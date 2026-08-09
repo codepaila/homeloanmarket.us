@@ -1,0 +1,395 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// app/api/brokers/[slug]/route.ts
+import { NextResponse } from 'next/server'
+import { getCurrentUser } from '@/lib/currentUser'
+import prisma from '@/lib/prisma'
+import { hasPaidEntitlement, isBrokerOwner, isPublicBroker, pickBrokerEditableFields, maxServiceCitiesForEntitlement } from '@/lib/broker-policy'
+import { SubscriptionService } from '@/lib/subscription'
+import { toPublicBrokerRecord } from '@/lib/public-broker'
+
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  try {
+    const currentUser = await getCurrentUser()
+    const slug = (await params).slug
+
+    const broker = await prisma.broker.findUnique({
+      where: { profileSlug: slug },
+      include: {
+        user: {
+          select: {
+            name: true,
+            image: true,
+            isActive: true,
+          }
+        },
+        bankPartners: {
+          select: {
+            id: true,
+            bankName: true,
+            bankType: true,
+            since: true
+          },
+          orderBy: { bankName: 'asc' }
+        },
+        subscription: {
+          select: {
+            plan: true,
+            isActive: true,
+            startDate: true,
+            endDate: true
+          }
+        },
+        reviews: {
+          where: {
+            isPublished: true
+          },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                image: true
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        },
+        _count: {
+          select: {
+            reviews: {
+              where: { isPublished: true }
+            },
+            contactMessages: true
+          }
+        }
+      }
+    })
+
+    if (!broker) {
+      return NextResponse.json(
+        { message: 'Broker not found' },
+        { status: 404 }
+      )
+    }
+
+    if (currentUser?.role !== 'ADMIN' && !isPublicBroker({
+      isVisible: broker.isVisible,
+      verificationStatus: broker.verificationStatus,
+      brokerStatus: broker.brokerStatus,
+      userId: broker.userId,
+      userIsActive: broker.user?.isActive,
+    })) {
+      return NextResponse.json(
+        { message: 'Broker profile not available' },
+        { status: 404 }
+      )
+    }
+
+
+
+    // Calculate response time and features based on subscription
+    let averageResponseTime = 'Within 24 hours'
+    let canShowContact = false
+    let isFeatured = false
+
+    if (hasPaidEntitlement(broker.subscription)) {
+      canShowContact = true
+      const plan = broker.subscription?.plan || 'FREE'
+      
+      switch (plan) {
+        case 'FEATURED':
+          averageResponseTime = 'Within 4 hours'
+          isFeatured = true
+          break
+        case 'FREE':
+        default:
+          averageResponseTime = 'Within 24 hours'
+           isFeatured = false
+      }
+    }
+
+    // Check if current user is the broker owner
+    const isOwner = currentUser?.id
+      ? isBrokerOwner(broker.userId, currentUser.id)
+      : false
+
+    // Prepare response data
+    const canShowContactFlag = canShowContact || isOwner || currentUser?.role === 'ADMIN'
+    const responseData = {
+      ...toPublicBrokerRecord(broker, { includeContact: canShowContactFlag }),
+      averageResponseTime,
+      canShowContact: canShowContactFlag,
+      isFeatured,
+      isOwner,
+      stats: {
+        totalReviews: broker._count.reviews,
+        totalLeads: broker.totalLeads,
+        profileViews: broker.profileViews,
+        avgRating: broker.avgRating,
+        experienceYears: broker.experienceYears,
+        serviceCities: broker.serviceCities.length,
+        specializations: broker.specializations.length
+      }
+    }
+
+    // Increment profile views (only for public access, not by owner)
+    if (!isOwner) {
+      await prisma.broker.update({
+        where: { id: broker.id },
+        data: { profileViews: { increment: 1 } }
+      })
+    }
+
+    return NextResponse.json(responseData)
+  } catch (error: any) {
+    console.error('GET /api/brokers/[slug] error:', error)
+    return NextResponse.json(
+      { message: 'Failed to fetch broker', error: error.message },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  try {
+    const currentUser = await getCurrentUser()
+    const slug = (await params).slug
+
+    if (!currentUser) {
+      return NextResponse.json(
+        { message: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    // Check if broker exists
+    const broker = await prisma.broker.findUnique({
+      where: { profileSlug: slug },
+      include: {
+        subscription: true
+      }
+    })
+
+    if (!broker) {
+      return NextResponse.json(
+        { message: 'Broker not found' },
+        { status: 404 }
+      )
+    }
+
+    // Check permissions: user must own the profile or be admin
+    if (broker.userId !== currentUser.id && currentUser.role !== 'ADMIN') {
+      return NextResponse.json(
+        { message: 'Unauthorized to update this broker profile' },
+        { status: 403 }
+      )
+    }
+
+    const body = await request.json()
+
+    // Strict allowlist: only broker-editable fields (plus admin-managed fields
+    // for admins). Ownership (userId), metrics (avgRating/totalLeads/
+    // profileViews), status, and system-managed fields are never accepted from
+    // client input.
+    const updateData: any = pickBrokerEditableFields(body, currentUser.role === 'ADMIN')
+
+    // Admin-only derived handling for verification and featured status
+    if (currentUser.role === 'ADMIN') {
+      if (updateData.verificationStatus === 'VERIFIED') updateData.verifiedAt = new Date()
+      if (updateData.brokerStatus === 'FEATURED') updateData.featuredRank = Math.floor(Math.random() * 100) + 1
+    }
+
+    // Special handling for profile slug - ensure uniqueness
+    if (body.profileSlug && body.profileSlug !== slug) {
+      // Validate slug format
+      const slugRegex = /^[a-z0-9-]+$/
+      if (!slugRegex.test(body.profileSlug)) {
+        return NextResponse.json(
+          { message: 'Profile slug can only contain lowercase letters, numbers, and hyphens' },
+          { status: 400 }
+        )
+      }
+
+      // Check if slug is already taken
+      const existingSlug = await prisma.broker.findFirst({
+        where: {
+          profileSlug: body.profileSlug,
+          id: { not: broker.id }
+        }
+      })
+
+      if (existingSlug) {
+        return NextResponse.json(
+          { message: 'Profile slug is already taken. Please choose another.' },
+          { status: 400 }
+        )
+      }
+
+      updateData.profileSlug = body.profileSlug
+    }
+
+    // Validate service cities limit for free subscription. The FREE allowance
+    // is a paid-entitlement gate: only a paid FEATURED subscription is
+    // unlimited. Raw `subscription.isActive` is true for every FREE plan.
+    if (body.serviceCities && Array.isArray(body.serviceCities)) {
+      const effectiveSubscription = SubscriptionService.effectiveSubscription(broker.subscription)
+      const maxServiceCities = maxServiceCitiesForEntitlement(effectiveSubscription)
+
+      if (body.serviceCities.length > maxServiceCities) {
+        return NextResponse.json(
+          { 
+            message: `Free plan limited to ${maxServiceCities} service city. Please upgrade to add more cities.`,
+            error: 'SUBSCRIPTION_LIMIT'
+          },
+          { status: 403 }
+        )
+      }
+    }
+
+    // Handle bank partnerships separately (if provided)
+    if (body.bankPartnerships && Array.isArray(body.bankPartnerships)) {
+      // Delete existing bank partnerships
+      await prisma.brokerBank.deleteMany({
+        where: { brokerId: broker.id }
+      })
+
+      // Create new bank partnerships
+      if (body.bankPartnerships.length > 0) {
+        const bankPartners = body.bankPartnerships.map((bankName: string) => ({
+          brokerId: broker.id,
+          bankName,
+          bankType: 'PRIVATE' // Default, can be customized
+        }))
+        
+        await prisma.brokerBank.createMany({
+          data: bankPartners
+        })
+      }
+    }
+
+    const updatedBroker = await prisma.broker.update({
+      where: { id: broker.id },
+      data: updateData,
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+            phone: true,
+            image: true
+          }
+        },
+        subscription: {
+          select: {
+            plan: true,
+            isActive: true
+          }
+        },
+        bankPartners: {
+          select: {
+            id: true,
+            bankName: true,
+            bankType: true
+          }
+        }
+      }
+    })
+
+    return NextResponse.json({
+      message: 'Broker profile updated successfully',
+      broker: updatedBroker,
+      hasActiveSubscription: broker.subscription?.isActive || false
+    })
+  } catch (error: any) {
+    console.error('PATCH /api/brokers/[slug] error:', error)
+    return NextResponse.json(
+      { message: 'Failed to update broker profile', error: error.message },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  try {
+    const currentUser = await getCurrentUser()
+    const slug = (await params).slug
+
+    if (!currentUser) {
+      return NextResponse.json(
+        { message: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    // Check if broker exists
+    const broker = await prisma.broker.findUnique({
+      where: { profileSlug: slug }
+    })
+
+    if (!broker) {
+      return NextResponse.json(
+        { message: 'Broker not found' },
+        { status: 404 }
+      )
+    }
+
+    // Check permissions: user must own the profile or be admin
+    if (broker.userId !== currentUser.id && currentUser.role !== 'ADMIN') {
+      return NextResponse.json(
+        { message: 'Unauthorized to delete this broker profile' },
+        { status: 403 }
+      )
+    }
+
+    // Handle deletion based on user role
+    if (currentUser.role === 'ADMIN') {
+      // Admin can suspend broker and downgrade user
+      await prisma.$transaction([
+        ...(broker.userId ? [prisma.user.update({
+          where: { id: broker.userId },
+          data: { role: 'USER' }
+        })] : []),
+        prisma.broker.update({
+          where: { id: broker.id },
+          data: {
+            isVisible: false,
+            brokerStatus: 'SUSPENDED',
+            verificationStatus: 'UNVERIFIED'
+          }
+        })
+      ])
+
+      return NextResponse.json({
+        message: 'Broker profile suspended successfully'
+      })
+    } else {
+      // Broker can only hide their profile
+      await prisma.broker.update({
+        where: { id: broker.id },
+        data: { 
+          isVisible: false 
+        }
+      })
+
+      return NextResponse.json({
+        message: 'Your broker profile has been hidden from public view',
+        note: 'You can make it visible again anytime from your profile settings'
+      })
+    }
+  } catch (error: any) {
+    console.error('DELETE /api/brokers/[slug] error:', error)
+    return NextResponse.json(
+      { message: 'Failed to delete broker profile', error: error.message },
+      { status: 500 }
+    )
+  }
+}

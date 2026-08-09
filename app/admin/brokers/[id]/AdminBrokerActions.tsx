@@ -1,0 +1,103 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+
+type AdminInvitation = {
+  id: string
+  recipientEmail: string
+  status: string
+  expiresAt: string | Date
+  createdAt: string | Date
+  usedAt?: string | Date | null
+  revokedAt?: string | Date | null
+}
+
+type AdminBroker = {
+  id: string
+  displayName: string
+  companyName?: string | null
+  description: string
+  phone: string
+  email?: string | null
+  officeAddress: string
+  city: string
+  state: string
+  pinCode: string
+  isVisible: boolean
+  claim?: { invitations: AdminInvitation[] } | null
+}
+
+export default function AdminBrokerActions({ broker }: { broker: AdminBroker }) {
+  const router = useRouter()
+  const [deliveryEmail, setDeliveryEmail] = useState(broker.claim?.invitations?.find((item) => item.status === 'ACTIVE')?.recipientEmail || broker.email || '')
+  const [message, setMessage] = useState('')
+  const [claimLink, setClaimLink] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({ displayName: broker.displayName, companyName: broker.companyName || '', description: broker.description, phone: broker.phone, email: broker.email || '', officeAddress: broker.officeAddress, city: broker.city, state: broker.state, pinCode: broker.pinCode, isVisible: broker.isVisible })
+
+  async function updateProfile(event: React.FormEvent) {
+    event.preventDefault()
+    setSaving(true); setMessage('')
+    try {
+      const response = await fetch(`/api/admin/brokers/${broker.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message || 'Unable to update profile')
+      setMessage('Profile updated.')
+      router.refresh()
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to update profile') }
+    finally { setSaving(false) }
+  }
+
+  async function issueInvitation(path: string) {
+    setSaving(true); setMessage('')
+    try {
+      const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ deliveryEmail }) })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message || 'Unable to issue invitation')
+      setClaimLink(data.claimLink || '')
+      setMessage(data.invitation.emailSent ? 'Invitation sent.' : 'Invitation created, but email delivery failed. Resend after checking the address.')
+      router.refresh()
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to issue invitation') }
+    finally { setSaving(false) }
+  }
+
+  async function revokeInvitation(id: string) {
+    setSaving(true); setMessage('')
+    try {
+      const response = await fetch(`/api/admin/claim-invitations/${id}/revoke`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason: 'Revoked by administrator' }) })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message || 'Unable to revoke invitation')
+      setMessage('Invitation revoked.'); router.refresh()
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to revoke invitation') }
+    finally { setSaving(false) }
+  }
+
+  const activeInvitation = broker.claim?.invitations?.find((item) => item.status === 'ACTIVE')
+
+  return (
+    <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
+      <form onSubmit={updateProfile} className="space-y-4 rounded-xl border bg-card p-6">
+        <h2 className="text-xl font-semibold">Profile details</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {(['displayName', 'companyName', 'phone', 'email', 'officeAddress', 'city', 'state', 'pinCode'] as const).map((field) => <label key={field} className="space-y-1"><span className="text-sm font-medium">{field}</span><input value={form[field]} onChange={(event) => setForm({ ...form, [field]: event.target.value })} className="w-full rounded-lg border bg-background px-3 py-2" /></label>)}
+        </div>
+        <label className="block space-y-1"><span className="text-sm font-medium">Description</span><textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className="min-h-28 w-full rounded-lg border bg-background px-3 py-2" /></label>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.isVisible} onChange={(event) => setForm({ ...form, isVisible: event.target.checked })} /> Publish profile after review</label>
+        <button disabled={saving} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">Save profile</button>
+      </form>
+      <div className="space-y-4 rounded-xl border bg-card p-6">
+        <h2 className="text-xl font-semibold">Claim readiness</h2>
+        <p className="text-sm text-muted-foreground">The profile remains unowned. Sending an invitation does not complete ownership.</p>
+        <input type="email" value={deliveryEmail} onChange={(event) => setDeliveryEmail(event.target.value)} placeholder="Company delivery email" className="w-full rounded-lg border bg-background px-3 py-2" />
+        <div className="flex flex-wrap gap-2">
+          <button disabled={saving || !deliveryEmail} onClick={() => issueInvitation(activeInvitation ? `/api/admin/claim-invitations/${activeInvitation.id}/resend` : `/api/admin/brokers/${broker.id}/claim-invitations`)} className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{activeInvitation ? 'Resend invitation' : 'Send invitation'}</button>
+          {activeInvitation && <button disabled={saving} onClick={() => revokeInvitation(activeInvitation.id)} className="rounded-lg border border-destructive px-3 py-2 text-sm text-destructive disabled:opacity-50">Revoke active</button>}
+        </div>
+        {claimLink && <button type="button" onClick={() => navigator.clipboard.writeText(claimLink).then(() => setMessage('Claim link copied.'))} className="rounded-lg border px-3 py-2 text-sm">Copy Claim Link</button>}
+        {broker.claim?.invitations && broker.claim.invitations.length > 0 && <div className="space-y-2 border-t pt-4"><p className="text-sm font-medium">Invitation history</p>{broker.claim.invitations.map((item) => <div key={item.id} className="grid grid-cols-[1fr_auto] gap-2 text-xs text-muted-foreground"><span>{item.recipientEmail} · {item.status}</span><span>{new Date(item.createdAt).toLocaleString()}</span></div>)}</div>}
+        {message && <p className="rounded-lg bg-muted px-3 py-2 text-sm">{message}</p>}
+      </div>
+    </div>
+  )
+}

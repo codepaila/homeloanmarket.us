@@ -1,0 +1,881 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum UserRole {
+  USER
+  BROKER
+  ADMIN
+}
+
+enum BrokerStatus {
+  FREE
+  FEATURED
+  SUSPENDED
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  VERIFIED
+}
+
+enum SubscriptionPlan {
+  FREE
+  FEATURED
+  PREMIUM
+}
+
+enum StripeWebhookEventStatus {
+  PROCESSING
+  PROCESSED
+  FAILED
+}
+
+enum BrokerCreationSource {
+  ADMIN_CREATED
+  SELF_REGISTERED
+}
+
+enum BrokerClaimStatus {
+  INVITED
+  IN_PROGRESS
+  COMPLETED
+  EXPIRED
+  REVOKED
+  FAILED
+}
+
+enum BrokerClaimInvitationStatus {
+  ACTIVE
+  USED
+  EXPIRED
+  REVOKED
+}
+
+enum BrokerClaimEventType {
+  GENERATED
+  SENT
+  OPENED
+  STARTED
+  EMAIL_SUBMITTED
+  VERIFICATION_PENDING
+  COMPLETED
+  EXPIRED
+  REVOKED
+  FAILED
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  LOST
+}
+
+enum BankType {
+  PUBLIC
+  PRIVATE
+  COOPERATIVE
+  NBFC
+  FOREIGN
+}
+
+// Advertisement Management enums
+enum AdvertisementPlacement {
+  HOMEPAGE_HERO
+  HOMEPAGE_SEARCH
+  HOMEPAGE_FEATURED
+  HOMEPAGE_SERVICES
+  HOMEPAGE_BANKS
+  HOMEPAGE_CTA
+  BROKER_LISTING
+  BROKER_PROFILE_HEADER
+  BROKER_LISTING_SIDEBAR
+  LOAN_CALCULATOR
+  BLOG_INLINE
+  FOOTER
+  ANNOUNCEMENT_TOP
+  ANNOUNCEMENT_BOTTOM
+  POPUP_OVERLAY
+  MOBILE_HEADER_BANNER
+}
+
+enum AdvertisementAction {
+  DISPLAY_ONLY
+  BANNER_CLICK
+  BUTTON_ONLY
+  BANNER_AND_BUTTON
+}
+
+enum AdType {
+  HERO_BANNER
+  SECTION_BANNER
+  INLINE_BANNER
+  SIDEBAR_BANNER
+  FOOTER_BANNER
+  SPONSORED_BANNER
+  POPUP_CAMPAIGN
+  ANNOUNCEMENT_BAR
+}
+
+enum ButtonVariant {
+  PRIMARY
+  SECONDARY
+  OUTLINE
+  GHOST
+}
+
+enum EventType {
+  IMPRESSION
+  CLICK
+}
+
+enum AdvertisementFormat {
+  HORIZONTAL
+  VERTICAL
+  SQUARE
+  RECTANGLE
+  MOBILE
+}
+
+// User model for authentication
+model User {
+  id                              String                  @id @default(auto()) @map("_id") @db.ObjectId
+  name                            String?
+  email                           String?                 @unique
+  phone                           String?                 @unique
+  password                        String?
+  image                           String?
+  role                            UserRole                @default(USER)
+  isActive                        Boolean                 @default(true)
+  emailVerified                   Boolean                 @default(false)
+  emailVerificationToken          String?
+  emailVerificationTokenExpiresAt DateTime?
+  resetPasswordToken              String?
+  resetPasswordTokenExpiry        DateTime?
+  brokerProfile                   Broker?
+  completedClaims                 BrokerClaim[]           @relation("ClaimCompletedBy")
+  createdClaimInvitations         BrokerClaimInvitation[] @relation("ClaimInvitationsCreated")
+  claimEvents                     BrokerClaimEvent[]      @relation("ClaimEventActor")
+  contactMessages                 ContactMessage[]
+
+  notifications  Notification[]
+  reviews        Review[]
+  supportTickets SupportTicket[]
+  accounts       Account[]
+
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+
+  // Advertisement Management relations
+  uploadedMedia MediaAsset[]    @relation("UploadedMedia")
+  createdAds    Advertisement[] @relation("CreatedBy")
+  updatedAds    Advertisement[] @relation("UpdatedBy")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email, phone])
+  @@map("users")
+}
+
+// Broker Profile
+model Broker {
+  id     String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId String? @unique @db.ObjectId
+
+  displayName String
+  companyName String?
+  profileSlug String  @unique
+  logo        String?
+  coverImage  String?
+  description String
+
+  phone         String
+  whatsapp      String?
+  email         String?
+  website       String?
+  officeAddress String
+  city          String
+  state         String
+  pinCode       String
+
+  experienceYears Int      @default(0)
+  specializations String[]
+  serviceCities   String[]
+  languages       String[] @default(["English", "Hindi"])
+
+  registrationNumber String?
+  panNumber          String?
+  creationSource     BrokerCreationSource?
+  verificationStatus VerificationStatus    @default(UNVERIFIED)
+  verifiedAt         DateTime?
+
+  brokerStatus BrokerStatus @default(FREE)
+  featuredRank Int?
+  isVisible    Boolean      @default(true)
+
+  avgRating    Float @default(0)
+  totalReviews Int   @default(0)
+  totalLeads   Int   @default(0)
+  profileViews Int   @default(0)
+
+  user            User?            @relation(fields: [userId], references: [id], onDelete: NoAction)
+  claim           BrokerClaim?
+  contactMessages ContactMessage[]
+
+  reviews      Review[]
+  bankPartners BrokerBank[]
+  subscription BrokerSubscription?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([city])
+  @@index([brokerStatus])
+  @@index([verificationStatus])
+  @@index([creationSource])
+  @@index([featuredRank])
+  @@index([brokerStatus, verificationStatus, featuredRank, avgRating])
+  @@map("brokers")
+}
+
+model BrokerSubscription {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  brokerId String @unique @db.ObjectId
+
+  plan     SubscriptionPlan
+  isActive Boolean          @default(true)
+
+  startDate DateTime  @default(now())
+  endDate   DateTime?
+
+  stripeCustomerId String?
+  stripeSubId      String?
+
+  broker Broker @relation(fields: [brokerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("broker_subscriptions")
+}
+
+model StripeWebhookEvent {
+  id               String                   @id @default(auto()) @map("_id") @db.ObjectId
+  eventId          String                   @unique
+  eventType        String
+  status           StripeWebhookEventStatus
+  eventCreatedAt   Int
+  stripeCustomerId String?
+  stripeSubId      String?
+  processedAt      DateTime?
+  error            String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([stripeSubId, eventCreatedAt])
+  @@index([status, createdAt])
+  @@map("stripe_webhook_events")
+}
+
+// Current claim process for an admin-created broker profile.
+model BrokerClaim {
+  id                String            @id @default(auto()) @map("_id") @db.ObjectId
+  brokerId          String            @unique @db.ObjectId
+  status            BrokerClaimStatus
+  startedAt         DateTime?
+  completedAt       DateTime?
+  completedByUserId String?           @db.ObjectId
+
+  broker      Broker                  @relation(fields: [brokerId], references: [id], onDelete: NoAction)
+  completedBy User?                   @relation("ClaimCompletedBy", fields: [completedByUserId], references: [id], onDelete: NoAction)
+  invitations BrokerClaimInvitation[]
+  events      BrokerClaimEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, updatedAt])
+  @@map("broker_claims")
+}
+
+// Each issued invitation stores only a digest of the delivered token.
+model BrokerClaimInvitation {
+  id             String                      @id @default(auto()) @map("_id") @db.ObjectId
+  brokerClaimId  String                      @db.ObjectId
+  tokenHash      String                      @unique
+  recipientEmail String
+  status         BrokerClaimInvitationStatus
+  expiresAt      DateTime
+  usedAt         DateTime?
+  revokedAt      DateTime?
+  createdById    String                      @db.ObjectId
+
+  claim     BrokerClaim        @relation(fields: [brokerClaimId], references: [id], onDelete: NoAction)
+  createdBy User               @relation("ClaimInvitationsCreated", fields: [createdById], references: [id], onDelete: NoAction)
+  events    BrokerClaimEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([brokerClaimId, status])
+  @@index([status, expiresAt])
+  @@map("broker_claim_invitations")
+}
+
+// Append-only lifecycle history for claim and invitation operations.
+model BrokerClaimEvent {
+  id            String               @id @default(auto()) @map("_id") @db.ObjectId
+  brokerClaimId String               @db.ObjectId
+  invitationId  String?              @db.ObjectId
+  actorUserId   String?              @db.ObjectId
+  eventType     BrokerClaimEventType
+  metadata      Json?
+  occurredAt    DateTime             @default(now())
+
+  claim      BrokerClaim            @relation(fields: [brokerClaimId], references: [id], onDelete: NoAction)
+  invitation BrokerClaimInvitation? @relation(fields: [invitationId], references: [id], onDelete: NoAction)
+  actor      User?                  @relation("ClaimEventActor", fields: [actorUserId], references: [id], onDelete: NoAction)
+
+  @@index([brokerClaimId, occurredAt])
+  @@index([invitationId])
+  @@index([eventType, occurredAt])
+  @@map("broker_claim_events")
+}
+
+model BrokerBank {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  brokerId String @db.ObjectId
+
+  bankName String
+  bankType BankType
+  since    DateTime?
+
+  broker Broker @relation(fields: [brokerId], references: [id])
+
+  @@index([brokerId])
+  @@map("broker_banks")
+}
+
+model ContactMessage {
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  brokerId String  @db.ObjectId
+  userId   String? @db.ObjectId
+
+  name  String
+  phone String
+  email String?
+  city  String?
+
+  // Message details
+  subject      String?
+  message      String
+  contactType  String  @default("email") // email, phone, whatsapp, sms
+  propertyType String?
+  loanAmount   Float?
+  loanType     String?
+  timeline     String? // immediate, 1-3_months, 3-6_months, exploring
+
+  // Status tracking
+  isRead        Boolean @default(false)
+  isResponded   Boolean @default(false)
+  responseNotes String?
+  priority      String  @default("normal") // low, normal, high
+
+  // Marketing preferences
+  agreeToMarketing Boolean @default(false)
+  agreeToTerms     Boolean @default(true)
+
+  // Relations
+  broker Broker @relation(fields: [brokerId], references: [id])
+  user   User?  @relation(fields: [userId], references: [id])
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  readAt      DateTime?
+  respondedAt DateTime?
+
+  @@index([brokerId])
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@index([brokerId, isRead])
+  @@map("contact_messages")
+}
+
+// Also update the Broker model to use ContactMessage
+
+// Reviews & Ratings
+model Review {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  brokerId String  @db.ObjectId
+  userId   String? @db.ObjectId
+
+  rating  Int
+  comment String?
+
+  isPublished Boolean @default(true)
+
+  broker Broker @relation(fields: [brokerId], references: [id])
+  user   User?  @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([brokerId])
+  @@map("reviews")
+}
+
+model Notification {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+
+  title   String
+  message String
+  isRead  Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("notifications")
+}
+
+// Support Tickets
+model SupportTicket {
+  id           String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String  @db.ObjectId
+  ticketNumber String  @unique
+  category     String // technical, billing, account, general
+  subject      String
+  description  String
+  priority     String  @default("medium") // low, medium, high, urgent
+  status       String  @default("open") // open, in_progress, resolved, closed
+  assignedTo   String? @db.ObjectId
+  resolution   String?
+
+  // Relations
+  user     User             @relation(fields: [userId], references: [id])
+  messages SupportMessage[]
+
+  // Timestamps
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  resolvedAt DateTime?
+  closedAt   DateTime?
+
+  @@index([userId])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+  @@map("support_tickets")
+}
+
+// Support Messages
+model SupportMessage {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  ticketId    String   @db.ObjectId
+  senderId    String   @db.ObjectId
+  senderType  String // user, support_agent
+  message     String
+  attachments String[]
+  isInternal  Boolean  @default(false)
+
+  // Relations
+  ticket SupportTicket @relation(fields: [ticketId], references: [id])
+
+  // Timestamps
+  createdAt DateTime @default(now())
+
+  @@index([ticketId])
+  @@index([createdAt])
+  @@map("support_messages")
+}
+
+// Account for OAuth
+model Account {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId            String   @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?  @db.String
+  access_token      String?  @db.String
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?  @db.String
+  session_state     String?
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// Message System
+model Message {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  senderId       String    @db.ObjectId
+  receiverId     String    @db.ObjectId
+  conversationId String
+  message        String
+  attachments    String[]
+  isRead         Boolean   @default(false)
+  readAt         DateTime?
+  delivered      Boolean   @default(false)
+  deliveredAt    DateTime?
+
+  sender   User @relation("SentMessages", fields: [senderId], references: [id])
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([senderId, receiverId])
+  @@index([conversationId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+// ============================================================
+// Advertisement Management
+// ============================================================
+
+model MediaFolder {
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  name     String
+  path     String  @unique
+  parentId String? @db.ObjectId
+
+  parent   MediaFolder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children MediaFolder[] @relation("FolderHierarchy")
+  assets   MediaAsset[]
+
+  isDeleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([parentId])
+  @@index([isDeleted])
+  @@map("media_folders")
+}
+
+model MediaAsset {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  title        String?
+  fileName     String // Filename on disk (e.g., "banner-2025-01.webp")
+  originalName String // Original uploaded filename
+  fileUrl      String // Relative URL path (e.g., "/uploads/media/banner.webp")
+  thumbnailUrl String? // Relative URL to thumbnail variant
+  mimeType     String // e.g., "image/webp"
+  extension    String // File extension without dot (e.g., "webp")
+  fileSize     Int // File size in bytes
+  width        Int? // Image width in pixels
+  height       Int? // Image height in pixels
+  altText      String? // Accessibility description
+  tags         String[] @default([])
+  folderId     String?  @db.ObjectId
+  uploaderId   String   @db.ObjectId
+
+  folder   MediaFolder? @relation(fields: [folderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  uploader User         @relation("UploadedMedia", fields: [uploaderId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  desktopAdvertisements Advertisement[] @relation("DesktopMedia")
+  mobileAdvertisements  Advertisement[] @relation("MobileMedia")
+  advertisementCreatives AdvertisementCreative[]
+
+  isDeleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([fileUrl])
+  @@index([uploaderId])
+  @@index([folderId])
+  @@index([isDeleted])
+  @@map("media_assets")
+}
+
+model Advertisement {
+  id             String                 @id @default(auto()) @map("_id") @db.ObjectId
+  title          String
+  slug           String                 @unique // Auto-generated from title; admin should not set manually
+  description    String?
+  placement      AdvertisementPlacement
+  type           AdType
+  action         AdvertisementAction
+  buttonVariant  ButtonVariant          @default(PRIMARY)
+  desktopMediaId String?                @db.ObjectId
+  mobileMediaId  String?                @db.ObjectId
+
+  // Content
+  altText       String?
+  bannerUrl     String? // Relative URL as fallback if no media asset
+  buttonLabel   String?
+  buttonUrl     String?
+  openInNewTab  Boolean @default(true)
+  internalNotes String? // Admin-only notes (never shown publicly)
+  isDismissible Boolean @default(false) // Show dismiss button (Announcement Bar, Popup)
+
+  // Display control
+  displayOrder Int @default(0) // Order within same placement (0 = first)
+  priority     Int @default(10) // 1 = highest, 100 = lowest
+
+  // Scheduling
+  startDate DateTime? // When ad becomes active (null = immediately)
+  endDate   DateTime? // When ad stops (null = no end)
+
+  // Status
+  isEnabled   Boolean @default(false)
+  isArchived  Boolean @default(false)
+  showDesktop Boolean @default(true)
+  showTablet  Boolean @default(true)
+  showMobile  Boolean @default(true)
+
+  // Audit
+  createdById String  @db.ObjectId
+  updatedById String? @db.ObjectId
+
+  desktopMedia MediaAsset? @relation("DesktopMedia", fields: [desktopMediaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  mobileMedia  MediaAsset? @relation("MobileMedia", fields: [mobileMediaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  creatives    AdvertisementCreative[]
+  createdBy    User        @relation("CreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  updatedBy    User?       @relation("UpdatedBy", fields: [updatedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  events AdEvent[]
+
+  isDeleted Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([placement])
+  @@index([type])
+  @@index([isEnabled, isArchived])
+  @@index([placement, displayOrder])
+  @@index([priority])
+  @@index([startDate, endDate])
+  @@index([createdById])
+  @@index([isDeleted])
+  @@map("advertisements")
+}
+
+model AdvertisementCreative {
+  id             String              @id @default(auto()) @map("_id") @db.ObjectId
+  advertisementId String              @db.ObjectId
+  mediaAssetId   String              @db.ObjectId
+  format         AdvertisementFormat
+
+  advertisement Advertisement @relation(fields: [advertisementId], references: [id], onDelete: Cascade)
+  mediaAsset   MediaAsset     @relation(fields: [mediaAssetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@unique([advertisementId, format])
+  @@index([mediaAssetId])
+  @@index([format])
+  @@map("advertisement_creatives")
+}
+
+model AdEvent {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  advertisementId String    @db.ObjectId
+  eventType       EventType
+  ipAddress       String?
+  userAgent       String?
+  referrer        String?
+  page            String?
+  country         String?
+  city            String?
+
+  advertisement Advertisement @relation(fields: [advertisementId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([advertisementId, eventType])
+  @@index([createdAt])
+  @@map("ad_events")
+}
+
+// ============================================================
+// Bank & Loan Products
+// ============================================================
+
+model Bank {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String   @unique
+  logo        String?
+  description String?
+  bankType    BankType
+  established Int?
+  headOffice  String?
+  website     String?
+  isActive    Boolean  @default(true)
+
+  loanProducts LoanProduct[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bankType])
+  @@map("banks")
+}
+
+model LoanProduct {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  bankId        String   @db.ObjectId
+  name          String
+  description   String?
+  interestRate  Float // e.g. 8.5 for 8.5%
+  processingFee Float? // percentage or flat
+  maxAmount     Float?
+  maxTenure     Int? // months
+  eligibility   String?
+  features      String[]
+  isActive      Boolean  @default(true)
+
+  bank Bank @relation(fields: [bankId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bankId])
+  @@map("loan_products")
+}
+
+// ============================================================
+// Properties
+// ============================================================
+
+model Property {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  slug         String   @unique
+  description  String?
+  propertyType String // apartment, house, villa, commercial, land
+  price        Float
+  currency     String   @default("NPR")
+  area         Float? // sq ft or sq m
+  bedrooms     Int?
+  bathrooms    Int?
+  location     String
+  city         String
+  district     String?
+  address      String?
+  features     String[]
+  images       String[]
+  isActive     Boolean  @default(true)
+  isFeatured   Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([city])
+  @@index([propertyType])
+  @@index([isFeatured])
+  @@map("properties")
+}
+
+// ============================================================
+// Blog System
+// ============================================================
+
+model BlogPost {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  title          String
+  slug           String    @unique
+  excerpt        String?
+  content        String
+  coverImage     String?
+  author         String
+  tags           String[]
+  category       String
+  isPublished    Boolean   @default(true)
+  publishedAt    DateTime?
+  seoTitle       String?
+  seoDescription String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([isPublished])
+  @@map("blog_posts")
+}
+
+// ============================================================
+// FAQ
+// ============================================================
+
+model FAQ {
+  id           String  @id @default(auto()) @map("_id") @db.ObjectId
+  question     String
+  answer       String
+  category     String?
+  displayOrder Int     @default(0)
+  isActive     Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([displayOrder])
+  @@map("faqs")
+}
+
+// ============================================================
+// Testimonials
+// ============================================================
+
+model Testimonial {
+  id           String  @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  photo        String?
+  rating       Int
+  comment      String
+  city         String?
+  propertyType String?
+  isActive     Boolean @default(true)
+  displayOrder Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("testimonials")
+}
+
+// ============================================================
+// Settings
+// ============================================================
+
+model Setting {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId
+  key         String  @unique
+  value       String
+  type        String  @default("string") // string, number, boolean, json
+  category    String?
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@map("settings")
+}

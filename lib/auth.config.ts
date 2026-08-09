@@ -1,0 +1,272 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { NextAuthConfig } from "next-auth";
+import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
+import prisma from "./prisma";
+import { UserRole } from "@prisma/client";
+import { sanitizeCallbackUrl } from './auth-redirect';
+import { headers } from 'next/headers';
+import { brokerLoginRateLimit } from './rateLimit';
+
+export const authOptions = {
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+  providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+          response_type: "code",
+        },
+      },
+      profile(profile) {
+        return {
+          id: profile.sub,
+          name: profile.name,
+          email: profile.email,
+          image: profile.picture,
+          role: "USER", // Default role for Google signups
+          isActive: true,
+        };
+      },
+    }),
+    CredentialsProvider({
+      id: "credentials",
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          return null;
+        }
+
+        // This is the shared credential boundary, including direct signIn
+        // callers such as the claim flow. The server derives the IP and fails
+        // open if rate-limit infrastructure is unavailable.
+        try {
+          const requestHeaders = await headers()
+          const ip = requestHeaders.get('x-forwarded-for')?.split(',')[0]?.trim()
+            || requestHeaders.get('x-real-ip')?.trim()
+            || 'unknown'
+          const rateResult = await brokerLoginRateLimit.limit(`login:${ip}`)
+          if (!rateResult.success) return null
+        } catch {
+          // Preserve authentication availability if Redis is unavailable.
+        }
+
+        // Get user with related profiles
+        const user = await prisma.user.findUnique({
+          where: {
+            email: credentials.email as string,
+          },
+          include: {
+            brokerProfile: {
+              include: {
+                subscription: true
+              }
+            },
+            accounts: true,
+          },
+        });
+
+        if (!user || !user.password) {
+          return null;
+        }
+
+        // Check if user is active
+        if (!user.isActive) {
+          return null;
+        }
+
+        if (user.role === 'BROKER' && !user.emailVerified) {
+          return null;
+        }
+
+        // Verify password
+        const isValid = await bcrypt.compare(
+          credentials.password as string,
+          user.password
+        );
+
+        if (!isValid) {
+          return null;
+        }
+
+        // Get subscription details from broker profile
+        const subscription = user.brokerProfile?.subscription;
+        
+        // Return user object
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          image: user.image,
+          isActive: user.isActive,
+          brokerProfile: user.brokerProfile
+            ? {
+                id: user.brokerProfile.id,
+                displayName: user.brokerProfile.displayName,
+                companyName: user.brokerProfile.companyName,
+                verificationStatus: user.brokerProfile.verificationStatus,
+                brokerStatus: user.brokerProfile.brokerStatus,
+                profileSlug: user.brokerProfile.profileSlug,
+                subscription: subscription ? {
+                  plan: subscription.plan,
+                  isActive: subscription.isActive,
+                  startDate: subscription.startDate,
+                  endDate: subscription.endDate,
+                } : null
+              }
+            : null,
+        };
+      },
+    }),
+  ],
+  callbacks: {
+    async jwt({ token, user, account, profile, trigger, session }) {
+      // Initial sign in
+      if (user) {
+        token.id = user.id;
+        token.name = user.name;
+        token.email = user.email;
+        token.emailVerified = user.emailVerified as boolean;
+        token.phone = user.phone;
+        token.image = user.image;
+        token.role = user.role;
+        token.isActive = user.isActive;
+        token.brokerProfile = user.brokerProfile;
+      }
+
+      // Identity claims are NEVER taken from the client. Auth.js fires this
+      // callback with trigger === "update" when the client calls
+      // useSession().update(); every in-app caller invokes it with no arguments
+      // purely to re-sync the JWT with the database. Merging a client-supplied
+      // session.user here would let a caller overwrite token.email/role and
+      // redirect the database refresh below to another account (privilege
+      // escalation). The refresh below re-derives every identity claim from
+      // the trusted database state.
+
+      // Refresh user data from database
+      if (token.email) {
+        const dbUser = await prisma.user.findUnique({
+          where: { email: token.email as string },
+          include: {
+            brokerProfile: {
+              include: {
+                subscription: true
+              }
+            },
+          },
+        });
+
+        if (dbUser) {
+          token.id = dbUser.id;
+          token.name = dbUser.name;
+          token.email = dbUser.email;
+          token.image = dbUser.image;
+          token.phone = dbUser.phone;
+          token.role = dbUser.role;
+        token.emailVerified = dbUser.emailVerified as boolean;
+
+          token.isActive = dbUser.isActive;
+          
+          if (dbUser.brokerProfile) {
+            const subscription = dbUser.brokerProfile.subscription;
+            token.brokerProfile = {
+              id: dbUser.brokerProfile.id,
+              displayName: dbUser.brokerProfile.displayName,
+              companyName: dbUser.brokerProfile.companyName,
+              verificationStatus: dbUser.brokerProfile.verificationStatus,
+              brokerStatus: dbUser.brokerProfile.brokerStatus,
+              profileSlug: dbUser.brokerProfile.profileSlug,
+              subscription: subscription ? {
+                plan: subscription.plan,
+                isActive: subscription.isActive,
+                startDate: subscription.startDate,
+                endDate: subscription.endDate,
+              } : null
+            };
+          }
+        }
+      }
+
+      return token;
+    },
+    async session({ session, token }) {
+      if (token) {
+        session.user = {
+          id: token.id as string,
+          name: token.name as string,
+          email: token.email as string,
+          image: token.image as string,
+          phone: token.phone as string,
+          role: token.role as UserRole,
+          isActive: token.isActive as boolean,
+          brokerProfile: token.brokerProfile,
+          emailVerified: token.emailVerified as any,
+        };
+      }
+      return session;
+    },
+    async signIn({ user, account, profile }) {
+      // Check if user is allowed to sign in
+      if (user && "isActive" in user && !user.isActive) {
+        throw new Error("Account is deactivated");
+      }
+
+      // Handle Google sign up - create profile if doesn't exist
+      if (account?.provider === "google" && user.email) {
+        const existingUser = await prisma.user.findUnique({
+          where: { email: user.email },
+        });
+
+        if (!existingUser) {
+          // Create user with Google profile
+          await prisma.user.create({
+            data: {
+              email: user.email!,
+              name: user.name,
+              image: user.image,
+              role: "USER", // Default role
+              isActive: true,
+            },
+          });
+        }
+      }
+
+      return true;
+    },
+    async redirect({ url, baseUrl }) {
+      const safePath = sanitizeCallbackUrl(url, baseUrl)
+      if (!safePath) return baseUrl
+      if (safePath === '/admin' || safePath === '/admin/dashboard') return `${baseUrl}/admin/ads`
+      if (safePath === '/dashboard') return baseUrl
+      return `${baseUrl}${safePath}`
+    },
+  },
+  pages: {
+    signIn: "/auth/signin",
+    error: "/auth/error",
+    newUser: "/",
+  },
+  events: {
+    async createUser({ user }) {
+      console.log("User created:", user.email);
+    },
+    async linkAccount({ user, account, profile }) {
+      console.log("Account linked:", user.email);
+    },
+  },
+  debug: process.env.NODE_ENV === "development",
+} satisfies NextAuthConfig;

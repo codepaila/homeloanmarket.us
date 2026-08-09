@@ -1,0 +1,108 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getCurrentUser } from '@/lib/currentUser'
+import prisma from '@/lib/prisma'
+import Stripe from 'stripe'
+import { validatePlanPrice } from '@/lib/stripe'
+import { getCorrelationId } from '@/lib/correlation'
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+
+export async function POST(request: NextRequest) {
+  try {
+    const correlationId = getCorrelationId(request)
+    const user = await getCurrentUser()
+    
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const { priceId, plan } = await request.json()
+    
+    if (!priceId || !plan) {
+      return NextResponse.json(
+        { success: false, error: 'Price ID and plan are required' },
+        { status: 400 }
+      )
+    }
+    if (!validatePlanPrice(plan, priceId)) {
+      return NextResponse.json({ success: false, error: 'Invalid subscription plan or price' }, { status: 400 })
+    }
+
+    if (!user.brokerProfile) {
+      return NextResponse.json(
+        { success: false, error: 'Broker profile not found' },
+        { status: 404 }
+      )
+    }
+
+    // Get or create Stripe customer
+    let customerId = user.stripeCustomerId
+    if (!customerId) {
+      const customer = await stripe.customers.create({
+        email: user.email || undefined,
+        name: user.name || undefined,
+        metadata: {
+          userId: user.id,
+          brokerId: user.brokerProfile.id
+        }
+      }, {
+        idempotencyKey: `stripe_customer_${user.id}`,
+      })
+      customerId = customer.id
+
+      // Update broker subscription with Stripe customer ID
+      await prisma.brokerSubscription.upsert({
+        where: { brokerId: user.brokerProfile.id },
+        update: { 
+          stripeCustomerId: customerId 
+        },
+        create: {
+          brokerId: user.brokerProfile.id,
+          plan: 'FREE',
+          isActive: false,
+          stripeCustomerId: customerId
+        }
+      })
+    }
+
+    // Create checkout session
+    const idempotencyKey = `checkout_${user.id}_${user.brokerProfile.id}_${plan}_${priceId}`
+    const checkoutSession = await stripe.checkout.sessions.create({
+        customer: customerId,
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price: priceId,
+            quantity: 1
+          }
+        ],
+        mode: 'subscription',
+        success_url: `${process.env.NEXTAUTH_URL}/broker/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.NEXTAUTH_URL}/broker/subscription`,
+        metadata: {
+          userId: user.id,
+          brokerId: user.brokerProfile.id,
+          plan: plan
+        }
+      }, {
+        idempotencyKey,
+      })
+
+    console.info('Subscription checkout created', { correlationId, brokerId: user.brokerProfile.id, plan })
+
+    return NextResponse.json({
+      success: true,
+      url: checkoutSession.url
+    })
+
+  } catch (error: unknown) {
+    console.error('Error creating checkout session', { correlationId: getCorrelationId(request), error: error instanceof Error ? error.message : 'Unknown error' })
+    return NextResponse.json(
+      { success: false, error: error instanceof Error ? error.message : 'Failed to create checkout session' },
+      { status: 500 }
+    )
+  }
+}
