@@ -25,9 +25,9 @@ const validateEmail = (email: string): string => {
 }
 
 const validatePhone = (phone: string): string => {
-  if (!phone.trim()) return 'Phone number is required'
-  const phoneRegex = /^(\+1[\-\s]?)?[0]?(1)?[789]\d{9}$/
-  if (!phoneRegex.test(phone.replace(/\s/g, ''))) return 'Please enter a valid 10-digit US phone number'
+  const digits = phone.replace(/\D/g, '')
+  if (!digits) return 'Phone number is required'
+  if (!(digits.length === 10 || (digits.length === 11 && digits.startsWith('1')))) return 'Please enter a valid US phone number'
   return ''
 }
 

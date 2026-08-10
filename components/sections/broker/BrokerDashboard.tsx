@@ -98,28 +98,28 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
     {
       title: "Total Messages",
       value: currentBroker?.totalLeads || 0,
-      change: "+12%",
+      change: null,
       icon: MessageSquare,
       color: "blue"
     },
     {
       title: "Avg. Rating",
       value: currentBroker?.avgRating?.toFixed(1) || '0.0',
-      change: "+0.5",
+      change: null,
       icon: Star,
       color: "yellow"
     },
     {
       title: "Profile Views",
       value: currentBroker?.profileViews || 0,
-      change: "+15%",
+      change: null,
       icon: Eye,
       color: "purple"
     },
     {
       title: "Reviews",
       value: currentBroker?.totalReviews || 0,
-      change: "+3",
+      change: null,
       icon: FileText,
       color: "green"
     }
@@ -328,7 +328,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
               <CardContent>
                 <div className="text-2xl font-bold">{stat.value}</div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  <span className="text-success">{stat.change}</span> from last month
+                  {stat.change ? <><span className="text-success">{stat.change}</span> from last month</> : 'Current total'}
                 </p>
               </CardContent>
             </Card>
@@ -662,7 +662,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
                   </p>
                   <div className="flex flex-col sm:flex-row gap-3 justify-center">
                     <Button asChild className="gap-2">
-                      <Link href="/broker/profile">
+                      <Link href="/broker/subscription">
                         <TrendingUp className="h-4 w-4" />
                         View Subscription Plans
                       </Link>
@@ -826,7 +826,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <BarChart3 className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p>Loading analytics data</p>
+                  <p>Detailed analytics will appear here as more profile activity is collected.</p>
                 </div>
               )}
             </CardContent>

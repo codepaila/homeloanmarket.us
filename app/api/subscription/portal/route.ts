@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/currentUser'
 import Stripe from 'stripe'
+import { SubscriptionService } from '@/lib/subscription'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
@@ -21,6 +22,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    if (!user.brokerProfile) return NextResponse.json({ success: false, error: 'Broker profile not found' }, { status: 404 })
+    await SubscriptionService.assertStripeCustomerOwnership(user.id, user.brokerProfile.id, user.stripeCustomerId)
 
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: user.stripeCustomerId,

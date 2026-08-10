@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronDown, Home as HomeIcon, MapPin, Search, ShieldCheck, Star } from 'lucide-react'
+import { ChevronDown, Home as HomeIcon, MapPin, Search, ShieldCheck, Star, ArrowRight } from 'lucide-react'
 import Image from 'next/image'
 import { PremiumButton } from '@/components/design/PremiumButton'
 import { fetchCities, fetchUSStates } from '@/lib/fetchClient'
@@ -17,12 +17,6 @@ const loanTypes = [
   { value: 'Jumbo Loan', label: 'Jumbo Loan' },
 ]
 
-const quickStats = [
-  { value: '10K+', label: 'Verified mortgage brokers' },
-  { value: '$2.5B+', label: 'Loans funded' },
-  { value: '< 24h', label: 'Avg. match time' },
-]
-
 const loanAmounts = [
   { value: '', label: 'Any amount' },
   { value: '250000', label: 'Up to $250K' },
@@ -31,7 +25,8 @@ const loanAmounts = [
   { value: '2000000', label: 'Above $1M' },
 ]
 
-const backgroundImage = 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=2400&h=1400&q=85'
+// Beautiful Unsplash background image
+const heroBackground = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=1920&q=80'
 
 type USStateOption = { code: string; name: string }
 
@@ -64,6 +59,7 @@ export default function HeroSection() {
   useEffect(() => {
     let mounted = true
     if (!state) return
+    setCitiesLoading(true)
     fetchCities(state)
       .then((data) => {
         if (mounted) setCityOptions(Array.isArray(data) ? data : [])
@@ -93,162 +89,285 @@ export default function HeroSection() {
   }
 
   const motionTransition = (delay: number) => ({
-    duration: prefersReducedMotion ? 0 : 0.45,
+    duration: prefersReducedMotion ? 0 : 0.5,
     delay: prefersReducedMotion ? 0 : delay,
+    ease: [0.25, 0.46, 0.45, 0.94],
   })
 
   return (
-    <section className="relative isolate overflow-hidden bg-secondary">
-      <Image
-        src={backgroundImage}
-        alt=""
-        fill
-        priority
-        sizes="100vw"
-        className="object-cover object-center"
-        aria-hidden="true"
-      />
-      <div className="absolute inset-0 bg-secondary/65" aria-hidden="true" />
+    <section className="relative isolate min-h-[80vh] overflow-hidden bg-secondary">
+      {/* Background Image */}
+      <div className="absolute inset-0">
+        <Image
+          src={heroBackground}
+          alt="Modern dream home"
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center"
+          aria-hidden="true"
+        />
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-secondary/85 via-secondary/70 to-secondary/80" aria-hidden="true" />
+        <div className="absolute inset-0 bg-gradient-to-t from-secondary/90 via-transparent to-secondary/30" aria-hidden="true" />
+        
+        {/* Decorative Glow Orbs */}
+        <div className="absolute -right-20 -top-20 h-[400px] w-[400px] rounded-full bg-primary/10 blur-3xl" aria-hidden="true" />
+        <div className="absolute -bottom-32 -left-32 h-[500px] w-[500px] rounded-full bg-accent/8 blur-3xl" aria-hidden="true" />
+      </div>
 
       <div className="container-custom relative z-10">
-        <div className="grid items-center gap-10 py-12 md:py-16 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.9fr)] lg:gap-12 lg:py-20">
-          <div className="max-w-xl">
+        <div className="flex min-h-[80vh] items-center py-16 md:py-20 lg:py-24">
+          <div className="mx-auto max-w-4xl text-center">
+            {/* Trust Badge */}
             <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={motionTransition(0)}
-              className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur-sm"
-            >
-              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-              America&apos;s trusted mortgage marketplace
-            </motion.div>
-
-            <motion.h1
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={motionTransition(0.08)}
-              className="mt-5 text-balance text-4xl font-extrabold leading-[1.1] tracking-tight text-white sm:text-5xl xl:text-[3.4rem]"
+              transition={motionTransition(0)}
+              className="inline-flex items-center gap-2.5 rounded-full border border-primary/30 bg-secondary/40 px-5 py-2 text-xs font-semibold text-white shadow-lg backdrop-blur-xl"
             >
-              Find the right mortgage broker,{' '}
-              <span className="text-primary">quickly</span>
+              <ShieldCheck className="h-4 w-4 text-primary" />
+              <span className="bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+                America&apos;s trusted mortgage marketplace
+              </span>
+            </motion.div>
+
+            {/* 5-Profile PNG Image */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={motionTransition(0.08)}
+              className="mt-6 flex justify-center"
+            >
+              <Image
+                src="/assets/images/5-profiles-cover-icon.png"
+                alt="Verified mortgage professionals"
+                width={600}
+                height={150}
+                priority
+                className="h-auto w-full max-w-[600px] object-contain"
+              />
+            </motion.div>
+
+            {/* Hero Heading */}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={motionTransition(0.12)}
+              className="mt-2 text-balance text-4xl font-extrabold leading-[1.1] tracking-tight text-white sm:text-5xl md:text-6xl lg:text-7xl"
+            >
+              Find the right{' '}
+              <span className="relative inline-block">
+                <span className="relative z-10 bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent">
+                  mortgage broker
+                </span>
+                <span className="absolute -bottom-2 left-0 h-3 w-full bg-primary/20 blur-xl" aria-hidden="true" />
+              </span>
+              <br />
+              <span className="text-white/90">for your dream home</span>
             </motion.h1>
 
+            {/* Subtitle */}
             <motion.p
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={motionTransition(0.16)}
-              className="mt-5 text-lg leading-relaxed text-white/80"
+              transition={motionTransition(0.18)}
+              className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-white/75 sm:text-lg"
             >
-              Compare verified mortgage professionals, read real borrower reviews, and connect with the right mortgage expert — all in one place.
+              Compare verified mortgage professionals, read real borrower reviews, 
+              and connect with the right expert — all in one place.
             </motion.p>
 
+            {/* Search Form */}
             <motion.form
               onSubmit={handleSearch}
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={motionTransition(0.24)}
-              className="mt-8 rounded-2xl border border-border bg-card p-2 text-card-foreground shadow-large"
+              transition={motionTransition(0.25)}
+              className="mt-8 rounded-2xl border border-white/10 bg-white/95 p-3 shadow-2xl backdrop-blur-xl"
             >
-              <div className="flex items-center gap-2 rounded-xl px-3 py-1 transition-colors focus-within:bg-muted/40">
-                <Search className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+              {/* Main Search Bar */}
+              <div className="flex items-center gap-3 rounded-xl bg-white px-4 py-2.5 shadow-sm ring-1 ring-black/5 transition-all focus-within:ring-2 focus-within:ring-primary/50">
+                <Search className="h-5 w-5 flex-shrink-0 text-primary" />
                 <input
                   type="search"
                   name="q"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Search by broker, company, ZIP code, city, or state..."
-                  className="w-full rounded-lg bg-transparent py-2 text-sm text-secondary outline-none placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/30"
+                  className="flex-1 bg-transparent py-1 text-sm font-medium text-secondary placeholder:text-muted-foreground/70 focus:outline-none"
                   aria-label="Search brokers"
                 />
-                <PremiumButton type="submit" className="shrink-0">Search Brokers</PremiumButton>
+                <PremiumButton type="submit" size="md" className="shrink-0 bg-gradient-to-r from-primary to-emerald-600 px-6 shadow-md">
+                  <span className="flex items-center">
+                    Search
+                    <ArrowRight className="ml-1.5 h-4 w-4" />
+                  </span>
+                </PremiumButton>
               </div>
 
-              <div className="mt-2 grid grid-cols-1 gap-1.5 border-t border-border pt-2 sm:grid-cols-2 lg:grid-cols-4">
-                <label className="relative flex items-center gap-2 rounded-xl px-3 py-2 transition-colors focus-within:bg-muted/40">
-                  <HomeIcon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                  <select name="loanType" value={loanType} onChange={(event) => setLoanType(event.target.value)} className="w-full appearance-none bg-transparent text-sm font-medium text-secondary outline-none" aria-label="Loan type">
-                    {loanTypes.map((type) => <option key={type.value} value={type.value}>{type.label}</option>)}
+              {/* Filter Options - Fixed Icons */}
+              <div className="mt-2.5 grid grid-cols-2 gap-1.5 border-t border-border/40 pt-2.5 md:grid-cols-4">
+                {/* Loan Type */}
+                <div className="group relative">
+                  <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
+                    <HomeIcon className="h-3.5 w-3.5 text-primary transition-transform group-hover:scale-110" />
+                  </div>
+                  <select
+                    name="loanType"
+                    value={loanType}
+                    onChange={(event) => setLoanType(event.target.value)}
+                    className="w-full appearance-none rounded-lg bg-muted/40 py-2 pl-8 pr-7 text-xs font-medium text-secondary transition-all hover:bg-muted/60 focus:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    aria-label="Loan type"
+                  >
+                    {loanTypes.map((type) => (
+                      <option key={type.value} value={type.value}>
+                        {type.label}
+                      </option>
+                    ))}
                   </select>
-                  <ChevronDown className="pointer-events-none absolute right-2 h-4 w-4 text-muted-foreground" />
-                </label>
+                  <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
+                    <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-hover:translate-y-0.5" />
+                  </div>
+                </div>
 
-                <label className="relative flex items-center gap-2 rounded-xl px-3 py-2 transition-colors focus-within:bg-muted/40">
-                  <MapPin className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                  <select name="state" value={state} onChange={(event) => { const value = event.target.value; setCity(''); setCityOptions([]); setCitiesLoading(Boolean(value)); setState(value) }} className="w-full appearance-none bg-transparent text-sm font-medium text-secondary outline-none" aria-label="State">
+                {/* State */}
+                <div className="group relative">
+                  <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
+                    <MapPin className="h-3.5 w-3.5 text-primary transition-transform group-hover:scale-110" />
+                  </div>
+                  <select
+                    name="state"
+                    value={state}
+                    onChange={(event) => {
+                      const value = event.target.value
+                      setCity('')
+                      setCityOptions([])
+                      setCitiesLoading(Boolean(value))
+                      setState(value)
+                    }}
+                    className="w-full appearance-none rounded-lg bg-muted/40 py-2 pl-8 pr-7 text-xs font-medium text-secondary transition-all hover:bg-muted/60 focus:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    aria-label="State"
+                  >
                     <option value="">All states</option>
-                    {states.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
+                    {states.map((item) => (
+                      <option key={item.code} value={item.code}>
+                        {item.name}
+                      </option>
+                    ))}
                   </select>
-                  <ChevronDown className="pointer-events-none absolute right-2 h-4 w-4 text-muted-foreground" />
-                </label>
+                  <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
+                    <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-hover:translate-y-0.5" />
+                  </div>
+                </div>
 
-                <label className="relative flex items-center gap-2 rounded-xl px-3 py-2 transition-colors focus-within:bg-muted/40">
-                  <MapPin className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                {/* City */}
+                <div className="group relative">
+                  <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
+                    <MapPin className="h-3.5 w-3.5 text-primary transition-transform group-hover:scale-110" />
+                  </div>
                   <select
                     name="city"
                     value={city}
                     onChange={(event) => setCity(event.target.value)}
                     disabled={!state || citiesLoading}
-                    className="w-full appearance-none bg-transparent text-sm font-medium text-secondary outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-full appearance-none rounded-lg bg-muted/40 py-2 pl-8 pr-7 text-xs font-medium text-secondary transition-all hover:bg-muted/60 focus:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label="City"
                   >
-                    <option value="">{state ? (citiesLoading ? 'Loading cities...' : 'All cities') : 'Select state first'}</option>
-                    {cityOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+                    <option value="">
+                      {state ? (citiesLoading ? 'Loading...' : 'All cities') : 'Select state'}
+                    </option>
+                    {cityOptions.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
                   </select>
-                  <ChevronDown className="pointer-events-none absolute right-2 h-4 w-4 text-muted-foreground" />
-                </label>
+                  <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
+                    <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-hover:translate-y-0.5" />
+                  </div>
+                </div>
 
-                <label className="relative flex items-center gap-2 rounded-xl px-3 py-2 transition-colors focus-within:bg-muted/40">
-                  <span className="text-sm font-medium text-muted-foreground">$</span>
-                  <select name="loanAmount" value={amount} onChange={(event) => setAmount(event.target.value)} className="w-full appearance-none bg-transparent text-sm font-medium text-secondary outline-none" aria-label="Loan amount">
-                    {loanAmounts.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
+                {/* Loan Amount */}
+                <div className="group relative">
+                  <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
+                    <span className="text-xs font-bold text-primary">$</span>
+                  </div>
+                  <select
+                    name="loanAmount"
+                    value={amount}
+                    onChange={(event) => setAmount(event.target.value)}
+                    className="w-full appearance-none rounded-lg bg-muted/40 py-2 pl-8 pr-7 text-xs font-medium text-secondary transition-all hover:bg-muted/60 focus:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    aria-label="Loan amount"
+                  >
+                    {loanAmounts.map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {item.label}
+                      </option>
+                    ))}
                   </select>
-                  <ChevronDown className="pointer-events-none absolute right-2 h-4 w-4 text-muted-foreground" />
-                </label>
+                  <div className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2">
+                    <ChevronDown className="h-3.5 w-3.5 text-muted-foreground transition-transform group-hover:translate-y-0.5" />
+                  </div>
+                </div>
               </div>
             </motion.form>
 
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={motionTransition(0.32)} className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <Link href="/brokers" className="sm:flex-1 lg:flex-none">
-                <PremiumButton variant="primary" size="md" fullWidth className="sm:w-auto">Find Mortgage Brokers</PremiumButton>
+            {/* CTA Buttons */}
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={motionTransition(0.32)}
+              className="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-center"
+            >
+              <Link href="/brokers" className="group">
+                <PremiumButton
+                  variant="primary"
+                  size="lg"
+                  className="relative overflow-hidden bg-gradient-to-r from-primary to-emerald-600 px-8 shadow-xl hover:shadow-2xl"
+                >
+                  <span className="relative z-10 flex items-center">
+                    Find Mortgage Brokers
+                    <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  </span>
+                  <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
+                </PremiumButton>
               </Link>
-              <Link href="/subscription" className="sm:flex-1 lg:flex-none">
-                <PremiumButton variant="secondary" size="md" fullWidth className="sm:w-auto">View Subscription Plans</PremiumButton>
+              <Link href="/subscription">
+                <PremiumButton
+                  variant="secondary"
+                  size="lg"
+                  className="border-white/30 bg-white/10 text-white backdrop-blur-md hover:bg-white/20"
+                >
+                  View Plans
+                </PremiumButton>
               </Link>
             </motion.div>
 
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={motionTransition(0.4)} className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-3">
-              <div className="flex items-center gap-3">
-                <div className="flex -space-x-2.5">
-                  {['RS', 'PK', 'AM', 'SV'].map((initials, index) => <span key={initials} className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-secondary bg-primary text-[10px] font-bold text-white" style={{ zIndex: 4 - index }}>{initials}</span>)}
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-secondary bg-white text-[10px] font-bold text-text-muted">50k+</span>
+            {/* Social Proof */}
+            {/* <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={motionTransition(0.4)}
+              className="mt-8 flex items-center justify-center gap-6"
+            >
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  {[...Array(5)].map((_, index) => (
+                    <Star key={index} className="h-4 w-4 fill-yellow-400 text-yellow-400 drop-shadow-sm" />
+                  ))}
                 </div>
-                <div className="text-xs text-white/75">
-                  <div className="flex items-center gap-1">
-                    {[...Array(5)].map((_, index) => <Star key={index} className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />)}
-                    <span className="ml-1 font-semibold text-white">4.8/5</span>
-                  </div>
-                  Trusted by 50,000+ borrowers
-                </div>
+                <span className="text-sm font-semibold text-white">4.8/5</span>
+                <span className="text-sm text-white/50">·</span>
+                <span className="text-sm text-white/70">50K+ borrowers</span>
               </div>
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={motionTransition(0.48)} className="mt-8 grid grid-cols-3 gap-4 border-t border-white/20 pt-6">
-              {quickStats.map((stat) => <div key={stat.label}><div className="text-2xl font-extrabold text-white">{stat.value}</div><div className="mt-0.5 text-xs text-white/70">{stat.label}</div></div>)}
-            </motion.div>
+            </motion.div> */}
           </div>
-
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={motionTransition(0.2)} className="relative mx-auto flex w-full max-w-xl items-center justify-center lg:justify-end">
-            <Image
-              src="/assets/images/5-profiles-cover-icon.png"
-              alt="HomeLoanMarket mortgage professionals"
-              width={830}
-              height={215}
-              priority
-              className="h-auto w-full max-w-[620px] object-contain drop-shadow-[0_20px_30px_rgba(0,0,0,0.28)]"
-            />
-          </motion.div>
         </div>
       </div>
+
+      {/* Bottom gradient fade */}
+      {/* <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent" aria-hidden="true" /> */}
     </section>
   )
 }

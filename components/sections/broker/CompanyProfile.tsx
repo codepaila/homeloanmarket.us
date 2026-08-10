@@ -98,7 +98,7 @@ const specializationOptions = [
   'Cash-Out Refinance'
 ]
 
-const indianCities = [
+const usCities = [
   'New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix',
   'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'San Jose',
   'Austin', 'Jacksonville', 'Fort Worth', 'Columbus', 'Charlotte',
@@ -174,9 +174,9 @@ export function CompanyProfile({ user, broker }: CompanyProfileProps) {
       zipCode: broker?.zipCode || '',
       
       experienceYears: broker?.experienceYears || 0,
-      specializations: broker?.specializations || ['Home Loan'],
+      specializations: broker?.specializations || ['Home Purchase'],
       serviceCities: broker?.serviceCities || [],
-      languages: broker?.languages || ['English', 'Hindi'],
+      languages: broker?.languages || ['English', 'Spanish'],
       
       registrationNumber: broker?.registrationNumber || '',
       panNumber: broker?.panNumber || '',
@@ -912,7 +912,7 @@ export function CompanyProfile({ user, broker }: CompanyProfileProps) {
                                 } />
                               </SelectTrigger>
                               <SelectContent>
-                                {indianCities.map((city) => (
+                                {usCities.map((city) => (
                                   <SelectItem 
                                     key={city} 
                                     value={city}

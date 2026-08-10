@@ -13,7 +13,8 @@ import {
   Facebook,
   Twitter,
   Linkedin,
-  Github,
+  Instagram,
+  Youtube,
   CheckCircle2,
 } from 'lucide-react'
 import { AdvertisementRenderer } from '@/components/advertisements'
@@ -53,13 +54,15 @@ const SOCIAL_ICONS = {
   facebook: Facebook,
   twitter: Twitter,
   linkedin: Linkedin,
-  instagram: Github,
-  youtube: Github,
+  instagram: Instagram,
+  youtube: Youtube,
 } as const
 
 export default function Footer({ settings }: { settings?: SiteSettings }) {
   const [email, setEmail] = useState('')
   const [subscribed, setSubscribed] = useState(false)
+  const [newsletterError, setNewsletterError] = useState('')
+  const [newsletterLoading, setNewsletterLoading] = useState(false)
 
   const contactInfo = [
     { icon: Phone, label: 'Phone', value: settings?.contactPhone || '+1-800-000-0000' },
@@ -77,12 +80,25 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
     return { name: key, href: settings?.[settingKey] || '', icon: SOCIAL_ICONS[key] }
   }).filter((social) => social.href)
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email.trim()) return
-    setSubscribed(true)
-    setEmail('')
-    setTimeout(() => setSubscribed(false), 3500)
+    setNewsletterError('')
+    setNewsletterLoading(true)
+    try {
+      const response = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Unable to subscribe')
+      setSubscribed(true)
+      setEmail('')
+    } catch (error) {
+      setNewsletterError(error instanceof Error ? error.message : 'Unable to subscribe')
+    } finally {
+      setNewsletterLoading(false)
+    }
   }
 
   return (
@@ -115,6 +131,7 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
             />
             <button
               type="submit"
+              disabled={newsletterLoading}
               className="flex h-10 flex-shrink-0 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-semibold text-white transition-all hover:bg-primary/90"
             >
               {subscribed ? (
@@ -123,11 +140,13 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
                 </>
               ) : (
                 <>
-                  Subscribe <ArrowRight className="h-3.5 w-3.5" />
+                  {newsletterLoading ? 'Submitting…' : 'Subscribe'}
+                  {!newsletterLoading && <ArrowRight className="h-3.5 w-3.5" />}
                 </>
               )}
             </button>
           </form>
+          {newsletterError && <p className="mt-2 text-sm text-destructive" role="alert">{newsletterError}</p>}
         </div>
 
         {/* Main footer grid */}

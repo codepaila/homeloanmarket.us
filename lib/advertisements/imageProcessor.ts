@@ -1,4 +1,5 @@
 import sharp from "sharp"
+import crypto from "crypto"
 import { writeFile, mkdir, unlink } from "fs/promises"
 import path from "path"
 import prisma from "@/lib/prisma"

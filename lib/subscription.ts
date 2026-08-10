@@ -1,12 +1,28 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { SubscriptionPlan } from '@prisma/client'
 import Stripe from 'stripe'
+import crypto from 'crypto'
+import { Redis } from '@upstash/redis'
 import prisma from '@/lib/prisma'
 import { getAuthoritativePlan, subscriptionPlans } from '@/lib/stripe'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   // apiVersion: '2024-06-20',
 })
+
+export class CheckoutConflictError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'CheckoutConflictError'
+  }
+}
+
+export class BillingUnavailableError extends Error {
+  constructor() {
+    super('Billing is temporarily unavailable. Please try again.')
+    this.name = 'BillingUnavailableError'
+  }
+}
 
 export function getPlanForStripePrice(priceId: unknown): SubscriptionPlan {
   return subscriptionPlans.find((plan) => plan.stripePriceId === priceId)?.name === 'FEATURED'
@@ -15,6 +31,97 @@ export function getPlanForStripePrice(priceId: unknown): SubscriptionPlan {
 }
 
 export class SubscriptionService {
+  static async withBillingLock<T>(scope: string, operation: () => Promise<T>): Promise<T> {
+    let redis: Redis
+    try {
+      redis = Redis.fromEnv()
+    } catch {
+      throw new BillingUnavailableError()
+    }
+    const lockKey = `homeloanmarket:billing:${scope}`
+    const lockValue = crypto.randomUUID()
+    const leaseSeconds = 60
+    let acquired: string | null
+    try {
+      acquired = await redis.set(lockKey, lockValue, { nx: true, ex: leaseSeconds })
+    } catch {
+      throw new BillingUnavailableError()
+    }
+    if (acquired !== 'OK') throw new CheckoutConflictError('Checkout already in progress')
+    let renewalFailed = false
+    const renewal = setInterval(async () => {
+      try {
+        const renewed = await redis.eval(
+          "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('expire', KEYS[1], ARGV[2]) else return 0 end",
+          [lockKey],
+          [lockValue, String(leaseSeconds)],
+        )
+        if ((renewed as number) !== 1) renewalFailed = true
+      } catch {
+        renewalFailed = true
+      }
+    }, 10_000)
+    renewal.unref?.()
+    try {
+      const result = await operation()
+      if (renewalFailed) throw new BillingUnavailableError()
+      return result
+    } finally {
+      clearInterval(renewal)
+      try {
+        const current = await redis.get<string>(lockKey)
+        if (current === lockValue) await redis.del(lockKey)
+      } catch {
+        // The operation already completed; a short-lived lock is safer than
+        // turning a successful billing operation into a client failure.
+      }
+    }
+  }
+
+  static async withCheckoutLock<T>(brokerId: string, operation: () => Promise<T>): Promise<T> {
+    return this.withBillingLock(`broker:${brokerId}`, operation)
+  }
+
+  static async assertStripeCustomerOwnership(userId: string, brokerId: string, customerId: string) {
+    const local = await prisma.brokerSubscription.findUnique({
+      where: { brokerId },
+      select: { stripeCustomerId: true },
+    })
+    if (!local?.stripeCustomerId || local.stripeCustomerId !== customerId) {
+      throw new Error('Stripe customer does not belong to this account')
+    }
+    const customer = await stripe.customers.retrieve(customerId)
+    if ('deleted' in customer && customer.deleted) throw new Error('Stripe customer is unavailable')
+    if (customer.metadata?.userId && customer.metadata.userId !== userId) {
+      throw new Error('Stripe customer does not belong to this account')
+    }
+    if (customer.metadata?.brokerId && customer.metadata.brokerId !== brokerId) {
+      throw new Error('Stripe customer does not belong to this account')
+    }
+    return customer
+  }
+
+  static async findCheckoutConflict(brokerId: string, customerId: string) {
+    const local = await prisma.brokerSubscription.findUnique({
+      where: { brokerId },
+      select: { plan: true, isActive: true, stripeSubId: true },
+    })
+    if (local?.plan === 'FEATURED' && local.isActive) {
+      return { reason: 'An existing subscription must be managed before another checkout.' }
+    }
+    const subscriptions = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 20 })
+    const blockingSubscription = subscriptions.data.find((subscription) =>
+      ['active', 'trialing', 'incomplete', 'past_due', 'unpaid', 'paused'].includes(subscription.status),
+    )
+    if (blockingSubscription) {
+      return { reason: 'An existing subscription must be managed before another checkout.' }
+    }
+    const sessions = await stripe.checkout.sessions.list({ customer: customerId, status: 'open', limit: 20 })
+    const openSession = sessions.data.find((session) => session.mode === 'subscription')
+    if (openSession?.url) return { checkoutUrl: openSession.url }
+    return null
+  }
+
   static effectiveSubscription(subscription: { plan: SubscriptionPlan; isActive: boolean; startDate?: Date; endDate?: Date | null; stripeCustomerId?: string | null; stripeSubId?: string | null } | null) {
     const expired = Boolean(subscription?.endDate && subscription.endDate <= new Date())
     if (!subscription || subscription.plan === 'FREE' || subscription.plan !== 'FEATURED' || !subscription.isActive || expired) {
@@ -209,7 +316,14 @@ export class SubscriptionService {
       throw new Error('Broker subscription not found')
     }
     if (subscription.stripeSubId && subscription.stripeSubId !== stripeSubscriptionId) {
-      throw new Error('Stripe subscription does not match Broker subscription')
+      const currentStripeSubscription = await stripe.subscriptions.retrieve(subscription.stripeSubId)
+      const incomingIsActive = status === 'active' || status === 'trialing'
+      const currentIsTerminal = ['canceled', 'incomplete_expired'].includes(currentStripeSubscription.status)
+      const currentIsActive = ['active', 'trialing', 'incomplete', 'past_due', 'unpaid', 'paused'].includes(currentStripeSubscription.status)
+      if (currentIsActive || !currentIsTerminal || !incomingIsActive) {
+        if (currentIsActive && !incomingIsActive) return subscription
+        throw new Error('Stripe subscription does not match Broker subscription')
+      }
     }
 
     const isActive = status === 'active' || status === 'trialing'
@@ -238,9 +352,10 @@ export class SubscriptionService {
 
   // Cancel subscription
   static async cancelSubscription(brokerId: string) {
-    const subscription = await prisma.brokerSubscription.findUnique({
+    return this.withCheckoutLock(brokerId, async () => {
+      const subscription = await prisma.brokerSubscription.findUnique({
       where: { brokerId }
-    })
+      })
 
     if (!subscription?.stripeSubId) {
       // Just mark as inactive in database
@@ -254,10 +369,12 @@ export class SubscriptionService {
     } else {
       // Cancel in Stripe
       try {
-        await stripe.subscriptions.cancel(subscription.stripeSubId) as any
+        await stripe.subscriptions.cancel(subscription.stripeSubId, {}, {
+          idempotencyKey: `cancel_${subscription.stripeCustomerId}_${subscription.stripeSubId}`,
+        }) as any
       } catch (error) {
         console.error('Error canceling Stripe subscription:', error)
-        // Still mark as inactive in our database
+        throw new Error('Stripe cancellation failed')
       }
 
       await prisma.brokerSubscription.update({
@@ -272,7 +389,8 @@ export class SubscriptionService {
     // Apply subscription features (will reset to free)
     await this.applySubscriptionFeatures(brokerId)
 
-    return { success: true }
+      return { success: true }
+    })
   }
 
   // Sync with Stripe

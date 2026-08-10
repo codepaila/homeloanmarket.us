@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed": "tsx prisma/seed/index.ts",
+    "seed": "node --env-file-if-exists=.env --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs prisma/seed/index.ts",
     "db:ensure-ownership-index": "npx tsx scripts/ensure-ownership-index.ts",
     "db:reconcile-subscription-plans": "npx tsx scripts/reconcile-subscription-plans.ts",
     "postinstall": "prisma generate",

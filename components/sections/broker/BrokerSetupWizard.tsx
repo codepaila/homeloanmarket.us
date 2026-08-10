@@ -124,7 +124,7 @@ export function BrokerSetupWizard({ user }: BrokerSetupWizardProps) {
   const [newBank, setNewBank] = useState('')
 
   // Common US cities for selection
-  const indianCities = [
+  const usCities = [
     'New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix',
     'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'San Jose',
     'Austin', 'Jacksonville', 'Fort Worth', 'Columbus', 'Charlotte',
@@ -190,9 +190,9 @@ export function BrokerSetupWizard({ user }: BrokerSetupWizardProps) {
       state: '',
       zipCode: '',
       experienceYears: 0,
-      specializations: ['Home Loan'],
+       specializations: ['Home Purchase'],
       serviceCities: [],
-      languages: ['English', 'Hindi'],
+       languages: ['English', 'Spanish'],
       bankPartnerships: [],
       registrationNumber: '',
       panNumber: '',
@@ -366,7 +366,7 @@ export function BrokerSetupWizard({ user }: BrokerSetupWizardProps) {
             specializationOptions={specializationOptions}
             languageOptions={languageOptions}
             bankOptions={bankOptions}
-            indianCities={indianCities}
+            indianCities={usCities}
             newSpec={newSpec}
             setNewSpec={setNewSpec}
             newCity={newCity}
@@ -468,7 +468,7 @@ export function BrokerSetupWizard({ user }: BrokerSetupWizardProps) {
             {currentStep === 3 && 'Share your professional expertise'}
             {/* {currentStep === 4 && 'Add registration details'} */}
             {/* {currentStep === 5 && 'Upload verification documents'} */}
-            {currentStep === 6 && 'Review and submit your application'}
+          {currentStep === 4 && 'Review and submit your application'}
           </CardDescription>
         </CardHeader>
         

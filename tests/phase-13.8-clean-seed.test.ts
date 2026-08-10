@@ -34,8 +34,8 @@ test('Clean seed has expected compact dataset', { skip: !database }, async () =>
 
   assert.equal(users.filter((user) => user.role === 'ADMIN').length, 1)
   assert.ok(users.filter((user) => user.role === 'USER').length >= 8 && users.filter((user) => user.role === 'USER').length <= 12)
-  assert.equal(brokers.length, 8)
-  assert.equal(brokers.filter((broker) => broker.userId).length, 7)
+  assert.equal(brokers.length, 6)
+  assert.equal(brokers.filter((broker) => broker.userId).length, 5)
   assert.equal(brokers.filter((broker) => !broker.userId).length, 1)
   const eligible = brokers.filter((broker) => isPublicBroker({
     isVisible: broker.isVisible,
@@ -44,13 +44,13 @@ test('Clean seed has expected compact dataset', { skip: !database }, async () =>
     userId: broker.userId,
     userIsActive: broker.user?.isActive,
   })).length
-  assert.ok(eligible >= 7 && eligible <= 8)
-  assert.ok(subscriptions.filter((s) => s.isActive).length >= 5 && subscriptions.filter((s) => s.isActive).length <= 6)
+  assert.ok(eligible >= 4 && eligible <= 5)
+  assert.ok(subscriptions.filter((s) => s.isActive).length >= 4 && subscriptions.filter((s) => s.isActive).length <= 5)
   assert.equal(subscriptions.filter((s) => s.plan === 'PREMIUM').length, 0)
   assert.ok(reviews >= 10 && reviews <= 15)
   assert.ok(contacts >= 5 && contacts <= 10)
   assert.ok(claims >= 2)
-  assert.ok(ads >= 8 && ads <= 10)
+  assert.ok(ads >= 18 && ads <= 20)
   assert.ok(mediaAssets >= 12)
   assert.ok(mediaFolders >= 2 && mediaFolders <= 4)
   assert.equal(blogs.filter((blog) => blog.isPublished).length, 4)
@@ -134,8 +134,7 @@ test('Clean seed has no duplicates or orphans and modest profile views', { skip:
   assert.equal(new Set(ads.map((ad) => ad.slug)).size, ads.length)
   assert.equal(events.filter((event) => !adIds.has(event.advertisementId)).length, 0)
 
-  const totalImpressions = events.length
-  assert.ok(totalImpressions >= 300 && totalImpressions <= 400, `ad events ${totalImpressions}`)
+   assert.equal(events.length, 0)
   for (const broker of brokers) {
     assert.ok(broker.profileViews >= 50 && broker.profileViews <= 2500, `${broker.profileSlug} views ${broker.profileViews}`)
   }

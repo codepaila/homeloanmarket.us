@@ -79,139 +79,25 @@ export const appSidebarData = (user: any) => {
 
   // ==================== ADMIN NAVIGATION ====================
   const adminNavItems: SidebarItem[] = isAdmin ? [
+    { title: "Admin Dashboard", url: "/admin", icon: Home, roles: ["ADMIN"] },
     {
-      title: "Admin Dashboard",
-      url: "/admin/dashboard",
-      icon: Home,
-      roles: ["ADMIN"]
-    },
-    {
-      title: "Broker Management",
+      title: "Brokers",
       url: "/admin/brokers",
       icon: Users,
       items: [
         { title: "All Brokers", url: "/admin/brokers" },
         { title: "Create Broker", url: "/admin/brokers/create" },
-      ]
+      ],
     },
-    {
-      title: "User Management",
-      url: "/admin/users",
-      icon: UserCog,
-      items: [
-        { title: "All Users", url: "/admin/users" },
-        { title: "Active Users", url: "/admin/users/active" },
-        { title: "User Analytics", url: "/admin/users/analytics" },
-      ]
-    },
-    {
-      title: "Subscription Management",
-      url: "/admin/subscriptions",
-      icon: CreditCard,
-      items: [
-        { title: "All Subscriptions", url: "/admin/subscriptions" },
-        { title: "Active Subscriptions", url: "/admin/subscriptions/active" },
-        { title: "Expiring Soon", url: "/admin/subscriptions/expiring" },
-        { title: "Revenue Analytics", url: "/admin/subscriptions/revenue" },
-      ]
-    },
-    {
-      title: "Leads Management",
-      url: "/admin/leads",
-      icon: MessageSquare,
-      items: [
-        { title: "All Leads", url: "/admin/leads" },
-        { title: "Recent Leads", url: "/admin/leads/recent" },
-        { title: "Lead Analytics", url: "/admin/leads/analytics" },
-      ]
-    },
-    {
-      title: "Reviews & Ratings",
-      url: "/admin/reviews",
-      icon: Star,
-      items: [
-        { title: "All Reviews", url: "/admin/reviews" },
-        { title: "Pending Reviews", url: "/admin/reviews/pending" },
-        { title: "Reported Reviews", url: "/admin/reviews/reported" },
-        { title: "Review Analytics", url: "/admin/reviews/analytics" },
-      ]
-    },
-    {
-      title: "Content Management",
-      url: "/admin/content",
-      icon: FileSpreadsheet,
-      items: [
-        {
-          title: "Bank Management",
-          url: "/admin/content/banks",
-          items: [
-            { title: "All Banks", url: "/admin/content/banks" },
-            { title: "Add Bank", url: "/admin/content/banks/create" },
-            { title: "Bank Types", url: "/admin/content/banks/types" },
-          ]
-        },
-        {
-          title: "Locations",
-          url: "/admin/content/locations",
-          items: [
-            { title: "Cities", url: "/admin/content/locations/cities" },
-            { title: "States", url: "/admin/content/locations/states" },
-            { title: "Service Areas", url: "/admin/content/locations/areas" },
-          ]
-        },
-        {
-          title: "Loan Types",
-          url: "/admin/content/loan-types",
-          items: [
-            { title: "All Loan Types", url: "/admin/content/loan-types" },
-            { title: "Add Loan Type", url: "/admin/content/loan-types/create" },
-          ]
-        },
-      ]
-    },
-    {
-      title: "Support System",
-      url: "/admin/support",
-      icon: HelpCircle,
-      items: [
-        { title: "All Tickets", url: "/admin/support/tickets" },
-        { title: "Open Tickets", url: "/admin/support/open" },
-        { title: "Support Analytics", url: "/admin/support/analytics" },
-      ]
-    },
-    {
-      title: "System Analytics",
-      url: "/admin/analytics",
-      icon: TrendingUp,
-      items: [
-        { title: "Platform Overview", url: "/admin/analytics/overview" },
-        { title: "User Growth", url: "/admin/analytics/users" },
-        { title: "Revenue Analytics", url: "/admin/analytics/revenue" },
-        { title: "Broker Performance", url: "/admin/analytics/brokers" },
-      ]
-    },
-    {
-      title: "Advertisements",
-      url: "/admin/ads",
-      icon: Megaphone,
-      items: [
-        { title: "Overview", url: "/admin/ads" },
-        { title: "Advertisements", url: "/admin/ads/list" },
-        { title: "Media Library", url: "/admin/media", enabled: false },
-        { title: "Folders", url: "/admin/folders", enabled: false },
-      ]
-    },
-    {
-      title: "System Settings",
-      url: "/admin/settings",
-      icon: Settings,
-      items: [
-        { title: "General Settings", url: "/admin/settings/general" },
-        { title: "Email Templates", url: "/admin/settings/email" },
-        { title: "Payment Gateway", url: "/admin/settings/payment" },
-        { title: "API Settings", url: "/admin/settings/api" },
-      ]
-    },
+    { title: "Advertisements", url: "/admin/ads", icon: Megaphone, items: [
+      { title: "Overview", url: "/admin/ads" },
+      { title: "Advertisements", url: "/admin/ads/list" },
+      { title: "Media Library", url: "/admin/media" },
+      { title: "Folders", url: "/admin/folders" },
+    ] },
+    { title: "Content", url: "/admin/content", icon: FileSpreadsheet },
+    { title: "FAQs", url: "/admin/faqs", icon: HelpCircle },
+    { title: "Settings", url: "/admin/settings", icon: Settings },
   ] : []
 
   // ==================== BROKER NAVIGATION ====================

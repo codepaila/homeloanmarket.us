@@ -18,7 +18,7 @@ test('Phase 1F C3: company edit passes an explicit broker DTO without subscripti
 test('Phase 1F checkout: Stripe idempotency is server-derived and request remains validated', () => {
   const source = read('app/api/subscription/checkout/route.ts')
   assert.ok(source.includes('validatePlanPrice(plan, priceId)'))
-  assert.ok(source.includes('const idempotencyKey = `checkout_${user.id}_${user.brokerProfile.id}_${plan}_${priceId}`'))
+  assert.ok(source.includes('const idempotencyKey = `checkout_${user.id}_${customerId}_${plan}_${priceId}`'))
   assert.ok(source.includes('idempotencyKey,'))
   assert.ok(source.includes('getCurrentUser()'))
 })
@@ -26,7 +26,7 @@ test('Phase 1F checkout: Stripe idempotency is server-derived and request remain
 test('Phase 1F upgrade: local entitlement is reconciled from Stripe after customer binding', () => {
   const source = read('app/api/subscription/upgrade/route.ts')
   assert.ok(source.includes('subscription.customer !== user.stripeCustomerId'))
-  assert.ok(source.includes('SubscriptionService.syncWithStripe(user.brokerProfile.id)'))
+  assert.ok(source.includes('SubscriptionService.syncWithStripe(user.brokerProfile!.id)'))
   assert.equal(source.includes('prisma.brokerSubscription.update'), false)
 })
 

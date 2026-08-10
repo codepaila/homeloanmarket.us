@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/currentUser'
 import Stripe from 'stripe'
+import { SubscriptionService } from '@/lib/subscription'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
@@ -28,6 +29,9 @@ export async function GET(request: NextRequest) {
         }
       })
     }
+
+    if (!user.brokerProfile) return NextResponse.json({ success: false, error: 'Broker profile not found' }, { status: 404 })
+    await SubscriptionService.assertStripeCustomerOwnership(user.id, user.brokerProfile.id, user.stripeCustomerId)
 
     // Fetch all billing data in parallel
     const [customer, paymentMethods, invoices, subscriptions] = await Promise.all([

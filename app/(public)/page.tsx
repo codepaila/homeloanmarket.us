@@ -9,6 +9,17 @@ import TestimonialsSection from '@/components/sections/landing/Testimonials'
 import FAQSection from '@/components/sections/landing/FAQ'
 import { LatestArticles } from '@/components/sections/landing/LatestArticles'
 import { AdvertisementRenderer } from '@/components/advertisements'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  title: 'Find a Trusted Mortgage Broker | HomeLoanMarket',
+  description: 'Compare verified mortgage brokers across the United States and connect with local home-loan experts.',
+  openGraph: {
+    title: 'Find a Trusted Mortgage Broker | HomeLoanMarket',
+    description: 'Connect with verified local mortgage brokers for your next home loan.',
+    images: [{ url: '/assets/images/cover.jpg', alt: 'HomeLoanMarket mortgage marketplace' }],
+  },
+}
 
 export default function Home() {
   return (

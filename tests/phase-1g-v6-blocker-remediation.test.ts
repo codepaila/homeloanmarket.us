@@ -45,7 +45,7 @@ test('Phase 1G: reset tokens require a non-null future expiry', () => {
 test('Phase 1G: alternate checkout action uses server-derived idempotency', () => {
   const source = read('actions/subscription.ts')
   assert.ok(source.includes('stripe.checkout.sessions.create'))
-  assert.ok(source.includes('idempotencyKey: `checkout_action_${user.id}_${customerId}_${plan}_${priceId}`'))
+  assert.ok(source.includes('idempotencyKey: `checkout_${user.id}_${customerId}_${plan}_${priceId}`'))
   assert.ok(source.includes('validatePlanPrice(plan, priceId)'))
   assert.ok(source.includes('user.id !== userId'))
 })

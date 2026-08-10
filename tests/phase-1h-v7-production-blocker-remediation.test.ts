@@ -29,8 +29,8 @@ test('Phase 1H Stripe customer creation is authenticated, persisted, and idempot
 test('Phase 1H checkout intents use deterministic server-derived keys', () => {
   const action = read('actions/subscription.ts')
   const route = read('app/api/subscription/checkout/route.ts')
-  assert.ok(action.includes('idempotencyKey: `checkout_action_${user.id}_${customerId}_${plan}_${priceId}`'))
-  assert.ok(route.includes('const idempotencyKey = `checkout_${user.id}_${user.brokerProfile.id}_${plan}_${priceId}`'))
+  assert.ok(action.includes('idempotencyKey: `checkout_${user.id}_${customerId}_${plan}_${priceId}`'))
+  assert.ok(route.includes('const idempotencyKey = `checkout_${user.id}_${customerId}_${plan}_${priceId}`'))
   assert.equal(action.includes('Math.floor(Date.now()'), false)
   assert.equal(route.includes('idempotencyBucket'), false)
 })

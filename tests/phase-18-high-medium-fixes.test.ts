@@ -112,7 +112,7 @@ test('H6: ordering guard considers in-flight PROCESSING events and registers bef
 test('H6: per-subscription serialization lock exists with graceful fallback', () => {
   const source = read('app/api/stripe/webhook/route.ts')
   assert.ok(source.includes('withWebhookSubscriptionLock'), 'per-subscription lock must exist')
-  assert.ok(source.includes('homeloanmarket:stripe-webhook:'), 'lock keyed by subscription id')
+  assert.ok(source.includes('subscription:${subscriptionId}'), 'lock keyed by subscription id')
 })
 
 test('H6: Stripe signature verification and unique eventId idempotency are preserved', () => {

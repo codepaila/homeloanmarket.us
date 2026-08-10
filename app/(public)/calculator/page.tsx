@@ -99,7 +99,10 @@ export default function CalculatorPage() {
                     <input
                       type="number"
                       value={loanAmount}
-                      onChange={(e) => setLoanAmount(parseInt(e.target.value) || 0)}
+                      onChange={(e) => {
+                        const value = parseInt(e.target.value, 10)
+                        setLoanAmount(Number.isFinite(value) ? Math.min(2000000, Math.max(50000, value)) : 50000)
+                      }}
                       min="50000"
                       max="2000000"
                       className={cn('input', inputClass, 'pl-10')}

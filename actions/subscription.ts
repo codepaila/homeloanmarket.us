@@ -5,6 +5,7 @@ import Stripe from 'stripe'
 import { validatePlanPrice } from '@/lib/stripe'
 import { getCurrentUser } from '@/lib/currentUser'
 import prisma from '@/lib/prisma'
+import { CheckoutConflictError, SubscriptionService } from '@/lib/subscription'
 // console.log(process.env.STRIPE_SECRET_KEY)
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('STRIPE_SECRET_KEY is not set in environment variables')
@@ -61,7 +62,13 @@ export async function createCheckoutSession(
   if (!validatePlanPrice(plan, priceId)) {
     throw new Error('Invalid subscription plan or price')
   }
-  const session = await stripe.checkout.sessions.create({
+  const session = await SubscriptionService.withCheckoutLock(user.brokerProfile!.id, async () => {
+    const conflict = await SubscriptionService.findCheckoutConflict(user.brokerProfile!.id, customerId)
+    if (conflict?.checkoutUrl) throw new CheckoutConflictError('Checkout already in progress')
+    if (conflict) throw new CheckoutConflictError(conflict.reason || 'Checkout is unavailable')
+
+    await SubscriptionService.assertStripeCustomerOwnership(user.id, user.brokerProfile!.id, customerId)
+    return stripe.checkout.sessions.create({
     customer: customerId,
     line_items: [
       {
@@ -84,8 +91,9 @@ export async function createCheckoutSession(
     },
     payment_method_types: ['card'],
     billing_address_collection: 'required',
-  }, {
-    idempotencyKey: `checkout_action_${user.id}_${customerId}_${plan}_${priceId}`,
+    }, {
+      idempotencyKey: `checkout_${user.id}_${customerId}_${plan}_${priceId}`,
+    })
   })
 
   return session
@@ -106,18 +114,30 @@ export async function createPortalSession(customerId: string, returnUrl?: string
 
 export async function getSubscription(subscriptionId: string) {
   const user = await getCurrentUser()
-  if (!user || user.subscriptionId !== subscriptionId) {
+  if (!user || user.subscriptionId !== subscriptionId || !user.brokerProfile || !user.stripeCustomerId) {
     throw new Error('Unauthorized subscription')
   }
-  return await stripe.subscriptions.retrieve(subscriptionId) as any
+  await SubscriptionService.assertStripeCustomerOwnership(user.id, user.brokerProfile.id, user.stripeCustomerId)
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any
+  if (subscription.customer !== user.stripeCustomerId) throw new Error('Unauthorized subscription')
+  return subscription
 }
 
 export async function cancelSubscription(subscriptionId: string) {
   const user = await getCurrentUser()
-  if (!user || user.subscriptionId !== subscriptionId) {
+  if (!user || user.subscriptionId !== subscriptionId || !user.brokerProfile || !user.stripeCustomerId) {
     throw new Error('Unauthorized subscription')
   }
-  return await stripe.subscriptions.cancel(subscriptionId) as any
+  await SubscriptionService.assertStripeCustomerOwnership(user.id, user.brokerProfile.id, user.stripeCustomerId)
+  const result = await SubscriptionService.withCheckoutLock(user.brokerProfile.id, async () => {
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any
+    if (subscription.customer !== user.stripeCustomerId) throw new Error('Unauthorized subscription')
+    return await stripe.subscriptions.cancel(subscriptionId, {}, {
+      idempotencyKey: `cancel_${user.id}_${user.stripeCustomerId}_${subscriptionId}`,
+    }) as any
+  })
+  await SubscriptionService.syncWithStripe(user.brokerProfile.id)
+  return result
 }
 
 export async function updateSubscription(
@@ -126,30 +146,36 @@ export async function updateSubscription(
   prorationDate?: number
 ) {
   const user = await getCurrentUser()
-  if (!user || user.subscriptionId !== subscriptionId) {
+  if (!user || user.subscriptionId !== subscriptionId || !user.brokerProfile || !user.stripeCustomerId) {
     throw new Error('Unauthorized subscription')
   }
   if (!validatePlanPrice('FEATURED', priceId)) {
     throw new Error('Invalid subscription price')
   }
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any
-
-  return await stripe.subscriptions.update(subscriptionId, {
-    items: [
-      {
-        id: subscription.items.data[0].id,
-        price: priceId,
-      },
-    ],
-    proration_date: prorationDate,
+  await SubscriptionService.assertStripeCustomerOwnership(user.id, user.brokerProfile.id, user.stripeCustomerId)
+  return SubscriptionService.withCheckoutLock(user.brokerProfile.id, async () => {
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any
+    if (subscription.customer !== user.stripeCustomerId) throw new Error('Unauthorized subscription')
+    return await stripe.subscriptions.update(subscriptionId, {
+      items: [
+        {
+          id: subscription.items.data[0].id,
+          price: priceId,
+        },
+      ],
+      proration_date: prorationDate,
+    }, {
+      idempotencyKey: `upgrade_${user.id}_${subscriptionId}_${priceId}`,
+    })
   })
 }
 
 export async function getCustomerSubscriptions(customerId: string) {
   const user = await getCurrentUser()
-  if (!user || user.stripeCustomerId !== customerId) {
+  if (!user || user.stripeCustomerId !== customerId || !user.brokerProfile) {
     throw new Error('Unauthorized subscription customer')
   }
+  await SubscriptionService.assertStripeCustomerOwnership(user.id, user.brokerProfile.id, customerId)
   const subscriptions = await stripe.subscriptions.list({
     customer: customerId,
     status: 'all',

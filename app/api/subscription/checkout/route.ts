@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import Stripe from 'stripe'
 import { validatePlanPrice } from '@/lib/stripe'
 import { getCorrelationId } from '@/lib/correlation'
+import { BillingUnavailableError, CheckoutConflictError, SubscriptionService } from '@/lib/subscription'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
@@ -38,39 +39,43 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get or create Stripe customer
-    let customerId = user.stripeCustomerId
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: user.email || undefined,
-        name: user.name || undefined,
-        metadata: {
-          userId: user.id,
-          brokerId: user.brokerProfile.id
-        }
-      }, {
-        idempotencyKey: `stripe_customer_${user.id}`,
-      })
-      customerId = customer.id
+    const checkoutSession = await SubscriptionService.withCheckoutLock(user.brokerProfile.id, async () => {
+      let customerId = user.stripeCustomerId
+      if (!customerId) {
+        const customer = await stripe.customers.create({
+          email: user.email || undefined,
+          name: user.name || undefined,
+          metadata: {
+            userId: user.id,
+            brokerId: user.brokerProfile!.id
+          }
+        }, {
+          idempotencyKey: `stripe_customer_${user.id}`,
+        })
+        customerId = customer.id
 
-      // Update broker subscription with Stripe customer ID
-      await prisma.brokerSubscription.upsert({
-        where: { brokerId: user.brokerProfile.id },
-        update: { 
-          stripeCustomerId: customerId 
-        },
-        create: {
-          brokerId: user.brokerProfile.id,
-          plan: 'FREE',
-          isActive: false,
-          stripeCustomerId: customerId
-        }
-      })
-    }
+        await prisma.brokerSubscription.upsert({
+          where: { brokerId: user.brokerProfile!.id },
+          update: { stripeCustomerId: customerId },
+          create: {
+            brokerId: user.brokerProfile!.id,
+            plan: 'FREE',
+            isActive: false,
+            stripeCustomerId: customerId
+          }
+        })
+      } else {
+        await SubscriptionService.assertStripeCustomerOwnership(user.id, user.brokerProfile!.id, customerId)
+      }
 
-    // Create checkout session
-    const idempotencyKey = `checkout_${user.id}_${user.brokerProfile.id}_${plan}_${priceId}`
-    const checkoutSession = await stripe.checkout.sessions.create({
+      if (!customerId) throw new Error('Stripe customer unavailable')
+
+      const conflict = await SubscriptionService.findCheckoutConflict(user.brokerProfile!.id, customerId)
+      if (conflict?.checkoutUrl) return { url: conflict.checkoutUrl }
+      if (conflict) throw new CheckoutConflictError(conflict.reason || 'Checkout is unavailable')
+
+      const idempotencyKey = `checkout_${user.id}_${customerId}_${plan}_${priceId}`
+      return stripe.checkout.sessions.create({
         customer: customerId,
         payment_method_types: ['card'],
         line_items: [
@@ -84,12 +89,21 @@ export async function POST(request: NextRequest) {
         cancel_url: `${process.env.NEXTAUTH_URL}/broker/subscription`,
         metadata: {
           userId: user.id,
-          brokerId: user.brokerProfile.id,
+          brokerId: user.brokerProfile!.id,
           plan: plan
-        }
+        },
+        subscription_data: {
+          metadata: {
+            userId: user.id,
+            brokerId: user.brokerProfile!.id,
+            plan: plan,
+          },
+        },
+        billing_address_collection: 'required',
       }, {
         idempotencyKey,
       })
+    })
 
     console.info('Subscription checkout created', { correlationId, brokerId: user.brokerProfile.id, plan })
 
@@ -100,6 +114,12 @@ export async function POST(request: NextRequest) {
 
   } catch (error: unknown) {
     console.error('Error creating checkout session', { correlationId: getCorrelationId(request), error: error instanceof Error ? error.message : 'Unknown error' })
+    if (error instanceof CheckoutConflictError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 409 })
+    }
+    if (error instanceof BillingUnavailableError) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 503 })
+    }
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : 'Failed to create checkout session' },
       { status: 500 }

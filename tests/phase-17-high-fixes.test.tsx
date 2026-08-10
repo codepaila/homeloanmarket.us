@@ -177,7 +177,7 @@ test('H2: PATCH routes use the allowlist helper and preserve the ownership check
 test('H3: reset email points to the real reset-password route with the token', () => {
   const source = read('actions/email.action.ts')
   assert.ok(source.includes('/auth/reset-password?token=${rawToken}'), 'reset link must target /auth/reset-password')
-  assert.ok(source.includes('email=${encodeURIComponent(email)}'), 'email must remain in the link')
+  assert.ok(source.includes('email=${encodeURIComponent(normalizedEmail)}'), 'normalized email must remain in the link')
 })
 
 test('H3: raw reset token is never logged', () => {

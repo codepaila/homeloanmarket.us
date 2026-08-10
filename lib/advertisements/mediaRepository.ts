@@ -180,7 +180,7 @@ export class MediaRepository {
   static async moveAsset(id: string, folderId: string | null): Promise<MediaAsset> {
     if (folderId) {
       const folder = await prisma.mediaFolder.findUnique({
-        where: { id, isDeleted: false },
+        where: { id: folderId, isDeleted: false },
       })
       if (!folder) throw new Error("Folder not found")
     }

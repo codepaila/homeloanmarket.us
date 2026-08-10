@@ -475,15 +475,16 @@ export async function sendNewReviewNotification(reviewId: string) {
 
 export async function sendPasswordResetEmail(email: string) {
     try {
-        console.log(`📧 Attempting to send reset email to: ${email}`)
+        const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : ''
+        console.log(`📧 Attempting to send reset email to: ${normalizedEmail}`)
 
         // Check if email exists (but don't reveal)
         const user = await prisma.user.findUnique({
-            where: { email }
+            where: { email: normalizedEmail }
         })
 
         if (!user) {
-            console.log(`⚠️ Email not found in database: ${email}`)
+            console.log(`⚠️ Email not found in database: ${normalizedEmail}`)
             return { success: true } // Don't reveal user existence
         }
 
@@ -498,7 +499,7 @@ export async function sendPasswordResetEmail(email: string) {
 
         // Update user with reset token
         await prisma.user.update({
-            where: { email },
+            where: { id: user.id },
             data: {
                 resetPasswordToken: hashedToken,
                 resetPasswordTokenExpiry: expires
@@ -508,7 +509,7 @@ export async function sendPasswordResetEmail(email: string) {
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://homeloanmarket.com'
         // The canonical reset page reads `token` and `email` query params.
         // Never log the raw reset token or the email-send result.
-        const resetUrl = `${appUrl}/auth/reset-password?token=${rawToken}&email=${encodeURIComponent(email)}`
+        const resetUrl = `${appUrl}/auth/reset-password?token=${rawToken}&email=${encodeURIComponent(normalizedEmail)}`
 
         const resetTemplate = emailTemplates.passwordReset(
             user.name || 'User',
@@ -517,7 +518,7 @@ export async function sendPasswordResetEmail(email: string) {
         )
 
         const emailResult = await sendEmail({
-            to: email,
+            to: normalizedEmail,
             subject: resetTemplate.subject,
             html: resetTemplate.html,
             text: `Reset your HomeLoanMarket password: ${resetUrl}\n\nThis link expires in 1 hour.`,
@@ -525,13 +526,13 @@ export async function sendPasswordResetEmail(email: string) {
         })
 
         if (emailResult.success) {
-            console.log(`✅ Reset email sent successfully to: ${email}`)
+            console.log(`✅ Reset email sent successfully to: ${normalizedEmail}`)
             return {
                 success: true,
                 messageId: emailResult.messageId
             }
         } else {
-            console.error(`❌ Failed to send email to ${email}:`, emailResult.error)
+            console.error(`❌ Failed to send email to ${normalizedEmail}:`, emailResult.error)
             return {
                 success: false,
                 error: 'Failed to send email',

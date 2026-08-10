@@ -1,9 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import Stripe from 'stripe'
-import { Redis } from '@upstash/redis'
 import prisma from '@/lib/prisma'
 import { SubscriptionService } from '@/lib/subscription'
 import { getCorrelationId } from '@/lib/correlation'
@@ -25,34 +23,9 @@ export function getStripeEventTarget(event: Stripe.Event) {
   }
 }
 
-// Serialize webhook processing per Stripe subscription so concurrently
-// delivered events (Stripe does not guarantee delivery order) cannot let an
-// older event overwrite newer subscription state. Best-effort: if Redis is
-// unavailable or the lock is held by another instance, the operation still
-// runs and the ordering guard below remains authoritative for sequential
-// delivery.
 async function withWebhookSubscriptionLock<T>(subscriptionId: string | null, operation: () => Promise<T>): Promise<T> {
   if (!subscriptionId) return operation()
-  let redis: Redis | null = null
-  try {
-    redis = Redis.fromEnv()
-  } catch {
-    return operation()
-  }
-  const lockKey = `homeloanmarket:stripe-webhook:${subscriptionId}`
-  const lockValue = crypto.randomUUID()
-  try {
-    const acquired = await redis.set(lockKey, lockValue, { nx: true, ex: 30 })
-    if (acquired !== 'OK') return operation()
-    try {
-      return await operation()
-    } finally {
-      const current = await redis.get<string>(lockKey)
-      if (current === lockValue) await redis.del(lockKey)
-    }
-  } catch {
-    return operation()
-  }
+  return SubscriptionService.withBillingLock(`subscription:${subscriptionId}`, operation)
 }
 
 // Pure ordering predicate using Stripe's `event.created` timestamp as the
@@ -84,7 +57,9 @@ async function processEvent(event: Stripe.Event) {
   return withWebhookSubscriptionLock(target.subscriptionId, async () => {
     const existing = await prisma.stripeWebhookEvent.findUnique({ where: { eventId: event.id } })
     if (existing?.status === 'PROCESSED') return { duplicate: true }
-    if (existing?.status === 'PROCESSING' && existing.updatedAt > new Date(Date.now() - 5 * 60 * 1000)) return { duplicate: true }
+    if (existing?.status === 'PROCESSING' && existing.updatedAt > new Date(Date.now() - 5 * 60 * 1000)) {
+      throw new Error('Webhook event is already processing')
+    }
     let retrying = false
     if (existing?.status === 'FAILED' || existing?.status === 'PROCESSING') {
       await prisma.stripeWebhookEvent.update({ where: { eventId: event.id }, data: { status: 'PROCESSING', error: null } })
