@@ -35,6 +35,36 @@ const nextConfig: NextConfig = {
 
 async headers() {
   return [
+    // Session-sensitive routes must never be treated as publicly cacheable.
+    // Auth.js session/auth endpoints, admin and broker pages, and dashboard
+    // responses are explicitly private/no-store. These rules are listed
+    // before the catch-all so they take precedence.
+    {
+      source: "/api/auth/:path*",
+      headers: [
+        { key: "Cache-Control", value: "private, no-store, no-cache, must-revalidate" },
+      ],
+    },
+    {
+      source: "/admin/:path*",
+      headers: [
+        { key: "Cache-Control", value: "private, no-store, no-cache, must-revalidate" },
+      ],
+    },
+    {
+      source: "/broker/:path*",
+      headers: [
+        { key: "Cache-Control", value: "private, no-store, no-cache, must-revalidate" },
+      ],
+    },
+    {
+      source: "/dashboard/:path*",
+      headers: [
+        { key: "Cache-Control", value: "private, no-store, no-cache, must-revalidate" },
+      ],
+    },
+    // Public marketing/content pages remain cacheable per the app's intended
+    // architecture (revalidate against origin on every request).
     {
       source: "/(.*)",
       headers: [

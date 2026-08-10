@@ -14,7 +14,11 @@ export const authOptions = {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  // AUTH_SECRET is the single canonical authentication secret. It is shared by
+  // Auth.js (cookie signing), proxy.ts, and claim-context.ts so every layer
+  // decodes the exact same JWE session. NEXTAUTH_SECRET is intentionally NOT
+  // used as an alternative source of truth.
+  secret: process.env.AUTH_SECRET,
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -49,6 +53,14 @@ export const authOptions = {
           return null;
         }
 
+        // Normalize email consistently before any lookup (same rule used by
+        // registration, password reset, and email verification) so login does
+        // not fail merely because of differing case, e.g. "Admin@X.com" vs
+        // "admin@x.com". Stored emails are written lowercase at registration
+        // and are never modified here.
+        const email = String(credentials.email).trim().toLowerCase();
+        const password = String(credentials.password);
+
         // This is the shared credential boundary, including direct signIn
         // callers such as the claim flow. The server derives the IP and fails
         // open if rate-limit infrastructure is unavailable.
@@ -63,10 +75,13 @@ export const authOptions = {
           // Preserve authentication availability if Redis is unavailable.
         }
 
-        // Get user with related profiles
+        // Get user with related profiles. The shared CredentialsProvider
+        // authenticates ADMIN, BROKER, and USER. The login limiter below is a
+        // per-IP brute-force guard (not broker-only in effect); it is applied
+        // to every role at this single shared credential boundary.
         const user = await prisma.user.findUnique({
           where: {
-            email: credentials.email as string,
+            email,
           },
           include: {
             brokerProfile: {
@@ -93,7 +108,7 @@ export const authOptions = {
 
         // Verify password
         const isValid = await bcrypt.compare(
-          credentials.password as string,
+          password,
           user.password
         );
 

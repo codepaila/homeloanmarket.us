@@ -1,8 +1,12 @@
 function allowedOrigins(): string[] {
   const values = [
     process.env.NEXT_PUBLIC_APP_URL,
-    process.env.NEXTAUTH_URL,
     process.env.AUTH_URL,
+    process.env.NEXT_PUBLIC_URL,
+    // Backward-compatible fallback; NOT an alternative source of truth for
+    // authentication secrets. Present only so CSRF origin checks keep working
+    // in environments that set only the legacy variable.
+    process.env.NEXTAUTH_URL,
   ]
   const origins = values
     .filter((value): value is string => Boolean(value))

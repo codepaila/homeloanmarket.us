@@ -4,10 +4,32 @@ import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { postLoginRedirect, sanitizeCallbackUrl, roleHome } from '@/lib/auth-redirect'
 
-const AUTH_SECRET = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
+// AUTH_SECRET is the single canonical authentication secret. Auth.js, this
+// proxy, and every server-side session verifier MUST use the exact same value
+// so the JWE session cookie can be decoded consistently across layers.
+const AUTH_SECRET = process.env.AUTH_SECRET
+
+// Auth.js computes its cookie prefix from the effective site URL protocol:
+//   https: -> "__Secure-authjs.session-token"   (useSecureCookies = true)
+//   http:  -> "authjs.session-token"            (useSecureCookies = false)
+// getToken() defaults secureCookie to FALSE, so without passing it this proxy
+// would look for the non-secure cookie name and always return null behind an
+// HTTPS reverse proxy — causing every protected route to bounce to signin even
+// though the browser holds a valid session cookie. Derive the flag the same
+// way Auth.js does (AUTH_URL protocol), so both layers read the same cookie.
+function secureSessionCookies(): boolean {
+  const authUrl = process.env.AUTH_URL
+  if (authUrl && /^https:\/\//i.test(authUrl)) return true
+  if (authUrl && /^http:\/\//i.test(authUrl)) return false
+  return process.env.NODE_ENV === 'production'
+}
 
 export default async function proxy(request: NextRequest) {
-  const token = await getToken({ req: request, secret: AUTH_SECRET })
+  const token = await getToken({
+    req: request,
+    secret: AUTH_SECRET,
+    secureCookie: secureSessionCookies(),
+  })
   const path = request.nextUrl.pathname
 
   if (path === '/auth/signin' && token) {

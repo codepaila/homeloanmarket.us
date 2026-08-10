@@ -77,8 +77,8 @@ export async function createCheckoutSession(
       },
     ],
     mode: 'subscription',
-    success_url: `${process.env.NEXTAUTH_URL}/broker/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${process.env.NEXTAUTH_URL}/broker/subscription`,
+    success_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/broker/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/broker/subscription`,
     subscription_data: {
       metadata: {
         userId,
@@ -106,7 +106,7 @@ export async function createPortalSession(customerId: string, returnUrl?: string
   }
   const session = await stripe.billingPortal.sessions.create({
     customer: customerId,
-    return_url: returnUrl || `${process.env.NEXTAUTH_URL}/dashboard/subscription`,
+    return_url: returnUrl || `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/dashboard/subscription`,
   })
 
   return session

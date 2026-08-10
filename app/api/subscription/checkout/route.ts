@@ -85,8 +85,8 @@ export async function POST(request: NextRequest) {
           }
         ],
         mode: 'subscription',
-        success_url: `${process.env.NEXTAUTH_URL}/broker/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.NEXTAUTH_URL}/broker/subscription`,
+        success_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/broker/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/broker/subscription`,
         metadata: {
           userId: user.id,
           brokerId: user.brokerProfile!.id,

@@ -67,7 +67,9 @@ export const LoginWithCredential = async (_previousState: LoginActionState, form
   const email = String(formData.get("email") || '').trim().toLowerCase()
   const password = String(formData.get("password") || '')
   const callbackUrl = String(formData.get('callbackUrl') || '')
-  const configuredBaseUrl = process.env.NEXTAUTH_URL || process.env.AUTH_URL || 'http://localhost:3000'
+  // Canonical public origin: AUTH_URL / NEXT_PUBLIC_APP_URL. NEXTAUTH_URL is
+  // not used so there is a single production URL configuration.
+  const configuredBaseUrl = process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'
   const user = await prisma.user.findUnique({
     where: { email },
     select: { role: true },

@@ -45,7 +45,7 @@ export function getSiteUrl() {
     process.env.NEXT_PUBLIC_SITE_URL,
     process.env.NEXT_PUBLIC_APP_URL,
     process.env.NEXT_PUBLIC_URL,
-    process.env.NEXTAUTH_URL,
+    process.env.AUTH_URL,
   ].map(publicOrigin).find(Boolean)
   return configured || DEFAULT_SITE_URL
 }

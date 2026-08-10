@@ -91,7 +91,7 @@ export default function HeroSection() {
   const motionTransition = (delay: number) => ({
     duration: prefersReducedMotion ? 0 : 0.5,
     delay: prefersReducedMotion ? 0 : delay,
-    ease: [0.25, 0.46, 0.45, 0.94],
+    ease: [0.25, 0.46, 0.45, 0.94] as const,
   })
 
   return (

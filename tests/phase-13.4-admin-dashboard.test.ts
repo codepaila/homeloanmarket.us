@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 const database = process.env.PHASE13_AUTH_DATABASE_URL
-const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET
+const secret = process.env.AUTH_SECRET
 
 test('Admin Dashboard secret source is configured to prevent getToken MissingSecret', { skip: !secret }, () => {
   assert.ok(secret && secret.length > 0)

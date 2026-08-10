@@ -15,8 +15,11 @@ export type ClaimContext = {
 }
 
 function secret() {
-  if (process.env.NEXTAUTH_SECRET) return process.env.NEXTAUTH_SECRET
-  if (process.env.NODE_ENV === 'production') throw new Error('NEXTAUTH_SECRET is required for claim context')
+  // AUTH_SECRET is the single canonical authentication secret, shared with
+  // Auth.js and proxy.ts. The claim-context cookie is a session-adjacent
+  // HMAC, so it must derive from the same source of truth.
+  if (process.env.AUTH_SECRET) return process.env.AUTH_SECRET
+  if (process.env.NODE_ENV === 'production') throw new Error('AUTH_SECRET is required for claim context')
   return 'development-claim-context-secret'
 }
 
