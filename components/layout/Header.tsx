@@ -20,6 +20,9 @@ import {
   Star,
   HelpCircle,
   LogOut,
+  User,
+  Building,
+  Plus,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import ThemeToggle from '@/components/ThemeToggle'
@@ -27,6 +30,7 @@ import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { PremiumButton } from '@/components/design/PremiumButton'
 import type { SiteSettings } from '@/lib/site/settings'
 import Image from 'next/image'
+import { Button } from '../ui/button'
 
 const navigation = [
   {
@@ -77,6 +81,11 @@ const navigation = [
         icon: HelpCircle,
       },
     ],
+  },
+  {
+    name: 'Join As Company',
+    href: '/company',
+    icon: Building,
   },
   { name: 'About', href: '/about', icon: Info },
   { name: 'Contact', href: '/contact', icon: Phone },
@@ -167,21 +176,21 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
             <div
               className="flex-shrink-0"
             >
-                <Link href="/" className="flex items-center gap-2">
-                 {settings?.siteLogo ? (
-                   <Image width={400} height={100} src={settings.siteLogo} alt={settings.siteName} className="h-9 max-w-40 object-contain" />
-                 ) : (
-                   <>
-                   <Image
-                    width={300}
-                    height={200}
-                    src="/assets/logo.png"
-                    alt="HomeLoanMarket"
-                    className="h-9 max-w-56 object-contain" 
-                   />
-                    
-                   </>
-                 )}
+              <Link href="/" className="flex items-center gap-2">
+                {settings?.siteLogo ? (
+                  <Image width={300} height={100} src={settings.siteLogo} alt={settings.siteName} className="h-9 max-w-40 object-contain" />
+                ) : (
+                  <>
+                    <Image
+                      width={300}
+                      height={200}
+                      src="/assets/logo.png"
+                      alt="HomeLoanMarket"
+                      className="h-12 max-w-40 md:max-w-48 object-contain"
+                    />
+
+                  </>
+                )}
               </Link>
             </div>
 
@@ -330,14 +339,17 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
                 >
                   <Link
                     href="/auth/signin"
-                    className="hidden rounded-xl px-3.5 py-2 text-sm font-medium text-text-muted transition-colors hover:text-text-main sm:block"
+                    className="hidden rounded-xl  text-base font-medium text-text-muted transition-colors hover:text-text-main sm:block "
                   >
-                    Sign In
+                    <Button variant="outline">
+
+                      <span>Sign In</span><User />
+                    </Button>
                   </Link>
                   <Link href="/auth/signup">
-                    <PremiumButton size="sm" className="px-4">
-                      Create Account
-                    </PremiumButton>
+                    <Button  >
+                      <Plus /> Get Listed
+                    </Button>
                   </Link>
                 </div>
               )}
@@ -495,12 +507,12 @@ function MobileMenu({
           </div>
         ))}
 
-        <div className="flex items-center justify-between rounded-lg px-3 py-2">
+        {/* <div className="flex items-center justify-between rounded-lg px-3 py-2">
           <span className="text-sm font-medium text-text-main">
             Appearance
           </span>
           <ThemeToggle />
-        </div>
+        </div> */}
 
         <div className="border-t border-border pt-2">
           {user ? (
@@ -529,15 +541,16 @@ function MobileMenu({
             <div className="grid grid-cols-2 gap-2 pt-1">
               <Link
                 href="/auth/signin"
-                className="flex items-center justify-center rounded-xl border border-border px-3 py-2.5 text-sm font-medium text-text-main transition-colors hover:bg-muted"
                 onClick={onClose}
               >
-                Sign In
+                <Button variant="outline" className="w-full">
+                  Sign In <User/>
+                </Button>
               </Link>
               <Link href="/auth/signup" onClick={onClose}>
-                <PremiumButton fullWidth size="sm" className="py-2.5">
-                  Get Started
-                </PremiumButton>
+                <Button className=" w-full">
+                  <Plus /> Get Listed
+                </Button>
               </Link>
             </div>
           )}

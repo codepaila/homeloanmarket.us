@@ -140,7 +140,7 @@ function SearchSection() {
       })
     
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4">
 
       <motion.form
                  onSubmit={handleSearch}
@@ -173,7 +173,7 @@ function SearchSection() {
                        ))}
                      </div>
                    )}
-                   <PremiumButton type="submit" size="md" className="shrink-0 bg-gradient-to-r from-primary to-emerald-600 px-6 shadow-md">
+                   <PremiumButton type="submit" size="md" className="shrink-0 px-6 shadow-md">
                      <span className="flex items-center">
                        Search
                        <ArrowRight className="ml-1.5 h-4 w-4" />

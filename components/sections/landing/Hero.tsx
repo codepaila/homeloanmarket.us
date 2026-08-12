@@ -18,7 +18,7 @@ export default function HeroSection() {
   })
 
   return (
-    <section className="relative isolate min-h-[85vh] overflow-hidden bg-secondary">
+    <section className="relative isolate min-h-[40vh] md:min-h-[85vh] overflow-hidden bg-secondary">
       {/* Background Image */}
       <div className="absolute inset-0">
         <Image
@@ -36,7 +36,7 @@ export default function HeroSection() {
       </div>
 
       <div className="container-custom relative z-10">
-        <div className="flex min-h-[85vh] items-center py-12 md:py-16 lg:py-20">
+        <div className="flex min-h-[40vh] md:min-h-[85vh] items-center py-12 md:py-16 lg:py-20">
           <div className="mx-auto max-w-2xl text-left lg:mx-0">
             {/* Trust Badge */}
             {/* <motion.div
