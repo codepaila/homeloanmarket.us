@@ -39,6 +39,7 @@ export const PLACEMENT_SIZE_SPECS: Record<string, PlacementSpec> = {
   HOMEPAGE_BANKS: { placement: 'HOMEPAGE_BANKS', formats: PLACEMENT_FORMATS.HOMEPAGE_BANKS, display: { ...FULL_WIDTH_BANNER_DISPLAY }, compact: true, displayLabel: 'Compact full-width banner' },
   HOMEPAGE_CTA: { placement: 'HOMEPAGE_CTA', formats: PLACEMENT_FORMATS.HOMEPAGE_CTA, display: { ...FULL_WIDTH_BANNER_DISPLAY }, compact: true, displayLabel: 'Compact full-width horizontal banner' },
   BROKER_LISTING: { placement: 'BROKER_LISTING', formats: PLACEMENT_FORMATS.BROKER_LISTING, display: { ...FULL_WIDTH_BANNER_DISPLAY }, compact: true, displayLabel: 'Compact full-width horizontal banner' },
+  BROKER_LISTING_LOCAL: { placement: 'BROKER_LISTING_LOCAL', formats: PLACEMENT_FORMATS.BROKER_LISTING_LOCAL, display: { ...FULL_WIDTH_BANNER_DISPLAY }, compact: true, displayLabel: 'Related local resources banner' },
   BROKER_PROFILE_HEADER: { placement: 'BROKER_PROFILE_HEADER', formats: PLACEMENT_FORMATS.BROKER_PROFILE_HEADER, display: { ...FULL_WIDTH_BANNER_DISPLAY }, compact: true, displayLabel: 'Compact full-width horizontal banner' },
   BROKER_LISTING_SIDEBAR: { placement: 'BROKER_LISTING_SIDEBAR', formats: PLACEMENT_FORMATS.BROKER_LISTING_SIDEBAR, display: { mobile: 220, tablet: 240, desktop: 250 }, compact: true, displayLabel: 'Compact sidebar creative' },
   LOAN_CALCULATOR: { placement: 'LOAN_CALCULATOR', formats: PLACEMENT_FORMATS.LOAN_CALCULATOR, display: { ...FULL_WIDTH_BANNER_DISPLAY }, compact: true, displayLabel: 'Compact full-width horizontal banner' },

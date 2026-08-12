@@ -1,44 +1,22 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
 import { sendBrokerRegistrationEmails } from '@/actions/email.action'
 import { brokerRegisterRateLimit } from '@/lib/rateLimit'
 import {
-  normalizeBrokerRegistrationInput,
-  validateBrokerRegistrationInput,
-  createBrokerAccount,
+  normalizeBrokerAccountRegistrationInput,
+  validateBrokerAccountRegistrationInput,
+  createBrokerRegistration,
 } from '@/lib/broker-registration'
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const {
-      name,
-      companyName,
-      email,
-      phone,
-      password,
-      description,
-      officeAddress,
-      city,
-      state,
-      pinCode,
-      agreeTerms,
-      captchaAnswer,
-      expectedCaptcha,
-    } = body
+    const { name, email, password, agreeTerms, captchaAnswer, expectedCaptcha } = body
 
-    const normalized = normalizeBrokerRegistrationInput({
+    const normalized = normalizeBrokerAccountRegistrationInput({
       name: typeof name === 'string' ? name : '',
-      companyName: typeof companyName === 'string' ? companyName : undefined,
       email: typeof email === 'string' ? email : '',
-      phone: typeof phone === 'string' ? phone : '',
       password: typeof password === 'string' ? password : '',
-      description: typeof description === 'string' ? description : '',
-      officeAddress: typeof officeAddress === 'string' ? officeAddress : '',
-      city: typeof city === 'string' ? city : '',
-      state: typeof state === 'string' ? state : '',
-      pinCode: typeof pinCode === 'string' ? pinCode : '',
     })
 
     // Rate limiting
@@ -59,7 +37,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const validationErrors = validateBrokerRegistrationInput(normalized)
+    const validationErrors = validateBrokerAccountRegistrationInput(normalized)
     if (agreeTerms !== true) validationErrors.push('Terms agreement is required')
     if (validationErrors.length > 0) {
       return NextResponse.json(
@@ -68,17 +46,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { user, broker } = await createBrokerAccount({
+    const { user, registration } = await createBrokerRegistration({
       name: normalized.name,
-      companyName: normalized.companyName || undefined,
       email: normalized.email,
-      phone: normalized.phone,
       password: normalized.password,
-      description: normalized.description,
-      officeAddress: normalized.officeAddress,
-      city: normalized.city,
-      state: normalized.state,
-      pinCode: normalized.pinCode,
     })
 
     // Send registration emails (verification + admin notification)
@@ -96,7 +67,7 @@ export async function POST(request: NextRequest) {
       message: 'Your broker account has been created. Please check your email to verify your account.',
       data: {
         id: user.id,
-        brokerId: broker.id,
+        registrationId: registration.id,
         name: user.name,
         email: user.email,
         role: user.role,

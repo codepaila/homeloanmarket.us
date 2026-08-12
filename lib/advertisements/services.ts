@@ -56,6 +56,17 @@ export class AdvertisementService {
     showMobile?: boolean
     internalNotes?: string
     isDismissible?: boolean
+    locationTarget?: {
+      locationLabel: string
+      countryCode: string
+      city?: string
+      state?: string
+      zip?: string
+      googlePlaceId?: string
+      latitude: number
+      longitude: number
+      radiusMiles: number
+    }
     creativeAssignments?: { mediaAssetId: string; format: AdvertisementFormat }[]
     createdById: string
   }): Promise<Advertisement> {
@@ -78,6 +89,10 @@ export class AdvertisementService {
       if (!asset) throw new Error("Mobile media asset not found")
     }
 
+    if (data.locationTarget && (data.locationTarget.countryCode !== 'US' || data.locationTarget.radiusMiles <= 0 || data.locationTarget.radiusMiles > 100)) {
+      throw new Error('Invalid US advertisement location target')
+    }
+
     await this.validateCreativeAssignments(data.placement, creativeAssignments)
 
     const ad = await AdvertisementRepository.create({
@@ -94,13 +109,32 @@ export class AdvertisementService {
     if (!ad) throw new Error("Advertisement not found")
 
     const creativeAssignments = data.creativeAssignments as { mediaAssetId: string; format: AdvertisementFormat }[] | undefined
+    const locationTarget = data.locationTarget as {
+      locationLabel: string
+      countryCode: string
+      city?: string
+      state?: string
+      zip?: string
+      googlePlaceId?: string
+      latitude: number
+      longitude: number
+      radiusMiles: number
+    } | null | undefined
     const advertisementData = { ...data }
     delete advertisementData.creativeAssignments
+    delete advertisementData.locationTarget
     if (advertisementData.desktopMediaId === '') advertisementData.desktopMediaId = null
     if (advertisementData.mobileMediaId === '') advertisementData.mobileMediaId = null
     if (creativeAssignments !== undefined) await this.validateCreativeAssignments(typeof data.placement === 'string' ? data.placement : ad.placement, creativeAssignments)
+    if (locationTarget && (locationTarget.countryCode !== 'US' || locationTarget.radiusMiles <= 0 || locationTarget.radiusMiles > 100)) {
+      throw new Error('Invalid US advertisement location target')
+    }
     const updated = await AdvertisementRepository.update(id, advertisementData)
     if (creativeAssignments !== undefined) await AdvertisementRepository.syncCreatives(id, creativeAssignments)
+    if (locationTarget !== undefined) {
+      await prisma.advertisementLocationTarget.deleteMany({ where: { advertisementId: id } })
+      if (locationTarget) await prisma.advertisementLocationTarget.create({ data: { advertisementId: id, ...locationTarget } })
+    }
     return (await this.getById(updated.id)) || updated
   }
 
@@ -220,9 +254,10 @@ export class AdvertisementService {
     placement: string,
     device: "desktop" | "tablet" | "mobile",
     limit: number = 1,
-    now: Date = new Date()
+    now: Date = new Date(),
+    location?: { latitude: number; longitude: number },
   ) {
-    return AdvertisementRepository.findActiveByPlacement(placement, device, limit, now)
+    return AdvertisementRepository.findActiveByPlacement(placement, device, limit, now, location)
   }
 
   static async getPublishableById(id: string) {

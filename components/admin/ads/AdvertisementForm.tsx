@@ -68,6 +68,7 @@ import { cn } from '@/lib/utils'
 import { ADVERTISEMENT_FORMAT_INFO, getPlacementFormats, isFormatCompatible, type AdvertisementFormat } from '@/lib/advertisements/formats'
 import { getPlacementSpec, getRequiredDimensions, getDisplayHeight } from '@/lib/advertisements/placementSpecs'
 import { getAdvertisementLayout } from '@/components/advertisements/ad-layout'
+import { USLocationPicker } from '@/components/location/USLocationPicker'
 
 type FormMode = 'create' | 'edit'
 
@@ -177,6 +178,7 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel }: Advertiseme
       showMobile: ad?.showMobile ?? true,
       internalNotes: ad?.internalNotes || '',
       isDismissible: ad?.isDismissible ?? false,
+      locationTarget: ad?.locationTarget || undefined,
       creativeAssignments: creativeAssignments.map(({ mediaAssetId, format }) => ({ mediaAssetId, format })),
     } as any,
   })
@@ -189,6 +191,7 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel }: Advertiseme
   const watchBannerUrl = form.watch('bannerUrl')
   const watchButtonLabel = form.watch('buttonLabel')
   const watchPlacement = form.watch('placement')
+  const watchLocationTarget = form.watch('locationTarget') as any
 
   const needsButton = useMemo(() => watchAction === 'BUTTON_ONLY' || watchAction === 'BANNER_AND_BUTTON', [watchAction])
 
@@ -425,6 +428,51 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel }: Advertiseme
                     )} />
                   </CardContent>
                 </Card>
+
+                {watchPlacement === 'BROKER_LISTING_LOCAL' && (
+                  <Card>
+                    <CardHeader><CardTitle>US Location Target</CardTitle><CardDescription>Local broker-listing resources are shown only within this validated target radius.</CardDescription></CardHeader>
+                    <CardContent className="space-y-4">
+                      <FormField control={form.control} name="locationTarget" render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <USLocationPicker
+                              value={field.value ? { ...field.value, normalizedAddress: field.value.locationLabel } as any : undefined}
+                              onChange={(location) => field.onChange(location ? {
+                                locationLabel: location.normalizedAddress,
+                                countryCode: 'US',
+                                city: location.city,
+                                state: location.state,
+                                zip: location.zip,
+                                googlePlaceId: location.placeId,
+                                latitude: location.latitude,
+                                longitude: location.longitude,
+                                radiusMiles: field.value?.radiusMiles || 25,
+                              } : undefined)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="locationTarget" render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Target radius (miles)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              min="1"
+                              max="100"
+                              value={field.value?.radiusMiles || ''}
+                              onChange={(event) => field.onChange(field.value ? { ...field.value, radiusMiles: Number(event.target.value) } : field.value)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )} />
+                      {watchLocationTarget && <p className="text-xs text-muted-foreground">Coordinates are resolved and validated server-side from the selected Google place.</p>}
+                    </CardContent>
+                  </Card>
+                )}
 
                 <Card>
                   <CardHeader><CardTitle>Status</CardTitle><CardDescription>Control whether this advertisement is active</CardDescription></CardHeader>

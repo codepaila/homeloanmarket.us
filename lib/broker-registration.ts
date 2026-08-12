@@ -11,6 +11,33 @@ export type BrokerRegistrationInput = {
   pinCode: string
 }
 
+export type BrokerAccountRegistrationInput = {
+  name: string
+  email: string
+  password: string
+}
+
+export function normalizeBrokerAccountRegistrationInput(input: BrokerAccountRegistrationInput) {
+  return {
+    name: input.name.trim(),
+    email: input.email.trim().toLowerCase(),
+    password: input.password,
+  }
+}
+
+export function validateBrokerAccountRegistrationInput(
+  input: ReturnType<typeof normalizeBrokerAccountRegistrationInput>,
+) {
+  const errors: string[] = []
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+  if (input.name.length < 2) errors.push('Name is required')
+  if (!emailRegex.test(input.email)) errors.push('Invalid email format')
+  if (input.password.length < 8) errors.push('Password must be at least 8 characters long')
+
+  return errors
+}
+
 export function normalizeBrokerRegistrationInput(input: BrokerRegistrationInput) {
   return {
     name: input.name.trim(),
@@ -64,8 +91,57 @@ export const selfRegisteredBrokerDefaults = {
 
 import prisma from '@/lib/prisma'
 import { hashPassword } from '@/lib/aes'
-import { BankType } from '@prisma/client'
-import { assertServiceCityLimit } from '@/lib/broker-policy'
+import { BankType, SubscriptionPlan } from '@prisma/client'
+import { assertServiceCityLimit, hasPaidEntitlement } from '@/lib/broker-policy'
+
+export async function createBrokerRegistration(input: BrokerAccountRegistrationInput) {
+  const normalized = normalizeBrokerAccountRegistrationInput(input)
+  const errors = validateBrokerAccountRegistrationInput(normalized)
+  if (errors.length > 0) {
+    throw new Error(errors[0])
+  }
+
+  const hashedPassword = await hashPassword(normalized.password)
+
+  return prisma.$transaction(async (tx) => {
+    const existingUser = await tx.user.findUnique({
+      where: { email: normalized.email },
+      select: { id: true },
+    })
+    if (existingUser) {
+      const error = new Error('ACCOUNT_ALREADY_REGISTERED')
+      error.name = 'DuplicateAccountError'
+      throw error
+    }
+
+    const user = await tx.user.create({
+      data: {
+        name: normalized.name,
+        email: normalized.email,
+        password: hashedPassword,
+        role: 'BROKER',
+        isActive: true,
+        emailVerified: false,
+      },
+    })
+
+    const registration = await tx.brokerRegistration.create({
+      data: {
+        userId: user.id,
+        status: 'SUBSCRIPTION_PENDING',
+        draft: {
+          create: {
+            data: {},
+            currentStep: 1,
+          },
+        },
+      },
+      include: { draft: true },
+    })
+
+    return { user, registration }
+  })
+}
 
 export async function createBrokerAccount(input: BrokerRegistrationInput) {
   const normalized = normalizeBrokerRegistrationInput(input)
@@ -151,24 +227,59 @@ export type ExistingUserBrokerInput = {
   serviceCities?: string[]
   languages?: string[]
   bankPartnerships?: string[]
+  location?: {
+    placeId?: string
+    normalizedAddress: string
+    city: string
+    state: string
+    zip: string
+    countryCode: 'US'
+    latitude: number
+    longitude: number
+  }
+}
+
+type RegistrationSubscription = {
+  plan: SubscriptionPlan
+  isActive: boolean
+  startDate?: Date | null
+  endDate?: Date | null
+  stripeCustomerId?: string | null
+  stripeSubId?: string | null
 }
 
 export async function createBrokerForExistingUser(userId: string, data: ExistingUserBrokerInput) {
-  // A newly created broker always starts on the FREE plan, so the FREE
-  // service-city allowance (1 city) applies at creation. Server-side
-  // enforcement only — the client can never claim paid entitlement.
-  const limit = assertServiceCityLimit(data.serviceCities, null)
-  if (!limit.ok) {
-    const error = new Error(limit.reason)
-    error.name = 'ServiceCityLimitError'
-    throw error
-  }
-
   return prisma.$transaction(async (tx) => {
     const existing = await tx.broker.findUnique({ where: { userId }, select: { id: true } })
     if (existing) {
       const error = new Error('ALREADY_A_BROKER')
       error.name = 'AlreadyBrokerError'
+      throw error
+    }
+
+    const registration = await tx.brokerRegistration.findUnique({
+      where: { userId },
+      include: { subscription: true, draft: true },
+    })
+    const selectedSubscription: RegistrationSubscription = registration?.subscription || {
+      plan: 'FREE',
+      isActive: true,
+      startDate: new Date(),
+      endDate: null,
+    }
+    if (registration && (registration.status === 'INTENT_SELECTED' || !registration.subscription?.isActive || registration.subscription.status !== 'ACTIVE')) {
+      const error = new Error('An active broker subscription is required before onboarding')
+      error.name = 'BrokerSubscriptionRequiredError'
+      throw error
+    }
+
+    const freeLimit = assertServiceCityLimit(data.serviceCities, null)
+    const limit = hasPaidEntitlement(selectedSubscription)
+      ? { ok: true as const, max: Infinity }
+      : freeLimit
+    if (!limit.ok) {
+      const error = new Error(limit.reason)
+      error.name = 'ServiceCityLimitError'
       throw error
     }
 
@@ -196,6 +307,12 @@ export async function createBrokerForExistingUser(userId: string, data: Existing
         city: data.city,
         state: data.state,
         pinCode: data.pinCode,
+        normalizedAddress: data.location?.normalizedAddress || data.officeAddress,
+        googlePlaceId: data.location?.placeId,
+        locationCountryCode: data.location?.countryCode || 'US',
+        location: data.location
+          ? JSON.parse(JSON.stringify({ type: 'Point', coordinates: [data.location.longitude, data.location.latitude] }))
+          : undefined,
         experienceYears: data.experienceYears || 0,
         specializations: data.specializations?.length ? data.specializations : ['Home Loan'],
         serviceCities: data.serviceCities || [],
@@ -204,7 +321,14 @@ export async function createBrokerForExistingUser(userId: string, data: Existing
         brokerStatus: 'FREE',
         isVisible: true,
         subscription: {
-          create: { plan: 'FREE', isActive: true, startDate: new Date(), endDate: null },
+          create: {
+            plan: selectedSubscription.plan,
+            isActive: selectedSubscription.isActive,
+            startDate: selectedSubscription.startDate || new Date(),
+            endDate: selectedSubscription.endDate ?? undefined,
+            stripeCustomerId: selectedSubscription.stripeCustomerId ?? undefined,
+            stripeSubId: selectedSubscription.stripeSubId ?? undefined,
+          },
         },
       },
     })
@@ -220,6 +344,18 @@ export async function createBrokerForExistingUser(userId: string, data: Existing
     }
 
     await tx.user.update({ where: { id: userId }, data: { role: 'BROKER' } })
+    if (registration) {
+      await tx.brokerRegistration.update({
+        where: { id: registration.id },
+        data: { status: 'COMPLETED' },
+      })
+      if (registration.draft) {
+        await tx.brokerOnboardingDraft.update({
+          where: { id: registration.draft.id },
+          data: { completedAt: new Date(), currentStep: 4 },
+        })
+      }
+    }
     return broker
   })
 }

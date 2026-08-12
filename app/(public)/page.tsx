@@ -8,8 +8,10 @@ import BankPartnersSection from '@/components/sections/landing/BankPartners'
 import TestimonialsSection from '@/components/sections/landing/Testimonials'
 import FAQSection from '@/components/sections/landing/FAQ'
 import { LatestArticles } from '@/components/sections/landing/LatestArticles'
-import { AdvertisementRenderer } from '@/components/advertisements'
 import type { Metadata } from 'next'
+import SearchSection from '@/components/sections/landing/SearchSection'
+import LocalExpertSection from '@/components/sections/landing/LocalExportSection'
+import SmartToolsSection from '@/components/sections/landing/SmartToolsSection'
 
 export const metadata: Metadata = {
   title: 'Find a Trusted Mortgage Broker | HomeLoanMarket',
@@ -25,21 +27,18 @@ export default function Home() {
   return (
     <>
       <HeroSection />
-      <AdvertisementRenderer placement="HOMEPAGE_HERO" />
-      <StatisticsSection />
-      <FeaturedBrokersSection />
-      <AdvertisementRenderer placement="HOMEPAGE_FEATURED" />
-      <ServicesSection />
-      <WhyChooseUsSection />
-      <ProcessSection />
-      <BankPartnersSection />
-      <TestimonialsSection />
-      <FAQSection />
-      <LatestArticles />
-      <div className="mx-2 md:mx-4">
-
-      <AdvertisementRenderer placement="HOMEPAGE_CTA" />
-      </div>
+      {/* <StatisticsSection /> */}
+      <SearchSection/>
+      <LocalExpertSection/>
+      <SmartToolsSection/>
+      {/* <FeaturedBrokersSection /> */}
+      {/* <ServicesSection /> */}
+      {/* <WhyChooseUsSection /> */}
+      {/* <ProcessSection /> */}
+      {/* <BankPartnersSection /> */}
+      {/* <TestimonialsSection /> */}
+      {/* <FAQSection /> */}
+      {/* <LatestArticles /> */}
       {/* <ChooseHomeSection /> */}
       {/* <Resources /> */}
       {/* <CallToActionSection /> */}

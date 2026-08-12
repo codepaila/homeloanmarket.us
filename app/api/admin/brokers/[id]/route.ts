@@ -55,10 +55,10 @@ export async function PATCH(
 
   const body = await request.json()
   const allowedFields = [
-    'displayName', 'companyName', 'description', 'phone', 'email', 'website',
+    'displayName', 'companyName', 'nmls', 'description', 'phone', 'email', 'website',
     'officeAddress', 'city', 'state', 'pinCode', 'experienceYears',
     'specializations', 'serviceCities', 'languages', 'registrationNumber',
-    'panNumber', 'logo', 'coverImage', 'isVisible',
+    'panNumber', 'logo', 'coverImage', 'isVisible', 'verificationStatus',
   ] as const
   const data: Record<string, unknown> = {}
 
@@ -68,6 +68,9 @@ export async function PATCH(
 
   if (data.email !== undefined && data.email !== null) data.email = String(data.email).trim().toLowerCase()
   if (data.website !== undefined && data.website !== null) data.website = String(data.website).trim()
+  if (data.verificationStatus !== undefined && !['UNVERIFIED', 'VERIFIED'].includes(String(data.verificationStatus))) {
+    return NextResponse.json({ message: 'Invalid verification status' }, { status: 422 })
+  }
 
   try {
     const updatedBroker = await prisma.broker.update({ where: { id }, data })

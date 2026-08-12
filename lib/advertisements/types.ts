@@ -68,6 +68,20 @@ export type Advertisement = {
   isDeleted: boolean
   createdAt: Date
   updatedAt: Date
+  companyId?: string | null
+  locationTarget?: {
+    id: string
+    advertisementId: string
+    locationLabel: string
+    countryCode: string
+    city: string | null
+    state: string | null
+    zip: string | null
+    googlePlaceId: string | null
+    latitude: number
+    longitude: number
+    radiusMiles: number
+  } | null
 }
 
 export type AdvertisementCreative = {

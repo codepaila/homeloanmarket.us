@@ -143,7 +143,7 @@ export const emailTemplates = {
       infoItems: {
         "Broker Name": broker.displayName,
         "Profile URL": `${process.env.NEXT_PUBLIC_APP_URL}/brokers/${broker.profileSlug}`,
-        "City": broker.city,
+        "City": broker.city || '',
         "Experience": `${broker.experienceYears} years`,
         "Specializations": broker.specializations.join(', '),
         "Verification Status": "Verified",
@@ -417,7 +417,7 @@ export const emailTemplates = {
         "Broker Name": broker.displayName,
         "Company": broker.companyName || "Individual",
         "User": `${user.name} (${user.email})`,
-        "City": broker.city,
+        "City": broker.city || '',
         "Experience": `${broker.experienceYears} years`,
         "Registration Date": new Date().toLocaleDateString(),
         "Profile URL": `${process.env.NEXT_PUBLIC_APP_URL}/admin/brokers/${broker.id}`,

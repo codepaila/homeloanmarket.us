@@ -3,7 +3,6 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import prisma from '@/lib/prisma'
 import { canonicalUrl, safeJsonLd } from '@/lib/seo'
-import { AdvertisementRenderer } from '@/components/advertisements'
 
 interface BlogSlugPageProps {
   params: Promise<{ slug: string }>
@@ -66,8 +65,6 @@ export default async function BlogSlugPage({ params }: BlogSlugPageProps) {
       <p className="mt-3 text-sm text-muted-foreground">
         {post.author} · {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : ''}
       </p>
-      <AdvertisementRenderer placement="BLOG_INLINE" className="mt-6" />
-
       {post.coverImage ? (
         <div className="mt-6 overflow-hidden rounded-2xl">
           {/* eslint-disable-next-line @next/next/no-img-element */}

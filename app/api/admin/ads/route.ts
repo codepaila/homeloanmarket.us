@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/currentUser"
 import { AdvertisementService } from "@/lib/advertisements/services"
 import { CreateAdSchema, AdQuerySchema } from "@/lib/advertisements/validation"
 import { serializeAdvertisement, serializeAdvertisementList } from "@/lib/admin/advertisement-dto"
+import { resolveAdvertisementTarget } from '@/lib/location/advertisement-target'
 
 export async function GET(request: NextRequest) {
   try {
@@ -86,8 +87,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (parsed.data.placement === 'BROKER_LISTING_LOCAL' && !parsed.data.locationTarget) {
+      return NextResponse.json({ success: false, error: 'A location target is required for local broker-listing ads' }, { status: 422 })
+    }
+    if (parsed.data.locationTarget && parsed.data.placement !== 'BROKER_LISTING_LOCAL') {
+      return NextResponse.json({ success: false, error: 'Location targets are only supported on local broker-listing ads' }, { status: 422 })
+    }
+    const locationTarget = parsed.data.locationTarget
+      ? await resolveAdvertisementTarget(parsed.data.locationTarget)
+      : undefined
+
     const ad = await AdvertisementService.create({
       ...parsed.data,
+      locationTarget,
       createdById: user.id,
     })
 

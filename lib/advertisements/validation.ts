@@ -77,6 +77,18 @@ const CreateAdBaseSchema = z.object({
     mediaAssetId: z.string().min(1),
     format: z.enum(ADVERTISEMENT_FORMATS),
   })).max(5).optional(),
+  locationTarget: z.object({
+    locationLabel: z.string().min(1).max(200),
+    countryCode: z.literal('US'),
+    city: z.string().max(100).optional(),
+    state: z.string().max(100).optional(),
+    zip: z.string().max(20).optional(),
+    googlePlaceId: z.string().max(200).optional(),
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    radiusMiles: z.number().positive().max(100),
+  }).optional(),
+  companyId: z.string().optional(),
 })
 
 function validateAdDates(data: { startDate?: Date; endDate?: Date; creativeAssignments?: { format: string }[] }, context: z.RefinementCtx) {

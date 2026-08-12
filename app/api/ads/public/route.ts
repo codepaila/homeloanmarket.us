@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getDeviceType } from "@/lib/advertisements/utils"
 import { AdvertisementService } from "@/lib/advertisements/services"
 import { PLACEMENT_KEY_MAP, PLACEMENT_ENUM_VALUES } from "@/lib/advertisements/public"
+import { verifySearchLocationToken } from '@/lib/location/search-token'
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,11 +28,26 @@ export async function GET(request: NextRequest) {
     }
 
     const device = getDeviceType(request.headers)
+    const locationToken = searchParams.get('locationToken')
+    let verifiedLocation
+    if (placement === 'BROKER_LISTING_LOCAL') {
+      if (!locationToken) return NextResponse.json({ success: true, ads: [] })
+      try {
+        verifiedLocation = verifySearchLocationToken(locationToken)
+      } catch {
+        return NextResponse.json({ success: true, ads: [] })
+      }
+    }
+    if (placement === 'BROKER_LISTING_LOCAL' && !verifiedLocation) {
+      return NextResponse.json({ success: true, ads: [] })
+    }
 
     const ads = await AdvertisementService.findActiveAds(
       placement,
       device === "mobile" ? "mobile" : device === "tablet" ? "tablet" : "desktop",
-      limit
+      limit,
+      new Date(),
+      verifiedLocation ? { latitude: verifiedLocation.latitude, longitude: verifiedLocation.longitude } : undefined,
     )
 
     if (ads.length === 0) {

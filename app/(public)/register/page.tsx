@@ -87,7 +87,7 @@ export default async function RegisterPage() {
           <div className="mt-6 flex-1" />
 
           <div className="mt-5 space-y-3">
-            <GoogleContinueButton callbackUrl="/setup" />
+            <GoogleContinueButton callbackUrl="/broker-registration/continue" brokerIntent />
             <AuthDivider label="or" />
             <Link
               href="/auth/signup"
@@ -102,6 +102,9 @@ export default async function RegisterPage() {
               </Link>
             </p>
           </div>
+        </div>
+        <div className="mt-5 text-center">
+          <Link href="/company/register" className="text-sm font-semibold text-primary hover:underline">Join as a Company</Link>
         </div>
       </div>
     </AuthFormWrapper>

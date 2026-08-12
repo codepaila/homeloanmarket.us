@@ -17,7 +17,6 @@ import {
   Youtube,
   CheckCircle2,
 } from 'lucide-react'
-import { AdvertisementRenderer } from '@/components/advertisements'
 import type { SiteSettings } from '@/lib/site/settings'
 import Image from 'next/image'
 
@@ -234,10 +233,6 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
               ))}
             </ul>
           </div>
-        </div>
-
-        <div className="border-t border-border py-8">
-          <AdvertisementRenderer placement="FOOTER" />
         </div>
 
         {/* Bottom bar */}

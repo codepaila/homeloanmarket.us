@@ -27,13 +27,15 @@ export const useAllBrokers = (
   brokerStatus?: string,
   minExperience?: number,
   language?: string,
-  zip?: string
+  zip?: string,
+  state?: string,
+  location?: { latitude: number; longitude: number; city?: string; state?: string; zip?: string; token?: string },
+  radius?: number,
 ) => {
   const queryParams = new URLSearchParams()
   queryParams.append('page', page.toString())
   queryParams.append('pageSize', pageSize.toString())
   if (city) queryParams.append('city', city)
-  if (zip) queryParams.append('zip', zip)
   if (specialization) queryParams.append('specialization', specialization)
   if (minRating) queryParams.append('minRating', minRating.toString())
   if (verificationStatus) queryParams.append('verificationStatus', verificationStatus)
@@ -42,6 +44,17 @@ export const useAllBrokers = (
   if (brokerStatus) queryParams.append('brokerStatus', brokerStatus)
   if (minExperience) queryParams.append('minExperience', minExperience.toString())
   if (language) queryParams.append('language', language)
+  if (state) queryParams.append('state', state)
+  if (zip) queryParams.append('zip', zip)
+  if (location) {
+    queryParams.append('latitude', location.latitude.toString())
+    queryParams.append('longitude', location.longitude.toString())
+    queryParams.append('radius', String(radius || 0))
+    if (location.city) queryParams.append('locationCity', location.city)
+    if (location.state) queryParams.append('locationState', location.state)
+    if (location.zip) queryParams.append('locationZip', location.zip)
+    if (location.token) queryParams.append('locationToken', location.token)
+  }
 
   const { data, error, mutate, isLoading } = useSWR(
     `${baseUrl}/api/brokers?${queryParams.toString()}`,

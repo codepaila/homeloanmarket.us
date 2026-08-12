@@ -11,12 +11,12 @@ import {
   X,
   ChevronDown,
   SlidersHorizontal,
+  MapPin,
 } from 'lucide-react'
 import { BrokerGridCard } from '@/components/brokers'
 import { BrokerCardSkeleton } from '@/components/design/BrokerCardSkeleton'
 import { EmptyState } from '@/components/design/EmptyState'
 import { useAllBrokers } from '@/hooks/useClient'
-import { fetchCities, fetchUSStates } from '@/lib/fetchClient'
 import { PAGE_SIZE } from '@/utils'
 import { cn } from '@/lib/utils'
 import { AdvertisementRenderer } from '@/components/advertisements'
@@ -72,8 +72,19 @@ export default function BrokersPage() {
   const reducedMotion = useReducedMotion()
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
-  const [city, setCity] = useState('')
-  const [zip, setZip] = useState('')
+  const [locationSuggestions, setLocationSuggestions] = useState<Array<{ placeId: string; label: string }>>([])
+  const [selectedLocation, setSelectedLocation] = useState<{
+    placeId?: string
+    normalizedAddress: string
+    city: string
+    state: string
+    zip: string
+    latitude: number
+    longitude: number
+    token?: string
+  } | null>(null)
+  const [radius, setRadius] = useState(0)
+  const [radiusEnabled, setRadiusEnabled] = useState(false)
   const [specialization, setSpecialization] = useState('')
   const [minExperience, setMinExperience] = useState('')
   const [language, setLanguage] = useState('')
@@ -81,10 +92,6 @@ export default function BrokersPage() {
   const [featuredOnly, setFeaturedOnly] = useState(false)
   const [page, setPage] = useState(1)
   const [filtersOpen, setFiltersOpen] = useState(false)
-  const [states, setStates] = useState<Array<{ code: string; name: string }>>([])
-  const [selectedState, setSelectedState] = useState('')
-  const [cityOptions, setCityOptions] = useState<string[]>([])
-  const [isLoadingCities, setIsLoadingCities] = useState(false)
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
   const [sortBy, setSortBy] = useState('relevance')
   const [urlHydrated, setUrlHydrated] = useState(false)
@@ -95,16 +102,31 @@ export default function BrokersPage() {
     if (typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
     const q = params.get('search') || params.get('q')
-    const cityParam = params.get('city')
-    const zipParam = params.get('zip')
     const specParam = params.get('specialization')
+    const locationToken = params.get('locationToken')
+    const locationLatitude = Number(params.get('locationLatitude'))
+    const locationLongitude = Number(params.get('locationLongitude'))
+    const locationLabel = params.get('locationLabel')
+    const locationCity = params.get('locationCity')
+    const locationState = params.get('locationState')
+    const locationZip = params.get('locationZip')
     if (q) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSearchInput(q)
-      setSearch(q)
+      setSearch(locationToken ? '' : q)
     }
-    if (cityParam) setCity(cityParam)
-    if (zipParam) setZip(zipParam)
+    if (locationToken && locationLabel && Number.isFinite(locationLatitude) && Number.isFinite(locationLongitude)) {
+      setSelectedLocation({
+        token: locationToken,
+        normalizedAddress: locationLabel,
+        city: locationCity || '',
+        state: locationState || '',
+        zip: locationZip || '',
+        latitude: locationLatitude,
+        longitude: locationLongitude,
+      })
+      setSearchInput(locationLabel)
+    }
     if (specParam) setSpecialization(specParam)
     if (params.get('experience')) setMinExperience(params.get('experience') || '')
     if (params.get('language')) setLanguage(params.get('language') || '')
@@ -118,7 +140,7 @@ export default function BrokersPage() {
   const { brokers, total, totalPages, isLoading } = useAllBrokers(
     page,
     PAGE_SIZE,
-    city,
+    undefined,
     specialization,
     parseFloat(minRating),
     undefined,
@@ -127,53 +149,82 @@ export default function BrokersPage() {
     featuredOnly ? 'FEATURED' : undefined,
     minExperience ? parseInt(minExperience) : undefined,
     language || undefined,
-    zip || undefined
+    undefined,
+    undefined,
+    selectedLocation ? { latitude: selectedLocation.latitude, longitude: selectedLocation.longitude, city: selectedLocation.city, state: selectedLocation.state, zip: selectedLocation.zip, token: selectedLocation.token } : undefined,
+     radiusEnabled ? radius : 0,
   )
-
-  useEffect(() => {
-    let mounted = true
-    fetchUSStates()
-      .then((data) => {
-        if (mounted) setStates(Array.isArray(data) ? data : [])
-      })
-      .catch(() => {
-        if (mounted) setStates([])
-      })
-    return () => {
-      mounted = false
-    }
-  }, [])
-
-  useEffect(() => {
-    let mounted = true
-    if (!selectedState) return
-    fetchCities(selectedState)
-      .then((data) => {
-        if (mounted) setCityOptions(Array.isArray(data) ? data : [])
-      })
-      .catch(() => {
-        if (mounted) setCityOptions([])
-      })
-      .finally(() => {
-        if (mounted) setIsLoadingCities(false)
-      })
-    return () => {
-      mounted = false
-    }
-  }, [selectedState])
 
   // Debounce the unified search field
   useEffect(() => {
     const timeout = window.setTimeout(() => {
+      if (selectedLocation?.normalizedAddress === searchInput.trim()) {
+        setSearch('')
+        return
+      }
       setSearch(searchInput.trim())
     }, 400)
     return () => window.clearTimeout(timeout)
-  }, [searchInput])
+  }, [searchInput, selectedLocation])
+
+  useEffect(() => {
+    const value = searchInput.trim()
+    if (value.length < 2 || selectedLocation?.normalizedAddress === value) {
+      if (locationSuggestions.length > 0) window.setTimeout(() => setLocationSuggestions([]), 0)
+      return
+    }
+    const timeout = window.setTimeout(() => {
+      fetch(`/api/location/autocomplete?input=${encodeURIComponent(value)}`)
+        .then((response) => response.json())
+        .then((data) => setLocationSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []))
+        .catch(() => setLocationSuggestions([]))
+    }, 300)
+    return () => window.clearTimeout(timeout)
+  }, [searchInput, selectedLocation, locationSuggestions.length])
+
+  const selectLocation = async (suggestion: { placeId: string; label: string }) => {
+    try {
+      const response = await fetch('/api/location/resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ placeId: suggestion.placeId }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Unable to resolve location')
+      setSelectedLocation(data.location)
+      setSearchInput(data.location.normalizedAddress || suggestion.label)
+      setSearch('')
+      setLocationSuggestions([])
+      setPage(1)
+    } catch {
+      setSelectedLocation(null)
+      setLocationSuggestions([])
+    }
+  }
+
+  const resolveZip = async () => {
+    if (!/^\d{5}$/.test(searchInput.trim()) || selectedLocation?.zip === searchInput.trim()) return
+    try {
+      const response = await fetch('/api/location/geocode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: `${searchInput.trim()}, USA` }),
+      })
+      const data = await response.json()
+       if (response.ok) {
+         setSelectedLocation(data.location)
+         setSearchInput(data.location.normalizedAddress || searchInput.trim())
+         setSearch('')
+       }
+    } catch {
+      setSelectedLocation(null)
+    }
+  }
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPage(1)
-  }, [search, city, zip, specialization, minExperience, language, minRating, featuredOnly])
+  }, [search, specialization, minExperience, language, minRating, featuredOnly, radius, selectedLocation])
 
   useEffect(() => {
     if (!urlHydrated || typeof window === 'undefined') return
@@ -181,24 +232,30 @@ export default function BrokersPage() {
     const setOrDelete = (key: string, value: string) => value ? params.set(key, value) : params.delete(key)
     setOrDelete('search', search)
     params.delete('q')
-    setOrDelete('city', city)
-    setOrDelete('zip', zip)
     setOrDelete('specialization', specialization)
     setOrDelete('experience', minExperience)
     setOrDelete('language', language)
     setOrDelete('rating', minRating === '0' ? '' : minRating)
     setOrDelete('featured', featuredOnly ? 'true' : '')
+    setOrDelete('locationToken', selectedLocation?.token || '')
+    setOrDelete('locationLabel', selectedLocation?.normalizedAddress || '')
+    setOrDelete('locationLatitude', selectedLocation ? String(selectedLocation.latitude) : '')
+    setOrDelete('locationLongitude', selectedLocation ? String(selectedLocation.longitude) : '')
+    setOrDelete('locationCity', selectedLocation?.city || '')
+    setOrDelete('locationState', selectedLocation?.state || '')
+    setOrDelete('locationZip', selectedLocation?.zip || '')
     setOrDelete('page', page > 1 ? String(page) : '')
     const query = params.toString()
     window.history.replaceState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}`)
-  }, [city, featuredOnly, language, minExperience, minRating, page, search, specialization, urlHydrated, zip])
+  }, [featuredOnly, language, minExperience, minRating, page, search, specialization, selectedLocation, urlHydrated])
 
   const clearAllFilters = useCallback(() => {
+    setLocationSuggestions([])
     setSearchInput('')
     setSearch('')
-    setCity('')
-    setSelectedState('')
-    setZip('')
+    setSelectedLocation(null)
+    setRadius(0)
+    setRadiusEnabled(false)
     setSpecialization('')
     setMinExperience('')
     setLanguage('')
@@ -206,12 +263,11 @@ export default function BrokersPage() {
     setFeaturedOnly(false)
   }, [])
 
-  const hasActiveFilters = Boolean(search || city || zip || specialization || minExperience || language || minRating !== '0' || featuredOnly)
+  const hasActiveFilters = Boolean(search || radius > 0 || specialization || minExperience || language || minRating !== '0' || featuredOnly)
 
   const activeFilterCount = [
     search,
-    city,
-    zip,
+    radius > 0 && 'radius',
     specialization,
     minExperience,
     language,
@@ -269,47 +325,30 @@ export default function BrokersPage() {
   const filtersPanel = (
     <div className="space-y-6">
       <div>
-        {sectionLabel('Location')}
-        <div className="mt-2.5 space-y-3">
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              ZIP / Postal code
+          <div className="space-y-2 rounded-xl border border-border bg-background p-3">
+            <label className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <span>Radius Search</span>
+              <input
+                type="checkbox"
+                checked={radiusEnabled}
+                disabled={!selectedLocation}
+                onChange={(event) => {
+                  setRadiusEnabled(event.target.checked)
+                  if (!event.target.checked) setRadius(0)
+                }}
+                aria-label="Enable radius search"
+                className="h-4 w-4 accent-primary disabled:opacity-50"
+              />
             </label>
-            <input
-              type="text"
-              inputMode="numeric"
-              value={zip}
-              onChange={(e) => setZip(e.target.value.replace(/[^0-9]/g, ''))}
-              placeholder="e.g. 90210"
-              aria-label="ZIP / Postal code"
-              className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-secondary placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/15"
-            />
+            {radiusEnabled ? (
+              <>
+                <div className="flex items-center justify-between text-xs text-muted-foreground"><span>0 miles</span><span className="font-medium text-text-main">{radius} miles</span><span>100 miles</span></div>
+                <input type="range" min="0" max="100" step="1" value={radius} onChange={(event) => setRadius(Number(event.target.value))} aria-label="Radius search in miles" className="w-full accent-primary" />
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground">Select a validated location and enable radius search to filter by distance.</p>
+            )}
           </div>
-          <FilterSelect
-            label="State"
-            value={selectedState}
-            onChange={(value) => {
-              setCity('')
-              setCityOptions([])
-              setIsLoadingCities(Boolean(value))
-              setSelectedState(value)
-            }}
-            options={[
-              { value: '', label: 'All states' },
-              ...states.map((s) => ({ value: s.code, label: s.name })),
-            ]}
-          />
-          <FilterSelect
-            label="City"
-            value={city}
-            onChange={setCity}
-            options={[
-              { value: '', label: selectedState ? (isLoadingCities ? 'Loading cities...' : 'All Cities') : 'Select a state first' },
-              ...cityOptions.map((c: string) => ({ value: c, label: c })),
-            ]}
-            loading={isLoadingCities}
-            disabled={!selectedState}
-          />
           <FilterSelect
             label="Specialization"
             value={specialization}
@@ -320,7 +359,6 @@ export default function BrokersPage() {
             ]}
           />
         </div>
-      </div>
 
       <div>
         {sectionLabel('Experience')}
@@ -373,8 +411,7 @@ export default function BrokersPage() {
           {hasActiveFilters ? (
             <div className="flex flex-wrap gap-2">
               {search && <FilterChip label={`Search: "${search}"`} onRemove={() => { setSearchInput(''); setSearch('') }} />}
-              {zip && <FilterChip label={`ZIP: ${zip}`} onRemove={() => setZip('')} />}
-              {city && <FilterChip label={city} onRemove={() => setCity('')} />}
+              {radius > 0 && <FilterChip label={`${radius} mile radius`} onRemove={() => setRadius(0)} />}
               {specialization && <FilterChip label={specialization} onRemove={() => setSpecialization('')} />}
               {minExperience && <FilterChip label={`${minExperience}+ years`} onRemove={() => setMinExperience('')} />}
               {language && <FilterChip label={language} onRemove={() => setLanguage('')} />}
@@ -440,10 +477,6 @@ export default function BrokersPage() {
         </div>
       </section>
 
-      <div className="container-custom py-3 md:py-4">
-        <AdvertisementRenderer placement="BROKER_LISTING" />
-      </div>
-
       {/* Sticky search + toolbar */}
       <section className="sticky top-16 z-30 border-b border-border bg-card/80 backdrop-blur-lg md:top-[72px]">
         <div className="container-custom py-4 md:py-5">
@@ -455,15 +488,40 @@ export default function BrokersPage() {
               aria-label="Search brokers"
               placeholder="Search by broker, company, ZIP code, address or location..."
               value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
+               onChange={(e) => {
+                 setSearchInput(e.target.value)
+                 setSelectedLocation(null)
+                 setRadiusEnabled(false)
+                 setRadius(0)
+               }}
+              onBlur={resolveZip}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') setSearch(searchInput.trim())
+                if (e.key === 'Escape') setLocationSuggestions([])
               }}
               className="h-12 w-full rounded-xl border border-border bg-background pl-11 pr-10 text-sm text-text-main shadow-soft placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
+            {locationSuggestions.length > 0 && (
+              <div className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-border bg-card shadow-large" role="listbox" aria-label="Location suggestions">
+                {locationSuggestions.map((suggestion) => (
+                  <button
+                    type="button"
+                    key={suggestion.placeId}
+                    role="option"
+                    aria-selected="false"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => selectLocation(suggestion)}
+                    className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-text-main hover:bg-muted focus:bg-muted focus:outline-none"
+                  >
+                    <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    {suggestion.label}
+                  </button>
+                ))}
+              </div>
+            )}
             {searchInput && (
               <button type="button"
-                onClick={() => { setSearchInput(''); setSearch('') }}
+               onClick={() => { setSearchInput(''); setSearch(''); setSelectedLocation(null); setRadius(0); setRadiusEnabled(false) }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-text-muted hover:bg-muted hover:text-text-main"
                 aria-label="Clear search"
               >
@@ -545,8 +603,7 @@ export default function BrokersPage() {
           {hasActiveFilters && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
               {search && <FilterChip label={`Search: "${search}"`} onRemove={() => { setSearchInput(''); setSearch('') }} />}
-              {zip && <FilterChip label={`ZIP: ${zip}`} onRemove={() => setZip('')} />}
-              {city && <FilterChip label={`City: ${city}`} onRemove={() => setCity('')} />}
+               {radius > 0 && <FilterChip label={`${radius} mile radius`} onRemove={() => setRadius(0)} />}
               {specialization && <FilterChip label={`Specialization: ${specialization}`} onRemove={() => setSpecialization('')} />}
               {minExperience && <FilterChip label={`${minExperience}+ years`} onRemove={() => setMinExperience('')} />}
               {language && <FilterChip label={`Language: ${language}`} onRemove={() => setLanguage('')} />}
@@ -721,6 +778,20 @@ export default function BrokersPage() {
           )}
         </div>
       </section>
+
+      {selectedLocation && (
+        <section className="border-t border-border bg-surface/40 py-8 md:py-10" aria-label="Related Local Resources">
+          <div className="container-custom">
+            <h2 className="text-xl font-bold text-text-main">Related Local Resources</h2>
+            <p className="mt-1 text-sm text-text-muted">Resources serving {selectedLocation.city || selectedLocation.normalizedAddress}</p>
+            <AdvertisementRenderer
+              placement="BROKER_LISTING_LOCAL"
+              location={{ latitude: selectedLocation.latitude, longitude: selectedLocation.longitude, token: selectedLocation.token }}
+              className="mt-3"
+            />
+          </div>
+        </section>
+      )}
     </div>
   )
 }

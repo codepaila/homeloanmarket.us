@@ -101,8 +101,8 @@ export function PricingCard({
           </div>
         ) : (
           <motion.button
-            onClick={() => stripePriceId && onSelect?.(stripePriceId, name)}
-            disabled={!stripePriceId}
+            onClick={() => (stripePriceId || price === 0) && onSelect?.(stripePriceId || '', name)}
+            disabled={!stripePriceId && price !== 0}
             className={cn(
               'w-full rounded-xl py-2.5 text-sm font-semibold transition-all',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30',

@@ -125,7 +125,7 @@ export default function SignInPage() {
         <AuthFormWrapper
           title="Welcome Back"
           subtitle="Sign in to your account to continue"
-          showBackLink
+          showBackLink={false}
           backHref="/"
           backLabel="Back to Home"
         >

@@ -16,6 +16,7 @@ export default async function AdminBrokersPage({ searchParams }: { searchParams:
       { displayName: { contains: filters.search, mode: 'insensitive' } },
       { companyName: { contains: filters.search, mode: 'insensitive' } },
       { profileSlug: { contains: filters.search, mode: 'insensitive' } },
+      { nmls: { contains: filters.search, mode: 'insensitive' } },
     ]
   }
   if (filters.ownership === 'UNOWNED') where.userId = null
@@ -47,13 +48,11 @@ export default async function AdminBrokersPage({ searchParams }: { searchParams:
           <h1 className="text-3xl font-semibold tracking-tight">Broker Profiles</h1>
           <p className="mt-1 text-sm text-muted-foreground">Create and prepare unowned profiles for future claiming.</p>
         </div>
-        <Link href="/admin/brokers/create" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
-          Create Broker
-        </Link>
+         <div className="flex flex-wrap gap-2"><Link href="/admin/brokers/create" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Create Broker</Link><Link href="/admin/brokers/import" className="rounded-lg border px-4 py-2 text-sm font-semibold">Import</Link><Link href="/api/admin/brokers/export?format=csv" className="rounded-lg border px-4 py-2 text-sm font-semibold">Export CSV</Link><Link href="/api/admin/brokers/export?format=xlsx" className="rounded-lg border px-4 py-2 text-sm font-semibold">Export XLSX</Link></div>
       </div>
 
       <form className="flex flex-col gap-3 rounded-xl border bg-card p-4 sm:flex-row" method="get">
-        <input name="search" defaultValue={filters.search || ''} placeholder="Search name, company, or slug" className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm" />
+         <input name="search" defaultValue={filters.search || ''} placeholder="Search name, company, NMLS, or slug" className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm" />
         <select name="ownership" defaultValue={filters.ownership || ''} className="rounded-lg border bg-background px-3 py-2 text-sm">
           <option value="">All ownership</option>
           <option value="UNOWNED">Unowned</option>

@@ -25,7 +25,6 @@ import { cn } from '@/lib/utils'
 import ThemeToggle from '@/components/ThemeToggle'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { PremiumButton } from '@/components/design/PremiumButton'
-import { AdvertisementRenderer } from '@/components/advertisements'
 import type { SiteSettings } from '@/lib/site/settings'
 import Image from 'next/image'
 
@@ -162,9 +161,6 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
           reducedMotion ? '' : 'transition-[background-color,border-color,box-shadow] duration-200 ease-out',
         )}
       >
-        <div className="lg:hidden">
-          <AdvertisementRenderer placement="MOBILE_HEADER_BANNER" />
-        </div>
         <div className="container-custom">
           <div className="flex h-16 items-center justify-between md:h-[72px] w-full">
             {/* Logo */}
@@ -173,15 +169,15 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
             >
                 <Link href="/" className="flex items-center gap-2">
                  {settings?.siteLogo ? (
-                   <Image width={300} height={100} src={settings.siteLogo} alt={settings.siteName} className="h-9 max-w-40 object-contain" />
+                   <Image width={400} height={100} src={settings.siteLogo} alt={settings.siteName} className="h-9 max-w-40 object-contain" />
                  ) : (
                    <>
                    <Image
-                    width={400}
-                    height={100}
+                    width={300}
+                    height={200}
                     src="/assets/logo.png"
                     alt="HomeLoanMarket"
-                    className="h-9 max-w-40 object-contain" 
+                    className="h-9 max-w-56 object-contain" 
                    />
                     
                    </>
@@ -279,9 +275,9 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
 
             {/* Right Side: Auth/User */}
             <div className="flex items-center gap-2.5">
-              <div className="hidden md:block">
+              {/* <div className="hidden md:block">
                 <ThemeToggle />
-              </div>
+              </div> */}
 
               {user ? (
                 <div className="relative">

@@ -42,6 +42,16 @@ export async function getCurrentUser() {
           },
         }
       },
+      brokerRegistration: {
+        include: {
+          subscription: true,
+          draft: true,
+        },
+      },
+      companyMemberships: {
+        where: { isActive: true },
+        include: { company: { include: { subscription: true } } },
+      },
     },
   })
 

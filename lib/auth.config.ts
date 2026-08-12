@@ -3,6 +3,7 @@ import type { NextAuthConfig } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import prisma from "./prisma";
 import { UserRole } from "@prisma/client";
 import { sanitizeCallbackUrl } from './auth-redirect';
@@ -47,9 +48,10 @@ export const authOptions = {
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        verificationToken: { label: "Verification token", type: "text" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (!credentials?.email) {
           return null;
         }
 
@@ -59,7 +61,10 @@ export const authOptions = {
         // "admin@x.com". Stored emails are written lowercase at registration
         // and are never modified here.
         const email = String(credentials.email).trim().toLowerCase();
-        const password = String(credentials.password);
+        const password = typeof credentials.password === 'string' ? credentials.password : '';
+        const verificationToken = typeof credentials.verificationToken === 'string'
+          ? credentials.verificationToken
+          : '';
 
         // This is the shared credential boundary, including direct signIn
         // callers such as the claim flow. The server derives the IP and fails
@@ -102,15 +107,33 @@ export const authOptions = {
           return null;
         }
 
-        if (user.role === 'BROKER' && !user.emailVerified) {
+        if (user.role === 'BROKER' && !user.emailVerified && !verificationToken) {
+          return null;
+        }
+
+        if (verificationToken) {
+          const verificationHash = crypto
+            .createHash('sha256')
+            .update(verificationToken)
+            .digest('hex');
+          if (
+            user.emailVerified !== true ||
+            user.emailVerificationToken !== verificationHash ||
+            !user.emailVerificationTokenExpiresAt ||
+            user.emailVerificationTokenExpiresAt <= new Date()
+          ) return null;
+
+          const consumed = await prisma.user.updateMany({
+            where: { id: user.id, emailVerificationToken: verificationHash },
+            data: { emailVerificationToken: null, emailVerificationTokenExpiresAt: null },
+          });
+          if (consumed.count !== 1) return null;
+        } else if (!password) {
           return null;
         }
 
         // Verify password
-        const isValid = await bcrypt.compare(
-          password,
-          user.password
-        );
+        const isValid = verificationToken || await bcrypt.compare(password, user.password);
 
         if (!isValid) {
           return null;
@@ -196,6 +219,7 @@ export const authOptions = {
 
           token.isActive = dbUser.isActive;
           
+          token.brokerProfile = null
           if (dbUser.brokerProfile) {
             const subscription = dbUser.brokerProfile.subscription;
             token.brokerProfile = {

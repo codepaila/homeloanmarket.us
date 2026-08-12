@@ -51,6 +51,7 @@ export const AD_PLACEMENT_CONFIG: Record<string, AdvertisementLayout> = {
   HOMEPAGE_BANKS: horizontalSlot('HOMEPAGE_BANKS', 'max-w-[1280px]'),
   HOMEPAGE_CTA: horizontalSlot('HOMEPAGE_CTA', 'max-w-[1280px]'),
   BROKER_LISTING: horizontalSlot('BROKER_LISTING', 'max-w-[1280px]'),
+  BROKER_LISTING_LOCAL: horizontalSlot('BROKER_LISTING_LOCAL', 'max-w-[1280px]'),
   BROKER_PROFILE_HEADER: horizontalSlot('BROKER_PROFILE_HEADER', 'max-w-[1280px]'),
   BROKER_LISTING_SIDEBAR: horizontalSlot('BROKER_LISTING_SIDEBAR', 'max-w-[320px]'),
   LOAN_CALCULATOR: horizontalSlot('LOAN_CALCULATOR', 'max-w-[970px]'),

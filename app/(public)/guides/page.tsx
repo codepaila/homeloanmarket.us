@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { BookOpen, TrendingUp, CreditCard, Home, Search } from 'lucide-react'
 import { AnimatedContainer } from '@/components/design/AnimatedContainer'
 import { Section } from '@/components/design/Section'
-import { AdvertisementRenderer } from '@/components/advertisements'
 
 const guides = [
   {
@@ -68,8 +67,6 @@ export default function GuidesPage() {
           </div>
         </AnimatedContainer>
       </Section>
-
-      <AdvertisementRenderer placement="BLOG_INLINE" />
 
       <Section className="bg-background">
         <AnimatedContainer>

@@ -9,6 +9,10 @@
     "lint": "eslint",
     "seed": "node --env-file-if-exists=.env --env-file-if-exists=.env.local node_modules/tsx/dist/cli.mjs prisma/seed/index.ts",
     "db:ensure-ownership-index": "npx tsx scripts/ensure-ownership-index.ts",
+    "db:ensure-user-phone-index": "npx tsx scripts/ensure-user-phone-index.ts",
+    "db:ensure-broker-registration-indexes": "npx tsx scripts/ensure-broker-registration-indexes.ts",
+    "db:ensure-broker-location-index": "npx tsx scripts/ensure-broker-location-index.ts",
+    "db:backfill-broker-locations": "npx tsx scripts/backfill-broker-locations.ts",
     "db:reconcile-subscription-plans": "npx tsx scripts/reconcile-subscription-plans.ts",
     "postinstall": "prisma generate",
     "webhooks": "stripe listen --forward-to localhost:3000/api/stripe/webhook"
@@ -55,6 +59,7 @@
     "stripe": "^20.3.0",
     "swr": "^2.4.0",
     "tailwind-merge": "^3.4.0",
+    "xlsx": "^0.18.5",
     "zod": "^4.3.6"
   },
   "devDependencies": {

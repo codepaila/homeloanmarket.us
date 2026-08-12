@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 const fields = [
   ['displayName', 'Display name', true],
   ['companyName', 'Company name', false],
+  ['nmls', 'NMLS', false],
   ['description', 'Description', true],
   ['phone', 'Phone', true],
   ['email', 'Profile email', false],

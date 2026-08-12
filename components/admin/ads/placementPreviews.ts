@@ -11,6 +11,7 @@ export type PlacementKey =
   | 'HOMEPAGE_BANKS'
   | 'HOMEPAGE_CTA'
   | 'BROKER_LISTING'
+  | 'BROKER_LISTING_LOCAL'
   | 'BROKER_PROFILE_HEADER'
   | 'BROKER_LISTING_SIDEBAR'
   | 'LOAN_CALCULATOR'
@@ -203,6 +204,30 @@ export const PLACEMENT_INFO: Record<PlacementKey, PlacementInfo> = {
     position: 'Between broker cards or at top of results',
     visibility: 'Desktop + Mobile',
     priority: 'Medium visibility',
+    icon: List,
+    specs: {
+      recommendedWidth: 800,
+      recommendedHeight: 200,
+      aspectRatio: '4:1',
+      maxFileSize: '3 MB',
+      formats: ['WebP', 'PNG', 'JPEG'],
+      quality: 'Medium',
+    },
+    backgroundOptions: [
+      { id: 'broker-light', label: 'Broker Listing (Light)', type: 'page', value: 'broker' },
+      { id: 'broker-dark', label: 'Broker Listing (Dark)', type: 'theme', value: 'dark' },
+      { id: 'light', label: 'Light Theme', type: 'theme', value: 'light' },
+      { id: 'dark', label: 'Dark Theme', type: 'theme', value: 'dark' },
+    ],
+  },
+  BROKER_LISTING_LOCAL: {
+    key: 'BROKER_LISTING_LOCAL',
+    label: 'Broker Listing Local Resources',
+    description: 'Location-targeted resources at the bottom of broker search results',
+    page: 'Broker Listing Page',
+    position: 'Bottom of broker search results',
+    visibility: 'Desktop + Mobile',
+    priority: 'Location eligible',
     icon: List,
     specs: {
       recommendedWidth: 800,

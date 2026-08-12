@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils'
 
 export const PLACEMENT_CATEGORIES: Record<string, { label: string; values: string[] }> = {
   HOMEPAGE: { label: 'Homepage', values: ['HOMEPAGE_HERO', 'HOMEPAGE_SEARCH', 'HOMEPAGE_FEATURED', 'HOMEPAGE_SERVICES', 'HOMEPAGE_BANKS', 'HOMEPAGE_CTA'] },
-  BROKER: { label: 'Broker Pages', values: ['BROKER_LISTING', 'BROKER_PROFILE_HEADER', 'BROKER_LISTING_SIDEBAR'] },
+  BROKER: { label: 'Broker Pages', values: ['BROKER_LISTING', 'BROKER_LISTING_LOCAL', 'BROKER_PROFILE_HEADER', 'BROKER_LISTING_SIDEBAR'] },
   FOOTER: { label: 'Footer', values: ['FOOTER'] },
   POPUP: { label: 'Popup', values: ['POPUP_OVERLAY'] },
   ANNOUNCEMENT: { label: 'Announcement', values: ['ANNOUNCEMENT_TOP', 'ANNOUNCEMENT_BOTTOM'] },

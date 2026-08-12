@@ -20,19 +20,26 @@ const PUBLIC_LAYOUT_CHAIN = [
   'components/layout/Footer.tsx',
 ]
 
-test('the public layout chain mounts FOOTER exactly once', () => {
+test('the public layout chain has no general public advertisement mounts', () => {
   const totalMounts = PUBLIC_LAYOUT_CHAIN
-    .map((file) => countPlacementMounts(read(file), 'FOOTER'))
+    .map((file) => ['ANNOUNCEMENT_TOP', 'ANNOUNCEMENT_BOTTOM', 'POPUP_OVERLAY', 'MOBILE_HEADER_BANNER', 'FOOTER']
+      .reduce((sum, placement) => sum + countPlacementMounts(read(file), placement), 0))
     .reduce((sum, count) => sum + count, 0)
-  assert.equal(totalMounts, 1, 'FOOTER must be mounted exactly once across the public layout chain (was double-mounted)')
+  assert.equal(totalMounts, 0, 'general public pages must not mount advertisements')
 })
 
-test('layout-chain placements are never double-mounted', () => {
+test('the broker listing keeps only the local-resource advertisement mount', () => {
+  const source = read('app/(public)/brokers/page.tsx')
+  assert.equal(countPlacementMounts(source, 'BROKER_LISTING'), 0)
+  assert.equal(countPlacementMounts(source, 'BROKER_LISTING_LOCAL'), 1)
+})
+
+test('general layout placements remain unmounted', () => {
   for (const placement of ['ANNOUNCEMENT_TOP', 'ANNOUNCEMENT_BOTTOM', 'POPUP_OVERLAY', 'MOBILE_HEADER_BANNER', 'FOOTER']) {
     const totalMounts = PUBLIC_LAYOUT_CHAIN
       .map((file) => countPlacementMounts(read(file), placement))
       .reduce((sum, count) => sum + count, 0)
-    assert.equal(totalMounts, 1, `${placement} must be mounted exactly once in the public layout chain`)
+    assert.equal(totalMounts, 0, `${placement} must not be mounted in the public layout chain`)
   }
 })
 

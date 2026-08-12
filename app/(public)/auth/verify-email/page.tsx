@@ -5,7 +5,7 @@ import { useState, useEffect, Suspense, useCallback } from 'react'
 import { motion } from 'motion/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { Mail, CheckCircle, XCircle, RefreshCw } from 'lucide-react'
+import { Mail, CheckCircle, XCircle } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { AuthFormWrapper } from '@/components/design/AuthFormWrapper'
 import { FormInput } from '@/components/design/FormInput'
@@ -34,9 +34,7 @@ function VerifyEmailContent() {
       if (data.success) {
         setVerificationStatus('success')
         toast.success('Email verified successfully!')
-        setTimeout(() => {
-          router.push(data.data?.redirectTo || '/')
-        }, 3000)
+        router.push(data.data?.redirectTo || '/')
       } else {
         setVerificationStatus('error')
         toast.error(data.error || 'Verification failed')
@@ -110,7 +108,7 @@ function VerifyEmailContent() {
           <div className="space-y-2">
             <h3 className="text-xl font-semibold text-text-main">Email Verified!</h3>
             <p className="text-sm text-text-muted">
-              Your email has been verified successfully. Redirecting to broker setup...
+              Your email has been verified successfully. Redirecting to plan selection...
             </p>
           </div>
         </motion.div>

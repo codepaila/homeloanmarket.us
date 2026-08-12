@@ -21,10 +21,11 @@ type AdminBroker = {
   phone: string
   email?: string | null
   officeAddress: string
-  city: string
-  state: string
-  pinCode: string
+  city: string | null
+  state: string | null
+  pinCode: string | null
   isVisible: boolean
+  verificationStatus: string
   claim?: { invitations: AdminInvitation[] } | null
 }
 
@@ -34,7 +35,7 @@ export default function AdminBrokerActions({ broker }: { broker: AdminBroker }) 
   const [message, setMessage] = useState('')
   const [claimLink, setClaimLink] = useState('')
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({ displayName: broker.displayName, companyName: broker.companyName || '', description: broker.description, phone: broker.phone, email: broker.email || '', officeAddress: broker.officeAddress, city: broker.city, state: broker.state, pinCode: broker.pinCode, isVisible: broker.isVisible })
+  const [form, setForm] = useState({ displayName: broker.displayName, companyName: broker.companyName || '', description: broker.description, phone: broker.phone, email: broker.email || '', officeAddress: broker.officeAddress, city: broker.city || '', state: broker.state || '', pinCode: broker.pinCode, isVisible: broker.isVisible, verificationStatus: broker.verificationStatus })
 
   async function updateProfile(event: React.FormEvent) {
     event.preventDefault()
@@ -62,6 +63,18 @@ export default function AdminBrokerActions({ broker }: { broker: AdminBroker }) 
     finally { setSaving(false) }
   }
 
+  async function resolveLocation() {
+    setSaving(true); setMessage('')
+    try {
+      const response = await fetch(`/api/admin/brokers/${broker.id}/location`, { method: 'POST' })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.message || 'Unable to resolve location')
+      setMessage('Location resolved and saved.')
+      router.refresh()
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to resolve location') }
+    finally { setSaving(false) }
+  }
+
   async function revokeInvitation(id: string) {
     setSaving(true); setMessage('')
     try {
@@ -80,13 +93,15 @@ export default function AdminBrokerActions({ broker }: { broker: AdminBroker }) 
       <form onSubmit={updateProfile} className="space-y-4 rounded-xl border bg-card p-6">
         <h2 className="text-xl font-semibold">Profile details</h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          {(['displayName', 'companyName', 'phone', 'email', 'officeAddress', 'city', 'state', 'pinCode'] as const).map((field) => <label key={field} className="space-y-1"><span className="text-sm font-medium">{field}</span><input value={form[field]} onChange={(event) => setForm({ ...form, [field]: event.target.value })} className="w-full rounded-lg border bg-background px-3 py-2" /></label>)}
+          {(['displayName', 'companyName', 'phone', 'email', 'officeAddress', 'city', 'state', 'pinCode'] as const).map((field) => <label key={field} className="space-y-1"><span className="text-sm font-medium">{field}</span><input value={form[field] || ''} onChange={(event) => setForm({ ...form, [field]: event.target.value })} className="w-full rounded-lg border bg-background px-3 py-2" /></label>)}
         </div>
         <label className="block space-y-1"><span className="text-sm font-medium">Description</span><textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className="min-h-28 w-full rounded-lg border bg-background px-3 py-2" /></label>
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.verificationStatus === 'VERIFIED'} onChange={(event) => setForm({ ...form, verificationStatus: event.target.checked ? 'VERIFIED' : 'UNVERIFIED' })} /> Mark profile verified after review</label>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.isVisible} onChange={(event) => setForm({ ...form, isVisible: event.target.checked })} /> Publish profile after review</label>
         <button disabled={saving} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">Save profile</button>
       </form>
       <div className="space-y-4 rounded-xl border bg-card p-6">
+        <div className="border-b pb-4"><h2 className="text-xl font-semibold">Location</h2><p className="mt-1 text-sm text-muted-foreground">Resolve the stored office address before enabling radius search.</p><button type="button" disabled={saving} onClick={resolveLocation} className="mt-3 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-primary disabled:opacity-50">Resolve Location</button></div>
         <h2 className="text-xl font-semibold">Claim readiness</h2>
         <p className="text-sm text-muted-foreground">The profile remains unowned. Sending an invitation does not complete ownership.</p>
         <input type="email" value={deliveryEmail} onChange={(event) => setDeliveryEmail(event.target.value)} placeholder="Company delivery email" className="w-full rounded-lg border bg-background px-3 py-2" />

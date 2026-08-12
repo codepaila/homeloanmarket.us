@@ -8,6 +8,7 @@ export const PLACEMENT_KEY_MAP: Record<string, string> = {
   'homepage-banks': 'HOMEPAGE_BANKS',
   'homepage-cta': 'HOMEPAGE_CTA',
   'broker-listing': 'BROKER_LISTING',
+  'broker-listing-local': 'BROKER_LISTING_LOCAL',
   'broker-profile-header': 'BROKER_PROFILE_HEADER',
   'broker-listing-sidebar': 'BROKER_LISTING_SIDEBAR',
   'loan-calculator': 'LOAN_CALCULATOR',
@@ -21,7 +22,7 @@ export const PLACEMENT_KEY_MAP: Record<string, string> = {
 
 export const PLACEMENT_ENUM_VALUES = [
   'HOMEPAGE_HERO', 'HOMEPAGE_SEARCH', 'HOMEPAGE_FEATURED', 'HOMEPAGE_SERVICES',
-  'HOMEPAGE_BANKS', 'HOMEPAGE_CTA', 'BROKER_LISTING', 'BROKER_PROFILE_HEADER',
+  'HOMEPAGE_BANKS', 'HOMEPAGE_CTA', 'BROKER_LISTING', 'BROKER_LISTING_LOCAL', 'BROKER_PROFILE_HEADER',
   'BROKER_LISTING_SIDEBAR', 'LOAN_CALCULATOR', 'BLOG_INLINE', 'FOOTER',
   'ANNOUNCEMENT_TOP', 'ANNOUNCEMENT_BOTTOM', 'POPUP_OVERLAY', 'MOBILE_HEADER_BANNER',
 ] as const

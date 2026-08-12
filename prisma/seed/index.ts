@@ -33,7 +33,7 @@ function validateSeedCreative(placement: string, format: AdvertisementFormat, wi
 }
 
 type SeedUser = { id: string; email: string; role: string; name: string }
-type SeedBroker = { id: string; profileSlug: string; userId: string | null; city: string; state: string; isVisible: boolean; verificationStatus: VerificationStatus; brokerStatus: BrokerStatus; user?: { isActive: boolean } | null }
+type SeedBroker = { id: string; profileSlug: string; userId: string | null; city: string | null; state: string | null; isVisible: boolean; verificationStatus: VerificationStatus; brokerStatus: BrokerStatus; user?: { isActive: boolean } | null }
 
 type BrokerSpec = {
   key: string
@@ -250,7 +250,7 @@ async function seedReviewsAndContacts(brokers: SeedBroker[], users: Record<strin
 
   let contactIndex = 0
   for (const broker of publicBrokers.slice(0, 6)) {
-    const message = contactTexts[contactIndex % contactTexts.length].replace('{city}', broker.city)
+    const message = contactTexts[contactIndex % contactTexts.length].replace('{city}', broker.city || '')
     const reviewer = users[userSpecs[contactIndex % userSpecs.length].key]
     const contactData = {
         brokerId: broker.id,

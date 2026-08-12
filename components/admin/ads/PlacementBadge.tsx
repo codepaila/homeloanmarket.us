@@ -11,6 +11,7 @@ const placementLabels: Record<string, string> = {
   HOMEPAGE_BANKS: 'Home Banks',
   HOMEPAGE_CTA: 'Home CTA',
   BROKER_LISTING: 'Broker Listing',
+  BROKER_LISTING_LOCAL: 'Broker Listing Local Resources',
   BROKER_PROFILE_HEADER: 'Broker Profile Header',
   BROKER_LISTING_SIDEBAR: 'Broker Listing Sidebar',
   LOAN_CALCULATOR: 'Loan Calculator',

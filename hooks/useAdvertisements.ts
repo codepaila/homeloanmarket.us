@@ -17,11 +17,14 @@ const fetcher = async (url: string) => {
   } satisfies PublicAdsResponse
 }
 
-export function usePublicAd(placement: string, limit: number = 1) {
+export function usePublicAd(placement: string, limit: number = 1, location?: { latitude: number; longitude: number; token?: string }) {
   const placementKey = placement.toLowerCase().replace(/_/g, '-')
+  const locationQuery = location ? `&latitude=${encodeURIComponent(location.latitude)}&longitude=${encodeURIComponent(location.longitude)}${location.token ? `&locationToken=${encodeURIComponent(location.token)}` : ''}` : ''
 
   const { data, error, isLoading, mutate } = useSWR(
-    `${baseUrl}/api/ads/public?placement=${encodeURIComponent(placementKey)}&limit=${limit}`,
+    placement === 'BROKER_LISTING_LOCAL' && !location
+      ? null
+      : `${baseUrl}/api/ads/public?placement=${encodeURIComponent(placementKey)}&limit=${limit}${locationQuery}`,
     fetcher,
     {
       revalidateOnFocus: false,

@@ -47,7 +47,7 @@ export function RecentBrokers({ brokers }: { brokers: RecentBroker[] }) {
         <Row
           key={`${broker.displayName}-${index}`}
           primary={broker.companyName || broker.displayName}
-          detail={`${broker.city}, ${broker.state}`}
+          detail={[broker.city, broker.state].filter(Boolean).join(', ') || 'Location not provided'}
           meta={`${broker.brokerStatus} · ${dateLabel(broker.createdAt)}`}
         />
       ))}

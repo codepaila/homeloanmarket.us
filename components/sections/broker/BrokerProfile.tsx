@@ -165,7 +165,7 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
                   <div>
                     <p className="text-sm text-muted-foreground">Office Address</p>
                     <p className="font-medium">
-                      {broker?.officeAddress ? `${broker.officeAddress}, ${broker.city}` : "Not provided"}
+                      {broker?.officeAddress ? [broker.officeAddress, broker.city, broker.state].filter(Boolean).join(', ') : "Not provided"}
                     </p>
                   </div>
                 </div>

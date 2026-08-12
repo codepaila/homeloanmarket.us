@@ -47,6 +47,7 @@ import { toast } from 'react-hot-toast'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import ImageUpload from '@/components/ImageUpload'
+import { USLocationPicker, type SelectedUSLocation } from '@/components/location/USLocationPicker'
 
 // Step 1 Schema - Basic Information
 const basicInfoSchema = z.object({
@@ -67,6 +68,15 @@ const contactInfoSchema = z.object({
   city: z.string().min(2, 'City must be at least 2 characters'),
   state: z.string().min(2, 'State must be at least 2 characters'),
   zipCode: z.string().length(5, 'ZIP Code must be 5 digits'),
+  location: z.object({
+    placeId: z.string().optional(),
+    normalizedAddress: z.string(),
+    city: z.string(),
+    state: z.string(),
+    zip: z.string(),
+    latitude: z.number(),
+    longitude: z.number(),
+  }).optional(),
 })
 
 // Step 3 Schema - Professional Details
@@ -110,12 +120,14 @@ const steps = [
 
 interface BrokerSetupWizardProps {
   user: any
+  initialData?: Partial<FormData>
+  initialStep?: number
 }
 
-export function BrokerSetupWizard({ user }: BrokerSetupWizardProps) {
+export function BrokerSetupWizard({ user, initialData = {}, initialStep = 1 }: BrokerSetupWizardProps) {
   const router = useRouter()
   const { update: refreshSession } = useSession()
-  const [currentStep, setCurrentStep] = useState(1)
+  const [currentStep, setCurrentStep] = useState(initialStep)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadedDocs, setUploadedDocs] = useState<Record<string, { name: string; url: string }>>({})
   const [newSpec, setNewSpec] = useState('')
@@ -188,7 +200,8 @@ export function BrokerSetupWizard({ user }: BrokerSetupWizardProps) {
       officeAddress: '',
       city: '',
       state: '',
-      zipCode: '',
+       zipCode: '',
+       location: undefined,
       experienceYears: 0,
        specializations: ['Home Purchase'],
       serviceCities: [],
@@ -200,6 +213,7 @@ export function BrokerSetupWizard({ user }: BrokerSetupWizardProps) {
       panCard: '',
       aadhaarCard: '',
       addressProof: '',
+      ...initialData,
     }
   })
 
@@ -260,7 +274,18 @@ export function BrokerSetupWizard({ user }: BrokerSetupWizardProps) {
     }
 
     if (isValid && currentStep < steps.length) {
-      setCurrentStep(prev => prev + 1)
+      try {
+        const response = await fetch('/api/broker-registration/onboarding', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...form.getValues(), currentStep: currentStep + 1 }),
+        })
+        const result = await response.json()
+        if (!response.ok) throw new Error(result.error || 'Unable to save onboarding progress')
+        setCurrentStep(prev => prev + 1)
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Unable to save onboarding progress')
+      }
     }
   }
 
@@ -314,6 +339,7 @@ export function BrokerSetupWizard({ user }: BrokerSetupWizardProps) {
         city: data.city,
         state: data.state,
         zipCode: data.zipCode,
+        location: data.location,
         experienceYears: data.experienceYears,
         specializations: data.specializations,
         serviceCities: data.serviceCities,
@@ -344,7 +370,6 @@ export function BrokerSetupWizard({ user }: BrokerSetupWizardProps) {
       await refreshSession()
 
       router.push('/broker/dashboard')
-      router.refresh()
 
     } catch (error: any) {
       toast.error(error.message)
@@ -687,6 +712,30 @@ function Step2ContactInfo({ form }: any) {
     <div className="space-y-6">
       <div className="space-y-4">
         <h3 className="text-lg font-medium">Contact Information</h3>
+
+        <FormField
+          control={form.control}
+          name="location"
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <USLocationPicker
+                  value={field.value as SelectedUSLocation | undefined}
+                  onChange={(location) => {
+                    field.onChange(location)
+                    if (location) {
+                      form.setValue('officeAddress', location.normalizedAddress)
+                      form.setValue('city', location.city)
+                      form.setValue('state', location.state)
+                      form.setValue('zipCode', location.zip)
+                    }
+                  }}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         
         <div className="grid gap-4 md:grid-cols-2">
           <FormField

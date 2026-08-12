@@ -5,31 +5,50 @@ import { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { BrokerSetupWizard } from '@/components/sections/broker/BrokerSetupWizard'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Loader2, Shield, Building, Users, CheckCircle } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import { Loader2, Building, Users, CheckCircle } from 'lucide-react'
 
 export default function BrokerSetupPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const [initialData, setInitialData] = useState<Record<string, unknown>>({})
+  const [initialStep, setInitialStep] = useState(1)
 
   useEffect(() => {
     if (status === 'loading') return
 
-    if (!session) {
+    if (status === 'unauthenticated') {
       router.push('/auth/signin')
       return
     }
 
-    // Check if user is already a broker
-    if (session.user?.role === 'BROKER' && session.user.brokerProfile) {
-      router.push('/broker/dashboard')
-      return
-    }
+    let active = true
+    fetch('/api/broker-registration/status')
+      .then(async (response) => {
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error || 'Broker registration is not available')
+        if (!active) return
+        if (data.completed) {
+          router.push(data.redirectTo || '/broker/dashboard')
+          return
+        }
+        if (data.subscription?.status !== 'ACTIVE' || !data.subscription?.isActive) {
+          router.push('/broker/subscription/select')
+          return
+        }
+        setInitialData(data.draft?.data && typeof data.draft.data === 'object' ? data.draft.data : {})
+        setInitialStep(Number.isInteger(data.draft?.currentStep) ? data.draft.currentStep : 1)
+        setLoading(false)
+      })
+      .catch(() => {
+        if (active) router.push('/register')
+      })
 
-    setLoading(false)
-  }, [session, status, router])
+    return () => {
+      active = false
+    }
+  }, [status, router])
 
   if (loading) {
     return (
@@ -95,7 +114,7 @@ export default function BrokerSetupPage() {
         </div>
 
         {/* Setup Wizard */}
-        <BrokerSetupWizard user={session?.user} />
+         <BrokerSetupWizard user={session?.user} initialData={initialData} initialStep={initialStep} />
       </div>
     </div>
   )

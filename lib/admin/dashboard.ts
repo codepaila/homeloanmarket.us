@@ -41,8 +41,8 @@ export type RecentUser = {
 export type RecentBroker = {
   displayName: string
   companyName: string | null
-  city: string
-  state: string
+  city: string | null
+  state: string | null
   brokerStatus: string
   createdAt: string
 }

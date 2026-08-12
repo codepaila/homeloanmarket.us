@@ -31,7 +31,6 @@ import { BrokerGridCard } from '@/components/brokers'
 import { BrokerAvatar } from '@/components/brokers/BrokerAvatar'
 import { PremiumButton } from '@/components/design/PremiumButton'
 import { cn } from '@/lib/utils'
-import { AdvertisementRenderer } from '@/components/advertisements'
 
 interface BrokerDetailClientProps {
   brokerSlug: string
@@ -255,8 +254,6 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
             Read Reviews
           </button>
         </div>
-
-        <AdvertisementRenderer placement="BROKER_PROFILE_HEADER" className="mt-6 mb-2" />
 
         {/* Main Content Layout */}
         <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">

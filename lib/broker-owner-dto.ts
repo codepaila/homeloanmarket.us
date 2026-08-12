@@ -33,9 +33,9 @@ type BrokerOwnerSource = {
   email: string | null
   website: string | null
   officeAddress: string
-  city: string
-  state: string
-  pinCode: string
+  city: string | null
+  state: string | null
+  pinCode: string | null
   experienceYears: number
   specializations: string[]
   serviceCities: string[]

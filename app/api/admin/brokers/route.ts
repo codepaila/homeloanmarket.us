@@ -27,6 +27,7 @@ export async function GET(request: Request) {
       { displayName: { contains: search, mode: 'insensitive' } },
       { companyName: { contains: search, mode: 'insensitive' } },
       { profileSlug: { contains: search, mode: 'insensitive' } },
+      { nmls: { contains: search, mode: 'insensitive' } },
     ]
   }
   if (ownership === 'UNOWNED') where.userId = null

@@ -18,10 +18,6 @@ export async function sendBrokerRegistrationEmails(userId: string) {
             throw new Error('User not found')
         }
 
-        if (!user.brokerProfile) {
-            throw new Error('Broker profile not found')
-        }
-
         // Generate verification token
         const rawToken = crypto.randomBytes(32).toString("hex")
         const hashedToken = crypto
@@ -58,9 +54,10 @@ export async function sendBrokerRegistrationEmails(userId: string) {
             idempotencyKey: `${idempotencyKey}_broker`
         })
 
-        // 2. Send notification to admin (if configured)
+        // A profile is created after subscription and onboarding. The admin
+        // notification is therefore deferred until that profile exists.
         let adminEmailResult = null
-        if (process.env.ADMIN_EMAIL) {
+        if (process.env.ADMIN_EMAIL && user.brokerProfile) {
             const adminTemplate = emailTemplates.adminNewBroker(user, user.brokerProfile)
 
             adminEmailResult = await sendEmail({

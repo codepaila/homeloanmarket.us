@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/currentUser"
 import { AdvertisementService } from "@/lib/advertisements/services"
 import { UpdateAdSchema } from "@/lib/advertisements/validation"
 import { serializeAdvertisement } from "@/lib/admin/advertisement-dto"
+import { resolveAdvertisementTarget } from '@/lib/location/advertisement-target'
 
 export async function GET(
   request: NextRequest,
@@ -71,7 +72,20 @@ export async function PUT(
       )
     }
 
-    const ad = await AdvertisementService.update(id, parsed.data as Record<string, unknown>)
+    const existing = await AdvertisementService.getById(id)
+    if (!existing) return NextResponse.json({ success: false, error: "Advertisement not found" }, { status: 404 })
+    const nextPlacement = parsed.data.placement || existing.placement
+    if (nextPlacement === 'BROKER_LISTING_LOCAL' && parsed.data.locationTarget === undefined && !existing.locationTarget) {
+      return NextResponse.json({ success: false, error: 'A location target is required for local broker-listing ads' }, { status: 422 })
+    }
+    if (parsed.data.locationTarget && nextPlacement !== 'BROKER_LISTING_LOCAL') {
+      return NextResponse.json({ success: false, error: 'Location targets are only supported on local broker-listing ads' }, { status: 422 })
+    }
+    const locationTarget = parsed.data.locationTarget
+      ? await resolveAdvertisementTarget(parsed.data.locationTarget)
+      : parsed.data.locationTarget
+
+    const ad = await AdvertisementService.update(id, { ...parsed.data, locationTarget } as Record<string, unknown>)
 
     return NextResponse.json({
       success: true,

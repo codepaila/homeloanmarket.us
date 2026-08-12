@@ -22,6 +22,7 @@ const PLACEMENT_OPTIONS = [
   { value: 'HOMEPAGE_BANKS', label: 'Home Banks' },
   { value: 'HOMEPAGE_CTA', label: 'Home CTA' },
   { value: 'BROKER_LISTING', label: 'Broker Listing' },
+  { value: 'BROKER_LISTING_LOCAL', label: 'Broker Listing Local Resources' },
   { value: 'BROKER_PROFILE_HEADER', label: 'Broker Profile Header' },
   { value: 'BROKER_LISTING_SIDEBAR', label: 'Broker Listing Sidebar' },
   { value: 'LOAN_CALCULATOR', label: 'Loan Calculator' },

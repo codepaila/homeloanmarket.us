@@ -8,6 +8,9 @@ import { VerificationStatus, BrokerStatus } from '@prisma/client'
 import { hasPaidEntitlement } from '@/lib/broker-policy'
 import { toPublicBrokerRecord } from '@/lib/public-broker'
 import { createBrokerForExistingUser } from '@/lib/broker-registration'
+import { findBrokerIdsWithinRadius } from '@/lib/location/broker-geo'
+import { resolveUSPlace } from '@/lib/location/google-place'
+import { verifySearchLocationToken } from '@/lib/location/search-token'
 
 export async function GET(request: Request) {
   try {
@@ -17,6 +20,7 @@ export async function GET(request: Request) {
     const skip = TABLE_ROW_PAGE * (page - 1)
     
     const city = searchParams.get('city')
+    const state = searchParams.get('state')
     const zip = searchParams.get('zip')
     const specialization = searchParams.get('specialization')
     const minRating = searchParams.get('minRating')
@@ -25,11 +29,19 @@ export async function GET(request: Request) {
     const minExperience = searchParams.get('minExperience')
     const language = searchParams.get('language')
     const search = searchParams.get('search') || searchParams.get('q')
+    const latitudeParam = searchParams.get('latitude')
+    const longitudeParam = searchParams.get('longitude')
+    const radiusParam = searchParams.get('radius')
+    const locationCity = searchParams.get('locationCity')
+    const locationState = searchParams.get('locationState')
+    const locationZip = searchParams.get('locationZip')
+    const locationToken = searchParams.get('locationToken')
 
     const where: any = {}
 
     // Apply filters based on your Prisma schema
     if (city) where.serviceCities = { has: city }
+    if (state) where.state = { contains: state, mode: 'insensitive' }
     if (zip) where.pinCode = { contains: zip, mode: 'insensitive' }
     if (specialization) where.specializations = { has: specialization }
     if (minRating) where.avgRating = { gte: parseFloat(minRating) }
@@ -67,11 +79,56 @@ export async function GET(request: Request) {
       ]
     }
 
+    const hasAnyCoordinate = latitudeParam !== null || longitudeParam !== null || radiusParam !== null || locationToken !== null
+    let verifiedLocation
+    if (hasAnyCoordinate) {
+      if (!locationToken) return NextResponse.json({ message: 'A server-validated search location is required' }, { status: 400 })
+      try {
+        verifiedLocation = verifySearchLocationToken(locationToken)
+      } catch {
+        return NextResponse.json({ message: 'Invalid or expired search location' }, { status: 400 })
+      }
+    }
+    const latitude = verifiedLocation?.latitude ?? (latitudeParam === null ? null : Number(latitudeParam))
+    const longitude = verifiedLocation?.longitude ?? (longitudeParam === null ? null : Number(longitudeParam))
+    const radius = radiusParam === null ? 0 : Number(radiusParam)
+    if (hasAnyCoordinate && (!verifiedLocation || !Number.isFinite(latitude) || !Number.isFinite(longitude) || !Number.isFinite(radius) || radius < 0 || radius > 100)) {
+      return NextResponse.json({ message: 'Valid location coordinates and a radius from 0 to 100 are required' }, { status: 400 })
+    }
+
+    if (radius === 0) {
+      if (!city && (locationCity || verifiedLocation?.city)) where.serviceCities = { has: locationCity || verifiedLocation?.city }
+      if (!state && (locationState || verifiedLocation?.state)) where.state = { contains: locationState || verifiedLocation?.state, mode: 'insensitive' }
+      if (!zip && (locationZip || verifiedLocation?.zip)) where.pinCode = { contains: locationZip || verifiedLocation?.zip, mode: 'insensitive' }
+    }
+
+    const geoResult = radius > 0
+      ? await findBrokerIdsWithinRadius({
+          latitude: latitude!,
+          longitude: longitude!,
+          radiusMiles: radius,
+          page,
+          take,
+          city,
+          state,
+          zip,
+          specialization,
+          minRating: minRating ? parseFloat(minRating) : null,
+          minExperience: minExperience ? parseInt(minExperience) : null,
+          language,
+          search,
+          featuredOnly: brokerStatus === 'FEATURED',
+          verificationStatus,
+          brokerStatus,
+          admin: currentUser?.role === 'ADMIN',
+        })
+      : null
+
     const [brokers, total] = await Promise.all([
       prisma.broker.findMany({
-        skip,
-        take,
-        where,
+        skip: geoResult ? 0 : skip,
+        take: geoResult ? Math.max(geoResult.ids.length, 1) : take,
+        where: geoResult ? { ...where, id: { in: geoResult.ids } } : where,
         include: {
           user: {
             select: {
@@ -116,10 +173,13 @@ export async function GET(request: Request) {
           { experienceYears: 'desc' }
         ]
       }),
-      prisma.broker.count({ where })
+      geoResult ? Promise.resolve(geoResult.total) : prisma.broker.count({ where })
     ])
 
-    const publicBrokers = brokers.map((broker) => {
+    const orderedBrokers = geoResult
+      ? [...brokers].sort((a, b) => geoResult.ids.indexOf(a.id) - geoResult.ids.indexOf(b.id))
+      : brokers
+    const publicBrokers = orderedBrokers.map((broker) => {
       const canShowContact = hasPaidEntitlement(broker.subscription)
       return {
         ...toPublicBrokerRecord(broker, { includeContact: canShowContact }),
@@ -154,6 +214,19 @@ export async function POST(request: Request) {
       )
     }
 
+    if (currentUser.role !== 'BROKER' || !currentUser.brokerRegistration) {
+      return NextResponse.json(
+        { message: 'Broker registration intent is required' },
+        { status: 403 }
+      )
+    }
+    if (currentUser.brokerRegistration.subscription?.status !== 'ACTIVE' || !currentUser.brokerRegistration.subscription.isActive) {
+      return NextResponse.json(
+        { message: 'An active broker subscription is required before onboarding' },
+        { status: 409 }
+      )
+    }
+
     // Check if user is already a broker
     const existingBroker = await prisma.broker.findUnique({
       where: { userId: currentUser.id }
@@ -170,6 +243,19 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
+
+    let resolvedLocation
+    if (currentUser.brokerRegistration) {
+      const placeId = body.location && typeof body.location.placeId === 'string' ? body.location.placeId : ''
+      if (!placeId) {
+        return NextResponse.json({ message: 'A validated US office location is required' }, { status: 400 })
+      }
+      try {
+        resolvedLocation = await resolveUSPlace(placeId)
+      } catch (error) {
+        return NextResponse.json({ message: error instanceof Error ? error.message : 'Office location could not be validated' }, { status: 400 })
+      }
+    }
 
     // The onboarding wizard submits the postal code as `zipCode`; the canonical
     // schema field is `pinCode`. Accept either input and map to `pinCode`.
@@ -213,6 +299,7 @@ export async function POST(request: Request) {
       serviceCities: body.serviceCities || [],
       languages: body.languages || ['English', 'Hindi'],
       bankPartnerships: Array.isArray(body.bankPartnerships) ? body.bankPartnerships : [],
+      location: resolvedLocation,
     })
 
     return NextResponse.json({
@@ -237,6 +324,12 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { message: error.message, error: 'SUBSCRIPTION_LIMIT' },
         { status: 403 }
+      )
+    }
+    if (error?.name === 'BrokerSubscriptionRequiredError') {
+      return NextResponse.json(
+        { message: error.message },
+        { status: 409 }
       )
     }
     console.error('POST /api/brokers error:', error)

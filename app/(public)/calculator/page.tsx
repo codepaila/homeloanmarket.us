@@ -7,7 +7,6 @@ import { AnimatedContainer } from '@/components/design/AnimatedContainer'
 import { Section } from '@/components/design/Section'
 import { StatCard } from '@/components/design/StatCard'
 import { cn } from '@/lib/utils'
-import { AdvertisementRenderer } from '@/components/advertisements'
 
 export default function CalculatorPage() {
   const [loanAmount, setLoanAmount] = useState(300000)
@@ -249,9 +248,6 @@ export default function CalculatorPage() {
           </div>
         </AnimatedContainer>
 
-        <div className="mt-12">
-          <AdvertisementRenderer placement="LOAN_CALCULATOR" />
-        </div>
       </Section>
     </div>
   )

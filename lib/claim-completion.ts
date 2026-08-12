@@ -27,9 +27,14 @@ export async function completeClaimForUser(context: ClaimContext, userId: string
 
     const user = await tx.user.findUnique({
       where: { id: userId },
-      include: { brokerProfile: { select: { id: true } }, accounts: { select: { provider: true } } },
+      include: {
+        brokerProfile: { select: { id: true } },
+        accounts: { select: { provider: true } },
+        companyMemberships: { where: { isActive: true }, select: { id: true } },
+      },
     })
     if (!user || !user.isActive || user.role === 'ADMIN') throw new ClaimFlowError('INELIGIBLE')
+    if (user.companyMemberships.length > 0) throw new ClaimFlowError('INELIGIBLE')
 
     const googleReauthenticated = context.reauthenticatedVia === 'google' &&
       user.accounts.some((account) => account.provider === 'google')

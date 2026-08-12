@@ -7,6 +7,7 @@ import { BrokerDashboard } from '@/components/sections/broker/BrokerDashboard'
 import { hasPaidEntitlement } from '@/lib/broker-policy'
 import { roleHome } from '@/lib/auth-redirect'
 import { toBrokerOwnerDto } from '@/lib/broker-owner-dto'
+import { isBrokerSetupComplete } from '@/lib/broker-onboarding-state'
 
 export default async function BrokerPage() {
   const user = await getCurrentUser()
@@ -20,7 +21,11 @@ export default async function BrokerPage() {
   }
 
   // Check if user has broker profile
-  if (!user.brokerProfile) {
+  if (!isBrokerSetupComplete(user)) {
+    const registrationSubscription = user.brokerRegistration?.subscription
+    if (user.brokerRegistration && (!registrationSubscription?.isActive || registrationSubscription.status !== 'ACTIVE')) {
+      redirect('/broker/subscription/select')
+    }
     redirect('/setup')
   }
 

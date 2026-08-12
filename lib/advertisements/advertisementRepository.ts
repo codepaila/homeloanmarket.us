@@ -56,6 +56,7 @@ export class AdvertisementRepository {
           desktopMedia: true,
           mobileMedia: true,
           creatives: { include: { mediaAsset: true } },
+          locationTarget: true,
         },
         skip,
         take: limit,
@@ -84,6 +85,7 @@ export class AdvertisementRepository {
         desktopMedia: true,
         mobileMedia: true,
         creatives: { include: { mediaAsset: true } },
+        locationTarget: true,
         createdBy: { select: { id: true, name: true, email: true } },
         updatedBy: { select: { id: true, name: true, email: true } },
       },
@@ -99,6 +101,7 @@ export class AdvertisementRepository {
         desktopMedia: true,
         mobileMedia: true,
         creatives: { include: { mediaAsset: true } },
+        locationTarget: true,
       },
     })
     if (!ad) return null
@@ -128,9 +131,21 @@ export class AdvertisementRepository {
   showDesktop?: boolean
   showTablet?: boolean
   showMobile?: boolean
-  internalNotes?: string
-  isDismissible?: boolean
-  createdById: string
+   internalNotes?: string
+   isDismissible?: boolean
+   companyId?: string | null
+   locationTarget?: {
+     locationLabel: string
+     countryCode: string
+     city?: string
+     state?: string
+     zip?: string
+     googlePlaceId?: string
+     latitude: number
+     longitude: number
+     radiusMiles: number
+   }
+   createdById: string
   }): Promise<Advertisement> {
     const ad = await prisma.advertisement.create({
       data: {
@@ -160,11 +175,15 @@ export class AdvertisementRepository {
         isDismissible: data.isDismissible ?? false,
         createdById: data.createdById,
         updatedById: data.createdById,
+        companyId: data.companyId ?? undefined,
+        ...(data.locationTarget ? { locationTarget: { create: data.locationTarget } } : {}),
       },
       include: {
         desktopMedia: true,
         mobileMedia: true,
         creatives: { include: { mediaAsset: true } },
+        locationTarget: true,
+        company: true,
       },
     })
     return ad as unknown as Advertisement
@@ -311,12 +330,30 @@ export class AdvertisementRepository {
         showMobile: original.showMobile,
         internalNotes: original.internalNotes,
         isDismissible: original.isDismissible,
+        ...(original.locationTarget ? {
+          locationTarget: {
+            create: {
+              locationLabel: original.locationTarget.locationLabel,
+              countryCode: original.locationTarget.countryCode,
+              city: original.locationTarget.city,
+              state: original.locationTarget.state,
+              zip: original.locationTarget.zip,
+              googlePlaceId: original.locationTarget.googlePlaceId,
+              latitude: original.locationTarget.latitude,
+              longitude: original.locationTarget.longitude,
+              radiusMiles: original.locationTarget.radiusMiles,
+            },
+          },
+        } : {}),
+        companyId: original.companyId ?? undefined,
         createdById: data.createdById,
         updatedById: data.createdById,
       },
       include: {
         desktopMedia: true,
         mobileMedia: true,
+        locationTarget: true,
+        company: true,
       },
     })
     return ad as unknown as Advertisement
@@ -326,7 +363,8 @@ export class AdvertisementRepository {
     placement: string,
     device: DeviceType,
     limit: number = 1,
-    now: Date = new Date()
+    now: Date = new Date(),
+    location?: { latitude: number; longitude: number },
   ): Promise<PublicAdResponse[]> {
     const where: any = {
       isEnabled: true,
@@ -358,6 +396,8 @@ export class AdvertisementRepository {
           where: { mediaAsset: { isDeleted: false } },
           include: { mediaAsset: { select: { fileUrl: true, thumbnailUrl: true, altText: true, width: true, height: true } } },
         },
+        locationTarget: true,
+        company: { select: { status: true, subscription: { select: { isActive: true } } } },
       },
       take: 100,
       orderBy: [
@@ -367,8 +407,26 @@ export class AdvertisementRepository {
       ],
     })
 
+    const distanceMiles = (latitude: number, longitude: number, targetLatitude: number, targetLongitude: number) => {
+      const radians = (value: number) => value * Math.PI / 180
+      const deltaLat = radians(targetLatitude - latitude)
+      const deltaLng = radians(targetLongitude - longitude)
+      const a = Math.sin(deltaLat / 2) ** 2 + Math.cos(radians(latitude)) * Math.cos(radians(targetLatitude)) * Math.sin(deltaLng / 2) ** 2
+      return 3958.7613 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    }
+
     return ads
-      .filter((ad) => (!ad.startDate || ad.startDate <= now) && (!ad.endDate || ad.endDate >= now))
+      .filter((ad) => {
+        if (ad.startDate && ad.startDate > now) return false
+        if (ad.endDate && ad.endDate < now) return false
+        if (placement === 'BROKER_LISTING_LOCAL') {
+          if (!location || !ad.locationTarget || ad.locationTarget.countryCode !== 'US') return false
+          if (!ad.companyId || ad.company?.status !== 'ACTIVE' || !ad.company.subscription?.isActive) return false
+          if (!ad.creatives.some((creative) => creative.format === 'SQUARE')) return false
+          return distanceMiles(location.latitude, location.longitude, ad.locationTarget.latitude, ad.locationTarget.longitude) <= ad.locationTarget.radiusMiles
+        }
+        return true
+      })
       .slice(0, limit)
       .map(ad => {
       const resolved = resolveAdvertisementCreative({

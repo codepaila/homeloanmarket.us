@@ -313,6 +313,19 @@ export class SubscriptionService {
     })
 
     if (!subscription) {
+      const registrationSubscription = await this.updateRegistrationSubscriptionFromStripe(
+        stripeCustomerId,
+        stripeSubscriptionId,
+        status,
+        planId,
+      )
+      if (registrationSubscription) return registrationSubscription as any
+      const companySubscription = await this.updateCompanySubscriptionFromStripe(
+        stripeCustomerId,
+        stripeSubscriptionId,
+        status,
+      )
+      if (companySubscription) return companySubscription as any
       throw new Error('Broker subscription not found')
     }
     if (subscription.stripeSubId && subscription.stripeSubId !== stripeSubscriptionId) {
@@ -348,6 +361,68 @@ export class SubscriptionService {
     await this.applySubscriptionFeatures(subscription.brokerId)
 
     return updatedSubscription
+  }
+
+  static async updateRegistrationSubscriptionFromStripe(
+    stripeCustomerId: string,
+    stripeSubscriptionId: string,
+    status: string,
+    planId?: string,
+  ) {
+    const registrationSubscription = await prisma.brokerRegistrationSubscription.findFirst({
+      where: { stripeCustomerId },
+      include: { registration: true },
+    })
+    if (!registrationSubscription) return null
+
+    const isActive = status === 'active' || status === 'trialing'
+    const plan = getPlanForStripePrice(planId)
+    const registrationStatus = isActive ? 'ONBOARDING_IN_PROGRESS' : registrationSubscription.registration.status
+    const updated = await prisma.$transaction(async (tx) => {
+      const result = await tx.brokerRegistrationSubscription.update({
+        where: { id: registrationSubscription.id },
+        data: {
+          plan,
+          status: isActive ? 'ACTIVE' : status === 'canceled' ? 'CANCELED' : 'EXPIRED',
+          isActive,
+          stripeSubId: stripeSubscriptionId,
+          startDate: isActive ? new Date() : registrationSubscription.startDate,
+          endDate: isActive ? null : new Date(),
+          updatedAt: new Date(),
+        },
+      })
+      await tx.brokerRegistration.update({
+        where: { id: registrationSubscription.registrationId },
+        data: { status: registrationStatus },
+      })
+      return result
+    })
+    return updated
+  }
+
+  static async updateCompanySubscriptionFromStripe(
+    stripeCustomerId: string,
+    stripeSubscriptionId: string,
+    status: string,
+  ) {
+    const existing = await prisma.companySubscription.findFirst({ where: { stripeCustomerId } })
+    if (!existing) return null
+    const isActive = status === 'active' || status === 'trialing'
+    return prisma.$transaction(async (tx) => {
+      const updated = await tx.companySubscription.update({
+        where: { id: existing.id },
+        data: {
+          status: isActive ? 'ACTIVE' : status === 'past_due' ? 'PAST_DUE' : status === 'canceled' ? 'CANCELED' : 'EXPIRED',
+          isActive,
+          stripeSubId: stripeSubscriptionId,
+          startDate: isActive ? existing.startDate || new Date() : existing.startDate,
+          endDate: isActive ? null : new Date(),
+          updatedAt: new Date(),
+        },
+      })
+      if (isActive) await tx.company.update({ where: { id: existing.companyId }, data: { status: 'ACTIVE' } })
+      return updated
+    })
   }
 
   // Cancel subscription

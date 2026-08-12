@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma'
 import crypto from 'crypto'
 import { sendBrokerVerificationEmail } from '@/actions/email.action'
 import { getClaimContext } from '@/lib/claim-context'
+import { signIn } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,13 +39,13 @@ export async function POST(request: NextRequest) {
       where: {
         emailVerificationToken: hashedToken,
       },
-      include:{brokerProfile:true}
+      include: { brokerProfile: true, brokerRegistration: true, companyMemberships: { where: { isActive: true }, take: 1 } }
     })
 
     if (!user && emailChangeTokenHash) {
       user = await prisma.user.findFirst({
         where: { emailVerificationToken: emailChangeTokenHash },
-        include: { brokerProfile: true },
+        include: { brokerProfile: true, brokerRegistration: true, companyMemberships: { where: { isActive: true }, take: 1 } },
       })
       emailChangeTokenMatched = Boolean(user)
     }
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
           emailVerificationTokenExpiresAt: null,
           updatedAt: new Date(),
         },
-        include: { brokerProfile: true },
+        include: { brokerProfile: true, brokerRegistration: true, companyMemberships: { where: { isActive: true }, take: 1 } },
       })
 
       return NextResponse.json({
@@ -127,20 +128,37 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Signup verification (first-time email verification). The token is
-    // single-use and cleared here; emailVerified flips to true.
+    // Signup verification (first-time email verification). Broker registration
+    // tokens remain available only long enough for the same Auth.js request to
+    // exchange them for a normal session; the credentials provider consumes it.
+    const isBrokerRegistration = Boolean(user.brokerRegistration?.id)
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
       data: {
         emailVerified: true,
-        emailVerificationToken: null,
-        emailVerificationTokenExpiresAt: null,
+        ...(isBrokerRegistration ? {} : {
+          emailVerificationToken: null,
+          emailVerificationTokenExpiresAt: null,
+        }),
         updatedAt: new Date()
       },
-      include:{
-        brokerProfile: true
-      }
+      include: { brokerProfile: true, brokerRegistration: true, companyMemberships: { where: { isActive: true }, take: 1 } }
     })
+
+    let authenticated = false
+    if (isBrokerRegistration) {
+      try {
+        await signIn('credentials', {
+          email: updatedUser.email || requestedEmail,
+          verificationToken: token,
+          redirect: false,
+          redirectTo: '/broker/subscription/select',
+        })
+        authenticated = true
+      } catch (error) {
+        console.error('Broker verification session creation failed:', error)
+      }
+    }
 
     // Send welcome email if user is a broker
     if (user?.brokerProfile?.id) {
@@ -164,9 +182,12 @@ export async function POST(request: NextRequest) {
         email: updatedUser.email,
         name: updatedUser.name,
         emailVerified: updatedUser.emailVerified,
-        redirectTo: claimContext
-          ? '/claim-broker/continue'
-          : updatedUser.brokerProfile?.id ? '/setup' : '/'
+        authenticated,
+         redirectTo: claimContext
+           ? '/claim-broker/continue'
+           : updatedUser.brokerRegistration?.id ? '/broker/subscription/select'
+           : updatedUser.companyMemberships?.length ? '/company/dashboard'
+           : updatedUser.brokerProfile?.id ? '/setup' : '/'
       }
     })
   } catch (error: any) {

@@ -1,6 +1,7 @@
 export type AdminBrokerInput = {
   displayName: string
   companyName?: string
+  nmls?: string
   description: string
   phone: string
   email?: string
@@ -23,6 +24,7 @@ export function normalizeAdminBrokerInput(input: AdminBrokerInput) {
   return {
     displayName: input.displayName.trim(),
     companyName: input.companyName?.trim() || null,
+    nmls: input.nmls?.trim() || null,
     description: input.description.trim(),
     phone: input.phone.trim(),
     email: input.email?.trim().toLowerCase() || null,

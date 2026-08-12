@@ -39,20 +39,35 @@ function AdvertisementPopup({ ads, layout }: { ads: PublicAdResponse[]; layout: 
   )
 }
 
-export function PublicAdvertisement({ placement, className }: { placement: string; className?: string }) {
-  const { ads, isLoading, error } = usePublicAd(placement, 10)
+export function PublicAdvertisement({ placement, className, location }: { placement: string; className?: string; location?: { latitude: number; longitude: number; token?: string } }) {
+  const { ads, isLoading, error } = usePublicAd(placement, 10, location)
   const layout = getAdvertisementLayout(placement)
   const validAds = filterValidPublicAds(ads)
 
   if (error) return null
   if (validAds.length === 0) {
     if (layout.popup) return null
+    if (placement === 'BROKER_LISTING_LOCAL') return null
     if (isLoading && ads.length === 0) {
       return <div className={cn('w-full overflow-hidden py-2', className)}><div className={cn('mx-auto w-full max-w-[1280px] animate-pulse rounded-lg bg-muted', layout.slotClassName)} role="status" aria-label="Loading advertisement" /></div>
     }
     return null
   }
   if (layout.popup) return <AdvertisementPopup ads={validAds} layout={layout} />
+
+  if (placement === 'BROKER_LISTING_LOCAL') {
+    return (
+      <section className={cn('w-full py-2 sm:py-3', className)} aria-label="related local resources">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {validAds.map((ad) => (
+            <div key={ad.id} className="aspect-square min-w-0 overflow-hidden rounded-lg bg-card">
+              <AdvertisementCard ad={ad} />
+            </div>
+          ))}
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section className={cn('w-full overflow-hidden py-2 sm:py-3', className)} aria-label={`${placement.replaceAll('_', ' ').toLowerCase()} advertisement`}>

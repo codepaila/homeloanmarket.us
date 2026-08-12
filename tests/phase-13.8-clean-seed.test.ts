@@ -67,7 +67,7 @@ test('Clean seed has no public-facing demo/test/sample naming', { skip: !databas
   ])
 
   for (const broker of brokers) {
-    for (const field of [broker.displayName, broker.companyName || '', broker.description, broker.city, broker.state]) {
+    for (const field of [broker.displayName, broker.companyName || '', broker.description, broker.city || '', broker.state || '']) {
       assert.equal(containsForbidden(field), false, `Broker forbidden naming: ${field}`)
     }
   }

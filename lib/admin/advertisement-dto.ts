@@ -55,6 +55,18 @@ export type AdvertisementAdminDTO = {
   mobileMedia: AdminMediaAssetDto | null
   creatives: AdvertisementCreativeDto[]
   createdBy: { id: string; name: string | null; email: string | null } | null
+  companyId: string | null
+  locationTarget: {
+    locationLabel: string
+    countryCode: string
+    city: string | null
+    state: string | null
+    zip: string | null
+    googlePlaceId: string | null
+    latitude: number
+    longitude: number
+    radiusMiles: number
+  } | null
 }
 
 export function toISOStringSafe(value: Date | string | null | undefined): string | null {
@@ -131,6 +143,20 @@ export function serializeAdvertisement(advertisement: AdvertisementWithCreator):
     creatives: advertisement.creatives?.map(serializeCreative) || [],
     createdBy: advertisement.createdBy
       ? { id: advertisement.createdBy.id, name: advertisement.createdBy.name, email: advertisement.createdBy.email }
+      : null,
+    companyId: advertisement.companyId || null,
+    locationTarget: advertisement.locationTarget
+      ? {
+          locationLabel: advertisement.locationTarget.locationLabel,
+          countryCode: advertisement.locationTarget.countryCode,
+          city: advertisement.locationTarget.city,
+          state: advertisement.locationTarget.state,
+          zip: advertisement.locationTarget.zip,
+          googlePlaceId: advertisement.locationTarget.googlePlaceId,
+          latitude: advertisement.locationTarget.latitude,
+          longitude: advertisement.locationTarget.longitude,
+          radiusMiles: advertisement.locationTarget.radiusMiles,
+        }
       : null,
   }
 }

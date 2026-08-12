@@ -1,7 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import prisma from '@/lib/prisma'
-import { AdvertisementRenderer } from '@/components/advertisements'
 
 export const metadata: Metadata = {
   title: 'Articles',
@@ -23,8 +22,6 @@ export default async function BlogPage() {
         <p className="mt-2 max-w-2xl text-muted-foreground">
           Practical guides and resources about mortgages, home buying, and refinancing.
         </p>
-        <AdvertisementRenderer placement="BLOG_INLINE" className="mt-6" />
-
         {posts.length === 0 ? (
           <p className="mt-12 text-center text-muted-foreground">No published articles yet.</p>
         ) : (

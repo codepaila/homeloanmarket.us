@@ -32,9 +32,9 @@ test('broker search results map to real public broker records', { skip: !databas
   const { default: prisma } = await import('../lib/prisma')
   const broker = await prisma.broker.findFirst({ where: { isVisible: true, verificationStatus: 'VERIFIED' }, select: { pinCode: true, profileSlug: true } })
   assert.ok(broker)
-  const response = await fetch(`${base}/api/brokers?search=${encodeURIComponent(broker.pinCode)}&page=1&pageSize=12`)
+  const response = await fetch(`${base}/api/brokers?search=${encodeURIComponent(broker.pinCode || '')}&page=1&pageSize=12`)
   assert.equal(response.status, 200)
   const body = await response.json() as { brokers: Array<{ profileSlug: string }> }
-  assert.ok(body.brokers.some((b) => b.profileSlug === broker.profileSlug), `expected ${broker.profileSlug} in results for ZIP ${broker.pinCode}`)
+  assert.ok(body.brokers.some((b) => b.profileSlug === broker.profileSlug), `expected ${broker.profileSlug} in results for ZIP ${broker.pinCode || 'any search'}`)
   await prisma.$disconnect()
 })

@@ -45,6 +45,7 @@ export default async function proxy(request: NextRequest) {
     '/auth/signin',
     '/auth/signup',
     '/register',
+    '/company/register',
     '/auth/forgot-password',
     '/auth/reset-password',
     '/auth/error',
@@ -67,6 +68,7 @@ export default async function proxy(request: NextRequest) {
     '/api/brokers',
     '/api/cities',
     '/api/states',
+    '/api/location',
     '/uploads',
     '/robots.txt',
     '/sitemap.xml',
@@ -81,6 +83,7 @@ export default async function proxy(request: NextRequest) {
     path.startsWith('/brokers/') && !path.includes('/dashboard') ||
       path.startsWith('/api/brokers/') && !path.includes('/me') ||
       path.startsWith('/api/company/') ||
+      path.startsWith('/api/location') ||
       path.startsWith('/api/contacts/send') ||
       path.startsWith('/api/ads') ||
       path.startsWith('/about') ||

@@ -45,6 +45,59 @@ enum BrokerCreationSource {
   SELF_REGISTERED
 }
 
+enum BrokerRegistrationStatus {
+  INTENT_SELECTED
+  SUBSCRIPTION_PENDING
+  ONBOARDING_IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+enum BrokerRegistrationSubscriptionStatus {
+  PENDING
+  CHECKOUT_PENDING
+  ACTIVE
+  CANCELED
+  EXPIRED
+}
+
+enum CompanyType {
+  HOME_LOAN_COMPANY
+  HELOC_COMPANY
+  DSCR_LOAN_COMPANY
+  TITLE_COMPANY
+  HOME_INSURANCE_COMPANY
+  OTHER
+}
+
+enum CompanyStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum CompanyMembershipRole {
+  OWNER
+  MEMBER
+}
+
+enum CompanySubscriptionStatus {
+  CHECKOUT_PENDING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
+}
+
+enum CompanyAdRequestStatus {
+  REQUESTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  FULFILLED
+  CANCELED
+}
+
 enum BrokerClaimStatus {
   INVITED
   IN_PROGRESS
@@ -99,6 +152,7 @@ enum AdvertisementPlacement {
   HOMEPAGE_BANKS
   HOMEPAGE_CTA
   BROKER_LISTING
+  BROKER_LISTING_LOCAL
   BROKER_PROFILE_HEADER
   BROKER_LISTING_SIDEBAR
   LOAN_CALCULATOR
@@ -153,7 +207,7 @@ model User {
   id                              String                  @id @default(auto()) @map("_id") @db.ObjectId
   name                            String?
   email                           String?                 @unique
-  phone                           String?                 @unique
+  phone                           String?
   password                        String?
   image                           String?
   role                            UserRole                @default(USER)
@@ -164,6 +218,9 @@ model User {
   resetPasswordToken              String?
   resetPasswordTokenExpiry        DateTime?
   brokerProfile                   Broker?
+  brokerRegistration             BrokerRegistration?
+  companyMemberships             CompanyMembership[]
+  requestedCompanyAdRequests     CompanyAdRequest[] @relation("CompanyAdRequestRequester")
   completedClaims                 BrokerClaim[]           @relation("ClaimCompletedBy")
   createdClaimInvitations         BrokerClaimInvitation[] @relation("ClaimInvitationsCreated")
   claimEvents                     BrokerClaimEvent[]      @relation("ClaimEventActor")
@@ -206,9 +263,13 @@ model Broker {
   email         String?
   website       String?
   officeAddress String
-  city          String
-  state         String
-  pinCode       String
+  city          String?
+  state         String?
+  pinCode       String?
+  normalizedAddress String?
+  googlePlaceId     String?
+  locationCountryCode String?
+  location          Json?
 
   experienceYears Int      @default(0)
   specializations String[]
@@ -216,6 +277,7 @@ model Broker {
   languages       String[] @default(["English", "Hindi"])
 
   registrationNumber String?
+  nmls              String?
   panNumber          String?
   creationSource     BrokerCreationSource?
   verificationStatus VerificationStatus    @default(UNVERIFIED)
@@ -242,6 +304,8 @@ model Broker {
   updatedAt DateTime @updatedAt
 
   @@index([city])
+  @@index([googlePlaceId])
+  @@index([nmls])
   @@index([brokerStatus])
   @@index([verificationStatus])
   @@index([creationSource])
@@ -269,6 +333,148 @@ model BrokerSubscription {
   updatedAt DateTime @updatedAt
 
   @@map("broker_subscriptions")
+}
+
+model BrokerRegistration {
+  id       String                  @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String                  @unique @db.ObjectId
+  status   BrokerRegistrationStatus @default(INTENT_SELECTED)
+
+  user         User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription BrokerRegistrationSubscription?
+  draft        BrokerOnboardingDraft?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@map("broker_registrations")
+}
+
+model BrokerRegistrationSubscription {
+  id             String                              @id @default(auto()) @map("_id") @db.ObjectId
+  registrationId String                              @unique @db.ObjectId
+  plan           SubscriptionPlan
+  status         BrokerRegistrationSubscriptionStatus @default(PENDING)
+  isActive       Boolean                             @default(false)
+  startDate      DateTime?
+  endDate        DateTime?
+  stripeCustomerId String?
+  stripeSubId      String?
+
+  registration BrokerRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([stripeCustomerId])
+  @@index([stripeSubId])
+  @@map("broker_registration_subscriptions")
+}
+
+model BrokerOnboardingDraft {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  registrationId String   @unique @db.ObjectId
+  data           Json
+  currentStep    Int      @default(1)
+  completedAt    DateTime?
+
+  registration BrokerRegistration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("broker_onboarding_drafts")
+}
+
+model Company {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  type           CompanyType
+  address        String
+  contactName    String
+  contactPosition String
+  phone          String
+  bannerAddress  String
+  bannerPhone    String
+  status         CompanyStatus  @default(PENDING)
+
+  memberships CompanyMembership[]
+  subscription CompanySubscription?
+  adRequests  CompanyAdRequest[]
+  advertisements Advertisement[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([type])
+  @@map("companies")
+}
+
+model CompanyMembership {
+  id        String               @id @default(auto()) @map("_id") @db.ObjectId
+  companyId String               @db.ObjectId
+  userId    String               @db.ObjectId
+  role      CompanyMembershipRole @default(OWNER)
+  isActive  Boolean              @default(true)
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, userId])
+  @@index([userId, isActive])
+  @@map("company_memberships")
+}
+
+model CompanySubscription {
+  id                String                   @id @default(auto()) @map("_id") @db.ObjectId
+  companyId         String                   @unique @db.ObjectId
+  plan              String                   @default("ADVERTISING")
+  status            CompanySubscriptionStatus
+  isActive          Boolean                  @default(false)
+  startDate         DateTime?
+  endDate           DateTime?
+  stripeCustomerId  String?
+  stripeSubId       String?
+  stripePromotionCodeId String?
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([stripeCustomerId])
+  @@index([stripeSubId])
+  @@map("company_subscriptions")
+}
+
+model CompanyAdRequest {
+  id             String                 @id @default(auto()) @map("_id") @db.ObjectId
+  companyId      String                 @db.ObjectId
+  requestedById  String                 @db.ObjectId
+  status         CompanyAdRequestStatus @default(REQUESTED)
+  requestDetails String?
+  targetLocation Json?
+  advertisementId String?
+  reviewedById   String?                @db.ObjectId
+  reviewedAt     DateTime?
+
+  company     Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  requestedBy User    @relation("CompanyAdRequestRequester", fields: [requestedById], references: [id], onDelete: NoAction)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId, status])
+  @@index([requestedById])
+  @@index([advertisementId])
+  @@map("company_ad_requests")
 }
 
 model StripeWebhookEvent {
@@ -650,14 +856,17 @@ model Advertisement {
   // Audit
   createdById String  @db.ObjectId
   updatedById String? @db.ObjectId
+  companyId   String? @db.ObjectId
 
   desktopMedia MediaAsset? @relation("DesktopMedia", fields: [desktopMediaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   mobileMedia  MediaAsset? @relation("MobileMedia", fields: [mobileMediaId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   creatives    AdvertisementCreative[]
   createdBy    User        @relation("CreatedBy", fields: [createdById], references: [id], onDelete: NoAction, onUpdate: NoAction)
   updatedBy    User?       @relation("UpdatedBy", fields: [updatedById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  company      Company?    @relation(fields: [companyId], references: [id], onDelete: NoAction)
 
   events AdEvent[]
+  locationTarget AdvertisementLocationTarget?
 
   isDeleted Boolean @default(false)
 
@@ -673,6 +882,29 @@ model Advertisement {
   @@index([createdById])
   @@index([isDeleted])
   @@map("advertisements")
+}
+
+model AdvertisementLocationTarget {
+  id                String   @id @default(auto()) @map("_id") @db.ObjectId
+  advertisementId   String   @unique @db.ObjectId
+  locationLabel     String
+  countryCode       String   @default("US")
+  city              String?
+  state             String?
+  zip               String?
+  googlePlaceId     String?
+  latitude          Float
+  longitude         Float
+  radiusMiles       Float
+
+  advertisement Advertisement @relation(fields: [advertisementId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([latitude, longitude])
+  @@index([countryCode])
+  @@map("advertisement_location_targets")
 }
 
 model AdvertisementCreative {

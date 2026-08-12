@@ -46,10 +46,11 @@ export default async function AdminBrokerDetailPage({ params }: { params: Promis
     phone: broker.phone,
     email: broker.email,
     officeAddress: broker.officeAddress,
-    city: broker.city,
-    state: broker.state,
-    pinCode: broker.pinCode,
+    city: broker.city || '',
+    state: broker.state || '',
+    pinCode: broker.pinCode || '',
     isVisible: broker.isVisible,
+    verificationStatus: broker.verificationStatus,
     claim: broker.claim,
   }
 
