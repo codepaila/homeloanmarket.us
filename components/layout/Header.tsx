@@ -84,7 +84,7 @@ const navigation = [
   },
   {
     name: 'Join As Company',
-    href: '/company',
+    href: '/company/register',
     icon: Building,
   },
   { name: 'About', href: '/about', icon: Info },
