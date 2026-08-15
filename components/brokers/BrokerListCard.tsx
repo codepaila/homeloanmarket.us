@@ -37,14 +37,11 @@ interface BrokerListCardProps {
   rating?: number
   reviewCount?: number
   yearsExperience?: number
-  specializations?: string[]
   isVerified?: boolean
   isFeatured?: boolean
   isPremium?: boolean
   description?: string
-  serviceCities?: string[]
   supportedBanks?: string[]
-  languages?: string[]
   className?: string
 }
 
@@ -57,14 +54,11 @@ export default function BrokerListCard({
   rating = 0,
   reviewCount = 0,
   yearsExperience = 0,
-  specializations = [],
   isVerified = false,
   isFeatured = false,
   isPremium = false,
   description,
-  serviceCities = [],
   supportedBanks = [],
-  languages = [],
   className,
 }: BrokerListCardProps) {
   const [isFavorite, setIsFavorite] = useState(
@@ -85,11 +79,8 @@ export default function BrokerListCard({
   }
 
   // Real data only — empty fields are hidden, never placeholder
-  const validSpecs = specializations.filter(Boolean)
   const validBanks = supportedBanks.filter(Boolean)
-  const validLanguages = languages.filter(Boolean)
-  const validCities = serviceCities.filter(Boolean)
-  const displayLocation = location || validCities[0] || ''
+  const displayLocation = location || ''
   const showRating = rating > 0 || reviewCount > 0
 
   return (
@@ -191,43 +182,25 @@ export default function BrokerListCard({
           </p>
         )}
 
-        {/* ===== Meta: Experience • Location • Languages ===== */}
-        {(yearsExperience > 0 || displayLocation || validLanguages.length > 0) && (
+        {/* ===== Meta: Experience • Location ===== */}
+        {(yearsExperience > 0 || displayLocation) && (
           <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-text-muted">
             {yearsExperience > 0 && <span>{yearsExperience}+ Years of Experience</span>}
-            {yearsExperience > 0 &&
-              (displayLocation || validLanguages.length > 0) && <Dot />}
+            {yearsExperience > 0 && displayLocation && <Dot />}
             {displayLocation && <span>{displayLocation}</span>}
-            {displayLocation && validLanguages.length > 0 && <Dot />}
-            {validLanguages.length > 0 && (
-              <span>
-                {validLanguages.slice(0, 3).join(', ')}
-                {validLanguages.length > 3 && ` +${validLanguages.length - 3}`}
-              </span>
-            )}
           </p>
         )}
 
-        {/* ===== Meta: Loan Types • Bank Partners ===== */}
-        {(validSpecs.length > 0 || validBanks.length > 0) && (
+        {/* ===== Meta: Bank Partners ===== */}
+        {validBanks.length > 0 && (
           <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-text-muted">
-            {validSpecs.length > 0 && (
-              <span>
-                <span className="font-medium text-text-main">Loan Types:</span>{' '}
-                {validSpecs.slice(0, 3).join(', ')}
-                {validSpecs.length > 3 && ` +${validSpecs.length - 3}`}
-              </span>
-            )}
-            {validSpecs.length > 0 && validBanks.length > 0 && <Dot />}
-            {validBanks.length > 0 && (
-              <span>
-                <span className="font-medium text-text-main">
-                  Bank Partners:
-                </span>{' '}
-                {validBanks.slice(0, 3).join(', ')}
-                {validBanks.length > 3 && ` +${validBanks.length - 3}`}
-              </span>
-            )}
+            <span>
+              <span className="font-medium text-text-main">
+                Bank Partners:
+              </span>{' '}
+              {validBanks.slice(0, 3).join(', ')}
+              {validBanks.length > 3 && ` +${validBanks.length - 3}`}
+            </span>
           </p>
         )}
 

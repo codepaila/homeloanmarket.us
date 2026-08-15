@@ -37,9 +37,6 @@ type BrokerOwnerSource = {
   state: string | null
   pinCode: string | null
   experienceYears: number
-  specializations: string[]
-  serviceCities: string[]
-  languages: string[]
   registrationNumber: string | null
   panNumber: string | null
   verificationStatus: string
@@ -77,9 +74,6 @@ export function toBrokerOwnerDto(
     state: broker.state,
     pinCode: broker.pinCode,
     experienceYears: broker.experienceYears,
-    specializations: broker.specializations,
-    serviceCities: broker.serviceCities,
-    languages: broker.languages,
     registrationNumber: broker.registrationNumber,
     panNumber: broker.panNumber,
     verificationStatus: broker.verificationStatus,

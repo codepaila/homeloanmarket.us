@@ -10,7 +10,7 @@ export async function sendBrokerRegistrationEmails(userId: string) {
         const user = await prisma.user.findUnique({
             where: { id: userId },
             include: {
-                brokerProfile: true
+                brokerProfile: { take: 1 }
             }
         })
 
@@ -57,8 +57,8 @@ export async function sendBrokerRegistrationEmails(userId: string) {
         // A profile is created after subscription and onboarding. The admin
         // notification is therefore deferred until that profile exists.
         let adminEmailResult = null
-        if (process.env.ADMIN_EMAIL && user.brokerProfile) {
-            const adminTemplate = emailTemplates.adminNewBroker(user, user.brokerProfile)
+        if (process.env.ADMIN_EMAIL && user.brokerProfile[0]) {
+            const adminTemplate = emailTemplates.adminNewBroker(user, user.brokerProfile[0])
 
             adminEmailResult = await sendEmail({
                 to: process.env.ADMIN_EMAIL,

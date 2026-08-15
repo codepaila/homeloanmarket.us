@@ -38,7 +38,6 @@ import {
   Shield,
   CheckCircle,
   Star,
-  Languages,
   ArrowLeft,
   Crown,
   AlertCircle
@@ -70,9 +69,6 @@ const companyProfileSchema = z.object({
   
   // Professional Details
   experienceYears: z.coerce.number().min(0, 'Experience cannot be negative').max(50, 'Maximum 50 years'),
-  specializations: z.array(z.string()).min(1, 'Select at least one specialization'),
-  serviceCities: z.array(z.string()),
-  languages: z.array(z.string()).min(1, 'Select at least one language'),
   
   // Additional Info
   registrationNumber: z.string().optional(),
@@ -83,29 +79,6 @@ const companyProfileSchema = z.object({
 })
 
 type CompanyProfileFormData = z.infer<typeof companyProfileSchema>
-
-// Options for selection
-const specializationOptions = [
-  'Home Purchase',
-  'Refinance',
-  'FHA Loan',
-  'VA Loan',
-  'USDA Loan',
-  'Jumbo Loan',
-  'Conventional Loan',
-  'Construction Loan',
-  'Home Equity Loan',
-  'Cash-Out Refinance'
-]
-
-const usCities = [
-  'New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix',
-  'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'San Jose',
-  'Austin', 'Jacksonville', 'Fort Worth', 'Columbus', 'Charlotte',
-  'Indianapolis', 'San Francisco', 'Seattle', 'Denver', 'Washington DC'
-]
-
-const languageOptions = ['English', 'Spanish']
 
 const bankOptions = [
   'Chase Bank',
@@ -136,17 +109,12 @@ export function CompanyProfile({ user, broker }: CompanyProfileProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [logoPreview, setLogoPreview] = useState(broker?.logo || '')
   const [coverPreview, setCoverPreview] = useState(broker?.coverImage || '')
-  const [newSpec, setNewSpec] = useState('')
-  const [newCity, setNewCity] = useState('')
-  const [newLang, setNewLang] = useState('')
   const [newBank, setNewBank] = useState('')
   const [bankPartnerships, setBankPartnerships] = useState<string[]>([])
   
   // Check subscription for restrictions
   const hasActiveSubscription = broker?.subscription?.isActive || false
   const subscriptionPlan = broker?.subscription?.plan || 'FREE'
-  const maxServiceCities = hasActiveSubscription ? Infinity : 1
-  const canAddMultipleCities = hasActiveSubscription
 
   // Load bank partnerships
   useEffect(() => {
@@ -174,9 +142,6 @@ export function CompanyProfile({ user, broker }: CompanyProfileProps) {
       zipCode: broker?.zipCode || '',
       
       experienceYears: broker?.experienceYears || 0,
-      specializations: broker?.specializations || ['Home Purchase'],
-      serviceCities: broker?.serviceCities || [],
-      languages: broker?.languages || ['English', 'Spanish'],
       
       registrationNumber: broker?.registrationNumber || '',
       panNumber: broker?.panNumber || '',
@@ -184,8 +149,6 @@ export function CompanyProfile({ user, broker }: CompanyProfileProps) {
       isVisible: broker?.isVisible ?? true,
     }
   })
-
-  const currentServiceCities = form.watch('serviceCities') || []
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -239,18 +202,6 @@ export function CompanyProfile({ user, broker }: CompanyProfileProps) {
     }
   }
 
-  const handleAddItem = (field: keyof CompanyProfileFormData, value: string) => {
-    const current = form.getValues(field) as string[]
-    if (value.trim() && !current.includes(value.trim())) {
-      form.setValue(field, [...current, value.trim()])
-    }
-  }
-
-  const handleRemoveItem = (field: keyof CompanyProfileFormData, value: string) => {
-    const current = form.getValues(field) as string[]
-    form.setValue(field, current.filter(item => item !== value))
-  }
-
   const handleAddBankPartnership = () => {
     if (newBank.trim() && !bankPartnerships.includes(newBank.trim())) {
       setBankPartnerships([...bankPartnerships, newBank.trim()])
@@ -286,12 +237,6 @@ export function CompanyProfile({ user, broker }: CompanyProfileProps) {
   const onSubmit = async (data: CompanyProfileFormData) => {
     try {
       setIsSubmitting(true)
-
-      // Validate service cities limit for free users
-      if (!hasActiveSubscription && data.serviceCities.length > maxServiceCities) {
-        toast.error(`Free Plan limited to ${maxServiceCities} service city. Please upgrade to add more cities.`)
-        return
-      }
 
       const payload = {
         ...data,
@@ -359,33 +304,6 @@ export function CompanyProfile({ user, broker }: CompanyProfileProps) {
       </div>
 
       {/* Subscription Banner */}
-      {!hasActiveSubscription && (
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Crown className="h-5 w-5 text-warning" />
-              <div>
-                <h4 className="font-medium text-warning">Free Plan Limitations</h4>
-                <p className="text-sm text-amber-700">
-                  You can only add {maxServiceCities} service city on the free plan
-                </p>
-              </div>
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="border-amber-300 text-amber-700 hover:bg-amber-100"
-              asChild
-            >
-              <Link href="/broker/subscription">
-                Upgrade
-              </Link>
-            </Button>
-          </div>
-        </div>
-      )}
-
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {/* Company Branding Card */}
@@ -786,296 +704,6 @@ export function CompanyProfile({ user, broker }: CompanyProfileProps) {
                 )}
               />
 
-              <Separator />
-
-              {/* Specializations */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">Specializations *</h4>
-                    <p className="text-sm text-muted-foreground">Loan types you specialize in</p>
-                  </div>
-                </div>
-                
-                <FormField
-                  control={form.control}
-                  name="specializations"
-                  render={() => (
-                    <FormItem>
-                      <FormControl>
-                        <div className="space-y-3">
-                          <div className="flex gap-2">
-                            <Select onValueChange={(value) => handleAddItem('specializations', value)}>
-                              <SelectTrigger className="flex-1">
-                                <SelectValue placeholder="Add specialization" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {specializationOptions.map((spec) => (
-                                  <SelectItem key={spec} value={spec}>{spec}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <div className="flex gap-2">
-                              <Input
-                                placeholder="Custom specialization"
-                                value={newSpec}
-                                onChange={(e) => setNewSpec(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault()
-                                    handleAddItem('specializations', newSpec)
-                                    setNewSpec('')
-                                  }
-                                }}
-                                className="w-48"
-                              />
-                              <Button 
-                                type="button" 
-                                variant="outline" 
-                                onClick={() => {
-                                  handleAddItem('specializations', newSpec)
-                                  setNewSpec('')
-                                }}
-                                disabled={!newSpec.trim()}
-                              >
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                          
-                          <div className="flex flex-wrap gap-2">
-                            {form.watch('specializations')?.map((spec: string) => (
-                              <Badge key={spec} variant="secondary" className="gap-1 py-1.5 px-3">
-                                {spec}
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveItem('specializations', spec)}
-                                  className="hover:text-destructive"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <Separator />
-
-              {/* Service Cities with subscription restriction */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">Service Cities</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Cities where you provide services
-                      {!hasActiveSubscription && (
-                        <span className="text-warning ml-1">
-                          (Limited to {maxServiceCities} city on free plan)
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    {currentServiceCities.length} / {maxServiceCities} selected
-                  </span>
-                </div>
-                
-                <FormField
-                  control={form.control}
-                  name="serviceCities"
-                  render={() => (
-                    <FormItem>
-                      <FormControl>
-                        <div className="space-y-3">
-                          <div className="flex gap-2">
-                            <Select 
-                              onValueChange={(value) => {
-                                if (currentServiceCities.length < maxServiceCities) {
-                                  handleAddItem('serviceCities', value)
-                                } else {
-                                  toast.error(`Free Plan limited to ${maxServiceCities} city. Upgrade to add more.`)
-                                }
-                              }}
-                              disabled={currentServiceCities.length >= maxServiceCities}
-                            >
-                              <SelectTrigger className="flex-1">
-                                <SelectValue placeholder={
-                                  currentServiceCities.length >= maxServiceCities 
-                                    ? "Limit reached" 
-                                    : "Add service city"
-                                } />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {usCities.map((city) => (
-                                  <SelectItem 
-                                    key={city} 
-                                    value={city}
-                                    disabled={currentServiceCities.includes(city)}
-                                  >
-                                    {city}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            {canAddMultipleCities && (
-                              <div className="flex gap-2">
-                                <Input
-                                  placeholder="Custom city"
-                                  value={newCity}
-                                  onChange={(e) => setNewCity(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      e.preventDefault()
-                                      handleAddItem('serviceCities', newCity)
-                                      setNewCity('')
-                                    }
-                                  }}
-                                  className="w-48"
-                                />
-                                <Button 
-                                  type="button" 
-                                  variant="outline" 
-                                  onClick={() => {
-                                    handleAddItem('serviceCities', newCity)
-                                    setNewCity('')
-                                  }}
-                                  disabled={!newCity.trim()}
-                                >
-                                  <Plus className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {!hasActiveSubscription && currentServiceCities.length >= maxServiceCities && (
-                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                              <div className="flex items-center gap-2">
-                                <AlertCircle className="h-4 w-4 text-warning" />
-                                <p className="text-sm text-warning">
-                                  Free Plan limited to 1 service city.{" "}
-                                  <Button
-                                    type="button"
-                                    variant="link"
-                                    className="p-0 h-auto text-warning underline"
-                                    asChild
-                                  >
-                                    <Link href="/broker/subscription">
-                                      Upgrade to add more cities
-                                    </Link>
-                                  </Button>
-                                </p>
-                              </div>
-                            </div>
-                          )}
-                          
-                          <div className="flex flex-wrap gap-2">
-                            {currentServiceCities.map((city: string) => (
-                              <Badge key={city} variant="outline" className="gap-1 py-1.5 px-3">
-                                <MapPin className="h-3 w-3" />
-                                {city}
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveItem('serviceCities', city)}
-                                  className="hover:text-destructive"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <Separator />
-
-              {/* Languages */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-medium">Languages *</h4>
-                    <p className="text-sm text-muted-foreground">Languages you can communicate in</p>
-                  </div>
-                </div>
-                
-                <FormField
-                  control={form.control}
-                  name="languages"
-                  render={() => (
-                    <FormItem>
-                      <FormControl>
-                        <div className="space-y-3">
-                          <div className="flex gap-2">
-                            <Select onValueChange={(value) => handleAddItem('languages', value)}>
-                              <SelectTrigger className="flex-1">
-                                <SelectValue placeholder="Add language" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {languageOptions.map((lang) => (
-                                  <SelectItem key={lang} value={lang}>{lang}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <div className="flex gap-2">
-                              <Input
-                                placeholder="Custom language"
-                                value={newLang}
-                                onChange={(e) => setNewLang(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault()
-                                    handleAddItem('languages', newLang)
-                                    setNewLang('')
-                                  }
-                                }}
-                                className="w-48"
-                              />
-                              <Button 
-                                type="button" 
-                                variant="outline" 
-                                onClick={() => {
-                                  handleAddItem('languages', newLang)
-                                  setNewLang('')
-                                }}
-                                disabled={!newLang.trim()}
-                              >
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                          
-                          <div className="flex flex-wrap gap-2">
-                            {form.watch('languages')?.map((lang: string) => (
-                              <Badge key={lang} variant="secondary" className="gap-1 py-1.5 px-3">
-                                <Languages className="h-3 w-3" />
-                                {lang}
-                                <button
-                                  type="button"
-                                  onClick={() => handleRemoveItem('languages', lang)}
-                                  className="hover:text-destructive"
-                                >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
             </CardContent>
           </Card>
 

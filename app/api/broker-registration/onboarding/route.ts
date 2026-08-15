@@ -7,7 +7,7 @@ const DRAFT_FIELDS = [
   'displayName', 'companyName', 'description', 'logo', 'profileSlug',
   'phone', 'whatsapp', 'email', 'website', 'officeAddress', 'city', 'state', 'zipCode',
   'location',
-  'experienceYears', 'specializations', 'serviceCities', 'languages', 'bankPartnerships',
+  'experienceYears', 'bankPartnerships',
 ] as const
 
 export async function PATCH(request: NextRequest) {

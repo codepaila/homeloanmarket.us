@@ -41,9 +41,6 @@ export default function AdminBrokerForm() {
         body: JSON.stringify({
           ...form,
           experienceYears: Number(form.experienceYears || 0),
-          specializations: (form.specializations || '').split(',').map((item) => item.trim()).filter(Boolean),
-          serviceCities: (form.serviceCities || '').split(',').map((item) => item.trim()).filter(Boolean),
-          languages: (form.languages || 'English').split(',').map((item) => item.trim()).filter(Boolean),
         }),
       })
       const data = await response.json()
@@ -62,7 +59,7 @@ export default function AdminBrokerForm() {
       <div>
         <p className="text-sm font-medium text-muted-foreground">Broker Management</p>
         <h1 className="text-3xl font-semibold tracking-tight">Create Admin Broker Profile</h1>
-        <p className="mt-1 text-sm text-muted-foreground">The profile will be unowned, unverified, unpublished, and FREE. No User account is created.</p>
+        <p className="mt-1 text-sm text-muted-foreground">The profile will be unowned, verified, published, and FREE. No User account is created.</p>
       </div>
       <form onSubmit={submit} className="space-y-6 rounded-xl border bg-card p-6">
         <div className="grid gap-4 sm:grid-cols-2">
@@ -74,18 +71,6 @@ export default function AdminBrokerForm() {
               ) : (
                 <input required={required} type={name === 'email' ? 'email' : name === 'experienceYears' ? 'number' : 'text'} value={form[name] || ''} onChange={(event) => update(name, event.target.value)} className="w-full rounded-lg border bg-background px-3 py-2" />
               )}
-            </label>
-          ))}
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[
-            ['specializations', 'Specializations', 'Home Purchase, Refinance'],
-            ['serviceCities', 'Service cities', 'Austin, Dallas'],
-            ['languages', 'Languages', 'English, Spanish'],
-          ].map(([name, label, placeholder]) => (
-            <label key={name} className="space-y-2">
-              <span className="text-sm font-medium">{label}</span>
-              <input value={form[name] || ''} placeholder={placeholder} onChange={(event) => update(name, event.target.value)} className="w-full rounded-lg border bg-background px-3 py-2" />
             </label>
           ))}
         </div>

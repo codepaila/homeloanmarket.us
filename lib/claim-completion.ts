@@ -28,7 +28,6 @@ export async function completeClaimForUser(context: ClaimContext, userId: string
     const user = await tx.user.findUnique({
       where: { id: userId },
       include: {
-        brokerProfile: { select: { id: true } },
         accounts: { select: { provider: true } },
         companyMemberships: { where: { isActive: true }, select: { id: true } },
       },
@@ -39,7 +38,7 @@ export async function completeClaimForUser(context: ClaimContext, userId: string
     const googleReauthenticated = context.reauthenticatedVia === 'google' &&
       user.accounts.some((account) => account.provider === 'google')
     if (!user.emailVerified && !googleReauthenticated) throw new ClaimFlowError('INELIGIBLE')
-    const existingBroker = await tx.broker.findUnique({ where: { userId }, select: { id: true } })
+    const existingBroker = await tx.broker.findFirst({ where: { userId }, select: { id: true } })
     if (existingBroker && existingBroker.id !== currentInvitation.claim.brokerId) throw new ClaimFlowError('CONFLICT')
 
     const attached = await tx.broker.updateMany({ where: { id: currentInvitation.claim.brokerId, userId: null }, data: { userId } })

@@ -9,8 +9,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     prisma.broker.findMany({
       where: {
         isVisible: true,
-        verificationStatus: 'VERIFIED',
         brokerStatus: { not: 'SUSPENDED' },
+        OR: [
+          { creationSource: 'ADMIN_CREATED' },
+          { verificationStatus: 'VERIFIED' },
+        ],
       },
       select: {
         profileSlug: true,
@@ -18,6 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         isVisible: true,
         verificationStatus: true,
         brokerStatus: true,
+        creationSource: true,
         updatedAt: true,
         user: { select: { isActive: true } },
       },
@@ -39,6 +43,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     isVisible: broker.isVisible,
     verificationStatus: broker.verificationStatus,
     brokerStatus: broker.brokerStatus,
+    creationSource: broker.creationSource,
     userId: broker.userId,
     userIsActive: broker.user?.isActive,
   })).map((broker) => ({

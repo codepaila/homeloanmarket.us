@@ -82,9 +82,6 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
       currentBroker.state,
       currentBroker.pinCode,
       currentBroker.experienceYears > 0,
-      currentBroker.specializations?.length > 0,
-      currentBroker.serviceCities?.length > 0,
-      currentBroker.languages?.length > 0,
       currentBroker.logo,
       currentBroker.coverImage
     ]
@@ -404,30 +401,6 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
                   <div className="flex items-center gap-3">
                     <Badge variant={currentBroker.displayName ? "outline" : "secondary"} className={currentBroker.displayName ? "bg-green-50 text-green-700 border-green-200" : "bg-yellow-50 text-yellow-700 border-yellow-200"}>
                       {currentBroker.displayName ? "Complete" : "Incomplete"}
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Specializations</p>
-                    <p className="text-sm text-muted-foreground">Add loan specializations</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant={(currentBroker.specializations?.length || 0) > 0 ? "outline" : "secondary"} className={(currentBroker.specializations?.length || 0) > 0 ? "bg-green-50 text-green-700 border-green-200" : "bg-yellow-50 text-yellow-700 border-yellow-200"}>
-                      {currentBroker.specializations?.length || 0} specializations
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Service Cities</p>
-                    <p className="text-sm text-muted-foreground">Add cities where services are provided</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant={(currentBroker.serviceCities?.length || 0) > 0 ? "outline" : "secondary"} className={(currentBroker.serviceCities?.length || 0) > 0 ? "bg-green-50 text-green-700 border-green-200" : "bg-yellow-50 text-yellow-700 border-yellow-200"}>
-                      {currentBroker.serviceCities?.length || 0} cities
                     </Badge>
                   </div>
                 </div>

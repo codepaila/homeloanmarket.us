@@ -8,15 +8,31 @@ const databaseUrl = process.env.DATABASE_URL
 if (!databaseUrl) throw new Error('DATABASE_URL is required')
 
 const script = `
-const brokers = db.getSiblingDB(db.getName()).brokers;
-const indexes = brokers.getIndexes();
-const locationIndex = indexes.find((index) => index.key && index.key.location === '2dsphere');
-const conflicting = indexes.find((index) => index.key && Object.keys(index.key).length === 1 && index.key.location === 1);
-if (conflicting && !locationIndex) throw new Error('A conflicting non-geospatial location index exists: ' + conflicting.name);
-if (!locationIndex) brokers.createIndex({ location: '2dsphere' }, { name: 'brokers_location_2dsphere' });
-const verified = brokers.getIndexes().find((index) => index.key && index.key.location === '2dsphere');
-if (!verified) throw new Error('Broker location 2dsphere index was not created or verified');
-printjson({ database: db.getName(), index: verified.name, status: 'reconciled' });
+const targetDb = db.getSiblingDB(db.getName());
+if (!targetDb.getCollectionNames().includes('brokers')) targetDb.createCollection('brokers');
+const brokers = targetDb.brokers;
+const GEO_INDEX = 'brokers_location_2dsphere';
+const isGeoIndex = (index) => index.key && index.key.location === '2dsphere';
+const isConflictIndex = (index) => index.key && Object.keys(index.key).length === 1 && index.key.location === 1;
+let indexes = brokers.getIndexes();
+let existing = indexes.find(isGeoIndex);
+const conflicts = indexes.filter((index) => isConflictIndex(index) && index.name !== GEO_INDEX);
+const changedIndexes = [];
+if (!existing) {
+  brokers.createIndex({ location: '2dsphere' }, { name: GEO_INDEX });
+  changedIndexes.push(GEO_INDEX + ' (created)');
+}
+indexes = brokers.getIndexes();
+existing = indexes.find(isGeoIndex);
+if (!existing) throw new Error('Broker location 2dsphere index was not created or verified');
+for (const conflict of conflicts) {
+  brokers.dropIndex(conflict.name);
+  changedIndexes.push(conflict.name + ' (removed conflicting non-geospatial index)');
+}
+indexes = brokers.getIndexes();
+const remainingConflicts = indexes.filter((index) => isConflictIndex(index) && index.name !== GEO_INDEX);
+if (remainingConflicts.length > 0) throw new Error('Conflicting non-geospatial location index remains: ' + remainingConflicts.map((i) => i.name).join(', '));
+printjson({ database: db.getName(), index: GEO_INDEX, changed: changedIndexes.length > 0, changedIndexes, status: changedIndexes.length > 0 ? 'reconciled' : 'healthy' });
 `
 
 async function main() {

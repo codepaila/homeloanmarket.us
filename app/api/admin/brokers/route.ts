@@ -8,6 +8,7 @@ import {
   slugifyAdminBroker,
   validateAdminBrokerInput,
 } from '@/lib/admin-broker'
+import { resolveBrokerLocation } from '@/lib/location/broker-location'
 
 async function requireAdmin() {
   const user = await getCurrentUser()
@@ -72,9 +73,6 @@ export async function POST(request: Request) {
       state: typeof body.state === 'string' ? body.state : '',
       pinCode: typeof body.pinCode === 'string' ? body.pinCode : '',
       experienceYears: body.experienceYears,
-      specializations: Array.isArray(body.specializations) ? body.specializations : [],
-      serviceCities: Array.isArray(body.serviceCities) ? body.serviceCities : [],
-      languages: Array.isArray(body.languages) ? body.languages : ['English'],
       registrationNumber: typeof body.registrationNumber === 'string' ? body.registrationNumber : undefined,
       panNumber: typeof body.panNumber === 'string' ? body.panNumber : undefined,
       logo: typeof body.logo === 'string' ? body.logo : undefined,
@@ -85,6 +83,10 @@ export async function POST(request: Request) {
     if (errors.length > 0) {
       return NextResponse.json({ message: errors[0], errors }, { status: 422 })
     }
+
+    console.info('[LOCATION] resolving broker address', { displayName: input.displayName, city: input.city, state: input.state })
+    const locationPatch = await resolveBrokerLocation({ officeAddress: input.officeAddress, city: input.city, state: input.state, pinCode: input.pinCode })
+    if (locationPatch) console.info('[LOCATION] resolved broker address', { displayName: input.displayName, latitude: locationPatch.location.coordinates[1], longitude: locationPatch.location.coordinates[0] })
 
     const duplicate = await prisma.broker.findFirst({
       where: {
@@ -129,14 +131,18 @@ export async function POST(request: Request) {
           state: input.state,
           pinCode: input.pinCode,
           experienceYears: input.experienceYears,
-          specializations: input.specializations,
-          serviceCities: input.serviceCities,
-          languages: input.languages,
           registrationNumber: input.registrationNumber,
           panNumber: input.panNumber,
           verificationStatus: adminCreatedBrokerDefaults.verificationStatus,
+          verifiedAt: new Date(),
           brokerStatus: adminCreatedBrokerDefaults.brokerStatus,
           isVisible: adminCreatedBrokerDefaults.isVisible,
+          ...(locationPatch ? {
+            normalizedAddress: locationPatch.normalizedAddress,
+            googlePlaceId: locationPatch.googlePlaceId,
+            locationCountryCode: locationPatch.locationCountryCode,
+            location: locationPatch.location,
+          } : {}),
           subscription: {
             create: {
               plan: adminCreatedBrokerDefaults.subscriptionPlan,

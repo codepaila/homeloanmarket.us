@@ -13,7 +13,7 @@ export async function POST(
   const { id } = await params
   const broker = await prisma.broker.findUnique({
     where: { id },
-    select: { id: true, officeAddress: true, serviceCities: true },
+    select: { id: true, officeAddress: true },
   })
   if (!broker) return NextResponse.json({ message: 'Broker not found' }, { status: 404 })
 
@@ -26,7 +26,6 @@ export async function POST(
         city: location.city || undefined,
         state: location.state || undefined,
         pinCode: location.zip || undefined,
-        serviceCities: broker.serviceCities.length === 0 && location.city ? [location.city] : undefined,
         googlePlaceId: location.placeId,
         locationCountryCode: location.countryCode,
         location: {

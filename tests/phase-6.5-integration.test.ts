@@ -33,9 +33,6 @@ function brokerData(profileSlug: string, userId: string | null = null, source: '
     verificationStatus: 'UNVERIFIED' as const,
     brokerStatus: 'FREE' as const,
     isVisible: false,
-    specializations: ['Home Purchase'],
-    serviceCities: ['Austin'],
-    languages: ['English'],
     subscription: {
       create: {
         plan: 'FREE' as const,

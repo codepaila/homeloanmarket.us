@@ -65,6 +65,7 @@ export async function POST(request: NextRequest) {
       isVisible: broker.isVisible,
       verificationStatus: broker.verificationStatus,
       brokerStatus: broker.brokerStatus,
+      creationSource: broker.creationSource,
       userId: broker.userId,
       userIsActive: broker.user?.isActive,
     })) {

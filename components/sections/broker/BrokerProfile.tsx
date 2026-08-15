@@ -25,8 +25,7 @@ import {
   CheckCircle,
   XCircle,
   Eye,
-  MessageSquare,
-  Languages
+  MessageSquare
 } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
@@ -205,17 +204,6 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Briefcase className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Specializations</p>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {broker?.specializations?.map((spec: string, idx: number) => (
-                        <Badge key={idx} variant="outline">{spec}</Badge>
-                      )) || <span className="text-muted-foreground">Not specified</span>}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
                   <Banknote className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <p className="text-sm text-muted-foreground">Bank Partnerships</p>
@@ -226,37 +214,6 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
                       {broker?.bankPartners?.length > 3 && (
                         <Badge variant="outline">+{broker.bankPartners.length - 3} more</Badge>
                       )}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Service Areas Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  Service Areas
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-2">Cities Served</p>
-                    <div className="flex flex-wrap gap-1">
-                      {broker?.serviceCities?.map((city: string, idx: number) => (
-                        <Badge key={idx} variant="outline">{city}</Badge>
-                      )) || <span className="text-muted-foreground">Not specified</span>}
-                    </div>
-                  </div>
-                  <Separator />
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-2">Languages</p>
-                    <div className="flex flex-wrap gap-1">
-                      {broker?.languages?.map((lang: string, idx: number) => (
-                        <Badge key={idx} variant="secondary">{lang}</Badge>
-                      )) || <span className="text-muted-foreground">English, Hindi</span>}
                     </div>
                   </div>
                 </div>

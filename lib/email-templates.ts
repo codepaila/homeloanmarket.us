@@ -145,7 +145,6 @@ export const emailTemplates = {
         "Profile URL": `${process.env.NEXT_PUBLIC_APP_URL}/brokers/${broker.profileSlug}`,
         "City": broker.city || '',
         "Experience": `${broker.experienceYears} years`,
-        "Specializations": broker.specializations.join(', '),
         "Verification Status": "Verified",
         "Next Steps": "Consider upgrading to Featured plan for better visibility"
       }

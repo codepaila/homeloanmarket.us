@@ -286,7 +286,7 @@ describe('Registration Flow Security', () => {
       )
 
       // Cleanup
-      const broker = await prisma.broker.findUnique({ where: { userId: user.id } })
+      const broker = await prisma.broker.findFirst({ where: { userId: user.id } })
       if (broker) {
         await prisma.brokerSubscription.deleteMany({ where: { brokerId: broker.id } })
         await prisma.broker.delete({ where: { id: broker.id } })
@@ -395,7 +395,7 @@ describe('Registration Flow Security', () => {
       // Auth.config.ts line 90-92 blocks BROKER login if !emailVerified
       
       // Cleanup
-      const broker = await prisma.broker.findUnique({ where: { userId: user.id } })
+      const broker = await prisma.broker.findFirst({ where: { userId: user.id } })
       if (broker) {
         await prisma.brokerSubscription.deleteMany({ where: { brokerId: broker.id } })
         await prisma.broker.delete({ where: { id: broker.id } })

@@ -30,6 +30,7 @@ export async function GET() {
         emailVerified: true,
         createdAt: true,
         brokerProfile: {
+          take: 1,
           select: {
             id: true,
             displayName: true,
@@ -47,7 +48,7 @@ export async function GET() {
       )
     }
 
-    return NextResponse.json(user)
+    return NextResponse.json({ ...user, brokerProfile: user.brokerProfile[0] ?? null })
   } catch (error : any) {
     console.error('GET /api/user/profile error:', error)
     return NextResponse.json(

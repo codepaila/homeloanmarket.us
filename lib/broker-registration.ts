@@ -92,7 +92,6 @@ export const selfRegisteredBrokerDefaults = {
 import prisma from '@/lib/prisma'
 import { hashPassword } from '@/lib/aes'
 import { BankType, SubscriptionPlan } from '@prisma/client'
-import { assertServiceCityLimit, hasPaidEntitlement } from '@/lib/broker-policy'
 
 export async function createBrokerRegistration(input: BrokerAccountRegistrationInput) {
   const normalized = normalizeBrokerAccountRegistrationInput(input)
@@ -223,9 +222,6 @@ export type ExistingUserBrokerInput = {
   state: string
   pinCode: string
   experienceYears?: number
-  specializations?: string[]
-  serviceCities?: string[]
-  languages?: string[]
   bankPartnerships?: string[]
   location?: {
     placeId?: string
@@ -250,7 +246,7 @@ type RegistrationSubscription = {
 
 export async function createBrokerForExistingUser(userId: string, data: ExistingUserBrokerInput) {
   return prisma.$transaction(async (tx) => {
-    const existing = await tx.broker.findUnique({ where: { userId }, select: { id: true } })
+    const existing = await tx.broker.findFirst({ where: { userId }, select: { id: true } })
     if (existing) {
       const error = new Error('ALREADY_A_BROKER')
       error.name = 'AlreadyBrokerError'
@@ -270,16 +266,6 @@ export async function createBrokerForExistingUser(userId: string, data: Existing
     if (registration && (registration.status === 'INTENT_SELECTED' || !registration.subscription?.isActive || registration.subscription.status !== 'ACTIVE')) {
       const error = new Error('An active broker subscription is required before onboarding')
       error.name = 'BrokerSubscriptionRequiredError'
-      throw error
-    }
-
-    const freeLimit = assertServiceCityLimit(data.serviceCities, null)
-    const limit = hasPaidEntitlement(selectedSubscription)
-      ? { ok: true as const, max: Infinity }
-      : freeLimit
-    if (!limit.ok) {
-      const error = new Error(limit.reason)
-      error.name = 'ServiceCityLimitError'
       throw error
     }
 
@@ -314,9 +300,6 @@ export async function createBrokerForExistingUser(userId: string, data: Existing
           ? JSON.parse(JSON.stringify({ type: 'Point', coordinates: [data.location.longitude, data.location.latitude] }))
           : undefined,
         experienceYears: data.experienceYears || 0,
-        specializations: data.specializations?.length ? data.specializations : ['Home Loan'],
-        serviceCities: data.serviceCities || [],
-        languages: data.languages?.length ? data.languages : ['English', 'Hindi'],
         verificationStatus: 'UNVERIFIED',
         brokerStatus: 'FREE',
         isVisible: true,

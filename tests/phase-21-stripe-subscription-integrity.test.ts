@@ -44,7 +44,7 @@ test('Phase 1I: failed Stripe cancellation does not write local inactive state',
 test('Phase 1I: H5 entitlement and H6 webhook protections remain', () => {
   const policy = read('lib/broker-policy.ts')
   const webhook = read('app/api/stripe/webhook/route.ts')
-  assert.ok(policy.includes('maxServiceCitiesForEntitlement'))
+  assert.ok(policy.includes('hasPaidEntitlement'))
   assert.ok(webhook.includes('PROCESSING'))
   assert.ok(webhook.includes('PROCESSED'))
   assert.ok(webhook.includes('eventId'))

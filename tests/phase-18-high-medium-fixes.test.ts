@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
-import { maxServiceCitiesForEntitlement, hasPaidEntitlement, BROKER_EDITABLE_FIELDS } from '../lib/broker-policy'
+import { hasPaidEntitlement, BROKER_EDITABLE_FIELDS } from '../lib/broker-policy'
 import { isClaimRecipientMatch } from '../lib/claim-policy'
 import { isStaleEvent } from '../app/api/stripe/webhook/route'
 
@@ -66,24 +66,6 @@ test('H5: hasPaidEntitlement distinguishes paid from FREE/expired', () => {
   assert.equal(hasPaidEntitlement(featuredSub), true, 'active FEATURED is paid')
   assert.equal(hasPaidEntitlement(expiredFeatured), false, 'expired FEATURED is not paid')
   assert.equal(hasPaidEntitlement(inactiveFeatured), false, 'inactive FEATURED is not paid')
-})
-
-test('H5: FREE tier is limited to 1 service city; paid is unlimited', () => {
-  assert.equal(maxServiceCitiesForEntitlement(freeSub), 1, 'FREE broker limited to 1 service city')
-  assert.equal(maxServiceCitiesForEntitlement(null), 1, 'no subscription = FREE limit')
-  assert.equal(maxServiceCitiesForEntitlement(expiredFeatured), 1, 'expired subscription collapses to FREE limit')
-  assert.equal(maxServiceCitiesForEntitlement(featuredSub), Infinity, 'paid FEATURED is unlimited')
-})
-
-test('H5: both PATCH routes enforce the limit against paid entitlement, not isActive', () => {
-  for (const file of ['app/api/brokers/me/route.ts', 'app/api/company/[slug]/route.ts']) {
-    const source = read(file)
-    assert.ok(source.includes('maxServiceCitiesForEntitlement('), `${file} must use the canonical entitlement helper`)
-    assert.ok(source.includes('body.serviceCities.length > maxServiceCities'), `${file} must enforce the cap server-side`)
-    assert.equal(source.includes('!hasActiveSubscription'), false, `${file} must not gate the limit on isActive`)
-  }
-  const me = read('app/api/brokers/me/route.ts')
-  assert.ok(me.includes('hasPaidEntitlement('), 'brokers/me must derive paid entitlement explicitly')
 })
 
 // =============================================================

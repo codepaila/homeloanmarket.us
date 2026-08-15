@@ -13,7 +13,6 @@ import {
   MessageCircle,
   ChevronRight,
   Banknote,
-  Languages,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Badge } from '@/components/ui/badge'
@@ -31,14 +30,11 @@ interface BrokerCardProps {
   rating?: number
   reviewCount?: number
   yearsExperience?: number
-  specializations?: string[]
   isVerified?: boolean
   isFeatured?: boolean
   isPremium?: boolean
   description?: string
-  serviceCities?: string[]
   supportedBanks?: string[]
-  languages?: string[]
   phone?: string
   email?: string
   showContact?: boolean
@@ -57,23 +53,19 @@ export default function BrokerCard({
   rating = 0,
   reviewCount = 0,
   yearsExperience = 0,
-  specializations = [],
   isVerified = false,
   isFeatured = false,
   isPremium = false,
   description = '',
-  serviceCities = [],
   supportedBanks = [],
-  languages = [],
   phone,
   email,
   showContact = true,
   viewMode = 'grid',
   className,
 }: BrokerCardProps) {
-  const displayLocation = serviceCities?.[0] || location || 'Multiple Locations'
+  const displayLocation = location || 'Multiple Locations'
   const displayBanks = supportedBanks?.slice(0, 4) || []
-  const displayLanguages = languages?.slice(0, 3) || []
 
   return (
     <motion.div
@@ -190,26 +182,6 @@ export default function BrokerCard({
                 </p>
               )}
 
-              {/* Specializations */}
-              {specializations.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {specializations.slice(0, 3).map((spec, idx) => (
-                    <Badge
-                      key={idx}
-                      variant="secondary"
-                      className="bg-primary/5 text-xs text-primary"
-                    >
-                      {spec}
-                    </Badge>
-                  ))}
-                  {specializations.length > 3 && (
-                    <Badge variant="secondary" className="bg-muted text-xs">
-                      +{specializations.length - 3}
-                    </Badge>
-                  )}
-                </div>
-              )}
-
               {/* Supported Banks */}
               {displayBanks.length > 0 && (
                 <div className="mt-3 flex items-start gap-2">
@@ -231,27 +203,6 @@ export default function BrokerCard({
                       </span>
                     )}
                   </div>
-                </div>
-              )}
-
-              {/* Languages + Service cities */}
-              {(displayLanguages.length > 0 || serviceCities.length > 0) && (
-                <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
-                  {displayLanguages.length > 0 && (
-                    <div className="flex items-center gap-1">
-                      <Languages className="h-3.5 w-3.5 flex-shrink-0" />
-                      <span>
-                        {displayLanguages.join(', ')}
-                        {languages.length > 3 && ` +${languages.length - 3}`}
-                      </span>
-                    </div>
-                  )}
-                  {serviceCities.length > 1 && (
-                    <span className="hidden sm:inline">
-                       Serving {serviceCities.slice(0, 3).join(', ')}
-                      {serviceCities.length > 3 && ' + more'}
-                    </span>
-                  )}
                 </div>
               )}
             </div>

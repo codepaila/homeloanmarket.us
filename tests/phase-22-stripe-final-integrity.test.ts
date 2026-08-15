@@ -92,7 +92,7 @@ test('client cannot set entitlement through checkout verification', () => {
 })
 
 test('H5 and H6 protections remain after billing changes', () => {
-  assert.ok(read('lib/broker-policy.ts').includes('assertServiceCityLimit'))
+  assert.ok(read('lib/broker-policy.ts').includes('hasPaidEntitlement'))
   const webhook = read('app/api/stripe/webhook/route.ts')
   assert.ok(webhook.includes('eventCreatedAt'))
   assert.ok(webhook.includes('FAILED'))

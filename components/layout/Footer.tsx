@@ -21,23 +21,23 @@ import type { SiteSettings } from '@/lib/site/settings'
 import Image from 'next/image'
 
 const footerColumns = [
-  {
-    title: 'Resources',
-    links: [
-      { name: 'Mortgage Broker Directory', href: '/brokers' },
-      { name: 'Mortgage Guides', href: '/guides' },
-      { name: 'Articles', href: '/blog' },
-      { name: 'Mortgage Calculator', href: '/calculator' },
-      { name: 'FAQ', href: '/faq' },
-    ],
-  },
+  // {
+  //   title: 'Resources',
+  //   links: [
+  //     { name: 'Mortgage Broker Directory', href: '/brokers' },
+  //     { name: 'Mortgage Guides', href: '/guides' },
+  //     { name: 'Articles', href: '/blog' },
+  //     { name: 'Mortgage Calculator', href: '/calculator' },
+  //     { name: 'FAQ', href: '/faq' },
+  //   ],
+  // },
   {
     title: 'Company',
     links: [
       { name: 'About Us', href: '/about' },
       { name: 'Contact', href: '/contact' },
       { name: 'Subscription Plans', href: '/subscription' },
-      { name: 'Become a Mortgage Broker', href: '/auth/signup' },
+      { name: 'Become a Mortgage Broker', href: '/register' },
     ],
   },
   {
@@ -149,7 +149,7 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
         </div>
 
         {/* Main footer grid */}
-        <div className="grid grid-cols-1 gap-10 py-12 sm:grid-cols-2 lg:grid-cols-6 lg:gap-8">
+        <div className="grid grid-cols-1 gap-10 py-12 sm:grid-cols-2 lg:grid-cols-5 lg:gap-8">
           {/* Brand */}
           <div className="space-y-4 lg:col-span-2">
             <Link href="/" className="flex items-center gap-2">

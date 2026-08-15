@@ -5,7 +5,7 @@ import { getCurrentUser } from '@/lib/currentUser'
 import prisma from '@/lib/prisma'
 import { TABLE_ROW_PAGE } from '@/utils'
 import { VerificationStatus, BrokerStatus } from '@prisma/client'
-import { hasPaidEntitlement } from '@/lib/broker-policy'
+import { hasPaidEntitlement, publicBrokerWhere } from '@/lib/broker-policy'
 import { toPublicBrokerRecord } from '@/lib/public-broker'
 import { createBrokerForExistingUser } from '@/lib/broker-registration'
 import { findBrokerIdsWithinRadius } from '@/lib/location/broker-geo'
@@ -18,66 +18,50 @@ export async function GET(request: Request) {
     const page = parseInt(searchParams.get('page') || '1')
     const take = TABLE_ROW_PAGE
     const skip = TABLE_ROW_PAGE * (page - 1)
-    
-    const city = searchParams.get('city')
+
     const state = searchParams.get('state')
     const zip = searchParams.get('zip')
-    const specialization = searchParams.get('specialization')
     const minRating = searchParams.get('minRating')
     const verificationStatus = searchParams.get('verificationStatus')
     const brokerStatus = searchParams.get('brokerStatus')
     const minExperience = searchParams.get('minExperience')
-    const language = searchParams.get('language')
     const search = searchParams.get('search') || searchParams.get('q')
     const latitudeParam = searchParams.get('latitude')
     const longitudeParam = searchParams.get('longitude')
     const radiusParam = searchParams.get('radius')
-    const locationCity = searchParams.get('locationCity')
     const locationState = searchParams.get('locationState')
     const locationZip = searchParams.get('locationZip')
     const locationToken = searchParams.get('locationToken')
 
-    const where: any = {}
+    const currentUser = await getCurrentUser()
+    const isAdmin = currentUser?.role === 'ADMIN'
 
-    // Apply filters based on your Prisma schema
-    if (city) where.serviceCities = { has: city }
+    const publicEligibility: any = isAdmin ? {} : publicBrokerWhere()
+
+    const buildSearchFilter = (term: string | null | undefined) => term ? {
+      OR: [
+        { displayName: { contains: term, mode: 'insensitive' } },
+        { companyName: { contains: term, mode: 'insensitive' } },
+        { description: { contains: term, mode: 'insensitive' } },
+        { officeAddress: { contains: term, mode: 'insensitive' } },
+        { city: { contains: term, mode: 'insensitive' } },
+        { state: { contains: term, mode: 'insensitive' } },
+        { pinCode: { contains: term, mode: 'insensitive' } },
+      ],
+    } : {}
+
+    const where: any = {
+      ...publicEligibility,
+      ...buildSearchFilter(search),
+    }
+
+    // Apply non-geographic filters for the normal (non-radius) listing.
     if (state) where.state = { contains: state, mode: 'insensitive' }
     if (zip) where.pinCode = { contains: zip, mode: 'insensitive' }
-    if (specialization) where.specializations = { has: specialization }
     if (minRating) where.avgRating = { gte: parseFloat(minRating) }
     if (verificationStatus) where.verificationStatus = verificationStatus as VerificationStatus
     if (brokerStatus) where.brokerStatus = brokerStatus as BrokerStatus
     if (minExperience) where.experienceYears = { gte: parseInt(minExperience) }
-    if (language) where.languages = { has: language }
-    
-    if (search) {
-      where.OR = [
-        { displayName: { contains: search, mode: 'insensitive' } },
-        { companyName: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { officeAddress: { contains: search, mode: 'insensitive' } },
-        { city: { contains: search, mode: 'insensitive' } },
-        { state: { contains: search, mode: 'insensitive' } },
-        { pinCode: { contains: search, mode: 'insensitive' } },
-      ]
-    }
-
-    // For non-admin users, only show visible, verified brokers
-    const currentUser = await getCurrentUser()
-    if (!currentUser?.role || currentUser.role !== 'ADMIN') {
-      where.isVisible = true
-      where.verificationStatus = 'VERIFIED'
-      where.AND = [
-        ...(where.AND || []),
-        { brokerStatus: { not: 'SUSPENDED' } },
-        {
-          OR: [
-            { userId: null },
-            { user: { isActive: true } },
-          ]
-        },
-      ]
-    }
 
     const hasAnyCoordinate = latitudeParam !== null || longitudeParam !== null || radiusParam !== null || locationToken !== null
     let verifiedLocation
@@ -97,38 +81,32 @@ export async function GET(request: Request) {
     }
 
     if (radius === 0) {
-      if (!city && (locationCity || verifiedLocation?.city)) where.serviceCities = { has: locationCity || verifiedLocation?.city }
       if (!state && (locationState || verifiedLocation?.state)) where.state = { contains: locationState || verifiedLocation?.state, mode: 'insensitive' }
       if (!zip && (locationZip || verifiedLocation?.zip)) where.pinCode = { contains: locationZip || verifiedLocation?.zip, mode: 'insensitive' }
     }
 
+    const geoWhere: any = {
+      ...publicEligibility,
+      ...buildSearchFilter(search),
+    }
+
     const geoResult = radius > 0
       ? await findBrokerIdsWithinRadius({
-          latitude: latitude!,
-          longitude: longitude!,
-          radiusMiles: radius,
-          page,
-          take,
-          city,
-          state,
-          zip,
-          specialization,
-          minRating: minRating ? parseFloat(minRating) : null,
-          minExperience: minExperience ? parseInt(minExperience) : null,
-          language,
-          search,
-          featuredOnly: brokerStatus === 'FEATURED',
-          verificationStatus,
-          brokerStatus,
-          admin: currentUser?.role === 'ADMIN',
-        })
+        latitude: latitude!,
+        longitude: longitude!,
+        radiusMiles: radius,
+        page,
+        take,
+        search,
+        admin: isAdmin,
+      })
       : null
 
     const [brokers, total] = await Promise.all([
       prisma.broker.findMany({
         skip: geoResult ? 0 : skip,
         take: geoResult ? Math.max(geoResult.ids.length, 1) : take,
-        where: geoResult ? { ...where, id: { in: geoResult.ids } } : where,
+        where: geoResult ? { ...geoWhere, id: { in: geoResult.ids } } : where,
         include: {
           user: {
             select: {
@@ -188,6 +166,13 @@ export async function GET(request: Request) {
       }
     })
 
+    console.log('[BROKER API]', {
+      role: currentUser?.role ?? 'ANONYMOUS',
+      dbCount: brokers.length,
+      total,
+      publicCount: publicBrokers.length,
+      hasRadius: radius > 0,
+    })
     return NextResponse.json({
       brokers: publicBrokers,
       total,
@@ -196,8 +181,11 @@ export async function GET(request: Request) {
     })
   } catch (error: any) {
     console.error('GET /api/brokers error:', error)
+    const message = error?.message?.includes('Radius search is unavailable')
+      ? error.message
+      : 'Failed to fetch brokers'
     return NextResponse.json(
-      { message: 'Failed to fetch brokers', error: error.message },
+      { message, error: error?.message || 'Unknown error' },
       { status: 500 }
     )
   }
@@ -228,7 +216,7 @@ export async function POST(request: Request) {
     }
 
     // Check if user is already a broker
-    const existingBroker = await prisma.broker.findUnique({
+    const existingBroker = await prisma.broker.findFirst({
       where: { userId: currentUser.id }
     })
 
@@ -295,9 +283,6 @@ export async function POST(request: Request) {
       state: body.state,
       pinCode,
       experienceYears: Number(body.experienceYears) || 0,
-      specializations: body.specializations || ['Home Loan'],
-      serviceCities: body.serviceCities || [],
-      languages: body.languages || ['English', 'Hindi'],
       bankPartnerships: Array.isArray(body.bankPartnerships) ? body.bankPartnerships : [],
       location: resolvedLocation,
     })
@@ -318,12 +303,6 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { message: 'You already have a broker profile' },
         { status: 400 }
-      )
-    }
-    if (error?.name === 'ServiceCityLimitError') {
-      return NextResponse.json(
-        { message: error.message, error: 'SUBSCRIPTION_LIMIT' },
-        { status: 403 }
       )
     }
     if (error?.name === 'BrokerSubscriptionRequiredError') {

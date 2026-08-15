@@ -39,13 +39,13 @@ export async function POST(request: NextRequest) {
       where: {
         emailVerificationToken: hashedToken,
       },
-      include: { brokerProfile: true, brokerRegistration: true, companyMemberships: { where: { isActive: true }, take: 1 } }
+      include: { brokerProfile: { take: 1 }, brokerRegistration: true, companyMemberships: { where: { isActive: true }, take: 1 } }
     })
 
     if (!user && emailChangeTokenHash) {
       user = await prisma.user.findFirst({
         where: { emailVerificationToken: emailChangeTokenHash },
-        include: { brokerProfile: true, brokerRegistration: true, companyMemberships: { where: { isActive: true }, take: 1 } },
+        include: { brokerProfile: { take: 1 }, brokerRegistration: true, companyMemberships: { where: { isActive: true }, take: 1 } },
       })
       emailChangeTokenMatched = Boolean(user)
     }
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
           emailVerificationTokenExpiresAt: null,
           updatedAt: new Date(),
         },
-        include: { brokerProfile: true, brokerRegistration: true, companyMemberships: { where: { isActive: true }, take: 1 } },
+        include: { brokerProfile: { take: 1 }, brokerRegistration: true, companyMemberships: { where: { isActive: true }, take: 1 } },
       })
 
       return NextResponse.json({
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
         }),
         updatedAt: new Date()
       },
-      include: { brokerProfile: true, brokerRegistration: true, companyMemberships: { where: { isActive: true }, take: 1 } }
+      include: { brokerProfile: { take: 1 }, brokerRegistration: true, companyMemberships: { where: { isActive: true }, take: 1 } }
     })
 
     let authenticated = false
@@ -161,9 +161,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Send welcome email if user is a broker
-    if (user?.brokerProfile?.id) {
+    if (user?.brokerProfile?.[0]?.id) {
       const broker = await prisma.broker.findUnique({
-        where: { id: user.brokerProfile.id },
+        where: { id: user.brokerProfile[0].id },
         include: { user: true }
       })
       
@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
            ? '/claim-broker/continue'
            : updatedUser.brokerRegistration?.id ? '/broker/subscription/select'
            : updatedUser.companyMemberships?.length ? '/company/dashboard'
-           : updatedUser.brokerProfile?.id ? '/setup' : '/'
+           : updatedUser.brokerProfile?.[0]?.id ? '/setup' : '/'
       }
     })
   } catch (error: any) {

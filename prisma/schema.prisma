@@ -217,7 +217,7 @@ model User {
   emailVerificationTokenExpiresAt DateTime?
   resetPasswordToken              String?
   resetPasswordTokenExpiry        DateTime?
-  brokerProfile                   Broker?
+  brokerProfile                   Broker[]
   brokerRegistration             BrokerRegistration?
   companyMemberships             CompanyMembership[]
   requestedCompanyAdRequests     CompanyAdRequest[] @relation("CompanyAdRequestRequester")
@@ -249,7 +249,7 @@ model User {
 // Broker Profile
 model Broker {
   id     String  @id @default(auto()) @map("_id") @db.ObjectId
-  userId String? @unique @db.ObjectId
+  userId String? @db.ObjectId
 
   displayName String
   companyName String?
@@ -272,9 +272,6 @@ model Broker {
   location          Json?
 
   experienceYears Int      @default(0)
-  specializations String[]
-  serviceCities   String[]
-  languages       String[] @default(["English", "Hindi"])
 
   registrationNumber String?
   nmls              String?
@@ -435,6 +432,7 @@ model CompanySubscription {
   id                String                   @id @default(auto()) @map("_id") @db.ObjectId
   companyId         String                   @unique @db.ObjectId
   plan              String                   @default("ADVERTISING")
+  planId            String?                  @db.ObjectId
   status            CompanySubscriptionStatus
   isActive          Boolean                  @default(false)
   startDate         DateTime?
@@ -443,15 +441,37 @@ model CompanySubscription {
   stripeSubId       String?
   stripePromotionCodeId String?
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company         Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  advertisingPlan CompanyAdvertisingPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([planId])
   @@index([status])
   @@index([stripeCustomerId])
   @@index([stripeSubId])
   @@map("company_subscriptions")
+}
+
+model CompanyAdvertisingPlan {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  name            String   @unique
+  description     String?
+  price           Int      @default(0) // price in cents
+  billingInterval String   @default("month")
+  stripeProductId String?
+  stripePriceId   String?  @unique
+  features        String[] @default([])
+  isActive        Boolean  @default(true)
+
+  subscriptions CompanySubscription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("company_advertising_plans")
 }
 
 model CompanyAdRequest {

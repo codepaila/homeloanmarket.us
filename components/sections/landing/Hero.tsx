@@ -5,7 +5,7 @@ import { motion, useReducedMotion } from 'motion/react'
 import Image from 'next/image'
 
 // Beautiful Unsplash background image - modern home exterior
-const heroBackground = '/assets/images/cover.jpg'
+const heroBackground = '/assets/images/cover.PNG'
 
 export default function HeroSection() {
  
@@ -36,27 +36,17 @@ export default function HeroSection() {
       </div>
 
       <div className="container-custom relative z-10">
-        <div className="flex min-h-[40vh] md:min-h-[85vh] items-center py-12 md:py-16 lg:py-20">
-          <div className="mx-auto max-w-2xl text-left lg:mx-0">
-            {/* Trust Badge */}
-            {/* <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={motionTransition(0)}
-              className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-secondary/40 px-4 py-1.5 text-xs font-semibold text-white shadow-lg backdrop-blur-xl"
-            >
-              <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-              <span className="bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
-                America&apos;s trusted mortgage marketplace
-              </span>
-            </motion.div> */}
+        <div className="flex min-h-[45vh] md:min-h-[85vh] items-center py-12 md:py-16 lg:py-20">
+          <div className="mx-auto max-w-4xl text-left lg:mx-0">
+       
+           
 
             {/* 5-Profile PNG Image */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={motionTransition(0.1)}
-              className="mt-8"
+              className="mt-0"
             >
               <Image
                 src="/assets/images/5-profiles-cover-icon.png"
@@ -69,18 +59,16 @@ export default function HeroSection() {
             </motion.div>
 
             {/* Main Heading - Exact text from image */}
-            <div className="mt-8 ml-4">
+            <div className="mt-12 ml-4">
 
               <motion.h1
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={motionTransition(0.2)}
-                className="mt-4 text-xl  font-bold leading-[1.1] tracking-tight text-white text-shadow-black tracking-wide"
+                className="mt-4  text-lg sm:text-xl lg:text-3xl  font-bold leading-[1.1] tracking-tight text-white text-shadow-black tracking-wide"
               >
                 You Could Save Thousands on Your Home Loan.
-                {/* <span className="bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent">
-              </span> */}
-
+        
               </motion.h1>
 
               {/* Subtitle - Exact text from image */}
@@ -88,7 +76,7 @@ export default function HeroSection() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={motionTransition(0.3)}
-                className="mt-3 text-xl font-medium text-white/90 sm:text-2xl"
+                className="mt-3 text-lg sm:text-2xl lg:text-3xl font-medium text-white/90"
               >
                 Talk To Local Home Loan Experts
               </motion.p>

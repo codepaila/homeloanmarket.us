@@ -28,6 +28,7 @@ export async function getCurrentUser() {
       emailVerified: true,
       createdAt: true,
       brokerProfile: {
+        take: 1,
         include: {
           subscription: true,
           bankPartners: true,
@@ -59,7 +60,7 @@ export async function getCurrentUser() {
     return null
   }
 
-  const brokerProfile = user.brokerProfile
+  const brokerProfile = user.brokerProfile[0] ?? null
   const subscription = brokerProfile?.subscription
   const effectiveSubscription = brokerProfile
     ? SubscriptionService.effectiveSubscription(subscription || null)

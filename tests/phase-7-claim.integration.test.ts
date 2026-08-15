@@ -43,9 +43,6 @@ test('claim completion attaches existing Broker atomically and preserves profile
       verificationStatus: 'UNVERIFIED',
       brokerStatus: 'FREE',
       isVisible: false,
-      specializations: ['Home Purchase'],
-      serviceCities: ['Austin'],
-      languages: ['English'],
       subscription: { create: { plan: 'FREE', isActive: true, startDate: new Date(), endDate: null } },
     },
     include: { subscription: true },
@@ -92,7 +89,7 @@ test('two claimants race with exactly one ownership winner', async () => {
   userIds.push(...users.map((user) => user.id))
   const broker = await prisma.broker.create({
     data: {
-      userId: null, creationSource: 'ADMIN_CREATED', displayName: 'Race Target', companyName: 'Race Target Loans', profileSlug: `${suffix}-race`, description: 'Race target.', phone: '+15551230000', email: 'race@example.test', officeAddress: '1 Race Street', city: 'Austin', state: 'Texas', pinCode: '78701', verificationStatus: 'UNVERIFIED', brokerStatus: 'FREE', isVisible: false, specializations: [], serviceCities: [], languages: ['English'], subscription: { create: { plan: 'FREE', isActive: true, startDate: new Date(), endDate: null } },
+      userId: null, creationSource: 'ADMIN_CREATED', displayName: 'Race Target', companyName: 'Race Target Loans', profileSlug: `${suffix}-race`, description: 'Race target.', phone: '+15551230000', email: 'race@example.test', officeAddress: '1 Race Street', city: 'Austin', state: 'Texas', pinCode: '78701', verificationStatus: 'UNVERIFIED', brokerStatus: 'FREE', isVisible: false, subscription: { create: { plan: 'FREE', isActive: true, startDate: new Date(), endDate: null } },
     },
   })
   brokerIds.push(broker.id)

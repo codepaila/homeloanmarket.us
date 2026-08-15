@@ -3,7 +3,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { SubscriptionService } from '@/lib/subscription'
-import { hasPaidEntitlement, maxServiceCitiesForEntitlement } from '@/lib/broker-policy'
 import { getCurrentUser } from '@/lib/currentUser'
 
 export async function GET() {
@@ -24,7 +23,7 @@ export async function GET() {
       )
     }
 
-    const broker = await prisma.broker.findUnique({
+    const broker = await prisma.broker.findFirst({
       where: { userId: currentUser.id },
       include: {
         user: {
@@ -101,7 +100,7 @@ export async function PATCH(request: Request) {
       )
     }
 
-    const broker = await prisma.broker.findUnique({
+    const broker = await prisma.broker.findFirst({
       where: { userId: currentUser.id },
       include: {
         subscription: true
@@ -116,27 +115,8 @@ export async function PATCH(request: Request) {
     }
 
     const body = await request.json()
-    
-    // Check subscription status for restrictions. The FREE service-city
-    // allowance is a paid-entitlement gate: only a paid FEATURED subscription
-    // is unlimited. `effectiveSubscription.isActive` is true for every FREE
-    // plan (account state), so it must NOT be used as the paid gate.
-    const effectiveSubscription = SubscriptionService.effectiveSubscription(broker.subscription)
-    const isPaidPlan = hasPaidEntitlement(effectiveSubscription)
-    const maxServiceCities = maxServiceCitiesForEntitlement(effectiveSubscription)
 
-    // Validate service cities limit for free users
-    if (body.serviceCities && !isPaidPlan) {
-      if (body.serviceCities.length > maxServiceCities) {
-        return NextResponse.json(
-          { 
-            message: `Free plan limited to ${maxServiceCities} service city. Please upgrade to add more cities.`,
-            error: 'SUBSCRIPTION_LIMIT'
-          },
-          { status: 403 }
-        )
-      }
-    }
+    const effectiveSubscription = SubscriptionService.effectiveSubscription(broker.subscription)
 
     // Fields that can be updated by broker
     const updateData: any = {}
@@ -177,10 +157,7 @@ export async function PATCH(request: Request) {
     
     // Professional info
     if (body.experienceYears !== undefined) updateData.experienceYears = body.experienceYears
-    if (body.specializations !== undefined) updateData.specializations = body.specializations
-    if (body.serviceCities !== undefined) updateData.serviceCities = body.serviceCities
-    if (body.languages !== undefined) updateData.languages = body.languages
-    
+
     // Additional info
     if (body.registrationNumber !== undefined) updateData.registrationNumber = body.registrationNumber
     if (body.panNumber !== undefined) updateData.panNumber = body.panNumber
@@ -214,7 +191,7 @@ export async function PATCH(request: Request) {
     }
 
     const updatedBroker = await prisma.broker.update({
-      where: { userId: currentUser.id },
+      where: { id: broker.id },
       data: updateData,
       include: {
         user: {

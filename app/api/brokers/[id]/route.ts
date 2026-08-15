@@ -80,6 +80,7 @@ export async function GET(
         isVisible: broker.isVisible,
         verificationStatus: broker.verificationStatus,
         brokerStatus: broker.brokerStatus,
+        creationSource: broker.creationSource,
         userId: broker.userId,
         userIsActive: broker.user?.isActive,
       })) {
@@ -136,9 +137,7 @@ export async function GET(
         totalLeads: broker.totalLeads,
         profileViews: broker.profileViews,
         avgRating: broker.avgRating,
-        experienceYears: broker.experienceYears,
-        serviceCities: broker.serviceCities.length,
-        specializations: broker.specializations.length
+        experienceYears: broker.experienceYears
       }
     }
 

@@ -1,5 +1,5 @@
-import { BrokerStatus, VerificationStatus } from '@prisma/client'
 import prisma from '@/lib/prisma'
+import { publicBrokerWhere } from '@/lib/broker-policy'
 
 export type GrowthPoint = {
   key: string
@@ -152,12 +152,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     prisma.user.count(),
     prisma.broker.count(),
     prisma.broker.count({
-      where: {
-        isVisible: true,
-        verificationStatus: VerificationStatus.VERIFIED,
-        brokerStatus: { not: BrokerStatus.SUSPENDED },
-        OR: [{ userId: null }, { user: { is: { isActive: true } } }],
-      },
+      where: publicBrokerWhere(),
     }),
     prisma.broker.aggregate({ _sum: { profileViews: true } }),
     prisma.brokerSubscription.findMany({ select: { plan: true, isActive: true, endDate: true } }),

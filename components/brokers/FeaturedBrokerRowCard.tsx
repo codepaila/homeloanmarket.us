@@ -32,12 +32,9 @@ interface FeaturedBrokerRowCardProps {
     avgRating?: number
     totalReviews?: number
     experienceYears?: number
-    specializations?: string[]
     verificationStatus?: string
     brokerStatus?: string
     description?: string
-    serviceCities?: string[]
-    languages?: string[]
     city?: string
     state?: string
     phone?: string
@@ -70,27 +67,21 @@ export default function FeaturedBrokerRowCard({ broker }: FeaturedBrokerRowCardP
     broker.user?.name || broker.displayName || broker.companyName || ''
   const company = broker.companyName || ''
   const location =
-    broker.serviceCities?.[0] || broker.city || broker.state || ''
+    broker.city || broker.state || ''
   const logo = broker.logo
   const rating = broker.avgRating || 0
   const reviewCount = broker.totalReviews || 0
   const yearsExperience = broker.experienceYears || 0
-  const specializations = broker.specializations || []
   const isVerified = broker.verificationStatus === 'VERIFIED'
   const isFeatured =
     broker.subscription?.isActive === true &&
     broker.subscription?.plan === 'FEATURED' &&
     (!broker.subscription.endDate || new Date(broker.subscription.endDate) > new Date())
   const description = broker.description
-  const serviceCities = broker.serviceCities || []
   const supportedBanks = (broker.bankPartners || []).map((bp) => bp.bankName)
-  const languages = broker.languages || []
 
-  const validSpecs = specializations.filter(Boolean)
   const validBanks = supportedBanks.filter(Boolean)
-  const validLanguages = languages.filter(Boolean)
-  const validCities = serviceCities.filter(Boolean)
-  const displayLocation = location || validCities[0] || ''
+  const displayLocation = location || ''
   const showRating = rating > 0 || reviewCount > 0
 
   return (
@@ -159,38 +150,15 @@ export default function FeaturedBrokerRowCard({ broker }: FeaturedBrokerRowCardP
               <span>{yearsExperience}+ years experience</span>
             )}
             {displayLocation && <span>{displayLocation}</span>}
-            {validLanguages.length > 0 && (
-              <span>
-                {validLanguages.slice(0, 3).join(', ')}
-                {validLanguages.length > 3 && ` +${validLanguages.length - 3}`}
-              </span>
-            )}
           </div>
 
-          {(validSpecs.length > 0 || validBanks.length > 0) && (
+          {validBanks.length > 0 && (
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-muted">
-              {validSpecs.length > 0 && (
-                <span>
-                  <span className="font-medium text-text-main">Loan Types:</span>{' '}
-                  {validSpecs.slice(0, 3).join(', ')}
-                  {validSpecs.length > 3 && ` +${validSpecs.length - 3}`}
-                </span>
-              )}
-              {validBanks.length > 0 && (
-                <span>
-                  <span className="font-medium text-text-main">Bank Partners:</span>{' '}
-                  {validBanks.slice(0, 3).join(', ')}
-                  {validBanks.length > 3 && ` +${validBanks.length - 3}`}
-                </span>
-              )}
-            </div>
-          )}
-
-          {validCities.length > 1 && (
-            <div className="mt-1 text-sm text-text-muted">
-              <span className="font-medium text-text-main">Serving:</span>{' '}
-              {validCities.slice(0, 3).join(', ')}
-              {validCities.length > 3 && ' + more'}
+              <span>
+                <span className="font-medium text-text-main">Bank Partners:</span>{' '}
+                {validBanks.slice(0, 3).join(', ')}
+                {validBanks.length > 3 && ` +${validBanks.length - 3}`}
+              </span>
             </div>
           )}
 

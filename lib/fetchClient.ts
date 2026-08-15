@@ -41,8 +41,6 @@ export const fetchUser = (id: string) => {
 // ==================== BROKERS ====================
 export const fetchAllBrokers = (
   page: number = 1,
-  city?: string,
-  specialization?: string,
   minRating?: number,
   verificationStatus?: string,
   featured?: boolean,
@@ -50,8 +48,6 @@ export const fetchAllBrokers = (
 ) => {
   const queryParams = new URLSearchParams()
   queryParams.append('page', page.toString())
-  if (city) queryParams.append('city', city)
-  if (specialization) queryParams.append('specialization', specialization)
   if (minRating) queryParams.append('minRating', minRating.toString())
   if (verificationStatus) queryParams.append('verificationStatus', verificationStatus)
   if (featured !== undefined) queryParams.append('featured', featured.toString())

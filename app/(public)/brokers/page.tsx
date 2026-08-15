@@ -28,19 +28,6 @@ const sortOptions = [
   { value: 'reviews', label: 'Most Reviewed' },
 ]
 
-const specializations = [
-  'Home Purchase',
-  'Refinance',
-  'FHA Loan',
-  'VA Loan',
-  'USDA Loan',
-  'Jumbo Loan',
-  'Conventional Loan',
-  'Construction Loan',
-  'Home Equity Loan',
-  'Cash-Out Refinance'
-]
-
 const ratingOptions = [
   { value: '0', label: 'Any Rating' },
   { value: '4.5', label: '4.5+ Stars' },
@@ -55,24 +42,14 @@ const experienceOptions = [
   { value: '15', label: '15+ years' },
 ]
 
-const languageOptions = [
-  { value: '', label: 'Any language' },
-  { value: 'English', label: 'English' },
-  { value: 'Spanish', label: 'Spanish' },
-  { value: 'Hindi', label: 'Hindi' },
-  { value: 'Mandarin', label: 'Mandarin' },
-  { value: 'Arabic', label: 'Arabic' },
-  { value: 'Vietnamese', label: 'Vietnamese' },
-  { value: 'Tagalog', label: 'Tagalog' },
-  { value: 'Korean', label: 'Korean' },
-  { value: 'French', label: 'French' },
-]
-
 export default function BrokersPage() {
   const reducedMotion = useReducedMotion()
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
+  const [committedSearch, setCommittedSearch] = useState('')
   const [locationSuggestions, setLocationSuggestions] = useState<Array<{ placeId: string; label: string }>>([])
+  const [locationError, setLocationError] = useState('')
+  const [resolvingLocation, setResolvingLocation] = useState(false)
   const [selectedLocation, setSelectedLocation] = useState<{
     placeId?: string
     normalizedAddress: string
@@ -85,9 +62,7 @@ export default function BrokersPage() {
   } | null>(null)
   const [radius, setRadius] = useState(0)
   const [radiusEnabled, setRadiusEnabled] = useState(false)
-  const [specialization, setSpecialization] = useState('')
   const [minExperience, setMinExperience] = useState('')
-  const [language, setLanguage] = useState('')
   const [minRating, setMinRating] = useState('0')
   const [featuredOnly, setFeaturedOnly] = useState(false)
   const [page, setPage] = useState(1)
@@ -96,91 +71,118 @@ export default function BrokersPage() {
   const [sortBy, setSortBy] = useState('relevance')
   const [urlHydrated, setUrlHydrated] = useState(false)
   const filtersButtonRef = useRef<HTMLButtonElement>(null)
+  const autocompleteRequestRef = useRef(0)
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
 
   // Hydrate filters from URL query parameters
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const params = new URLSearchParams(window.location.search)
-    const q = params.get('search') || params.get('q')
-    const specParam = params.get('specialization')
-    const locationToken = params.get('locationToken')
-    const locationLatitude = Number(params.get('locationLatitude'))
-    const locationLongitude = Number(params.get('locationLongitude'))
-    const locationLabel = params.get('locationLabel')
-    const locationCity = params.get('locationCity')
-    const locationState = params.get('locationState')
-    const locationZip = params.get('locationZip')
-    if (q) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSearchInput(q)
-      setSearch(locationToken ? '' : q)
+    const resolveLocationText = async (text: string) => {
+      setResolvingLocation(true)
+      try {
+        const response = await fetch('/api/location/geocode', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address: `${text}, USA` }),
+        })
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error || 'Location could not be resolved')
+        setSelectedLocation(data.location)
+        setSearchInput(data.location.normalizedAddress || text)
+        setLocationError('')
+      } catch (error) {
+        setSelectedLocation(null)
+        setLocationError(error instanceof Error ? error.message : 'Location could not be resolved')
+      } finally {
+        setResolvingLocation(false)
+      }
     }
-    if (locationToken && locationLabel && Number.isFinite(locationLatitude) && Number.isFinite(locationLongitude)) {
-      setSelectedLocation({
-        token: locationToken,
-        normalizedAddress: locationLabel,
-        city: locationCity || '',
-        state: locationState || '',
-        zip: locationZip || '',
-        latitude: locationLatitude,
-        longitude: locationLongitude,
-      })
-      setSearchInput(locationLabel)
+    const syncFromUrl = () => {
+      const params = new URLSearchParams(window.location.search)
+      const q = params.get('search') || params.get('q') || ''
+      // New canonical `location` param, with legacy `locationLabel` fallback.
+      const locationText = params.get('location') || params.get('locationLabel') || ''
+      const radiusParam = Number(params.get('radius'))
+      const radiusValue = Number.isFinite(radiusParam) && radiusParam > 0 && radiusParam <= 100 ? radiusParam : 0
+      setRadius(radiusValue)
+      setRadiusEnabled(radiusValue > 0)
+      setSearch(q)
+      setCommittedSearch(q)
+      setSearchInput(locationText || q)
+      setSelectedLocation(null)
+      setMinExperience(params.get('experience') || '')
+      setMinRating(params.get('rating') || '0')
+      setFeaturedOnly(params.get('featured') === 'true')
+      const pageParam = Number(params.get('page'))
+      setPage(Number.isInteger(pageParam) && pageParam > 1 ? pageParam : 1)
+      if (locationText) resolveLocationText(locationText)
     }
-    if (specParam) setSpecialization(specParam)
-    if (params.get('experience')) setMinExperience(params.get('experience') || '')
-    if (params.get('language')) setLanguage(params.get('language') || '')
-    if (params.get('rating')) setMinRating(params.get('rating') || '0')
-    if (params.get('featured') === 'true') setFeaturedOnly(true)
-    const pageParam = Number(params.get('page'))
-    if (Number.isInteger(pageParam) && pageParam > 1) setPage(pageParam)
+    syncFromUrl()
+    window.addEventListener('popstate', syncFromUrl)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUrlHydrated(true)
+    return () => window.removeEventListener('popstate', syncFromUrl)
   }, [])
 
-  const { brokers, total, totalPages, isLoading } = useAllBrokers(
+  const { brokers, total, totalPages, isLoading, error: brokerError } = useAllBrokers(
     page,
     PAGE_SIZE,
-    undefined,
-    specialization,
     parseFloat(minRating),
     undefined,
     undefined,
     search,
     featuredOnly ? 'FEATURED' : undefined,
     minExperience ? parseInt(minExperience) : undefined,
-    language || undefined,
     undefined,
     undefined,
     selectedLocation ? { latitude: selectedLocation.latitude, longitude: selectedLocation.longitude, city: selectedLocation.city, state: selectedLocation.state, zip: selectedLocation.zip, token: selectedLocation.token } : undefined,
      radiusEnabled ? radius : 0,
   )
 
-  // Debounce the unified search field
+  // Keep the input immediate; only the remote broker query is debounced.
   useEffect(() => {
+    if (resolvingLocation) return
     const timeout = window.setTimeout(() => {
       if (selectedLocation?.normalizedAddress === searchInput.trim()) {
         setSearch('')
         return
       }
       setSearch(searchInput.trim())
-    }, 400)
+    }, 200)
     return () => window.clearTimeout(timeout)
-  }, [searchInput, selectedLocation])
+  }, [searchInput, selectedLocation, resolvingLocation])
 
   useEffect(() => {
     const value = searchInput.trim()
-    if (value.length < 2 || selectedLocation?.normalizedAddress === value) {
-      if (locationSuggestions.length > 0) window.setTimeout(() => setLocationSuggestions([]), 0)
+    if (resolvingLocation || value.length < 2 || selectedLocation?.normalizedAddress === value) {
+      autocompleteRequestRef.current += 1
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLocationSuggestions([])
+      setActiveSuggestionIndex(-1)
       return
     }
-    const timeout = window.setTimeout(() => {
-      fetch(`/api/location/autocomplete?input=${encodeURIComponent(value)}`)
-        .then((response) => response.json())
-        .then((data) => setLocationSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []))
-        .catch(() => setLocationSuggestions([]))
-    }, 300)
-    return () => window.clearTimeout(timeout)
-  }, [searchInput, selectedLocation, locationSuggestions.length])
+    const requestId = ++autocompleteRequestRef.current
+    const controller = new AbortController()
+    const timeout = window.setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/location/autocomplete?input=${encodeURIComponent(value)}`, { signal: controller.signal })
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error || 'Location autocomplete is unavailable')
+        if (requestId !== autocompleteRequestRef.current) return
+        setLocationSuggestions(Array.isArray(data.suggestions) ? data.suggestions : [])
+        setLocationError('')
+        setActiveSuggestionIndex(-1)
+      } catch (error) {
+        if (controller.signal.aborted || requestId !== autocompleteRequestRef.current) return
+        setLocationSuggestions([])
+        setLocationError(error instanceof Error ? error.message : 'Location autocomplete is unavailable')
+      }
+    }, 200)
+    return () => {
+      window.clearTimeout(timeout)
+      controller.abort()
+    }
+  }, [searchInput, selectedLocation, resolvingLocation])
 
   const selectLocation = async (suggestion: { placeId: string; label: string }) => {
     try {
@@ -194,11 +196,15 @@ export default function BrokersPage() {
       setSelectedLocation(data.location)
       setSearchInput(data.location.normalizedAddress || suggestion.label)
       setSearch('')
+      setCommittedSearch('')
       setLocationSuggestions([])
+      setLocationError('')
+      setActiveSuggestionIndex(-1)
       setPage(1)
-    } catch {
+    } catch (error) {
       setSelectedLocation(null)
       setLocationSuggestions([])
+      setLocationError(error instanceof Error ? error.message : 'Selected location could not be resolved')
     }
   }
 
@@ -215,62 +221,64 @@ export default function BrokersPage() {
          setSelectedLocation(data.location)
          setSearchInput(data.location.normalizedAddress || searchInput.trim())
          setSearch('')
+         setCommittedSearch('')
+         setLocationError('')
        }
-    } catch {
+    } catch (error) {
       setSelectedLocation(null)
+      setLocationError(error instanceof Error ? error.message : 'Location could not be resolved')
     }
   }
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPage(1)
-  }, [search, specialization, minExperience, language, minRating, featuredOnly, radius, selectedLocation])
+  }, [search, minExperience, minRating, featuredOnly, radius, selectedLocation])
 
   useEffect(() => {
     if (!urlHydrated || typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
     const setOrDelete = (key: string, value: string) => value ? params.set(key, value) : params.delete(key)
-    setOrDelete('search', search)
+    setOrDelete('search', committedSearch)
     params.delete('q')
-    setOrDelete('specialization', specialization)
     setOrDelete('experience', minExperience)
-    setOrDelete('language', language)
     setOrDelete('rating', minRating === '0' ? '' : minRating)
     setOrDelete('featured', featuredOnly ? 'true' : '')
-    setOrDelete('locationToken', selectedLocation?.token || '')
-    setOrDelete('locationLabel', selectedLocation?.normalizedAddress || '')
-    setOrDelete('locationLatitude', selectedLocation ? String(selectedLocation.latitude) : '')
-    setOrDelete('locationLongitude', selectedLocation ? String(selectedLocation.longitude) : '')
-    setOrDelete('locationCity', selectedLocation?.city || '')
-    setOrDelete('locationState', selectedLocation?.state || '')
-    setOrDelete('locationZip', selectedLocation?.zip || '')
+    setOrDelete('location', selectedLocation?.normalizedAddress || '')
+    setOrDelete('radius', radius > 0 ? String(radius) : '')
+    params.delete('locationToken')
+    params.delete('locationLabel')
+    params.delete('locationLatitude')
+    params.delete('locationLongitude')
+    params.delete('locationCity')
+    params.delete('locationState')
+    params.delete('locationZip')
     setOrDelete('page', page > 1 ? String(page) : '')
     const query = params.toString()
     window.history.replaceState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}`)
-  }, [featuredOnly, language, minExperience, minRating, page, search, specialization, selectedLocation, urlHydrated])
+  }, [committedSearch, featuredOnly, minExperience, minRating, page, radius, selectedLocation, urlHydrated])
 
   const clearAllFilters = useCallback(() => {
     setLocationSuggestions([])
     setSearchInput('')
     setSearch('')
+    setCommittedSearch('')
     setSelectedLocation(null)
     setRadius(0)
     setRadiusEnabled(false)
-    setSpecialization('')
     setMinExperience('')
-    setLanguage('')
     setMinRating('0')
     setFeaturedOnly(false)
+    setLocationError('')
+    setActiveSuggestionIndex(-1)
   }, [])
 
-  const hasActiveFilters = Boolean(search || radius > 0 || specialization || minExperience || language || minRating !== '0' || featuredOnly)
+  const hasActiveFilters = Boolean(search || radius > 0 || minExperience || minRating !== '0' || featuredOnly)
 
   const activeFilterCount = [
     search,
     radius > 0 && 'radius',
-    specialization,
     minExperience,
-    language,
     minRating !== '0' && 'rating',
     featuredOnly && 'featured',
   ].filter(Boolean).length
@@ -349,15 +357,6 @@ export default function BrokersPage() {
               <p className="text-xs text-muted-foreground">Select a validated location and enable radius search to filter by distance.</p>
             )}
           </div>
-          <FilterSelect
-            label="Specialization"
-            value={specialization}
-            onChange={setSpecialization}
-            options={[
-              { value: '', label: 'All Specializations' },
-              ...specializations.map((s) => ({ value: s, label: s })),
-            ]}
-          />
         </div>
 
       <div>
@@ -368,18 +367,6 @@ export default function BrokersPage() {
             value={minExperience}
             onChange={setMinExperience}
             options={experienceOptions}
-          />
-        </div>
-      </div>
-
-      <div>
-        {sectionLabel('Language')}
-        <div className="mt-2.5 space-y-3">
-          <FilterSelect
-            label="Language"
-            value={language}
-            onChange={setLanguage}
-            options={languageOptions}
           />
         </div>
       </div>
@@ -410,11 +397,9 @@ export default function BrokersPage() {
         <div className="mt-2.5">
           {hasActiveFilters ? (
             <div className="flex flex-wrap gap-2">
-              {search && <FilterChip label={`Search: "${search}"`} onRemove={() => { setSearchInput(''); setSearch('') }} />}
+              {search && <FilterChip label={`Search: "${search}"`} onRemove={() => { setSearchInput(''); setSearch(''); setCommittedSearch(''); setLocationSuggestions([]); setActiveSuggestionIndex(-1) }} />}
               {radius > 0 && <FilterChip label={`${radius} mile radius`} onRemove={() => setRadius(0)} />}
-              {specialization && <FilterChip label={specialization} onRemove={() => setSpecialization('')} />}
               {minExperience && <FilterChip label={`${minExperience}+ years`} onRemove={() => setMinExperience('')} />}
-              {language && <FilterChip label={language} onRemove={() => setLanguage('')} />}
               {minRating !== '0' && <FilterChip label={`${minRating}+ rating`} onRemove={() => setMinRating('0')} />}
               {featuredOnly && <FilterChip label="Featured" onRemove={() => setFeaturedOnly(false)} />}
             </div>
@@ -485,33 +470,60 @@ export default function BrokersPage() {
             <input
               type="search"
               name="q"
+              role="combobox"
+              aria-autocomplete="list"
               aria-label="Search brokers"
+              aria-expanded={locationSuggestions.length > 0}
+              aria-controls="broker-location-suggestions"
+              aria-activedescendant={activeSuggestionIndex >= 0 ? `broker-location-suggestion-${activeSuggestionIndex}` : undefined}
               placeholder="Search by broker, company, ZIP code, address or location..."
               value={searchInput}
-               onChange={(e) => {
-                 setSearchInput(e.target.value)
-                 setSelectedLocation(null)
-                 setRadiusEnabled(false)
-                 setRadius(0)
-               }}
+                onChange={(e) => {
+                  setSearchInput(e.target.value)
+                  setSelectedLocation(null)
+                  setRadiusEnabled(false)
+                  setRadius(0)
+                  setLocationError('')
+                  setActiveSuggestionIndex(-1)
+                }}
               onBlur={resolveZip}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') setSearch(searchInput.trim())
-                if (e.key === 'Escape') setLocationSuggestions([])
+                if (e.key === 'ArrowDown' && locationSuggestions.length > 0) {
+                  e.preventDefault()
+                  setActiveSuggestionIndex((current) => (current + 1) % locationSuggestions.length)
+                }
+                if (e.key === 'ArrowUp' && locationSuggestions.length > 0) {
+                  e.preventDefault()
+                  setActiveSuggestionIndex((current) => (current - 1 + locationSuggestions.length) % locationSuggestions.length)
+                }
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  if (activeSuggestionIndex >= 0 && locationSuggestions[activeSuggestionIndex]) selectLocation(locationSuggestions[activeSuggestionIndex])
+                  else {
+                    const value = searchInput.trim()
+                    setSearch(value)
+                    setCommittedSearch(value)
+                  }
+                }
+                if (e.key === 'Escape') {
+                  setLocationSuggestions([])
+                  setActiveSuggestionIndex(-1)
+                }
               }}
               className="h-12 w-full rounded-xl border border-border bg-background pl-11 pr-10 text-sm text-text-main shadow-soft placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
             {locationSuggestions.length > 0 && (
-              <div className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-border bg-card shadow-large" role="listbox" aria-label="Location suggestions">
+              <div id="broker-location-suggestions" className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-border bg-card shadow-large" role="listbox" aria-label="Location suggestions">
                 {locationSuggestions.map((suggestion) => (
                   <button
                     type="button"
                     key={suggestion.placeId}
+                    id={`broker-location-suggestion-${locationSuggestions.indexOf(suggestion)}`}
                     role="option"
-                    aria-selected="false"
+                    aria-selected={locationSuggestions.indexOf(suggestion) === activeSuggestionIndex}
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => selectLocation(suggestion)}
-                    className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-text-main hover:bg-muted focus:bg-muted focus:outline-none"
+                    className={cn('flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-text-main hover:bg-muted focus:bg-muted focus:outline-none', locationSuggestions.indexOf(suggestion) === activeSuggestionIndex && 'bg-muted')}
                   >
                     <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
                     {suggestion.label}
@@ -519,9 +531,10 @@ export default function BrokersPage() {
                 ))}
               </div>
             )}
+            {locationError && <p role="status" className="absolute inset-x-0 top-full z-50 mt-2 rounded-xl border border-destructive/30 bg-card p-3 text-sm text-destructive">{locationError}</p>}
             {searchInput && (
               <button type="button"
-               onClick={() => { setSearchInput(''); setSearch(''); setSelectedLocation(null); setRadius(0); setRadiusEnabled(false) }}
+               onClick={() => { setSearchInput(''); setSearch(''); setCommittedSearch(''); setSelectedLocation(null); setRadius(0); setRadiusEnabled(false); setLocationSuggestions([]); setLocationError(''); setActiveSuggestionIndex(-1) }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-text-muted hover:bg-muted hover:text-text-main"
                 aria-label="Clear search"
               >
@@ -602,11 +615,9 @@ export default function BrokersPage() {
 
           {hasActiveFilters && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
-              {search && <FilterChip label={`Search: "${search}"`} onRemove={() => { setSearchInput(''); setSearch('') }} />}
+              {search && <FilterChip label={`Search: "${search}"`} onRemove={() => { setSearchInput(''); setSearch(''); setCommittedSearch(''); setLocationSuggestions([]); setActiveSuggestionIndex(-1) }} />}
                {radius > 0 && <FilterChip label={`${radius} mile radius`} onRemove={() => setRadius(0)} />}
-              {specialization && <FilterChip label={`Specialization: ${specialization}`} onRemove={() => setSpecialization('')} />}
               {minExperience && <FilterChip label={`${minExperience}+ years`} onRemove={() => setMinExperience('')} />}
-              {language && <FilterChip label={`Language: ${language}`} onRemove={() => setLanguage('')} />}
               {minRating !== '0' && <FilterChip label={`Rating: ${minRating}+`} onRemove={() => setMinRating('0')} />}
               {featuredOnly && <FilterChip label="Featured partners" onRemove={() => setFeaturedOnly(false)} />}
               <button type="button"
@@ -712,6 +723,16 @@ export default function BrokersPage() {
         <div className="container-custom">
           {isLoading ? (
             <BrokerCardSkeleton count={PAGE_SIZE} view={viewMode} />
+          ) : brokerError ? (
+            <EmptyState
+              title="Unable to load brokers"
+              description={brokerError instanceof Error ? brokerError.message : 'Broker search is temporarily unavailable. Please try again.'}
+              action={
+                <button type="button" onClick={() => window.location.reload()} className="btn btn-primary">
+                  Try Again
+                </button>
+              }
+            />
           ) : sortedBrokers && sortedBrokers.length > 0 ? (
             <>
               <motion.div
@@ -723,27 +744,24 @@ export default function BrokersPage() {
                 )}
                 layout
               >
-                {sortedBrokers.map((broker: any) => (
+                {sortedBrokers.map((broker: any,ind:number) => (
                   <BrokerGridCard
-                    key={broker.id}
+                    key={broker.id+"hlm"+ind}
                     slug={broker.profileSlug}
                     name={broker.displayName || broker.companyName || 'Mortgage Broker'}
                     company={broker.companyName || 'Mortgage Broker'}
-                    location={broker.serviceCities?.[0] || broker.city || 'United States'}
+                    location={broker.city || 'United States'}
                     logo={broker.logo}
                     rating={broker.avgRating || 0}
                     reviewCount={broker.totalReviews || broker._count?.reviews || 0}
                     yearsExperience={broker.experienceYears || 0}
-                    specializations={broker.specializations || []}
                     isVerified={broker.verificationStatus === 'VERIFIED'}
                     isFeatured={broker.isFeatured === true}
                     isPremium={false}
                     description={broker.description}
-                    serviceCities={broker.serviceCities || []}
                     supportedBanks={(broker.bankPartners || []).map(
                       (bp: any) => bp.bankName
                     )}
-                    languages={broker.languages || []}
                     phone={broker.canShowContact ? broker.phone : undefined}
                     email={broker.canShowContact ? broker.email : undefined}
                     viewMode={viewMode}

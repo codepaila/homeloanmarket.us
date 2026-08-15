@@ -90,6 +90,7 @@ export const authOptions = {
           },
           include: {
             brokerProfile: {
+              take: 1,
               include: {
                 subscription: true
               }
@@ -140,7 +141,7 @@ export const authOptions = {
         }
 
         // Get subscription details from broker profile
-        const subscription = user.brokerProfile?.subscription;
+        const subscription = user.brokerProfile[0]?.subscription;
         
         // Return user object
         return {
@@ -151,14 +152,14 @@ export const authOptions = {
           role: user.role,
           image: user.image,
           isActive: user.isActive,
-          brokerProfile: user.brokerProfile
+          brokerProfile: user.brokerProfile[0]
             ? {
-                id: user.brokerProfile.id,
-                displayName: user.brokerProfile.displayName,
-                companyName: user.brokerProfile.companyName,
-                verificationStatus: user.brokerProfile.verificationStatus,
-                brokerStatus: user.brokerProfile.brokerStatus,
-                profileSlug: user.brokerProfile.profileSlug,
+                id: user.brokerProfile[0].id,
+                displayName: user.brokerProfile[0].displayName,
+                companyName: user.brokerProfile[0].companyName,
+                verificationStatus: user.brokerProfile[0].verificationStatus,
+                brokerStatus: user.brokerProfile[0].brokerStatus,
+                profileSlug: user.brokerProfile[0].profileSlug,
                 subscription: subscription ? {
                   plan: subscription.plan,
                   isActive: subscription.isActive,
@@ -201,6 +202,7 @@ export const authOptions = {
           where: { email: token.email as string },
           include: {
             brokerProfile: {
+              take: 1,
               include: {
                 subscription: true
               }
@@ -220,15 +222,15 @@ export const authOptions = {
           token.isActive = dbUser.isActive;
           
           token.brokerProfile = null
-          if (dbUser.brokerProfile) {
-            const subscription = dbUser.brokerProfile.subscription;
+          if (dbUser.brokerProfile[0]) {
+            const subscription = dbUser.brokerProfile[0].subscription;
             token.brokerProfile = {
-              id: dbUser.brokerProfile.id,
-              displayName: dbUser.brokerProfile.displayName,
-              companyName: dbUser.brokerProfile.companyName,
-              verificationStatus: dbUser.brokerProfile.verificationStatus,
-              brokerStatus: dbUser.brokerProfile.brokerStatus,
-              profileSlug: dbUser.brokerProfile.profileSlug,
+              id: dbUser.brokerProfile[0].id,
+              displayName: dbUser.brokerProfile[0].displayName,
+              companyName: dbUser.brokerProfile[0].companyName,
+              verificationStatus: dbUser.brokerProfile[0].verificationStatus,
+              brokerStatus: dbUser.brokerProfile[0].brokerStatus,
+              profileSlug: dbUser.brokerProfile[0].profileSlug,
               subscription: subscription ? {
                 plan: subscription.plan,
                 isActive: subscription.isActive,

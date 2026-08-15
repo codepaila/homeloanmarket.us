@@ -42,45 +42,45 @@ const navigation = [
     name: 'Find Brokers',
     href: '/brokers',
     icon: Briefcase,
-    children: [
-      {
-        name: 'All Mortgage Brokers',
-        description: 'Find mortgage brokers',
-        href: '/brokers',
-        icon: Building2,
-      },
-      {
-        name: 'Featured Mortgage Brokers',
-        description: 'Our top-rated, premium partners',
-        href: '/brokers',
-        icon: Star,
-      },
-    ],
+    // children: [
+    //   {
+    //     name: 'All Mortgage Brokers',
+    //     description: 'Find mortgage brokers',
+    //     href: '/brokers',
+    //     icon: Building2,
+    //   },
+    //   {
+    //     name: 'Featured Mortgage Brokers',
+    //     description: 'Our top-rated, premium partners',
+    //     href: '/brokers',
+    //     icon: Star,
+    //   },
+    // ],
   },
+  // {
+  //   name: 'Resources',
+  //   href: '/guides',
+  //   icon: BookOpen,
+  //   children: [
+  //     {
+  //       name: 'Guides',
+  //       description: 'Learn about the mortgage process',
+  //       href: '/guides',
+  //       icon: BookOpen,
+  //     },
+
+  //     {
+  //       name: 'FAQ',
+  //       description: 'Answers to common questions',
+  //       href: '/faq',
+  //       icon: HelpCircle,
+  //     },
+  //   ],
+  // },
   {
-    name: 'Resources',
-    href: '/guides',
-    icon: BookOpen,
-    children: [
-      {
-        name: 'Guides',
-        description: 'Learn about the mortgage process',
-        href: '/guides',
-        icon: BookOpen,
-      },
-      {
-        name: 'Mortgage Calculator',
-        description: 'Estimate your monthly payment in seconds',
-        href: '/calculator',
-        icon: Calculator,
-      },
-      {
-        name: 'FAQ',
-        description: 'Answers to common questions',
-        href: '/faq',
-        icon: HelpCircle,
-      },
-    ],
+    name: 'Mortgage Calculator',
+    href: '/calculator',
+    icon: Calculator,
   },
   {
     name: 'Join As Company',
@@ -200,66 +200,67 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
               aria-label="Main navigation"
             >
               {navigation.map((item) =>
-                item.children ? (
-                  <div key={item.name} className="relative">
-                    <button
-                      onClick={() =>
-                        setOpenDropdown(
-                          openDropdown === item.name ? null : item.name
-                        )
-                      }
-                      aria-expanded={openDropdown === item.name}
-                      aria-haspopup="true"
-                      className={cn(
-                        'flex items-center gap-1 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors',
-                        isActive(item.href)
-                          ? 'text-primary'
-                          : 'text-text-muted hover:text-text-main',
-                      )}
-                    >
-                      {item.name}
-                      <ChevronDown
-                        className={cn(
-                          'h-3.5 w-3.5 transition-transform duration-200',
-                          openDropdown === item.name && 'rotate-180',
-                        )}
-                      />
-                    </button>
+                // item.children ? (
+                //   <div key={item.name} className="relative">
+                //     <button
+                //       onClick={() =>
+                //         setOpenDropdown(
+                //           openDropdown === item.name ? null : item.name
+                //         )
+                //       }
+                //       aria-expanded={openDropdown === item.name}
+                //       aria-haspopup="true"
+                //       className={cn(
+                //         'flex items-center gap-1 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors',
+                //         isActive(item.href)
+                //           ? 'text-primary'
+                //           : 'text-text-muted hover:text-text-main',
+                //       )}
+                //     >
+                //       {item.name}
+                //       <ChevronDown
+                //         className={cn(
+                //           'h-3.5 w-3.5 transition-transform duration-200',
+                //           openDropdown === item.name && 'rotate-180',
+                //         )}
+                //       />
+                //     </button>
 
-                    <AnimatePresence>
-                      {openDropdown === item.name && (
-                        <motion.div
-                          initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                          animate={{ opacity: 1, y: 0, scale: 1 }}
-                          exit={{ opacity: 0, y: 8, scale: 0.98 }}
-                          transition={{ duration: 0.15, ease: 'easeOut' }}
-                          className="absolute left-0 top-full mt-2 w-72 overflow-hidden rounded-2xl border border-border bg-card p-2 shadow-large"
-                        >
-                          {item.children.map((child) => (
-                            <Link
-                              key={child.name}
-                              href={child.href}
-                              className="group flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-muted/60"
-                              onClick={() => setOpenDropdown(null)}
-                            >
-                              <span className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
-                                <child.icon className="h-4 w-4" />
-                              </span>
-                              <span>
-                                <span className="block text-sm font-semibold text-text-main">
-                                  {child.name}
-                                </span>
-                                <span className="block text-xs text-text-muted">
-                                  {child.description}
-                                </span>
-                              </span>
-                            </Link>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                ) : (
+                //     <AnimatePresence>
+                //       {openDropdown === item.name && (
+                //         <motion.div
+                //           initial={{ opacity: 0, y: 8, scale: 0.98 }}
+                //           animate={{ opacity: 1, y: 0, scale: 1 }}
+                //           exit={{ opacity: 0, y: 8, scale: 0.98 }}
+                //           transition={{ duration: 0.15, ease: 'easeOut' }}
+                //           className="absolute left-0 top-full mt-2 w-72 overflow-hidden rounded-2xl border border-border bg-card p-2 shadow-large"
+                //         >
+                //           {item.children.map((child) => (
+                //             <Link
+                //               key={child.name}
+                //               href={child.href}
+                //               className="group flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-muted/60"
+                //               onClick={() => setOpenDropdown(null)}
+                //             >
+                //               <span className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+                //                 <child.icon className="h-4 w-4" />
+                //               </span>
+                //               <span>
+                //                 <span className="block text-sm font-semibold text-text-main">
+                //                   {child.name}
+                //                 </span>
+                //                 <span className="block text-xs text-text-muted">
+                //                   {child.description}
+                //                 </span>
+                //               </span>
+                //             </Link>
+                //           ))}
+                //         </motion.div>
+                //       )}
+                //     </AnimatePresence>
+                //   </div>
+                // ) : 
+                (
                   <Link
                     key={item.name}
                     href={item.href}
@@ -335,11 +336,11 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
                 </div>
               ) : (
                 <div
-                  className="flex items-center gap-2"
+                  className="hidden md:flex items-center gap-2"
                 >
                   <Link
                     href="/auth/signin"
-                    className="hidden rounded-xl  text-base font-medium text-text-muted transition-colors hover:text-text-main sm:block "
+                    className=" rounded-xl  text-base font-medium text-text-muted transition-colors hover:text-text-main"
                   >
                     <Button variant="outline">
 
@@ -544,7 +545,7 @@ function MobileMenu({
                 onClick={onClose}
               >
                 <Button variant="outline" className="w-full">
-                  Sign In <User/>
+                  Sign In <User />
                 </Button>
               </Link>
               <Link href="/auth/signup" onClick={onClose}>

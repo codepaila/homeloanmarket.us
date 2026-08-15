@@ -45,9 +45,6 @@ export async function findClaimInvitation(rawToken: string) {
               state: true,
               officeAddress: true,
               experienceYears: true,
-              specializations: true,
-              serviceCities: true,
-              languages: true,
             },
           },
         },
@@ -106,9 +103,6 @@ export function safeClaimProfile(broker: Awaited<ReturnType<typeof findClaimInvi
     state: broker.state,
     officeAddress: broker.officeAddress,
     experienceYears: broker.experienceYears,
-    specializations: broker.specializations,
-    serviceCities: broker.serviceCities,
-    languages: broker.languages,
   }
 }
 

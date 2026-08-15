@@ -97,9 +97,6 @@ function calculateProfileCompletion(brokerProfile: any): number {
     brokerProfile.state,
     brokerProfile.pinCode,
     brokerProfile.experienceYears > 0,
-    brokerProfile.specializations.length > 0,
-    brokerProfile.serviceCities.length > 0,
-    brokerProfile.languages.length > 0,
     brokerProfile.logo,
     brokerProfile.coverImage
   ]

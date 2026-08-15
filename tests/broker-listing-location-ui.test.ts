@@ -30,7 +30,7 @@ test('admin review exposes explicit verification, publication, and location reso
 })
 
 test('public listing preserves verification and visibility gates', () => {
-  assert.match(publicApi, /where\.isVisible = true/)
-  assert.match(publicApi, /where\.verificationStatus = 'VERIFIED'/)
+  assert.match(publicApi, /isVisible: true/)
+  assert.match(publicApi, /verificationStatus: 'VERIFIED'/)
   assert.match(publicApi, /brokerStatus: \{ not: 'SUSPENDED' \}/)
 })

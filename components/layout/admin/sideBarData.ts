@@ -236,7 +236,6 @@ export const appSidebarData = (user: any) => {
         { title: "Featured Brokers", url: "/brokers?featured=true" },
         { title: "Verified Brokers", url: "/brokers?verified=true" },
         { title: "By City", url: "/brokers/cities" },
-        { title: "By Specialization", url: "/brokers/specializations" },
       ]
     },
     {

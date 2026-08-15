@@ -1,9 +1,10 @@
-import type { BrokerStatus, VerificationStatus, SubscriptionPlan } from '@prisma/client'
+import type { BrokerCreationSource, BrokerStatus, VerificationStatus, SubscriptionPlan, Prisma } from '@prisma/client'
 
 export type BrokerPublicState = {
   isVisible: boolean
   verificationStatus: VerificationStatus
   brokerStatus: BrokerStatus
+  creationSource?: BrokerCreationSource | null
   userId: string | null
   userIsActive?: boolean
 }
@@ -24,10 +25,29 @@ export function isBrokerOwner(brokerUserId: string | null, userId: string) {
 }
 
 export function isPublicBroker(state: BrokerPublicState) {
+  const sourceEligible = state.creationSource === 'ADMIN_CREATED' || state.verificationStatus === 'VERIFIED'
   return state.isVisible &&
-    state.verificationStatus === 'VERIFIED' &&
     state.brokerStatus !== 'SUSPENDED' &&
-    (state.userId === null || state.userIsActive === true)
+    (state.userId === null || state.userIsActive === true) &&
+    sourceEligible
+}
+
+// Canonical public marketplace eligibility shared by the broker listing,
+// radius search, and sitemap. ADMIN_CREATED brokers are platform-published
+// marketplace profiles that may be unowned and do not go through the
+// self-registration verification lifecycle, so they are public unless they are
+// suspended or hard-hidden via `isVisible`. SELF_REGISTERED brokers must still
+// be VERIFIED and visible. Both branches share the suspension and ownership
+// protections.
+export function publicBrokerWhere(): Prisma.BrokerWhereInput {
+  return {
+    isVisible: true,
+    brokerStatus: { not: 'SUSPENDED' },
+    AND: [
+      { OR: [{ userId: null }, { user: { isActive: true } }] },
+      { OR: [{ creationSource: 'ADMIN_CREATED' }, { verificationStatus: 'VERIFIED' }] },
+    ],
+  }
 }
 
 export function hasActiveEntitlement(subscription?: BrokerEntitlement | null) {
@@ -61,14 +81,10 @@ export const BROKER_EDITABLE_FIELDS = [
   'state',
   'pinCode',
   'experienceYears',
-  'specializations',
-  'serviceCities',
-  'languages',
   'registrationNumber',
   'panNumber',
   'logo',
   'coverImage',
-  'isVisible',
 ] as const
 
 // Fields only an ADMIN may set (and only through an admin-authorized PATCH).
@@ -77,6 +93,7 @@ export const BROKER_ADMIN_FIELDS = [
   'verifiedAt',
   'brokerStatus',
   'featuredRank',
+  'isVisible',
 ] as const
 
 // Apply the canonical broker-update allowlist to an arbitrary request body.
@@ -92,32 +109,6 @@ export function pickBrokerEditableFields(body: Record<string, unknown>, isAdmin:
     if (allowed.has(key)) updateData[key] = body[key]
   }
   return updateData
-}
-
-// Canonical FREE-tier service-city allowance: FREE = 1 service city, paid
-// FEATURED = unlimited. `hasPaidEntitlement` (not `isActive`, which is true
-// for every FREE plan) is the authoritative paid gate.
-export function maxServiceCitiesForEntitlement(subscription?: BrokerEntitlement | null): number {
-  return hasPaidEntitlement(subscription) ? Infinity : 1
-}
-
-// Server-side service-city limit check. Returns ok:false (with the canonical
-// reason) when the caller exceeds the allowance for the given entitlement.
-// A `null`/undefined subscription (e.g. a broker being created, which always
-// starts on the FREE plan) resolves to the FREE allowance.
-export function assertServiceCityLimit(
-  serviceCities: unknown,
-  subscription?: BrokerEntitlement | null,
-): { ok: true; max: number } | { ok: false; max: number; reason: string } {
-  const max = maxServiceCitiesForEntitlement(subscription)
-  if (Array.isArray(serviceCities) && serviceCities.length > max) {
-    return {
-      ok: false,
-      max,
-      reason: `Free plan limited to ${max} service city. Please upgrade to add more cities.`,
-    }
-  }
-  return { ok: true, max }
 }
 
 export function getBrokerContactEmail(

@@ -17,7 +17,7 @@ const steps = [
     step: 2,
     title: 'Compare & Review',
     description:
-      'Search mortgage broker profiles, compare specializations, and read verified borrower reviews.',
+      'Search mortgage broker profiles, compare offices, and read verified borrower reviews.',
     icon: Users,
   },
   {

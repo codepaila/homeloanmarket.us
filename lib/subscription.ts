@@ -5,6 +5,7 @@ import crypto from 'crypto'
 import { Redis } from '@upstash/redis'
 import prisma from '@/lib/prisma'
 import { getAuthoritativePlan, subscriptionPlans } from '@/lib/stripe'
+import { resolveCompanyPlanByStripePrice } from '@/lib/company-plan'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   // apiVersion: '2024-06-20',
@@ -324,6 +325,7 @@ export class SubscriptionService {
         stripeCustomerId,
         stripeSubscriptionId,
         status,
+        planId,
       )
       if (companySubscription) return companySubscription as any
       throw new Error('Broker subscription not found')
@@ -404,9 +406,11 @@ export class SubscriptionService {
     stripeCustomerId: string,
     stripeSubscriptionId: string,
     status: string,
+    priceId?: string | null,
   ) {
     const existing = await prisma.companySubscription.findFirst({ where: { stripeCustomerId } })
     if (!existing) return null
+    const plan = priceId ? await resolveCompanyPlanByStripePrice(priceId) : null
     const isActive = status === 'active' || status === 'trialing'
     return prisma.$transaction(async (tx) => {
       const updated = await tx.companySubscription.update({
@@ -415,6 +419,8 @@ export class SubscriptionService {
           status: isActive ? 'ACTIVE' : status === 'past_due' ? 'PAST_DUE' : status === 'canceled' ? 'CANCELED' : 'EXPIRED',
           isActive,
           stripeSubId: stripeSubscriptionId,
+          planId: plan ? plan.id : existing.planId,
+          plan: plan ? plan.name : existing.plan,
           startDate: isActive ? existing.startDate || new Date() : existing.startDate,
           endDate: isActive ? null : new Date(),
           updatedAt: new Date(),

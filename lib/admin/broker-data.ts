@@ -1,7 +1,9 @@
 import * as XLSX from 'xlsx'
 import prisma from '@/lib/prisma'
-import { buildBrokerImportData, normalizePhoneForMatch, type BrokerImportRow } from './broker-import'
-import { slugifyAdminBroker, adminCreatedBrokerDefaults } from '@/lib/admin-broker'
+import { Prisma } from '@prisma/client'
+import { buildBrokerImportData, buildBrokerImportIdentity, normalizeEmail, normalizeNmls, normalizePhoneForMatch, type BrokerImportRow } from './broker-import'
+import { adminCreatedBrokerDefaults } from '@/lib/admin-broker'
+import { resolveBrokerLocation, locationHasValidCoordinates, type BrokerLocationPatch } from '@/lib/location/broker-location'
 
 export type BrokerImportResultError = {
   row: number
@@ -13,11 +15,25 @@ export type BrokerImportResultError = {
   error: string
 }
 
-function safeImportError(error: unknown) {
+function uniqueTarget(error: unknown) {
+  const meta = error && typeof error === 'object' && 'meta' in error ? error.meta : null
+  const target = meta && typeof meta === 'object' && 'target' in meta ? meta.target : null
+  return Array.isArray(target) ? target.join(',') : typeof target === 'string' ? target : ''
+}
+
+function safeImportError(error: unknown, row: BrokerImportRow) {
   const code = error && typeof error === 'object' && 'code' in error && typeof error.code === 'string'
     ? error.code
     : 'IMPORT_PERSISTENCE_FAILED'
-  if (code === 'P2002') return { errorCode: code, error: 'Unique constraint violation while creating the broker record.' }
+  if (code === 'P2002') {
+    const target = uniqueTarget(error).toLowerCase()
+    if (target.includes('userid')) return { errorCode: code, error: 'Broker ownership index rejected another unowned broker. Run the ownership-index reconciliation before importing.' }
+    if (target.includes('profileslug')) return { errorCode: code, error: `Duplicate Broker detected for generated slug from ${row.values.companyName || row.values.displayName || 'the imported name'}.` }
+    if (target.includes('nmls')) return { errorCode: code, error: `Duplicate Broker detected for NMLS ${row.values.nmls || 'the imported row'}.` }
+    if (target.includes('email')) return { errorCode: code, error: `Duplicate Broker detected for email ${row.values.email || 'the imported row'}.` }
+    if (target.includes('phone')) return { errorCode: code, error: `Duplicate Broker detected for phone ${row.values.phone || 'the imported row'}.` }
+    return { errorCode: code, error: 'Broker became a duplicate after preview; import was not applied.' }
+  }
   if (code === 'P2014') return { errorCode: code, error: 'Broker relation could not be persisted.' }
   if (code === 'P2025') return { errorCode: code, error: 'Referenced broker record was not found.' }
   return { errorCode: code, error: 'Unable to persist the broker record.' }
@@ -44,27 +60,94 @@ export function brokerWhereFromParams(params: { search?: string; ownership?: str
   return where
 }
 
-export async function annotateBrokerImportRows(rows: BrokerImportRow[]) {
-  const nmls = rows.map((row) => row.values.nmls).filter((value): value is string => Boolean(value))
-  const emails = rows.map((row) => row.values.email).filter((value): value is string => Boolean(value))
-  const phones = rows.map((row) => row.values.phone).filter((value): value is string => Boolean(value))
-  const phoneCandidates = phones.map((value) => normalizePhoneForMatch(value)).filter(Boolean)
-  const phoneWhere = phoneCandidates.map((value) => ({ phone: { contains: value } }))
-  const existing = await prisma.broker.findMany({
-    where: { OR: [{ nmls: { in: nmls } }, { email: { in: emails } }, ...phoneWhere] },
-    select: { id: true, nmls: true, email: true, phone: true, displayName: true, companyName: true, officeAddress: true },
-  })
-  const byIdentity = new Map<string, (typeof existing)[number]>()
-  for (const broker of existing) {
-    if (broker.nmls) byIdentity.set(`nmls:${broker.nmls}`, broker)
-    if (broker.email) byIdentity.set(`email:${broker.email.toLowerCase()}`, broker)
-    if (broker.phone) byIdentity.set(`phone:${normalizePhoneForMatch(broker.phone)}`, broker)
+type BrokerIdentityRecord = {
+  id: string
+  nmls: string | null
+  email: string | null
+  phone: string
+  registrationNumber: string | null
+  panNumber: string | null
+  profileSlug: string
+  displayName: string
+  companyName: string | null
+  officeAddress: string
+}
+
+const brokerIdentitySelect = {
+  id: true,
+  nmls: true,
+  email: true,
+  phone: true,
+  registrationNumber: true,
+  panNumber: true,
+  profileSlug: true,
+  displayName: true,
+  companyName: true,
+  officeAddress: true,
+} as const
+
+async function assertOwnershipIndexSupportsUnownedBrokers() {
+  let raw: { cursor?: { firstBatch?: Array<{ key?: Record<string, unknown>; name?: string; isUnique?: boolean; partialUserIdType?: string }> } }
+  try {
+    // Project only scalar index metadata. Returning the raw partial filter makes
+    // Prisma 6's BSON tagged-value deserializer reject Mongo's `$type` key.
+    raw = await prisma.$runCommandRaw({
+      aggregate: 'brokers',
+      pipeline: [
+        { $indexStats: {} },
+        {
+          $project: {
+            name: 1,
+            key: 1,
+            isUnique: { $ifNull: ['$spec.unique', false] },
+            partialUserIdType: {
+              $getField: {
+                field: { $literal: '$type' },
+                input: {
+                  $ifNull: [
+                    { $getField: { field: 'userId', input: { $ifNull: ['$spec.partialFilterExpression', {}] } } },
+                    {},
+                  ],
+                },
+              },
+            },
+          },
+        },
+      ],
+      cursor: {},
+    }) as typeof raw
+  } catch (error) {
+    if (String(error).includes('NamespaceNotFound') || String(error).includes('code 26')) return
+    throw error
   }
+  const indexes = raw.cursor?.firstBatch || []
+  const ownership = indexes.find((index) => index.isUnique === true && index.key?.userId === 1)
+  if (!ownership) return
+  if (ownership.partialUserIdType !== 'objectId') throw new Error('Broker ownership index is not partial for non-null userId values. Run yarn db:ensure-ownership-index before importing unowned brokers.')
+}
+
+function brokerMatchesIdentity(broker: BrokerIdentityRecord, row: BrokerImportRow) {
+  const identity = buildBrokerImportIdentity(row)
+  return Boolean(
+    (identity.nmls && broker.nmls && normalizeNmls(broker.nmls) === identity.nmls) ||
+    (identity.email && broker.email && normalizeEmail(broker.email) === identity.email) ||
+    (identity.phone && normalizePhoneForMatch(broker.phone) === identity.phone) ||
+    (identity.registrationNumber && broker.registrationNumber === identity.registrationNumber) ||
+    (identity.panNumber && broker.panNumber === identity.panNumber),
+  )
+}
+
+async function findBrokerConflict(db: typeof prisma | Prisma.TransactionClient, row: BrokerImportRow) {
+  const brokers = await db.broker.findMany({ select: brokerIdentitySelect }) as BrokerIdentityRecord[]
+  return brokers.find((broker) => brokerMatchesIdentity(broker, row))
+}
+
+export async function annotateBrokerImportRows(rows: BrokerImportRow[]) {
+  await assertOwnershipIndexSupportsUnownedBrokers()
+  const existing = await prisma.broker.findMany({ select: brokerIdentitySelect }) as BrokerIdentityRecord[]
   return rows.map((row) => {
     if (row.status === 'INVALID' || row.status === 'DUPLICATE_IN_FILE') return row
-    const match = (row.values.nmls && byIdentity.get(`nmls:${row.values.nmls}`)) ||
-      (row.values.email && byIdentity.get(`email:${row.values.email.toLowerCase()}`)) ||
-      (row.values.phone && byIdentity.get(`phone:${normalizePhoneForMatch(row.values.phone)}`))
+    const match = existing.find((broker) => brokerMatchesIdentity(broker, row))
     if (!match) return row
     const next = buildBrokerImportData(row, '')
     const changes: Record<string, { old: string; next: string }> = {}
@@ -78,6 +161,18 @@ export async function annotateBrokerImportRows(rows: BrokerImportRow[]) {
 
 export async function importBrokerRows(rows: BrokerImportRow[], mode: 'CREATE_ONLY' | 'UPDATE_ONLY' | 'UPSERT', defaultDescription: string) {
   const result = { imported: 0, updated: 0, skipped: 0, failed: 0, locationResolved: 0, locationMissing: 0, locationFailed: 0, errors: [] as BrokerImportResultError[] }
+  const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
+  const updateBrokerFields = (data: ReturnType<typeof buildBrokerImportData>) => ({ displayName: data.displayName, nmls: data.nmls, companyName: data.companyName, phone: data.phone, email: data.email, officeAddress: data.officeAddress, city: data.city ?? undefined, state: data.state ?? undefined, pinCode: data.pinCode, description: data.description, website: data.website, experienceYears: data.experienceYears, registrationNumber: data.registrationNumber, panNumber: data.panNumber })
+  const mergeLocationPatch = (patch: BrokerLocationPatch | null) => patch ? { normalizedAddress: patch.normalizedAddress, googlePlaceId: patch.googlePlaceId, locationCountryCode: patch.locationCountryCode, location: patch.location } : {}
+  const resolveAddress = async (data: ReturnType<typeof buildBrokerImportData>) => {
+    const address = [data.officeAddress, data.city, data.state, data.pinCode].filter(Boolean).join(', ')
+    if (!address) return { patch: null, attempted: false }
+    await delay(120)
+    console.info('[LOCATION] resolving broker address', { displayName: data.displayName, city: data.city || null, state: data.state || null })
+    const patch = await resolveBrokerLocation({ officeAddress: data.officeAddress, city: data.city, state: data.state, pinCode: data.pinCode })
+    if (patch) console.info('[LOCATION] resolved broker address', { displayName: data.displayName, latitude: patch.location.coordinates[1], longitude: patch.location.coordinates[0] })
+    return { patch, attempted: true }
+  }
   for (const row of rows) {
     if (row.errors.length || row.status === 'DUPLICATE_IN_FILE') {
       result.skipped += 1
@@ -86,22 +181,47 @@ export async function importBrokerRows(rows: BrokerImportRow[], mode: 'CREATE_ON
     }
     try {
       const data = buildBrokerImportData(row, defaultDescription)
-      if (row.existingBrokerId) {
+      let existingBrokerId = row.existingBrokerId
+      if (!existingBrokerId) {
+        const raceMatch = await findBrokerConflict(prisma, row)
+        if (raceMatch) existingBrokerId = raceMatch.id
+      }
+      if (existingBrokerId) {
         if (mode === 'CREATE_ONLY') {
           result.skipped += 1
           continue
         }
-        if (mode === 'UPDATE_ONLY' || mode === 'UPSERT') await prisma.broker.update({ where: { id: row.existingBrokerId }, data: { displayName: data.displayName, nmls: data.nmls, companyName: data.companyName, phone: data.phone, email: data.email, officeAddress: data.officeAddress, city: data.city ?? undefined, state: data.state ?? undefined, pinCode: data.pinCode, description: data.description, website: data.website, experienceYears: data.experienceYears, specializations: data.specializations, serviceCities: data.serviceCities, languages: data.languages, registrationNumber: data.registrationNumber, panNumber: data.panNumber } })
+        if (mode === 'UPDATE_ONLY' || mode === 'UPSERT') {
+          const existing = await prisma.broker.findUnique({ where: { id: existingBrokerId }, select: { location: true } })
+          let updateData: Record<string, unknown> = updateBrokerFields(data)
+          if (!existing || !locationHasValidCoordinates(existing.location)) {
+            const { patch, attempted } = await resolveAddress(data)
+            if (patch) { updateData = { ...updateData, ...mergeLocationPatch(patch) }; result.locationResolved += 1 }
+            else if (attempted) result.locationFailed += 1
+            else result.locationMissing += 1
+          }
+          await prisma.broker.update({ where: { id: existingBrokerId }, data: updateData })
+        }
         result.updated += 1
-        result.locationMissing += 1
         continue
       }
       if (mode === 'UPDATE_ONLY') {
         result.skipped += 1
+        result.errors.push(importResultError(row, 'SKIPPED', 'IMPORT_NOT_FOUND', 'No existing Broker matched the supported import identity.'))
         continue
       }
+      const { patch, attempted } = await resolveAddress(data)
+      if (patch) result.locationResolved += 1
+      else if (attempted) result.locationFailed += 1
+      else result.locationMissing += 1
       await prisma.$transaction(async (tx) => {
-        const baseSlug = slugifyAdminBroker(data.companyName || data.displayName)
+        const transactionConflict = await findBrokerConflict(tx, row)
+        if (transactionConflict) {
+          const conflict = new Error('Broker became a duplicate after preview; import was not applied.')
+          Object.assign(conflict, { code: 'IMPORT_RACE_CONFLICT' })
+          throw conflict
+        }
+        const baseSlug = buildBrokerImportIdentity(row).profileSlug
         let profileSlug = baseSlug
         let suffix = 2
         while (await tx.broker.findUnique({ where: { profileSlug } })) profileSlug = `${baseSlug}-${suffix++}`
@@ -112,17 +232,29 @@ export async function importBrokerRows(rows: BrokerImportRow[], mode: 'CREATE_ON
             userId: adminCreatedBrokerDefaults.userId,
             creationSource: adminCreatedBrokerDefaults.creationSource,
             verificationStatus: adminCreatedBrokerDefaults.verificationStatus,
+            verifiedAt: new Date(),
             brokerStatus: adminCreatedBrokerDefaults.brokerStatus,
             isVisible: adminCreatedBrokerDefaults.isVisible,
+            ...mergeLocationPatch(patch),
             subscription: { create: { plan: 'FREE', isActive: true, startDate: new Date(), endDate: null } },
           },
         })
       })
       result.imported += 1
-      result.locationMissing += 1
     } catch (error) {
+      const code = error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' ? error.code : ''
+      if ((code === 'P2002' || code === 'IMPORT_RACE_CONFLICT') && mode !== 'CREATE_ONLY') {
+        const conflict = await findBrokerConflict(prisma, row)
+        if (conflict) {
+          const data = buildBrokerImportData(row, defaultDescription)
+          await prisma.broker.update({ where: { id: conflict.id }, data: updateBrokerFields(data) })
+          result.updated += 1
+          result.locationMissing += 1
+          continue
+        }
+      }
       result.failed += 1
-      const safe = safeImportError(error)
+      const safe = safeImportError(error, row)
       console.error('Admin broker import row failed', { row: row.rowNumber, nmls: row.values.nmls || null, name: row.values.displayName || null, mode, errorCode: safe.errorCode, error: safe.error })
       result.errors.push(importResultError(row, 'FAILED', safe.errorCode, safe.error))
     }

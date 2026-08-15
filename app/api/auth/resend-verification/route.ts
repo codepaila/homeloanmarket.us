@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     const user = await prisma.user.findUnique({
       where: { email },
       include: {
-        brokerProfile: true
+        brokerProfile: { take: 1 }
       }
     })
 
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!user.brokerProfile) {
+    if (!user.brokerProfile[0]) {
       const result = await sendUserVerificationEmail(user.id)
       return NextResponse.json({
         success: result.success,
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Resend verification email
-    const result = await resendBrokerVerificationEmail(user.brokerProfile.id)
+    const result = await resendBrokerVerificationEmail(user.brokerProfile[0].id)
 
     if (!result.success) {
       return NextResponse.json(

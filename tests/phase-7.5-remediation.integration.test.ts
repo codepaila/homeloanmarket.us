@@ -29,9 +29,6 @@ function adminBrokerData(profileSlug: string) {
     verificationStatus: 'UNVERIFIED' as const,
     brokerStatus: 'FREE' as const,
     isVisible: false,
-    specializations: ['Home Purchase'],
-    serviceCities: ['Austin'],
-    languages: ['English'],
     subscription: {
       create: { plan: 'FREE' as const, isActive: true, startDate: new Date(), endDate: null },
     },

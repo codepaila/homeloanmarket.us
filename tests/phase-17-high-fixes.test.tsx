@@ -95,9 +95,6 @@ test('H2: allowlist keeps legitimate broker-editable fields', () => {
     state: 'TX',
     pinCode: '75201',
     experienceYears: 5,
-    specializations: ['Home Loan'],
-    serviceCities: ['Dallas'],
-    languages: ['English'],
     registrationNumber: 'RN1',
     panNumber: 'PN1',
     logo: '/logo.png',
@@ -105,9 +102,10 @@ test('H2: allowlist keeps legitimate broker-editable fields', () => {
     isVisible: true,
   }
   const picked = pickBrokerEditableFields(body, false)
-  for (const key of Object.keys(body)) {
+  for (const key of Object.keys(body).filter((key) => key !== 'isVisible')) {
     assert.equal(picked[key], body[key], `editable field ${key} must be applied`)
   }
+  assert.equal(picked.isVisible, undefined, 'visibility must remain admin-only')
 })
 
 test('H2: non-admin cannot set ownership, status, metrics, or verification fields', () => {
@@ -146,6 +144,7 @@ test('H2: admin may set admin-managed fields but never ownership/metrics', () =>
   assert.equal(picked.brokerStatus, 'FEATURED', 'admin can manage status')
   assert.equal(picked.verificationStatus, 'VERIFIED', 'admin can manage verification')
   assert.equal(picked.featuredRank, 3, 'admin can manage rank')
+  assert.equal(picked.isVisible, undefined, 'visibility is not present in this admin test payload')
   assert.equal(picked.userId, undefined, 'admin must not transfer ownership via PATCH')
   assert.equal(picked.avgRating, undefined, 'admin must not hand-set metrics')
   assert.equal(picked.totalLeads, undefined, 'admin must not hand-set metrics')
@@ -157,7 +156,8 @@ test('H2: allowlist constants are canonical (no privileged field is editable by 
     assert.equal((BROKER_EDITABLE_FIELDS as readonly string[]).includes(field), false, `${field} must not be broker-editable`)
   }
   assert.ok(BROKER_EDITABLE_FIELDS.length > 0, 'editable allowlist must exist')
-  assert.ok(BROKER_ADMIN_FIELDS.includes('verificationStatus'), 'admin allowlist includes verification')
+   assert.ok(BROKER_ADMIN_FIELDS.includes('verificationStatus'), 'admin allowlist includes verification')
+   assert.ok(BROKER_ADMIN_FIELDS.includes('isVisible'), 'admin allowlist includes visibility')
 })
 
 test('H2: PATCH routes use the allowlist helper and preserve the ownership check', () => {

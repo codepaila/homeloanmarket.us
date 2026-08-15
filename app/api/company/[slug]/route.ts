@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/currentUser'
 import prisma from '@/lib/prisma'
-import { hasPaidEntitlement, isBrokerOwner, isPublicBroker, pickBrokerEditableFields, maxServiceCitiesForEntitlement } from '@/lib/broker-policy'
+import { hasPaidEntitlement, isBrokerOwner, isPublicBroker, pickBrokerEditableFields } from '@/lib/broker-policy'
 import { SubscriptionService } from '@/lib/subscription'
 import { toPublicBrokerRecord } from '@/lib/public-broker'
 
@@ -79,6 +79,7 @@ export async function GET(
       isVisible: broker.isVisible,
       verificationStatus: broker.verificationStatus,
       brokerStatus: broker.brokerStatus,
+      creationSource: broker.creationSource,
       userId: broker.userId,
       userIsActive: broker.user?.isActive,
     })) {
@@ -129,9 +130,7 @@ export async function GET(
         totalLeads: broker.totalLeads,
         profileViews: broker.profileViews,
         avgRating: broker.avgRating,
-        experienceYears: broker.experienceYears,
-        serviceCities: broker.serviceCities.length,
-        specializations: broker.specializations.length
+        experienceYears: broker.experienceYears
       }
     }
 
@@ -232,24 +231,6 @@ export async function PATCH(
       }
 
       updateData.profileSlug = body.profileSlug
-    }
-
-    // Validate service cities limit for free subscription. The FREE allowance
-    // is a paid-entitlement gate: only a paid FEATURED subscription is
-    // unlimited. Raw `subscription.isActive` is true for every FREE plan.
-    if (body.serviceCities && Array.isArray(body.serviceCities)) {
-      const effectiveSubscription = SubscriptionService.effectiveSubscription(broker.subscription)
-      const maxServiceCities = maxServiceCitiesForEntitlement(effectiveSubscription)
-
-      if (body.serviceCities.length > maxServiceCities) {
-        return NextResponse.json(
-          { 
-            message: `Free plan limited to ${maxServiceCities} service city. Please upgrade to add more cities.`,
-            error: 'SUBSCRIPTION_LIMIT'
-          },
-          { status: 403 }
-        )
-      }
     }
 
     // Handle bank partnerships separately (if provided)

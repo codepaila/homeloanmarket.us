@@ -36,8 +36,6 @@ test('Phase 2 admin navigation points only to implemented primary areas', () => 
 
 test('Phase 2 onboarding uses US-oriented defaults', () => {
   const source = read('components/sections/broker/BrokerSetupWizard.tsx')
-  assert.ok(source.includes("specializations: ['Home Purchase']"))
-  assert.ok(source.includes("languages: ['English', 'Spanish']"))
   assert.ok(source.includes("currentStep === 4 && 'Review and submit your application'"))
 })
 

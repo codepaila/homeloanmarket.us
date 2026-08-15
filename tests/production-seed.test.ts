@@ -45,7 +45,6 @@ test('broker fixture contains six profiles with an unowned claim candidate', () 
   assert.equal((fixture.match(/key: '[a-z-]+', first:/g) || []).length, 6)
   assert.ok(code.includes('userId: spec.owned ? users[spec.key].id : null'))
   assert.ok(fixture.includes("owned: false"))
-  assert.ok(code.includes('serviceCities: [spec.city]'))
   assert.ok(code.includes('profileSlug: slug'))
 })
 

@@ -79,7 +79,6 @@ export default async function BrokerProfilePage() {
       officeState: broker.state,
       officePinCode: broker.pinCode,
       yearsOfExperience: broker.experienceYears,
-      serviceCities: broker.serviceCities,
       bankPartnerships: broker.bankPartners.map(bp => bp.bankName),
       registrationNumber: broker.registrationNumber,
       panNumber: broker.panNumber,

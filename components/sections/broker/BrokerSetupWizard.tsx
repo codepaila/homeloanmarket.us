@@ -40,8 +40,7 @@ import {
   FileText,
   Upload,
   Check,
-  AlertCircle,
-  Languages
+  AlertCircle
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -82,9 +81,6 @@ const contactInfoSchema = z.object({
 // Step 3 Schema - Professional Details
 const professionalSchema = z.object({
   experienceYears: z.coerce.number().min(0, 'Experience cannot be negative').max(50, 'Maximum 50 years'),
-  specializations: z.array(z.string()).min(1, 'Select at least one specialization'),
-  serviceCities: z.array(z.string()).min(1, 'Select at least one city'),
-  languages: z.array(z.string()).min(1, 'Select at least one language'),
   bankPartnerships: z.array(z.string()),
 })
 
@@ -130,9 +126,6 @@ export function BrokerSetupWizard({ user, initialData = {}, initialStep = 1 }: B
   const [currentStep, setCurrentStep] = useState(initialStep)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [uploadedDocs, setUploadedDocs] = useState<Record<string, { name: string; url: string }>>({})
-  const [newSpec, setNewSpec] = useState('')
-  const [newCity, setNewCity] = useState('')
-  const [newLang, setNewLang] = useState('')
   const [newBank, setNewBank] = useState('')
 
   // Common US cities for selection
@@ -142,23 +135,6 @@ export function BrokerSetupWizard({ user, initialData = {}, initialStep = 1 }: B
     'Austin', 'Jacksonville', 'Fort Worth', 'Columbus', 'Charlotte',
     'Indianapolis', 'San Francisco', 'Seattle', 'Denver', 'Washington DC'
   ]
-
-  // Specialization options
-  const specializationOptions = [
-    'Home Purchase',
-    'Refinance',
-    'FHA Loan',
-    'VA Loan',
-    'USDA Loan',
-    'Jumbo Loan',
-    'Conventional Loan',
-    'Construction Loan',
-    'Home Equity Loan',
-    'Cash-Out Refinance'
-  ]
-
-  // Language options
-  const languageOptions = ['English', 'Spanish']
 
   // Bank options
   const bankOptions = [
@@ -202,11 +178,8 @@ export function BrokerSetupWizard({ user, initialData = {}, initialStep = 1 }: B
       state: '',
        zipCode: '',
        location: undefined,
-      experienceYears: 0,
-       specializations: ['Home Purchase'],
-      serviceCities: [],
-       languages: ['English', 'Spanish'],
-      bankPartnerships: [],
+       experienceYears: 0,
+       bankPartnerships: [],
       registrationNumber: '',
       panNumber: '',
       gstNumber: '',
@@ -220,7 +193,7 @@ export function BrokerSetupWizard({ user, initialData = {}, initialStep = 1 }: B
   const progress = (currentStep / steps.length) * 100
 
   // Handle adding items to array fields
-  const handleAddItem = (field: 'specializations' | 'serviceCities' | 'languages' | 'bankPartnerships', value: string) => {
+  const handleAddItem = (field: 'bankPartnerships', value: string) => {
     const current = form.getValues(field) as string[]
     const trimmedValue = value.trim()
 
@@ -231,16 +204,11 @@ export function BrokerSetupWizard({ user, initialData = {}, initialStep = 1 }: B
     }
 
     // Clear input
-    switch (field) {
-      case 'specializations': setNewSpec(''); break
-      case 'serviceCities': setNewCity(''); break
-      case 'languages': setNewLang(''); break
-      case 'bankPartnerships': setNewBank(''); break
-    }
+    if (field === 'bankPartnerships') setNewBank('')
   }
 
   // Handle removing items from array fields
-  const handleRemoveItem = (field: 'specializations' | 'serviceCities' | 'languages' | 'bankPartnerships', value: string) => {
+  const handleRemoveItem = (field: 'bankPartnerships', value: string) => {
     const current = form.getValues(field) as string[]
     form.setValue(field, current.filter(item => item !== value))
   }
@@ -257,7 +225,7 @@ export function BrokerSetupWizard({ user, initialData = {}, initialStep = 1 }: B
         isValid = await form.trigger(['phone', 'officeAddress', 'city', 'state', 'zipCode'])
         break
       case 3:
-        isValid = await form.trigger(['experienceYears', 'specializations', 'serviceCities', 'languages'])
+        isValid = await form.trigger(['experienceYears'])
         break
       // case 4:
       //   isValid = await form.trigger(['registrationNumber'])
@@ -341,9 +309,6 @@ export function BrokerSetupWizard({ user, initialData = {}, initialStep = 1 }: B
         zipCode: data.zipCode,
         location: data.location,
         experienceYears: data.experienceYears,
-        specializations: data.specializations,
-        serviceCities: data.serviceCities,
-        languages: data.languages,
         bankPartnerships: data.bankPartnerships,
         registrationNumber: data.registrationNumber,
         panNumber: data.panNumber,
@@ -388,16 +353,8 @@ export function BrokerSetupWizard({ user, initialData = {}, initialStep = 1 }: B
         return (
           <Step3ProfessionalInfo 
             form={form}
-            specializationOptions={specializationOptions}
-            languageOptions={languageOptions}
             bankOptions={bankOptions}
             indianCities={usCities}
-            newSpec={newSpec}
-            setNewSpec={setNewSpec}
-            newCity={newCity}
-            setNewCity={setNewCity}
-            newLang={newLang}
-            setNewLang={setNewLang}
             newBank={newBank}
             setNewBank={setNewBank}
             handleAddItem={handleAddItem}
@@ -891,16 +848,8 @@ function Step2ContactInfo({ form }: any) {
 // Step 3: Professional Information
 function Step3ProfessionalInfo({ 
   form, 
-  specializationOptions, 
-  languageOptions, 
   bankOptions, 
   indianCities,
-  newSpec,
-  setNewSpec,
-  newCity,
-  setNewCity,
-  newLang,
-  setNewLang,
   newBank,
   setNewBank,
   handleAddItem,
@@ -940,208 +889,7 @@ function Step3ProfessionalInfo({
 
       <Separator />
 
-      {/* Specializations */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h4 className="font-medium">Specializations *</h4>
-            <p className="text-sm text-muted-foreground">Select loan types you specialize in</p>
-          </div>
-          <span className="text-sm text-muted-foreground">
-            {form.watch('specializations')?.length || 0} selected
-          </span>
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Select onValueChange={(value) => handleAddItem('specializations', value)}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Add specialization" />
-              </SelectTrigger>
-              <SelectContent>
-                 {specializationOptions.map((spec: string) => (
-                  <SelectItem key={spec} value={spec}>{spec}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Custom specialization"
-                value={newSpec}
-                onChange={(e) => setNewSpec(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    handleAddItem('specializations', newSpec)
-                  }
-                }}
-                className="min-w-0"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleAddItem('specializations', newSpec)}
-                disabled={!newSpec.trim()}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2 min-h-[40px]">
-            {form.watch('specializations')?.map((spec: string) => (
-              <Badge key={spec} variant="secondary" className="gap-1 py-1.5 px-3">
-                {spec}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveItem('specializations', spec)}
-                  className="hover:text-destructive"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <Separator />
-
-      {/* Service Cities */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h4 className="font-medium">Service Cities *</h4>
-            <p className="text-sm text-muted-foreground">Cities where you provide services</p>
-          </div>
-          <span className="text-sm text-muted-foreground">
-            {form.watch('serviceCities')?.length || 0} selected
-          </span>
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Select onValueChange={(value) => handleAddItem('serviceCities', value)}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Add service city" />
-              </SelectTrigger>
-              <SelectContent>
-                 {indianCities.map((city: string) => (
-                  <SelectItem key={city} value={city}>
-                    {city}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Custom city"
-                value={newCity}
-                onChange={(e) => setNewCity(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    handleAddItem('serviceCities', newCity)
-                  }
-                }}
-                className="min-w-0"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleAddItem('serviceCities', newCity)}
-                disabled={!newCity.trim()}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2 min-h-[40px]">
-            {form.watch('serviceCities')?.map((city: string) => (
-              <Badge key={city} variant="outline" className="gap-1 py-1.5 px-3">
-                <MapPin className="h-3 w-3" />
-                {city}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveItem('serviceCities', city)}
-                  className="hover:text-destructive"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <Separator />
-
-      {/* Languages */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h4 className="font-medium">Languages *</h4>
-            <p className="text-sm text-muted-foreground">Languages you can communicate in</p>
-          </div>
-          <span className="text-sm text-muted-foreground">
-            {form.watch('languages')?.length || 0} selected
-          </span>
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Select onValueChange={(value) => handleAddItem('languages', value)}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Add language" />
-              </SelectTrigger>
-              <SelectContent>
-                 {languageOptions.map((lang: string) => (
-                  <SelectItem key={lang} value={lang}>{lang}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Custom language"
-                value={newLang}
-                onChange={(e) => setNewLang(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    handleAddItem('languages', newLang)
-                  }
-                }}
-                className="min-w-0"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleAddItem('languages', newLang)}
-                disabled={!newLang.trim()}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2 min-h-[40px]">
-            {form.watch('languages')?.map((lang: string) => (
-              <Badge key={lang} variant="secondary" className="gap-1 py-1.5 px-3">
-                <Languages className="h-3 w-3" />
-                {lang}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveItem('languages', lang)}
-                  className="hover:text-destructive"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* Bank Partnerships */}
 
       <Separator />
 
@@ -1464,9 +1212,6 @@ function Step6Review({ form, uploadedDocs }: any) {
       icon: Briefcase,
       fields: [
         { label: 'Years of Experience', value: `${formValues.experienceYears} years` },
-        { label: 'Specializations', value: formatValue(formValues.specializations) },
-        { label: 'Service Cities', value: formatValue(formValues.serviceCities) },
-        { label: 'Languages', value: formatValue(formValues.languages) },
         { label: 'Bank Partnerships', value: formatValue(formValues.bankPartnerships) },
       ]
     },

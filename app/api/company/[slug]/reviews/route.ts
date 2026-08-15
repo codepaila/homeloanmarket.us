@@ -17,7 +17,7 @@ export async function GET(
 
     const broker = await prisma.broker.findUnique({
       where: { profileSlug: slug },
-      select: { id: true, avgRating: true, isVisible: true, verificationStatus: true, brokerStatus: true, userId: true, user: { select: { isActive: true } } }
+      select: { id: true, avgRating: true, isVisible: true, verificationStatus: true, brokerStatus: true, creationSource: true, userId: true, user: { select: { isActive: true } } }
     })
 
     if (!broker) {
@@ -31,6 +31,7 @@ export async function GET(
       isVisible: broker.isVisible,
       verificationStatus: broker.verificationStatus,
       brokerStatus: broker.brokerStatus,
+      creationSource: broker.creationSource,
       userId: broker.userId,
       userIsActive: broker.user?.isActive,
     })) {

@@ -1,38 +1,56 @@
 import 'dotenv/config'
 import prisma from '@/lib/prisma'
-import { geocodeUSAddress } from '@/lib/location/google-place'
+import { resolveBrokerLocation, locationHasValidCoordinates } from '@/lib/location/broker-location'
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms))
 
 async function main() {
   const brokers = await prisma.broker.findMany({
-    where: { location: { equals: null } },
-    select: { id: true, officeAddress: true, city: true, state: true, pinCode: true },
+    select: { id: true, officeAddress: true, city: true, state: true, pinCode: true, location: true },
     orderBy: { id: 'asc' },
   })
-  let updated = 0
+
+  let alreadyLocated = 0
+  let attempted = 0
+  let resolved = 0
   let failed = 0
+  let skipped = 0
+
   for (const broker of brokers) {
-    try {
-      const location = await geocodeUSAddress(`${broker.officeAddress}, ${broker.city}, ${broker.state} ${broker.pinCode}, USA`)
+    if (locationHasValidCoordinates(broker.location)) {
+      alreadyLocated += 1
+      continue
+    }
+    const address = [broker.officeAddress, broker.city, broker.state, broker.pinCode].filter(Boolean).join(', ')
+    if (!address) {
+      skipped += 1
+      continue
+    }
+    attempted += 1
+    console.info('[LOCATION] resolving broker address', { brokerId: broker.id })
+    const patch = await resolveBrokerLocation({ officeAddress: broker.officeAddress, city: broker.city, state: broker.state, pinCode: broker.pinCode })
+    if (patch) {
       await prisma.broker.update({
         where: { id: broker.id },
         data: {
-          normalizedAddress: location.normalizedAddress,
-          googlePlaceId: location.placeId,
-          locationCountryCode: location.countryCode,
-          location: { type: 'Point', coordinates: [location.longitude, location.latitude] },
+          normalizedAddress: patch.normalizedAddress,
+          googlePlaceId: patch.googlePlaceId,
+          locationCountryCode: patch.locationCountryCode,
+          location: patch.location,
         },
       })
-      updated += 1
-      console.info('Broker location backfilled', { brokerId: broker.id })
-    } catch (error) {
+      resolved += 1
+      console.info('[LOCATION] broker location persisted', { brokerId: broker.id })
+    } else {
       failed += 1
-      console.error('Broker location backfill failed', { brokerId: broker.id, error: error instanceof Error ? error.message : 'Unknown error' })
     }
-    await delay(100)
+    await delay(120)
   }
-  console.info('Broker location backfill complete', { inspected: brokers.length, updated, failed })
+
+  const total = brokers.length
+  const coverage = total > 0 ? ((alreadyLocated + resolved) / total) * 100 : 0
+  console.info('[LOCATION] backfill completed', { total, alreadyLocated, attempted, resolved, failed, skipped, coverage })
+  console.info(`Broker location backfill\n\nTotal: ${total}\nAlready located: ${alreadyLocated}\nAttempted geocoding: ${attempted}\nResolved: ${resolved}\nFailed: ${failed}\nSkipped: ${skipped}\nCoverage: ${coverage.toFixed(1)}%`)
 }
 
 main().catch((error) => {

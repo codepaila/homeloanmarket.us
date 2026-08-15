@@ -7,17 +7,7 @@ type BrokerGeoSearchInput = {
   radiusMiles: number
   page: number
   take: number
-  city?: string | null
-  state?: string | null
-  zip?: string | null
-  specialization?: string | null
-  minRating?: number | null
-  minExperience?: number | null
-  language?: string | null
   search?: string | null
-  verificationStatus?: string | null
-  brokerStatus?: string | null
-  featuredOnly?: boolean
   admin: boolean
 }
 
@@ -30,35 +20,29 @@ function regex(value: string) {
 }
 
 function baseMatch(input: BrokerGeoSearchInput) {
-  const match: Record<string, unknown> = {}
-  if (input.city) match.serviceCities = input.city
-  if (input.state) match.state = regex(input.state)
-  if (input.zip) match.pinCode = regex(input.zip)
-  if (input.specialization) match.specializations = input.specialization
-  if (input.minRating) match.avgRating = { $gte: input.minRating }
-  if (input.minExperience) match.experienceYears = { $gte: input.minExperience }
-  if (input.language) match.languages = input.language
-  if (input.featuredOnly) match.brokerStatus = 'FEATURED'
-  if (input.verificationStatus) match.verificationStatus = input.verificationStatus
-  if (input.brokerStatus) match.brokerStatus = input.brokerStatus
+  const conditions: Record<string, unknown>[] = []
   if (!input.admin) {
-    match.isVisible = true
-    match.verificationStatus = 'VERIFIED'
-    match.brokerStatus = input.featuredOnly || input.brokerStatus === 'FEATURED' ? 'FEATURED' : { $ne: 'SUSPENDED' }
+    conditions.push({ isVisible: true })
+    conditions.push({ brokerStatus: { $ne: 'SUSPENDED' } })
+    // Mirrors publicBrokerWhere(): ADMIN_CREATED brokers are public regardless
+    // of verificationStatus; all other sources must be VERIFIED.
+    conditions.push({ $or: [{ creationSource: 'ADMIN_CREATED' }, { verificationStatus: 'VERIFIED' }] })
   }
   if (input.search) {
     const value = regex(input.search)
-    match.$or = [
-      { displayName: value },
-      { companyName: value },
-      { description: value },
-      { officeAddress: value },
-      { city: value },
-      { state: value },
-      { pinCode: value },
-    ]
+    conditions.push({
+      $or: [
+        { displayName: value },
+        { companyName: value },
+        { description: value },
+        { officeAddress: value },
+        { city: value },
+        { state: value },
+        { pinCode: value },
+      ],
+    })
   }
-  return match
+  return conditions.length ? { $and: conditions } : {}
 }
 
 function idValue(value: unknown): string | null {
@@ -104,7 +88,16 @@ export async function findBrokerIdsWithinRadius(input: BrokerGeoSearchInput) {
     },
   })
 
-  const result = await prisma.$runCommandRaw({ aggregate: 'brokers', pipeline, cursor: {} } as any) as any
+  let result
+  try {
+    result = await prisma.$runCommandRaw({ aggregate: 'brokers', pipeline, cursor: {} } as any) as any
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (message.includes('unable to find index for $geoNear') || message.includes('NoQueryExecutionPlans') || message.includes('GEONEAR')) {
+      throw new Error('Radius search is unavailable because the Broker location index is missing. Run yarn db:ensure-broker-location-index.')
+    }
+    throw error
+  }
   const batch = result?.cursor?.firstBatch?.[0] || { metadata: [], data: [] }
   const ids = (batch.data || []).map((row: { _id?: unknown }) => idValue(row._id)).filter((id: string | null): id is string => Boolean(id))
   const total = Number(batch.metadata?.[0]?.total || 0)

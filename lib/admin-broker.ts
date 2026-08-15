@@ -11,9 +11,6 @@ export type AdminBrokerInput = {
   state: string
   pinCode: string
   experienceYears?: number | string
-  specializations?: string[]
-  serviceCities?: string[]
-  languages?: string[]
   registrationNumber?: string
   panNumber?: string
   logo?: string
@@ -34,9 +31,6 @@ export function normalizeAdminBrokerInput(input: AdminBrokerInput) {
     state: input.state.trim(),
     pinCode: input.pinCode.trim(),
     experienceYears: Number(input.experienceYears || 0),
-    specializations: (input.specializations || []).map((item) => item.trim()).filter(Boolean),
-    serviceCities: (input.serviceCities || []).map((item) => item.trim()).filter(Boolean),
-    languages: (input.languages || ['English']).map((item) => item.trim()).filter(Boolean),
     registrationNumber: input.registrationNumber?.trim() || null,
     panNumber: input.panNumber?.trim() || null,
     logo: input.logo?.trim() || null,
@@ -78,9 +72,9 @@ export function slugifyAdminBroker(value: string) {
 export const adminCreatedBrokerDefaults = {
   creationSource: 'ADMIN_CREATED' as const,
   userId: null,
-  verificationStatus: 'UNVERIFIED' as const,
+  verificationStatus: 'VERIFIED' as const,
   brokerStatus: 'FREE' as const,
-  isVisible: false,
+  isVisible: true,
   subscriptionPlan: 'FREE' as const,
   subscriptionActive: true,
 }

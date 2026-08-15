@@ -15,7 +15,6 @@ import {
   Star,
   Users,
   Clock,
-  Languages,
   Briefcase,
   Banknote,
   Shield,
@@ -55,18 +54,8 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
     })
   }, [brokerSlug])
 
-  // Similar brokers based on the first service city
-  const similarCity = currentBroker?.serviceCities?.[0] || currentBroker?.city
-  const { brokers: similarBrokers } = useAllBrokers(
-    1,
-    4,
-    similarCity,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined
-  )
+  // Similar brokers
+  const { brokers: similarBrokers } = useAllBrokers(1, 4)
   const similar = (similarBrokers || [])
     .filter((b: any) => b.id !== currentBroker?.id && b.profileSlug !== brokerSlug)
     .slice(0, 3)
@@ -94,9 +83,6 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
     companyName,
     description,
     experienceYears,
-    specializations = [],
-    serviceCities = [],
-    languages = [],
     phone,
     whatsapp,
     email,
@@ -280,64 +266,6 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
               />
 
               {/* Specializations */}
-              {specializations.length > 0 && (
-                <SidebarCard
-                  icon={<Briefcase className="h-5 w-5 text-primary" />}
-                  title="Specializations"
-                >
-                  <div className="flex flex-wrap gap-1.5">
-                    {specializations.map((spec: string, idx: number) => (
-                      <Badge
-                        key={idx}
-                        variant="secondary"
-                        className="bg-primary/5 text-primary"
-                      >
-                        {spec}
-                      </Badge>
-                    ))}
-                  </div>
-                </SidebarCard>
-              )}
-
-              {/* Service Cities */}
-              {serviceCities.length > 0 && (
-                <SidebarCard
-                  icon={<MapPin className="h-5 w-5 text-primary" />}
-                  title="Service Areas"
-                >
-                  <div className="flex flex-wrap gap-1">
-                    {serviceCities.map((c: string, idx: number) => (
-                      <span key={idx} className="text-sm text-text-muted">
-                        {c}
-                        {idx < serviceCities.length - 1 ? ', ' : ''}
-                      </span>
-                    ))}
-                  </div>
-                </SidebarCard>
-              )}
-
-              {/* Languages */}
-              {languages.length > 0 && (
-                <SidebarCard
-                  icon={<Languages className="h-5 w-5 text-primary" />}
-                  title="Languages Spoken"
-                >
-                  <div className="flex flex-wrap gap-1.5">
-                    {languages.slice(0, 6).map((lang: string, idx: number) => (
-                      <Badge key={idx} variant="outline" className="text-xs">
-                        {lang}
-                      </Badge>
-                    ))}
-                    {languages.length > 6 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{languages.length - 6} more
-                      </Badge>
-                    )}
-                  </div>
-                </SidebarCard>
-              )}
-
-              {/* Bank Partnerships */}
               {bankPartners.length > 0 && (
                 <SidebarCard
                   icon={<Banknote className="h-5 w-5 text-primary" />}
@@ -409,14 +337,12 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
                     experienceYears={experienceYears}
                     profileViews={profileViews}
                     totalLeads={totalLeads || stats?.totalLeads || 0}
-                    languages={languages}
                   />
 
                   {/* Experience Timeline */}
                   {experienceYears > 0 && (
                     <ExperienceSection
                       experienceYears={experienceYears}
-                      specializations={specializations}
                     />
                   )}
 
@@ -495,8 +421,7 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
                     Similar brokers
                   </h2>
                   <p className="mt-1 text-sm text-text-muted">
-                    More verified professionals serving{' '}
-                    {similarCity || 'your area'}.
+                    More verified professionals in your area.
                   </p>
                 </div>
                 <Link
@@ -515,20 +440,17 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
                     slug={broker.profileSlug}
                     name={broker.displayName || broker.companyName || 'Mortgage Broker'}
                     company={broker.companyName || 'Mortgage Broker'}
-                    location={broker.serviceCities?.[0] || broker.city || 'United States'}
+                    location={broker.city || 'United States'}
                     logo={broker.logo}
                     rating={broker.avgRating || 0}
                     reviewCount={broker.totalReviews || broker._count?.reviews || 0}
                     yearsExperience={broker.experienceYears || 0}
-                    specializations={broker.specializations || []}
                     isVerified={broker.verificationStatus === 'VERIFIED'}
                     isFeatured={broker.isFeatured}
                     description={broker.description}
-                    serviceCities={broker.serviceCities || []}
                     supportedBanks={(broker.bankPartners || []).map(
                       (bp: any) => bp.bankName
                     )}
-                    languages={broker.languages || []}
                     phone={broker.canShowContact ? broker.phone : undefined}
                     email={broker.canShowContact ? broker.email : undefined}
                   />
@@ -739,14 +661,12 @@ function AboutSection({
   experienceYears,
   profileViews,
   totalLeads,
-  languages,
 }: {
   displayName?: string
   description?: string
   experienceYears?: number
   profileViews?: number
   totalLeads?: number
-  languages?: string[]
 }) {
   return (
     <div className="space-y-8">
@@ -760,41 +680,19 @@ function AboutSection({
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <StatBox label="Years Experience" value={`${experienceYears || 0}+`} />
         <StatBox label="Profile Views" value={profileViews || 0} />
         <StatBox label="Leads Assisted" value={`${totalLeads || 0}+`} />
-        <StatBox
-          label="Languages"
-          value={languages?.length || 2}
-        />
       </div>
-
-      {languages && languages.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="font-medium text-text-main flex items-center gap-2">
-            <Languages className="h-5 w-5 text-primary" />
-            Languages Spoken
-          </h3>
-          <div className="flex flex-wrap gap-2">
-            {languages.map((lang: string, idx: number) => (
-              <Badge key={idx} variant="outline" className="text-xs">
-                {lang}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }
 
 function ExperienceSection({
   experienceYears,
-  specializations = [],
 }: {
   experienceYears?: number
-  specializations?: string[]
 }) {
   return (
     <div className="space-y-4">
@@ -806,25 +704,6 @@ function ExperienceSection({
         specializes in helping borrowers navigate the mortgage process with
         transparency and care.
       </p>
-
-      {specializations.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-text-main">
-            Areas of expertise:
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {specializations.map((spec: string, idx: number) => (
-              <Badge
-                key={idx}
-                variant="secondary"
-                className="bg-primary/5 text-primary"
-              >
-                {spec}
-              </Badge>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

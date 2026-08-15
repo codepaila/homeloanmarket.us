@@ -16,7 +16,7 @@ export default async function BrokerProfileEditPage() {
   }
 
   // Fetch complete broker profile
-  const brokerProfile = await prisma.broker.findUnique({
+  const brokerProfile = await prisma.broker.findFirst({
     where: { userId: user.id },
   })
 
@@ -41,9 +41,6 @@ export default async function BrokerProfileEditPage() {
     state: brokerProfile.state,
     pinCode: brokerProfile.pinCode,
     experienceYears: brokerProfile.experienceYears,
-    specializations: brokerProfile.specializations,
-    serviceCities: brokerProfile.serviceCities,
-    languages: brokerProfile.languages,
     registrationNumber: brokerProfile.registrationNumber,
     panNumber: brokerProfile.panNumber,
     isVisible: brokerProfile.isVisible,

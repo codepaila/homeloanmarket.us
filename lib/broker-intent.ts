@@ -28,7 +28,7 @@ export async function establishBrokerRegistration(userId: string) {
     if (!user || !user.isActive) throw new Error('Account is unavailable')
     if (user.role === 'ADMIN') throw new Error('Account cannot register as a broker')
 
-    const existingBroker = await tx.broker.findUnique({ where: { userId }, select: { id: true } })
+    const existingBroker = await tx.broker.findFirst({ where: { userId }, select: { id: true } })
     if (existingBroker) return { alreadyBroker: true as const, registration: null }
 
     const existingRegistration = await tx.brokerRegistration.findUnique({

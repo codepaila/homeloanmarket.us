@@ -3,6 +3,7 @@ import Stripe from 'stripe'
 import { getCurrentCompany } from '@/lib/company-policy'
 import { isSameOriginRequest } from '@/lib/origin'
 import { SubscriptionService } from '@/lib/subscription'
+import { resolveCompanyPlanForCheckout, COMPANY_PLAN_DEFAULT_NAME } from '@/lib/company-plan'
 import prisma from '@/lib/prisma'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
@@ -11,7 +12,13 @@ export async function POST(request: NextRequest) {
   if (!isSameOriginRequest(request)) return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 })
   const current = await getCurrentCompany()
   if (!current) return NextResponse.json({ error: 'Company access required' }, { status: 403 })
-  const priceId = process.env.STRIPE_COMPANY_AD_PRICE_ID
+
+  const body = await request.json().catch(() => ({}))
+  const requestedPlanId = typeof body?.planId === 'string' ? body.planId : null
+
+  const plan = await resolveCompanyPlanForCheckout(requestedPlanId)
+  if (!plan) return NextResponse.json({ error: 'No active company advertising plan is available' }, { status: 503 })
+  const priceId = plan.stripePriceId || process.env.STRIPE_COMPANY_AD_PRICE_ID
   if (!priceId) return NextResponse.json({ error: 'Company advertising price is not configured' }, { status: 503 })
 
   try {
@@ -34,8 +41,8 @@ export async function POST(request: NextRequest) {
       }
       await prisma.companySubscription.upsert({
         where: { companyId: current.company.id },
-        update: { status: 'CHECKOUT_PENDING', stripeCustomerId: customerId },
-        create: { companyId: current.company.id, status: 'CHECKOUT_PENDING', stripeCustomerId: customerId },
+        update: { status: 'CHECKOUT_PENDING', stripeCustomerId: customerId, plan: plan.name, planId: plan.id },
+        create: { companyId: current.company.id, status: 'CHECKOUT_PENDING', stripeCustomerId: customerId, plan: plan.name, planId: plan.id },
       })
       return stripe.checkout.sessions.create({
         customer: customerId,
@@ -45,13 +52,13 @@ export async function POST(request: NextRequest) {
         allow_promotion_codes: true,
         success_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/company/dashboard?subscription=success`,
         cancel_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/company/dashboard`,
-        metadata: { userId: current.user.id, companyId: current.company.id, plan: 'ADVERTISING' },
-        subscription_data: { metadata: { userId: current.user.id, companyId: current.company.id, plan: 'ADVERTISING' } },
+        metadata: { userId: current.user.id, companyId: current.company.id, plan: plan.name, ownerType: 'COMPANY', planId: plan.id },
+        subscription_data: { metadata: { userId: current.user.id, companyId: current.company.id, plan: plan.name, ownerType: 'COMPANY', planId: plan.id } },
         billing_address_collection: 'required',
       }, { idempotencyKey: `company_checkout_${current.company.id}_${customerId}_${priceId}` })
     })
     if (!session.url) return NextResponse.json({ error: 'An existing company subscription is already active' }, { status: 409 })
-    return NextResponse.json({ success: true, url: session.url })
+    return NextResponse.json({ success: true, url: session.url, planId: plan.id, planName: plan.name || COMPANY_PLAN_DEFAULT_NAME })
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Unable to start company checkout' }, { status: 500 })
   }

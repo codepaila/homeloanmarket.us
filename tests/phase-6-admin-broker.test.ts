@@ -9,13 +9,13 @@ import {
 import { generateClaimToken, hashClaimToken } from '../lib/tokens'
 import { isClaimInvitationActive } from '../lib/claim-policy'
 
-test('admin-created broker defaults remain unowned and unpublished', () => {
+test('admin-created broker defaults are unowned, verified, and published', () => {
   assert.deepEqual(adminCreatedBrokerDefaults, {
     creationSource: 'ADMIN_CREATED',
     userId: null,
-    verificationStatus: 'UNVERIFIED',
+    verificationStatus: 'VERIFIED',
     brokerStatus: 'FREE',
-    isVisible: false,
+    isVisible: true,
     subscriptionPlan: 'FREE',
     subscriptionActive: true,
   })
