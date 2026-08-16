@@ -60,8 +60,7 @@ export default function BrokersPage() {
     longitude: number
     token?: string
   } | null>(null)
-  const [radius, setRadius] = useState(0)
-  const [radiusEnabled, setRadiusEnabled] = useState(false)
+  const [radius, setRadius] = useState(25)
   const [minExperience, setMinExperience] = useState('')
   const [minRating, setMinRating] = useState('0')
   const [featuredOnly, setFeaturedOnly] = useState(false)
@@ -73,6 +72,8 @@ export default function BrokersPage() {
   const filtersButtonRef = useRef<HTMLButtonElement>(null)
   const autocompleteRequestRef = useRef(0)
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
+  const searchRef = useRef<HTMLDivElement>(null)
+  const suggestionsOpenRef = useRef(false)
 
   // Hydrate filters from URL query parameters
   useEffect(() => {
@@ -102,10 +103,10 @@ export default function BrokersPage() {
       const q = params.get('search') || params.get('q') || ''
       // New canonical `location` param, with legacy `locationLabel` fallback.
       const locationText = params.get('location') || params.get('locationLabel') || ''
-      const radiusParam = Number(params.get('radius'))
-      const radiusValue = Number.isFinite(radiusParam) && radiusParam > 0 && radiusParam <= 100 ? radiusParam : 0
+      const radiusParamStr = params.get('radius')
+      const radiusParam = radiusParamStr === null ? null : Number(radiusParamStr)
+      const radiusValue = radiusParam !== null && Number.isFinite(radiusParam) && radiusParam >= 0 && radiusParam <= 100 ? radiusParam : 25
       setRadius(radiusValue)
-      setRadiusEnabled(radiusValue > 0)
       setSearch(q)
       setCommittedSearch(q)
       setSearchInput(locationText || q)
@@ -136,7 +137,7 @@ export default function BrokersPage() {
     undefined,
     undefined,
     selectedLocation ? { latitude: selectedLocation.latitude, longitude: selectedLocation.longitude, city: selectedLocation.city, state: selectedLocation.state, zip: selectedLocation.zip, token: selectedLocation.token } : undefined,
-     radiusEnabled ? radius : 0,
+     radius,
   )
 
   // Keep the input immediate; only the remote broker query is debounced.
@@ -183,6 +184,27 @@ export default function BrokersPage() {
       controller.abort()
     }
   }, [searchInput, selectedLocation, resolvingLocation])
+
+  // Track whether the autocomplete dropdown is open in a ref so the
+  // once-registered outside-click listener can read it without re-subscribing.
+  useEffect(() => {
+    suggestionsOpenRef.current = locationSuggestions.length > 0
+  }, [locationSuggestions])
+
+  // Close the autocomplete dropdown when the user points/clicks outside the
+  // search component (works for mouse and touch via pointer events).
+  useEffect(() => {
+    const handlePointerDown = (e: PointerEvent) => {
+      if (!suggestionsOpenRef.current) return
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        autocompleteRequestRef.current += 1
+        setLocationSuggestions([])
+        setActiveSuggestionIndex(-1)
+      }
+    }
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [])
 
   const selectLocation = async (suggestion: { placeId: string; label: string }) => {
     try {
@@ -254,7 +276,7 @@ export default function BrokersPage() {
     setOrDelete('rating', minRating === '0' ? '' : minRating)
     setOrDelete('featured', featuredOnly ? 'true' : '')
     setOrDelete('location', selectedLocation?.normalizedAddress || '')
-    setOrDelete('radius', radius > 0 ? String(radius) : '')
+    setOrDelete('radius', selectedLocation ? String(radius) : '')
     params.delete('locationToken')
     params.delete('locationLabel')
     params.delete('locationLatitude')
@@ -273,8 +295,7 @@ export default function BrokersPage() {
     setSearch('')
     setCommittedSearch('')
     setSelectedLocation(null)
-    setRadius(0)
-    setRadiusEnabled(false)
+    setRadius(25)
     setMinExperience('')
     setMinRating('0')
     setFeaturedOnly(false)
@@ -282,11 +303,11 @@ export default function BrokersPage() {
     setActiveSuggestionIndex(-1)
   }, [])
 
-  const hasActiveFilters = Boolean(search || radius > 0 || minExperience || minRating !== '0' || featuredOnly)
+  const hasActiveFilters = Boolean(search || selectedLocation || minExperience || minRating !== '0' || featuredOnly)
 
   const activeFilterCount = [
     search,
-    radius > 0 && 'radius',
+    selectedLocation && 'radius',
     minExperience,
     minRating !== '0' && 'rating',
     featuredOnly && 'featured',
@@ -344,27 +365,12 @@ export default function BrokersPage() {
       <div>
           <div className="space-y-2 rounded-xl border border-border bg-background p-3">
             <label className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              <span>Radius Search</span>
-              <input
-                type="checkbox"
-                checked={radiusEnabled}
-                disabled={!selectedLocation}
-                onChange={(event) => {
-                  setRadiusEnabled(event.target.checked)
-                  if (!event.target.checked) setRadius(0)
-                }}
-                aria-label="Enable radius search"
-                className="h-4 w-4 accent-primary disabled:opacity-50"
-              />
+              <span>Search Radius</span>
+              <span className="font-medium normal-case text-text-main">{radius} miles</span>
             </label>
-            {radiusEnabled ? (
-              <>
-                <div className="flex items-center justify-between text-xs text-muted-foreground"><span>0 miles</span><span className="font-medium text-text-main">{radius} miles</span><span>100 miles</span></div>
-                <input type="range" min="0" max="100" step="1" value={radius} onChange={(event) => setRadius(Number(event.target.value))} aria-label="Radius search in miles" className="w-full accent-primary" />
-              </>
-            ) : (
-              <p className="text-xs text-muted-foreground">Select a validated location and enable radius search to filter by distance.</p>
-            )}
+            <div className="flex items-center justify-between text-xs text-muted-foreground"><span>0 miles</span><span>100 miles</span></div>
+            <input type="range" min="0" max="100" step="1" value={radius} onChange={(event) => setRadius(Number(event.target.value))} aria-label="Search radius in miles" className="w-full accent-primary" />
+            <p className="text-xs text-muted-foreground">Search for brokers within this radius of the selected location.</p>
           </div>
         </div>
 
@@ -380,7 +386,7 @@ export default function BrokersPage() {
         </div>
       </div> */}
 
-      <div>
+      {/* <div>
         {sectionLabel('Quality')}
         <div className="mt-2.5 space-y-3">
           <FilterSelect
@@ -399,7 +405,7 @@ export default function BrokersPage() {
             ]}
           />
         </div>
-      </div>
+      </div> */}
 
       <div className="border-t border-border pt-4">
         {sectionLabel('Active filters')}
@@ -407,7 +413,7 @@ export default function BrokersPage() {
           {hasActiveFilters ? (
             <div className="flex flex-wrap gap-2">
               {search && <FilterChip label={`Search: "${search}"`} onRemove={() => { setSearchInput(''); setSearch(''); setCommittedSearch(''); setLocationSuggestions([]); setActiveSuggestionIndex(-1) }} />}
-              {radius > 0 && <FilterChip label={`${radius} mile radius`} onRemove={() => setRadius(0)} />}
+              {selectedLocation && <FilterChip label={`${radius} mile radius`} onRemove={() => setRadius(25)} />}
               {minExperience && <FilterChip label={`${minExperience}+ years`} onRemove={() => setMinExperience('')} />}
               {minRating !== '0' && <FilterChip label={`${minRating}+ rating`} onRemove={() => setMinRating('0')} />}
               {featuredOnly && <FilterChip label="Featured" onRemove={() => setFeaturedOnly(false)} />}
@@ -474,7 +480,7 @@ export default function BrokersPage() {
       {/* Sticky search + toolbar */}
       <section className="sticky top-16 z-30 border-b border-border bg-card/80 backdrop-blur-lg md:top-[72px]">
         <div className="container-custom py-4 md:py-5">
-          <div className="relative mx-auto max-w-4xl">
+          <div ref={searchRef} className="relative mx-auto max-w-4xl">
             <Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-text-muted" />
             <input
               type="search"
@@ -486,13 +492,12 @@ export default function BrokersPage() {
               aria-expanded={locationSuggestions.length > 0}
               aria-controls="broker-location-suggestions"
               aria-activedescendant={activeSuggestionIndex >= 0 ? `broker-location-suggestion-${activeSuggestionIndex}` : undefined}
-              placeholder="Search by broker, company, ZIP code, address or location..."
+              placeholder="Search by City , ZIP code"
               value={searchInput}
                 onChange={(e) => {
                   setSearchInput(e.target.value)
                   setSelectedLocation(null)
-                  setRadiusEnabled(false)
-                  setRadius(0)
+                  setRadius(25)
                   setLocationError('')
                   setActiveSuggestionIndex(-1)
                 }}
@@ -544,7 +549,7 @@ export default function BrokersPage() {
             {locationError && <p role="status" className="absolute inset-x-0 top-full z-50 mt-2 rounded-xl border border-destructive/30 bg-card p-3 text-sm text-destructive">{locationError}</p>}
             {searchInput && (
               <button type="button"
-               onClick={() => { setSearchInput(''); setSearch(''); setCommittedSearch(''); setSelectedLocation(null); setRadius(0); setRadiusEnabled(false); setLocationSuggestions([]); setLocationError(''); setActiveSuggestionIndex(-1) }}
+               onClick={() => { setSearchInput(''); setSearch(''); setCommittedSearch(''); setSelectedLocation(null); setRadius(25); setLocationSuggestions([]); setLocationError(''); setActiveSuggestionIndex(-1) }}
                 className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-text-muted hover:bg-muted hover:text-text-main"
                 aria-label="Clear search"
               >
@@ -575,7 +580,7 @@ export default function BrokersPage() {
                 )}
               </button>
 
-              <div className="hidden items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm text-text-muted sm:inline-flex">
+              {/* <div className="hidden items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm text-text-muted sm:inline-flex">
                 <span>Sort:</span>
                 <Select
                   value={sortBy}
@@ -583,7 +588,7 @@ export default function BrokersPage() {
                   options={sortOptions}
                   triggerClassName="border-0 shadow-none bg-transparent text-text-main font-medium"
                 />
-              </div>
+              </div> */}
 
               <div className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm">
                 <span className="hidden text-text-muted sm:inline">View:</span>
@@ -626,7 +631,7 @@ export default function BrokersPage() {
           {hasActiveFilters && (
             <div className="mt-3 flex flex-wrap items-center gap-2">
               {search && <FilterChip label={`Search: "${search}"`} onRemove={() => { setSearchInput(''); setSearch(''); setCommittedSearch(''); setLocationSuggestions([]); setActiveSuggestionIndex(-1) }} />}
-               {radius > 0 && <FilterChip label={`${radius} mile radius`} onRemove={() => setRadius(0)} />}
+              {selectedLocation && <FilterChip label={`${radius} mile radius`} onRemove={() => setRadius(25)} />}
               {minExperience && <FilterChip label={`${minExperience}+ years`} onRemove={() => setMinExperience('')} />}
               {minRating !== '0' && <FilterChip label={`Rating: ${minRating}+`} onRemove={() => setMinRating('0')} />}
               {featuredOnly && <FilterChip label="Featured partners" onRemove={() => setFeaturedOnly(false)} />}

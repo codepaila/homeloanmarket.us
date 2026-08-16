@@ -52,8 +52,8 @@ test('radius parameter is synchronized to the broker query and location token', 
   assert.match(hook, /queryParams\.append\('latitude'/)
 })
 
-test('clearing radius resets to zero and disables the geo branch', () => {
-  assert.match(listing, /onRemove=\{\(\) => setRadius\(0\)\}/)
+test('clearing radius resets to the default 25 miles', () => {
+  assert.match(listing, /onRemove=\{\(\) => setRadius\(25\)\}/)
   assert.match(api, /const radius = radiusParam === null \? 0 : Number\(radiusParam\)/)
 })
 

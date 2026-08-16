@@ -20,9 +20,9 @@ test('home search submits the canonical `search` parameter, not `q`', () => {
   assert.doesNotMatch(hero, /params\.set\('q', text\)/)
 })
 
-test('home search geocodes a 5-digit ZIP into location parameters', () => {
+test('home search geocodes a 5-digit ZIP and applies the default 25-mile radius', () => {
   assert.match(searchSection, /\/api\/location\/geocode/)
-  assert.match(searchSection, /locationToken/)
+  assert.match(searchSection, /params\.set\('radius', '25'\)/)
   assert.match(hero, /\/api\/location\/geocode/)
 })
 
@@ -47,7 +47,14 @@ test('autocomplete guards against stale responses with AbortController and a req
   assert.match(searchSection, /requestRef/)
 })
 
-test('clicking a location suggestion navigates to the broker listing for that location', () => {
+test('clicking a location suggestion navigates to the broker listing with the location', () => {
   assert.match(searchSection, /router\.push\(buildBrokerSearchUrl\(data\.location, ''\)\)/)
-  assert.match(searchSection, /locationToken/)
+  assert.match(searchSection, /params\.set\('location', location\.normalizedAddress\)/)
+  assert.match(searchSection, /params\.set\('radius', '25'\)/)
+})
+
+test('autocomplete closes when clicking outside the search component', () => {
+  assert.match(searchSection, /addEventListener\('pointerdown'/)
+  assert.match(searchSection, /searchRef\.current\.contains\(e\.target as Node\)/)
+  assert.match(searchSection, /removeEventListener\('pointerdown'/)
 })

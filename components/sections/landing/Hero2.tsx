@@ -185,13 +185,8 @@ export default function HeroSection() {
       }
     }
     if (location?.token) {
-      params.set('locationToken', location.token)
-      params.set('locationLabel', location.normalizedAddress)
-      params.set('locationLatitude', String(location.latitude))
-      params.set('locationLongitude', String(location.longitude))
-      params.set('locationCity', location.city)
-      params.set('locationState', location.state)
-      params.set('locationZip', location.zip)
+      params.set('location', location.normalizedAddress)
+      params.set('radius', '25')
     } else if (text) params.set('search', text)
     else if (state) params.set('state', state)
     if (city) params.set('search', city)

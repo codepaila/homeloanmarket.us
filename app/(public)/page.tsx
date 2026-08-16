@@ -12,6 +12,7 @@ import type { Metadata } from 'next'
 import SearchSection from '@/components/sections/landing/SearchSection'
 import LocalExpertSection from '@/components/sections/landing/LocalExportSection'
 import SmartToolsSection from '@/components/sections/landing/SmartToolsSection'
+import HeroImageSection from '@/components/sections/landing/HeroImage'
 
 export const metadata: Metadata = {
   title: 'Find a Trusted Mortgage Broker | HomeLoanMarket',
@@ -26,7 +27,8 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <>
-      <HeroSection />
+    <HeroImageSection/>
+      {/* <HeroSection /> */}
       {/* <StatisticsSection /> */}
       <SearchSection/>
       <LocalExpertSection/>

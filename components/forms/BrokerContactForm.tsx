@@ -22,7 +22,7 @@ import { FormTextarea } from '@/components/design/FormInput'
 import { PremiumButton } from '@/components/design/PremiumButton'
 
 interface ContactFormProps {
-  brokerId: string
+  brokerId?: string
   brokerSlug: string
   brokerName?: string
   brokerEmail?: string
@@ -247,7 +247,7 @@ export default function ContactForm({
         // Optionally track conversion
         if (typeof window !== 'undefined' && (window as any).gtag) {
           ;(window as any).gtag('event', 'contact_form_submitted', {
-            broker_id: brokerId,
+            broker_id: brokerId || brokerSlug,
             broker_name: brokerName,
           })
         }

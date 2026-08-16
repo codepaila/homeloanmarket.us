@@ -180,8 +180,7 @@ export async function GET(request: Request) {
           }
         },
         orderBy: [
-          { brokerStatus: 'desc' }, // FEATURED first
-          { featuredRank: 'desc' },
+          { featuredRank: 'desc' }, // subscribed/featured brokers first
           { avgRating: 'desc' },
           { experienceYears: 'desc' },
           { id: 'asc' },

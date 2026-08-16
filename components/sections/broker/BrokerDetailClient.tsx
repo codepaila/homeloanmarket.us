@@ -536,9 +536,9 @@ function ContactInfoCard({
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <Phone className="h-4 w-4" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs text-text-muted">Phone</p>
-              <p className="font-medium text-text-main">{phone}</p>
+              <p className="break-words font-medium text-text-main">{phone}</p>
             </div>
           </a>
         )}
@@ -553,9 +553,9 @@ function ContactInfoCard({
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-green-500/10 text-success">
               <MessageCircle className="h-4 w-4" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs text-text-muted">WhatsApp</p>
-              <p className="font-medium text-text-main">{whatsapp}</p>
+              <p className="break-words font-medium text-text-main">{whatsapp}</p>
             </div>
           </a>
         )}
@@ -568,9 +568,9 @@ function ContactInfoCard({
             <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-info">
               <Mail className="h-4 w-4" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs text-text-muted">Email</p>
-              <p className="font-medium text-text-main">{email}</p>
+              <p className="break-words font-medium text-text-main">{email}</p>
             </div>
           </a>
         )}
@@ -585,9 +585,9 @@ function ContactInfoCard({
             <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <Globe className="h-4 w-4" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs text-text-muted">Website</p>
-              <p className="font-medium text-text-main">
+              <p className="break-words font-medium text-text-main">
                 {website.replace(/^https?:\/\//, '')}
               </p>
             </div>
@@ -599,9 +599,9 @@ function ContactInfoCard({
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <MapPin className="h-4 w-4" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs text-text-muted">Office Location</p>
-              <p className="font-medium text-text-main">
+              <p className="break-words font-medium text-text-main">
                 {[officeAddress, city, state, pinCode].filter(Boolean).join(', ')}
               </p>
             </div>
@@ -613,9 +613,9 @@ function ContactInfoCard({
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
               <Clock className="h-4 w-4" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs text-text-muted">Avg. Response Time</p>
-              <p className="font-medium text-text-main">{averageResponseTime}</p>
+              <p className="break-words font-medium text-text-main">{averageResponseTime}</p>
             </div>
           </div>
         )}

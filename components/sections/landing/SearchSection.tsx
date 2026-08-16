@@ -15,6 +15,8 @@ function SearchSection() {
   const [locationSuggestions, setLocationSuggestions] = useState<Array<{ placeId: string; label: string }>>([])
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
   const requestRef = useRef(0)
+  const searchRef = useRef<HTMLDivElement>(null)
+  const suggestionsOpenRef = useRef(false)
 
   const [selectedLocation, setSelectedLocation] = useState<{
     normalizedAddress: string
@@ -64,14 +66,9 @@ function SearchSection() {
     text: string,
   ) {
     const params = new URLSearchParams()
-    if (location?.token) {
-      params.set('locationToken', location.token)
-      params.set('locationLabel', location.normalizedAddress)
-      params.set('locationLatitude', String(location.latitude))
-      params.set('locationLongitude', String(location.longitude))
-      params.set('locationCity', location.city)
-      params.set('locationState', location.state)
-      params.set('locationZip', location.zip)
+    if (location) {
+      params.set('location', location.normalizedAddress)
+      params.set('radius', '25')
     } else if (text) {
       params.set('search', text)
     }
@@ -126,6 +123,28 @@ function SearchSection() {
     }
   }
 
+  // Track whether suggestions are open in a ref so the once-registered
+  // outside-click listener can read it without re-subscribing every render.
+  useEffect(() => {
+    suggestionsOpenRef.current = locationSuggestions.length > 0 || searching
+  }, [locationSuggestions, searching])
+
+  // Close the suggestions dropdown when the user points/clicks outside the
+  // search component (works for mouse and touch via pointer events).
+  useEffect(() => {
+    const handlePointerDown = (e: PointerEvent) => {
+      if (!suggestionsOpenRef.current) return
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        requestRef.current += 1
+        setLocationSuggestions([])
+        setActiveSuggestionIndex(-1)
+        setSearching(false)
+      }
+    }
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [])
+
   const handleSearch = async (event: React.FormEvent) => {
     event.preventDefault()
     const text = query.trim()
@@ -177,7 +196,7 @@ function SearchSection() {
         className="mt-6 mx-auto max-w-4xl"
       >
         {/* Main Search Bar */}
-        <div className="relative flex items-center gap-3 rounded-xl bg-white px-4 py-2.5 shadow-sm ring-1 ring-black/5 transition-all focus-within:ring-2 focus-within:ring-primary/50">
+        <div ref={searchRef} className="relative flex items-center gap-3 rounded-xl bg-white px-4 py-2.5 shadow-sm ring-1 ring-black/5 transition-all focus-within:ring-2 focus-within:ring-primary/50">
           <Search className="h-5 w-5 flex-shrink-0 text-primary" />
           <input
             type="search"

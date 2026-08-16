@@ -80,7 +80,7 @@ export async function findBrokerIdsWithinRadius(input: BrokerGeoSearchInput) {
     $facet: {
       metadata: [{ $count: 'total' }],
       data: [
-        { $sort: { brokerStatus: -1, featuredRank: -1, avgRating: -1, experienceYears: -1, _id: 1 } },
+        { $sort: { featuredRank: -1, avgRating: -1, experienceYears: -1, _id: 1 } },
         { $skip: input.take * (input.page - 1) },
         { $limit: input.take },
         { $project: { _id: 1, distanceMeters: 1 } },

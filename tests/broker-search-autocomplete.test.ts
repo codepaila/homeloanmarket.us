@@ -77,3 +77,9 @@ test('suggestions support keyboard navigation and ARIA combobox semantics', () =
   assert.match(listing, /ArrowUp/)
   assert.match(listing, /Escape/)
 })
+
+test('autocomplete closes when clicking outside the search component', () => {
+  assert.match(listing, /addEventListener\('pointerdown'/)
+  assert.match(listing, /searchRef\.current\.contains\(e\.target as Node\)/)
+  assert.match(listing, /removeEventListener\('pointerdown'/)
+})
