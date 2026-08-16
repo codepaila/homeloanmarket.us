@@ -4,7 +4,7 @@
 import Image from 'next/image'
 
 // Beautiful Unsplash background image - modern home exterior
-const heroBackground = '/assets/images/home-cover.jpg'
+const heroBackground = '/assets/images/home-cover.png'
 
 export default function HeroImageSection() {
  
