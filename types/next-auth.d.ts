@@ -14,6 +14,7 @@ declare module "next-auth" {
       emailVerified?: boolean;
 
       isActive: boolean;
+      isCompany?: boolean;
       brokerProfile?: {
         id: string;
         displayName: string;
@@ -39,6 +40,7 @@ declare module "next-auth" {
     image?: string | null;
     role: UserRole;
     isActive: boolean;
+    isCompany?: boolean;
     emailVerified?: boolean;
     brokerProfile?: {
       id: string;
@@ -66,6 +68,7 @@ declare module "next-auth/jwt" {
     phone?: string | null;
     role: UserRole;
     isActive: boolean;
+    isCompany?: boolean;
     emailVerified?: boolean;
 
     brokerProfile?: {

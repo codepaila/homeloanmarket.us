@@ -1,18 +1,21 @@
 "use client"
-import { useEffect, useState } from 'react'
+/* eslint-disable react-hooks/set-state-in-effect */
+import { useEffect, useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { useRouter } from 'next/navigation'
-import {  Home as HomeIcon, MapPin, Search } from 'lucide-react'
-
-import { Button } from '@/components/ui/button'
+import { MapPin, Search } from 'lucide-react'
 
 
 function SearchSection() {
   const router = useRouter()
   const prefersReducedMotion = useReducedMotion()
   const [query, setQuery] = useState('')
+  const [searching, setSearching] = useState(false)
 
   const [locationSuggestions, setLocationSuggestions] = useState<Array<{ placeId: string; label: string }>>([])
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
+  const requestRef = useRef(0)
+
   const [selectedLocation, setSelectedLocation] = useState<{
     normalizedAddress: string
     city: string
@@ -23,22 +26,58 @@ function SearchSection() {
     token: string
   } | null>(null)
 
-
-
   useEffect(() => {
     const value = query.trim()
     if (value.length < 2 || selectedLocation?.normalizedAddress === value) {
-      if (locationSuggestions.length > 0) window.setTimeout(() => setLocationSuggestions([]), 0)
+      requestRef.current += 1
+      setSearching(false)
+      setLocationSuggestions([])
+      setActiveSuggestionIndex(-1)
       return
     }
+    const requestId = ++requestRef.current
+    const controller = new AbortController()
+    setSearching(true)
     const timer = window.setTimeout(() => {
-      fetch(`/api/location/autocomplete?input=${encodeURIComponent(value)}`)
+      fetch(`/api/location/autocomplete?input=${encodeURIComponent(value)}`, { signal: controller.signal })
         .then((response) => response.json())
-        .then((data) => setLocationSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []))
-        .catch(() => setLocationSuggestions([]))
+        .then((data) => {
+          if (requestId !== requestRef.current) return
+          setSearching(false)
+          setLocationSuggestions(Array.isArray(data.suggestions) ? data.suggestions : [])
+          setActiveSuggestionIndex(-1)
+        })
+        .catch(() => {
+          if (controller.signal.aborted || requestId !== requestRef.current) return
+          setSearching(false)
+          setLocationSuggestions([])
+        })
     }, 300)
-    return () => window.clearTimeout(timer)
-  }, [query, selectedLocation, locationSuggestions.length])
+    return () => {
+      window.clearTimeout(timer)
+      controller.abort()
+    }
+  }, [query, selectedLocation])
+
+  function buildBrokerSearchUrl(
+    location: { normalizedAddress: string; city: string; state: string; zip: string; latitude: number; longitude: number; token: string } | null,
+    text: string,
+  ) {
+    const params = new URLSearchParams()
+    if (location?.token) {
+      params.set('locationToken', location.token)
+      params.set('locationLabel', location.normalizedAddress)
+      params.set('locationLatitude', String(location.latitude))
+      params.set('locationLongitude', String(location.longitude))
+      params.set('locationCity', location.city)
+      params.set('locationState', location.state)
+      params.set('locationZip', location.zip)
+    } else if (text) {
+      params.set('search', text)
+    }
+    const queryString = params.toString()
+    return queryString ? `/brokers?${queryString}` : '/brokers'
+  }
 
   async function selectLocation(suggestion: { placeId: string; label: string }) {
     try {
@@ -52,15 +91,43 @@ function SearchSection() {
       setSelectedLocation(data.location)
       setQuery(data.location.normalizedAddress || suggestion.label)
       setLocationSuggestions([])
+      setActiveSuggestionIndex(-1)
+      // Clicking a suggestion navigates straight to the broker listing for that location.
+      router.push(buildBrokerSearchUrl(data.location, ''))
     } catch {
       setSelectedLocation(null)
       setLocationSuggestions([])
+      setActiveSuggestionIndex(-1)
+    }
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Escape') {
+      setLocationSuggestions([])
+      setActiveSuggestionIndex(-1)
+      return
+    }
+    if (event.key === 'ArrowDown' && locationSuggestions.length > 0) {
+      event.preventDefault()
+      setActiveSuggestionIndex((current) => (current + 1) % locationSuggestions.length)
+      return
+    }
+    if (event.key === 'ArrowUp' && locationSuggestions.length > 0) {
+      event.preventDefault()
+      setActiveSuggestionIndex((current) => (current - 1 + locationSuggestions.length) % locationSuggestions.length)
+      return
+    }
+    if (event.key === 'Enter') {
+      if (activeSuggestionIndex >= 0 && locationSuggestions[activeSuggestionIndex]) {
+        event.preventDefault()
+        selectLocation(locationSuggestions[activeSuggestionIndex])
+      }
+      // Otherwise allow the form submit (typed search).
     }
   }
 
   const handleSearch = async (event: React.FormEvent) => {
     event.preventDefault()
-    const params = new URLSearchParams()
     const text = query.trim()
     let location = selectedLocation
     if (!location && /^\d{5}$/.test(text)) {
@@ -78,18 +145,7 @@ function SearchSection() {
         location = null
       }
     }
-    if (location?.token) {
-      params.set('locationToken', location.token)
-      params.set('locationLabel', location.normalizedAddress)
-      params.set('locationLatitude', String(location.latitude))
-      params.set('locationLongitude', String(location.longitude))
-      params.set('locationCity', location.city)
-      params.set('locationState', location.state)
-      params.set('locationZip', location.zip)
-    } else if (text) params.set('q', text)
- 
-    const queryString = params.toString()
-    router.push(queryString ? `/brokers?${queryString}` : '/brokers')
+    router.push(buildBrokerSearchUrl(location, text))
   }
 
   const motionTransition = (delay: number) => ({
@@ -99,7 +155,7 @@ function SearchSection() {
   })
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-16 md:py-20 ">
+    <div className="max-w-8xl mx-auto px-4 py-16 md:py-20  bg-primary/20 ">
       {/* Heading */}
       <motion.h2
         initial={{ opacity: 0, y: 20 }}
@@ -107,10 +163,10 @@ function SearchSection() {
         transition={motionTransition(0.1)}
         className="text-center text-2xl font-bold text-secondary sm:text-3xl md:text-4xl"
       >
-        <span className="bg-gradient-to-r from-primary to-emerald-500 bg-clip-text text-transparent">
+        <span className="text-primary">
           Find Home Loan Experts
         </span>
-        <span className="text-secondary"> near you</span>
+        <span className="text-secondary"> Near You</span>
       </motion.h2>
 
       <motion.form
@@ -118,37 +174,46 @@ function SearchSection() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={motionTransition(0.25)}
-        className="mt-6"
+        className="mt-6 mx-auto max-w-4xl"
       >
         {/* Main Search Bar */}
         <div className="relative flex items-center gap-3 rounded-xl bg-white px-4 py-2.5 shadow-sm ring-1 ring-black/5 transition-all focus-within:ring-2 focus-within:ring-primary/50">
           <Search className="h-5 w-5 flex-shrink-0 text-primary" />
           <input
             type="search"
-            name="q"
+            name="search"
             value={query}
-            onChange={(event) => { setQuery(event.target.value); setSelectedLocation(null) }}
-            onKeyDown={(event) => { if (event.key === 'Escape') setLocationSuggestions([]) }}
-            placeholder="Search by  ZIP code, location"
+            onChange={(event) => { setQuery(event.target.value); setSelectedLocation(null); setActiveSuggestionIndex(-1) }}
+            onKeyDown={handleKeyDown}
+            placeholder="Search by city or ZIP code"
             className="flex-1 bg-transparent py-1 text-sm font-medium text-secondary placeholder:text-muted-foreground/70 focus:outline-none"
-            aria-label="Search brokers"
+            aria-label="Search brokers by city or ZIP code"
+            aria-expanded={locationSuggestions.length > 0 || searching}
+            aria-autocomplete="list"
+            aria-controls="broker-search-suggestions"
+            role="combobox"
           />
-          {locationSuggestions.length > 0 && (
-            <div className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-border bg-white shadow-xl" role="listbox" aria-label="Location suggestions">
-              {locationSuggestions.map((suggestion) => (
-                <button type="button" key={suggestion.placeId} role="option" aria-selected="false" onMouseDown={(event) => event.preventDefault()} onClick={() => selectLocation(suggestion)} className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-secondary hover:bg-muted focus:bg-muted focus:outline-none">
-                  <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                  {suggestion.label}
-                </button>
-              ))}
+          {(searching || locationSuggestions.length > 0) && (
+            <div id="broker-search-suggestions" className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-border bg-white shadow-xl" role="listbox" aria-label="Location suggestions">
+              {searching && locationSuggestions.length === 0 ? (
+                <p className="px-4 py-3 text-sm text-muted-foreground">Searching brokers…</p>
+              ) : locationSuggestions.length === 0 ? (
+                <p className="px-4 py-3 text-sm text-muted-foreground">No brokers found</p>
+              ) : (
+                locationSuggestions.map((suggestion, index) => (
+                  <button type="button" key={suggestion.placeId} role="option" aria-selected={index === activeSuggestionIndex} onMouseDown={(event) => event.preventDefault()} onClick={() => selectLocation(suggestion)} className={`flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-secondary hover:bg-muted focus:bg-muted focus:outline-none ${index === activeSuggestionIndex ? 'bg-muted' : ''}`}>
+                    <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                    {suggestion.label}
+                  </button>
+                ))
+              )}
             </div>
           )}
-          <Button type="submit" className="shrink-0 bg-gradient-to-r from-primary to-emerald-600 px-6 shadow-md hover:shadow-lg">
+          {/* <Button type="submit" className="shrink-0 bg-gradient-to-r from-primary to-emerald-600 px-6 shadow-md hover:shadow-lg">
             <span className="flex items-center">
               <Search className="mr-2 h-4 w-4" />
-              
             </span>
-          </Button>
+          </Button> */}
         </div>
       </motion.form>
     </div>

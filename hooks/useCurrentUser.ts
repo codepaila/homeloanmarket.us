@@ -13,6 +13,7 @@ interface SessionUser {
   image?: string | null;
   role: UserRole;
   isActive: boolean;
+  isCompany?: boolean;
   brokerProfile?: {
     id: string;
     displayName: string;
@@ -53,6 +54,7 @@ export function useCurrentUser() {
     isAdmin: user.role === "ADMIN",
     isBroker: user.role === "BROKER",
     isUser: user.role === "USER",
+    isCompany: user.isCompany === true,
   hasActiveSubscription: Boolean(brokerProfile) && (subscription ? subscriptionIsActive : true),
     isVerifiedBroker: brokerProfile?.verificationStatus === "VERIFIED",
     isFeaturedBroker: isFeatured,

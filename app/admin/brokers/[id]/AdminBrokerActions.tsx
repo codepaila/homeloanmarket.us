@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'react-hot-toast'
+import { Loader2 } from 'lucide-react'
 
 type AdminInvitation = {
   id: string
@@ -35,6 +37,7 @@ export default function AdminBrokerActions({ broker }: { broker: AdminBroker }) 
   const [message, setMessage] = useState('')
   const [claimLink, setClaimLink] = useState('')
   const [saving, setSaving] = useState(false)
+  const [isSending, setIsSending] = useState(false)
   const [form, setForm] = useState({ displayName: broker.displayName, companyName: broker.companyName || '', description: broker.description, phone: broker.phone, email: broker.email || '', officeAddress: broker.officeAddress, city: broker.city || '', state: broker.state || '', pinCode: broker.pinCode, isVisible: broker.isVisible, verificationStatus: broker.verificationStatus })
 
   async function updateProfile(event: React.FormEvent) {
@@ -51,16 +54,27 @@ export default function AdminBrokerActions({ broker }: { broker: AdminBroker }) 
   }
 
   async function issueInvitation(path: string) {
-    setSaving(true); setMessage('')
+    if (isSending) return
+    setIsSending(true); setMessage('')
     try {
       const response = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ deliveryEmail }) })
       const data = await response.json()
-      if (!response.ok) throw new Error(data.message || 'Unable to issue invitation')
+      if (!response.ok) {
+        toast.error(data.message || 'Unable to resend the invitation. Please try again.')
+        return
+      }
       setClaimLink(data.claimLink || '')
-      setMessage(data.invitation.emailSent ? 'Invitation sent.' : 'Invitation created, but email delivery failed. Resend after checking the address.')
+      if (data.invitation?.emailSent === false) {
+        toast.error('The invitation email could not be sent.')
+      } else {
+        toast.success(`Invitation email accepted by the email provider${data.invitation ? ` for ${deliveryEmail}` : ''}.`)
+      }
       router.refresh()
-    } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to issue invitation') }
-    finally { setSaving(false) }
+    } catch {
+      toast.error('Unable to resend the invitation. Please try again.')
+    } finally {
+      setIsSending(false)
+    }
   }
 
   async function resolveLocation() {
@@ -76,14 +90,22 @@ export default function AdminBrokerActions({ broker }: { broker: AdminBroker }) 
   }
 
   async function revokeInvitation(id: string) {
-    setSaving(true); setMessage('')
+    if (isSending) return
+    setIsSending(true); setMessage('')
     try {
       const response = await fetch(`/api/admin/claim-invitations/${id}/revoke`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason: 'Revoked by administrator' }) })
       const data = await response.json()
-      if (!response.ok) throw new Error(data.message || 'Unable to revoke invitation')
-      setMessage('Invitation revoked.'); router.refresh()
-    } catch (error) { setMessage(error instanceof Error ? error.message : 'Unable to revoke invitation') }
-    finally { setSaving(false) }
+      if (!response.ok) {
+        toast.error(data.message || 'Unable to revoke invitation.')
+        return
+      }
+      toast.success('Invitation revoked.')
+      router.refresh()
+    } catch {
+      toast.error('Unable to revoke invitation.')
+    } finally {
+      setIsSending(false)
+    }
   }
 
   const activeInvitation = broker.claim?.invitations?.find((item) => item.status === 'ACTIVE')
@@ -104,10 +126,13 @@ export default function AdminBrokerActions({ broker }: { broker: AdminBroker }) 
         <div className="border-b pb-4"><h2 className="text-xl font-semibold">Location</h2><p className="mt-1 text-sm text-muted-foreground">Resolve the stored office address before enabling radius search.</p><button type="button" disabled={saving} onClick={resolveLocation} className="mt-3 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-primary disabled:opacity-50">Resolve Location</button></div>
         <h2 className="text-xl font-semibold">Claim readiness</h2>
         <p className="text-sm text-muted-foreground">The profile remains unowned. Sending an invitation does not complete ownership.</p>
-        <input type="email" value={deliveryEmail} onChange={(event) => setDeliveryEmail(event.target.value)} placeholder="Company delivery email" className="w-full rounded-lg border bg-background px-3 py-2" />
+        <label className="block space-y-1"><span className="text-sm font-medium">Invitation recipient</span><input type="email" value={deliveryEmail} onChange={(event) => setDeliveryEmail(event.target.value)} placeholder="Company delivery email" className="w-full rounded-lg border bg-background px-3 py-2" /></label>
         <div className="flex flex-wrap gap-2">
-          <button disabled={saving || !deliveryEmail} onClick={() => issueInvitation(activeInvitation ? `/api/admin/claim-invitations/${activeInvitation.id}/resend` : `/api/admin/brokers/${broker.id}/claim-invitations`)} className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{activeInvitation ? 'Resend invitation' : 'Send invitation'}</button>
-          {activeInvitation && <button disabled={saving} onClick={() => revokeInvitation(activeInvitation.id)} className="rounded-lg border border-destructive px-3 py-2 text-sm text-destructive disabled:opacity-50">Revoke active</button>}
+          <button disabled={isSending || !deliveryEmail} aria-busy={isSending} onClick={() => issueInvitation(activeInvitation ? `/api/admin/claim-invitations/${activeInvitation.id}/resend` : `/api/admin/brokers/${broker.id}/claim-invitations`)} className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
+            {isSending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
+            {isSending ? 'Sending…' : activeInvitation ? 'Resend invitation' : 'Send invitation'}
+          </button>
+          {activeInvitation && <button disabled={isSending} onClick={() => revokeInvitation(activeInvitation.id)} className="rounded-lg border border-destructive px-3 py-2 text-sm text-destructive disabled:opacity-50">Revoke active</button>}
         </div>
         {claimLink && <button type="button" onClick={() => navigator.clipboard.writeText(claimLink).then(() => setMessage('Claim link copied.'))} className="rounded-lg border px-3 py-2 text-sm">Copy Claim Link</button>}
         {broker.claim?.invitations && broker.claim.invitations.length > 0 && <div className="space-y-2 border-t pt-4"><p className="text-sm font-medium">Invitation history</p>{broker.claim.invitations.map((item) => <div key={item.id} className="grid grid-cols-[1fr_auto] gap-2 text-xs text-muted-foreground"><span>{item.recipientEmail} · {item.status}</span><span>{new Date(item.createdAt).toLocaleString()}</span></div>)}</div>}

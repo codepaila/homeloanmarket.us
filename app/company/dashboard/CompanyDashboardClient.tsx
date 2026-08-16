@@ -18,10 +18,7 @@ export function CompanyDashboardClient({ company, requests }: { company: Company
   const [requestDetails, setRequestDetails] = useState('')
   const [message, setMessage] = useState('')
   async function checkout() {
-    const response = await fetch('/api/company/subscription/checkout', { method: 'POST' })
-    const data = await response.json()
-    if (data.url) window.location.href = data.url
-    else setMessage(data.error || 'Unable to start subscription')
+    window.location.href = '/company/subscription/select'
   }
   async function portal() {
     const response = await fetch('/api/company/subscription/portal', { method: 'POST' })

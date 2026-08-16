@@ -1,10 +1,11 @@
 'use client'
+/* eslint-disable react-hooks/set-state-in-effect */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ChevronDown, Home as HomeIcon, MapPin, Search, ShieldCheck, Star, ArrowRight } from 'lucide-react'
+import { ChevronDown, Home as HomeIcon, MapPin, Search, ShieldCheck, ArrowRight } from 'lucide-react'
 import Image from 'next/image'
 import { PremiumButton } from '@/components/design/PremiumButton'
 import { fetchCities, fetchUSStates } from '@/lib/fetchClient'
@@ -42,6 +43,9 @@ export default function HeroSection() {
   const [citiesLoading, setCitiesLoading] = useState(false)
   const [amount, setAmount] = useState('')
   const [locationSuggestions, setLocationSuggestions] = useState<Array<{ placeId: string; label: string }>>([])
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
+  const [searching, setSearching] = useState(false)
+  const requestRef = useRef(0)
   const [selectedLocation, setSelectedLocation] = useState<{
     normalizedAddress: string
     city: string
@@ -88,17 +92,35 @@ export default function HeroSection() {
   useEffect(() => {
     const value = query.trim()
     if (value.length < 2 || selectedLocation?.normalizedAddress === value) {
-      if (locationSuggestions.length > 0) window.setTimeout(() => setLocationSuggestions([]), 0)
+      requestRef.current += 1
+      setSearching(false)
+      setLocationSuggestions([])
+      setActiveSuggestionIndex(-1)
       return
     }
+    const requestId = ++requestRef.current
+    const controller = new AbortController()
+    setSearching(true)
     const timer = window.setTimeout(() => {
-      fetch(`/api/location/autocomplete?input=${encodeURIComponent(value)}`)
+      fetch(`/api/location/autocomplete?input=${encodeURIComponent(value)}`, { signal: controller.signal })
         .then((response) => response.json())
-        .then((data) => setLocationSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []))
-        .catch(() => setLocationSuggestions([]))
+        .then((data) => {
+          if (requestId !== requestRef.current) return
+          setSearching(false)
+          setLocationSuggestions(Array.isArray(data.suggestions) ? data.suggestions : [])
+          setActiveSuggestionIndex(-1)
+        })
+        .catch(() => {
+          if (controller.signal.aborted || requestId !== requestRef.current) return
+          setSearching(false)
+          setLocationSuggestions([])
+        })
     }, 300)
-    return () => window.clearTimeout(timer)
-  }, [query, selectedLocation, locationSuggestions.length])
+    return () => {
+      window.clearTimeout(timer)
+      controller.abort()
+    }
+  }, [query, selectedLocation])
 
   async function selectLocation(suggestion: { placeId: string; label: string }) {
     try {
@@ -112,9 +134,33 @@ export default function HeroSection() {
       setSelectedLocation(data.location)
       setQuery(data.location.normalizedAddress || suggestion.label)
       setLocationSuggestions([])
+      setActiveSuggestionIndex(-1)
     } catch {
       setSelectedLocation(null)
       setLocationSuggestions([])
+      setActiveSuggestionIndex(-1)
+    }
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Escape') {
+      setLocationSuggestions([])
+      setActiveSuggestionIndex(-1)
+      return
+    }
+    if (event.key === 'ArrowDown' && locationSuggestions.length > 0) {
+      event.preventDefault()
+      setActiveSuggestionIndex((current) => (current + 1) % locationSuggestions.length)
+      return
+    }
+    if (event.key === 'ArrowUp' && locationSuggestions.length > 0) {
+      event.preventDefault()
+      setActiveSuggestionIndex((current) => (current - 1 + locationSuggestions.length) % locationSuggestions.length)
+      return
+    }
+    if (event.key === 'Enter' && activeSuggestionIndex >= 0 && locationSuggestions[activeSuggestionIndex]) {
+      event.preventDefault()
+      selectLocation(locationSuggestions[activeSuggestionIndex])
     }
   }
 
@@ -146,10 +192,9 @@ export default function HeroSection() {
       params.set('locationCity', location.city)
       params.set('locationState', location.state)
       params.set('locationZip', location.zip)
-    } else if (text) params.set('q', text)
-    else if (state && !city) params.set('q', state)
-    if (city) params.set('city', city)
-    if (loanType && loanType !== 'Home Loan') params.set('specialization', loanType)
+    } else if (text) params.set('search', text)
+    else if (state) params.set('state', state)
+    if (city) params.set('search', city)
     if (amount) params.set('loanAmount', amount)
     const queryString = params.toString()
     router.push(queryString ? `/brokers?${queryString}` : '/brokers')
@@ -258,22 +303,32 @@ export default function HeroSection() {
                 <Search className="h-5 w-5 flex-shrink-0 text-primary" />
                 <input
                   type="search"
-                  name="q"
+                  name="search"
                   value={query}
-                  onChange={(event) => { setQuery(event.target.value); setSelectedLocation(null) }}
-                  onKeyDown={(event) => { if (event.key === 'Escape') setLocationSuggestions([]) }}
-                  placeholder="Search by broker, company, ZIP code, city, or state..."
+                  onChange={(event) => { setQuery(event.target.value); setSelectedLocation(null); setActiveSuggestionIndex(-1) }}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Search by city or ZIP code"
                   className="flex-1 bg-transparent py-1 text-sm font-medium text-secondary placeholder:text-muted-foreground/70 focus:outline-none"
-                  aria-label="Search brokers"
+                  aria-label="Search brokers by city or ZIP code"
+                  aria-expanded={locationSuggestions.length > 0 || searching}
+                  aria-autocomplete="list"
+                  aria-controls="broker-search-suggestions"
+                  role="combobox"
                 />
-                {locationSuggestions.length > 0 && (
-                  <div className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-border bg-white shadow-xl" role="listbox" aria-label="Location suggestions">
-                    {locationSuggestions.map((suggestion) => (
-                      <button type="button" key={suggestion.placeId} role="option" aria-selected="false" onMouseDown={(event) => event.preventDefault()} onClick={() => selectLocation(suggestion)} className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-secondary hover:bg-muted focus:bg-muted focus:outline-none">
-                        <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                        {suggestion.label}
-                      </button>
-                    ))}
+                {(searching || locationSuggestions.length > 0) && (
+                  <div id="broker-search-suggestions" className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-border bg-white shadow-xl" role="listbox" aria-label="Location suggestions">
+                    {searching && locationSuggestions.length === 0 ? (
+                      <p className="px-4 py-3 text-sm text-muted-foreground">Searching brokers…</p>
+                    ) : locationSuggestions.length === 0 ? (
+                      <p className="px-4 py-3 text-sm text-muted-foreground">No brokers found</p>
+                    ) : (
+                      locationSuggestions.map((suggestion, index) => (
+                        <button type="button" key={suggestion.placeId} role="option" aria-selected={index === activeSuggestionIndex} onMouseDown={(event) => event.preventDefault()} onClick={() => selectLocation(suggestion)} className={`flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-secondary hover:bg-muted focus:bg-muted focus:outline-none ${index === activeSuggestionIndex ? 'bg-muted' : ''}`}>
+                          <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                          {suggestion.label}
+                        </button>
+                      ))
+                    )}
                   </div>
                 )}
                 <PremiumButton type="submit" size="md" className="shrink-0 bg-gradient-to-r from-primary to-emerald-600 px-6 shadow-md">

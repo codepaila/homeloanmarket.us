@@ -18,7 +18,7 @@ export default function HeroSection() {
   })
 
   return (
-    <section className="relative isolate min-h-[40vh] md:min-h-[85vh] overflow-hidden bg-secondary">
+    <section className="relative isolate min-h-[50vh] md:min-h-[95vh] overflow-hidden bg-secondary">
       {/* Background Image */}
       <div className="absolute inset-0">
         <Image
@@ -36,7 +36,7 @@ export default function HeroSection() {
       </div>
 
       <div className="container-custom relative z-10">
-        <div className="flex min-h-[45vh] md:min-h-[85vh] items-center py-12 md:py-16 lg:py-20">
+        <div className="flex min-h-[50vh] md:min-h-[95vh] items-center py-12 md:py-16 lg:py-20">
           <div className="mx-auto max-w-4xl text-left lg:mx-0">
        
            
@@ -54,18 +54,18 @@ export default function HeroSection() {
                 width={800}
                 height={100}
                 priority
-                className="h-auto w-full max-w-[800px] object-contain"
+                className="h-auto w-full max-w-[800px] object-contain object-left"
               />
             </motion.div>
 
             {/* Main Heading - Exact text from image */}
-            <div className="mt-12 ml-4">
+            <div className="mt-12">
 
               <motion.h1
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={motionTransition(0.2)}
-                className="mt-4  text-lg sm:text-xl lg:text-3xl  font-bold leading-[1.1] tracking-tight text-white text-shadow-black tracking-wide"
+                className="mt-4  text-base sm:text-xl lg:text-3xl  font-bold leading-[1.1] tracking-tight text-white text-shadow-black tracking-wide"
               >
                 You Could Save Thousands on Your Home Loan.
         

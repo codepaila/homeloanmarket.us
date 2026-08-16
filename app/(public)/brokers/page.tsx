@@ -235,6 +235,15 @@ export default function BrokersPage() {
     setPage(1)
   }, [search, minExperience, minRating, featuredOnly, radius, selectedLocation])
 
+  // Normalize an out-of-range page (e.g. a stale ?page= URL or a search that
+  // narrowed the result set) to the last valid page instead of rendering empty.
+  useEffect(() => {
+    if (totalPages > 0 && page > totalPages) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setPage(totalPages)
+    }
+  }, [page, totalPages])
+
   useEffect(() => {
     if (!urlHydrated || typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
@@ -359,7 +368,7 @@ export default function BrokersPage() {
           </div>
         </div>
 
-      <div>
+      {/* <div>
         {sectionLabel('Experience')}
         <div className="mt-2.5 space-y-3">
           <FilterSelect
@@ -369,7 +378,7 @@ export default function BrokersPage() {
             options={experienceOptions}
           />
         </div>
-      </div>
+      </div> */}
 
       <div>
         {sectionLabel('Quality')}
@@ -443,21 +452,21 @@ export default function BrokersPage() {
         />
         <div className="container-custom relative">
           <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            {/* <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
               Verified mortgage broker directory
-            </div>
-            <h1 className="heading-1 text-text-main text-balance">
+            </div> */}
+            <h1 className="heading-2 text-text-main text-balance">
               Find the right mortgage broker
             </h1>
             <p className="mx-auto mt-3 max-w-2xl text-base text-text-muted md:text-lg">
               Search by broker, company, ZIP code, address or location, then compare verified mortgage professionals.
             </p>
-            {!isLoading && (
+            {/* {!isLoading && (
               <p className="mt-4 text-sm font-medium text-primary">
                 {total || 0} verified broker{total === 1 ? '' : 's'} currently listed
               </p>
-            )}
+            )} */}
           </div>
         </div>
       </section>
@@ -471,6 +480,7 @@ export default function BrokersPage() {
               type="search"
               name="q"
               role="combobox"
+              autoComplete="off"
               aria-autocomplete="list"
               aria-label="Search brokers"
               aria-expanded={locationSuggestions.length > 0}
@@ -750,21 +760,10 @@ export default function BrokersPage() {
                     slug={broker.profileSlug}
                     name={broker.displayName || broker.companyName || 'Mortgage Broker'}
                     company={broker.companyName || 'Mortgage Broker'}
-                    location={broker.city || 'United States'}
+                    location={[broker.city, broker.state].filter(Boolean).join(', ') || 'United States'}
+                    nmls={broker.nmls}
                     logo={broker.logo}
-                    rating={broker.avgRating || 0}
-                    reviewCount={broker.totalReviews || broker._count?.reviews || 0}
-                    yearsExperience={broker.experienceYears || 0}
-                    isVerified={broker.verificationStatus === 'VERIFIED'}
-                    isFeatured={broker.isFeatured === true}
-                    isPremium={false}
-                    description={broker.description}
-                    supportedBanks={(broker.bankPartners || []).map(
-                      (bp: any) => bp.bankName
-                    )}
-                    phone={broker.canShowContact ? broker.phone : undefined}
-                    email={broker.canShowContact ? broker.email : undefined}
-                    viewMode={viewMode}
+                    isPremium={broker.isFeatured === true}
                   />
                 ))}
               </motion.div>
@@ -923,60 +922,56 @@ function Pagination({
   totalPages: number
   onPageChange: (page: number) => void
 }) {
-  const pages = Math.min(5, totalPages)
+  // Build a compact page-number window around the current page with ellipses
+  // for gaps, keeping the control usable on mobile.
+  const pageItems: Array<number | 'ellipsis-start' | 'ellipsis-end'> = []
+  const range = 1
+  const start = Math.max(2, page - range)
+  const end = Math.min(totalPages - 1, page + range)
+
+  pageItems.push(1)
+  if (start > 2) pageItems.push('ellipsis-start')
+  for (let p = start; p <= end; p += 1) pageItems.push(p)
+  if (end < totalPages - 1) pageItems.push('ellipsis-end')
+  if (totalPages > 1) pageItems.push(totalPages)
+
   return (
-    <div className="mt-12 flex items-center justify-center gap-2">
+    <nav className="mt-12 flex flex-wrap items-center justify-center gap-1.5" aria-label="Pagination">
       <button type="button"
-        onClick={() => onPageChange(Math.max(1, page - 1))}
-        disabled={page === 1}
-        className="rounded-lg border border-border px-3.5 py-2 text-sm font-medium text-text-main transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+        onClick={() => onPageChange(page - 1)}
+        disabled={page <= 1}
+        className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-main transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
       >
         Previous
       </button>
 
-      <div className="flex items-center gap-1">
-        {Array.from({ length: pages }, (_, i) => {
-          const pageNum = i + 1
-          return (
-            <button type="button"
-              key={pageNum}
-              onClick={() => onPageChange(pageNum)}
-              className={cn(
-                'h-9 w-9 rounded-lg border text-sm font-medium transition-colors',
-                page === pageNum
-                  ? 'border-primary bg-primary text-white'
-                  : 'border-border text-text-main hover:bg-muted',
-              )}
-            >
-              {pageNum}
-            </button>
-          )
-        })}
-        {totalPages > 5 && (
-          <>
-            <span className="px-1 text-sm text-text-muted">...</span>
-            <button type="button"
-              onClick={() => onPageChange(totalPages)}
-              className={cn(
-                'h-9 w-9 rounded-lg border text-sm font-medium transition-colors',
-                page === totalPages
-                  ? 'border-primary bg-primary text-white'
-                  : 'border-border text-text-main hover:bg-muted',
-              )}
-            >
-              {totalPages}
-            </button>
-          </>
-        )}
-      </div>
+      {pageItems.map((item) =>
+        item === 'ellipsis-start' || item === 'ellipsis-end' ? (
+          <span key={item} className="px-1 text-sm text-text-muted" aria-hidden="true">…</span>
+        ) : (
+          <button type="button"
+            key={item}
+            onClick={() => onPageChange(item)}
+            aria-current={item === page ? 'page' : undefined}
+            className={cn(
+              'h-9 min-w-9 rounded-lg border px-2 text-sm font-medium transition-colors',
+              item === page
+                ? 'border-primary bg-primary text-white'
+                : 'border-border text-text-main hover:bg-muted',
+            )}
+          >
+            {item}
+          </button>
+        ),
+      )}
 
       <button type="button"
-        onClick={() => onPageChange(Math.min(totalPages, page + 1))}
-        disabled={page === totalPages}
-        className="rounded-lg border border-border px-3.5 py-2 text-sm font-medium text-text-main transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+        onClick={() => onPageChange(page + 1)}
+        disabled={page >= totalPages}
+        className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-main transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
       >
         Next
       </button>
-    </div>
+    </nav>
   )
 }

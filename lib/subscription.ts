@@ -305,8 +305,35 @@ export class SubscriptionService {
     stripeCustomerId: string,
     stripeSubscriptionId: string,
     status: string,
-    planId?: string
+    planId?: string,
+    ownerType?: string | null,
   ) {
+    // Cross-product isolation: when the Stripe event carries an explicit
+    // ownerType, route to exactly one product's subscription model. This
+    // guarantees a COMPANY event can never mutate a BrokerSubscription (and
+    // vice versa). Legacy events without ownerType fall back to the historical
+    // customer-id dispatch.
+    if (ownerType === 'COMPANY') {
+      const companySubscription = await this.updateCompanySubscriptionFromStripe(
+        stripeCustomerId,
+        stripeSubscriptionId,
+        status,
+        planId,
+      )
+      if (!companySubscription) throw new Error('Company subscription not found')
+      return companySubscription
+    }
+    if (ownerType === 'BROKER_REGISTRATION') {
+      const registrationSubscription = await this.updateRegistrationSubscriptionFromStripe(
+        stripeCustomerId,
+        stripeSubscriptionId,
+        status,
+        planId,
+      )
+      if (!registrationSubscription) throw new Error('Broker registration subscription not found')
+      return registrationSubscription
+    }
+
     // Find broker by Stripe customer ID
     const subscription = await prisma.brokerSubscription.findFirst({
       where: { stripeCustomerId },
@@ -314,6 +341,7 @@ export class SubscriptionService {
     })
 
     if (!subscription) {
+      if (ownerType === 'BROKER') throw new Error('Broker subscription not found')
       const registrationSubscription = await this.updateRegistrationSubscriptionFromStripe(
         stripeCustomerId,
         stripeSubscriptionId,

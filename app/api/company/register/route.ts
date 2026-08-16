@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { CompanyType } from '@prisma/client'
 import { hashPassword } from '@/lib/aes'
 import { customerRegisterRateLimit } from '@/lib/rateLimit'
 import { sendUserVerificationEmail } from '@/actions/email.action'
 import { isSameOriginRequest } from '@/lib/origin'
 import prisma from '@/lib/prisma'
 
-const companyTypes = new Set(Object.values(CompanyType))
-
+// Account-only company registration. Company business fields (name, type,
+// address, contacts, banner) are collected during company onboarding AFTER the
+// company advertising plan is selected/activated. A PENDING company shell is
+// created here only so the company-scoped subscription/dashboard can be
+// attached during the pre-onboarding phase; onboarding completes it.
 export async function POST(request: NextRequest) {
   if (!isSameOriginRequest(request)) return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 })
   try {
@@ -15,15 +17,14 @@ export async function POST(request: NextRequest) {
     const name = typeof body.name === 'string' ? body.name.trim() : ''
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
     const password = typeof body.password === 'string' ? body.password : ''
-    const companyName = typeof body.companyName === 'string' ? body.companyName.trim() : ''
-    const companyType = body.companyType
-    const fields = ['address', 'contactName', 'contactPosition', 'phone', 'bannerAddress', 'bannerPhone']
-    if (!name || !companyName || !email || password.length < 8 || !companyTypes.has(companyType) || fields.some((field) => typeof body[field] !== 'string' || !body[field].trim())) {
-      return NextResponse.json({ error: 'All company registration fields are required' }, { status: 400 })
-    }
+
+    if (!name) return NextResponse.json({ error: 'Full name is required.' }, { status: 400 })
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 })
+    if (password.length < 8) return NextResponse.json({ error: 'Password must be at least 8 characters.' }, { status: 400 })
+
     const rate = await customerRegisterRateLimit.limit(`company_register:${request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'}`)
     if (!rate.success) return NextResponse.json({ error: 'Too many registration attempts. Please try again later.' }, { status: 429 })
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return NextResponse.json({ error: 'Invalid email address' }, { status: 400 })
+
     const existing = await prisma.user.findUnique({ where: { email }, select: { id: true } })
     if (existing) return NextResponse.json({ error: 'An account with this email already exists. Please sign in.' }, { status: 409 })
 
@@ -33,14 +34,15 @@ export async function POST(request: NextRequest) {
       })
       await tx.company.create({
         data: {
-          name: companyName,
-          type: companyType,
-          address: body.address.trim(),
-          contactName: body.contactName.trim(),
-          contactPosition: body.contactPosition.trim(),
-          phone: body.phone.trim(),
-          bannerAddress: body.bannerAddress.trim(),
-          bannerPhone: body.bannerPhone.trim(),
+          name,
+          type: 'OTHER',
+          address: '',
+          contactName: '',
+          contactPosition: '',
+          phone: '',
+          bannerAddress: '',
+          bannerPhone: '',
+          status: 'PENDING',
           memberships: { create: { userId: createdUser.id, role: 'OWNER', isActive: true } },
         },
       })

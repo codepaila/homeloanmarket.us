@@ -28,9 +28,14 @@ export default async function AdminBrokerDetailPage({ params }: { params: Promis
       subscription: { select: { plan: true, isActive: true } },
       claim: {
         select: {
+          status: true,
           invitations: {
             select: { id: true, recipientEmail: true, status: true, expiresAt: true, usedAt: true, revokedAt: true, createdAt: true },
             orderBy: { createdAt: 'desc' },
+          },
+          events: {
+            select: { id: true, eventType: true, occurredAt: true, actor: { select: { name: true } } },
+            orderBy: { occurredAt: 'asc' },
           },
         },
       },
@@ -71,6 +76,23 @@ export default async function AdminBrokerDetailPage({ params }: { params: Promis
         ].map(([label, value]) => <div key={label} className="rounded-xl border bg-card p-4"><p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-2 font-semibold">{value}</p></div>)}
       </div>
       <AdminBrokerActions broker={brokerDto} />
+
+      {broker.claim?.events && broker.claim.events.length > 0 && (
+        <section className="rounded-xl border bg-card p-6">
+          <h2 className="text-xl font-semibold">Claim Timeline</h2>
+          <ol className="mt-4 space-y-3">
+            {broker.claim.events.map((event) => (
+              <li key={event.id} className="flex items-start gap-3 text-sm">
+                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                <div>
+                  <p className="font-medium">{event.eventType}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(event.occurredAt).toLocaleString()}{event.actor?.name ? ` · ${event.actor.name}` : ''}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
     </div>
   )
 }

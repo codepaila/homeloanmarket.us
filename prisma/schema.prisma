@@ -396,6 +396,7 @@ model Company {
   bannerAddress  String
   bannerPhone    String
   status         CompanyStatus  @default(PENDING)
+  onboardedAt    DateTime?
 
   memberships CompanyMembership[]
   subscription CompanySubscription?

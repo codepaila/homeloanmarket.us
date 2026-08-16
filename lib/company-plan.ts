@@ -14,13 +14,13 @@ export async function getCompanyAdvertisingPlan(planId: string) {
 }
 
 export async function resolveCompanyPlanForCheckout(planId?: string | null) {
+  // A requested planId must resolve to an active plan; do not silently fall
+  // back to another plan when the requested plan is inactive or missing.
   if (planId) {
-    const plan = await getCompanyAdvertisingPlan(planId)
-    if (plan) return plan
+    return getCompanyAdvertisingPlan(planId)
   }
   const plans = await getActiveCompanyAdvertisingPlans()
-  if (plans.length > 0) return plans[0]
-  return null
+  return plans.length > 0 ? plans[0] : null
 }
 
 export async function resolveCompanyPlanByStripePrice(priceId: string | null | undefined) {

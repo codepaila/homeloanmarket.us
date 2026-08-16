@@ -11,23 +11,18 @@ import {
   X,
   Home,
   Briefcase,
-  BookOpen,
   Calculator,
   Info,
   Phone,
   ChevronDown,
-  Building2,
-  Star,
-  HelpCircle,
   LogOut,
   User,
   Building,
   Plus,
+  LayoutDashboard,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import ThemeToggle from '@/components/ThemeToggle'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
-import { PremiumButton } from '@/components/design/PremiumButton'
 import type { SiteSettings } from '@/lib/site/settings'
 import Image from 'next/image'
 import { Button } from '../ui/button'
@@ -42,50 +37,11 @@ const navigation = [
     name: 'Find Brokers',
     href: '/brokers',
     icon: Briefcase,
-    // children: [
-    //   {
-    //     name: 'All Mortgage Brokers',
-    //     description: 'Find mortgage brokers',
-    //     href: '/brokers',
-    //     icon: Building2,
-    //   },
-    //   {
-    //     name: 'Featured Mortgage Brokers',
-    //     description: 'Our top-rated, premium partners',
-    //     href: '/brokers',
-    //     icon: Star,
-    //   },
-    // ],
   },
-  // {
-  //   name: 'Resources',
-  //   href: '/guides',
-  //   icon: BookOpen,
-  //   children: [
-  //     {
-  //       name: 'Guides',
-  //       description: 'Learn about the mortgage process',
-  //       href: '/guides',
-  //       icon: BookOpen,
-  //     },
-
-  //     {
-  //       name: 'FAQ',
-  //       description: 'Answers to common questions',
-  //       href: '/faq',
-  //       icon: HelpCircle,
-  //     },
-  //   ],
-  // },
   {
     name: 'Mortgage Calculator',
     href: '/calculator',
     icon: Calculator,
-  },
-  {
-    name: 'Join As Company',
-    href: '/company/register',
-    icon: Building,
   },
   { name: 'About', href: '/about', icon: Info },
   { name: 'Contact', href: '/contact', icon: Phone },
@@ -100,6 +56,7 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
   const pathname = usePathname()
   const user = useCurrentUser()
   const headerRef = useRef<HTMLDivElement>(null)
+  const mobileMenuRef = useRef<HTMLDivElement>(null)
 
   const { scrollY } = useScroll()
   useMotionValueEvent(scrollY, 'change', (latest) => {
@@ -119,18 +76,22 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
     return () => window.removeEventListener('keydown', handleKey)
   }, [])
 
-  // Close dropdowns on outside click
+  // Close dropdowns and the mobile menu on outside click
   useEffect(() => {
-    if (!openDropdown && !isUserMenuOpen) return
+    if (!openDropdown && !isUserMenuOpen && !isMenuOpen) return
     const handleClick = (e: MouseEvent) => {
-      if (headerRef.current && !headerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      const insideHeader = headerRef.current?.contains(target)
+      const insideMenu = mobileMenuRef.current?.contains(target)
+      if (!insideHeader && !insideMenu) {
         setOpenDropdown(null)
         setIsUserMenuOpen(false)
+        setIsMenuOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
-  }, [openDropdown, isUserMenuOpen])
+  }, [openDropdown, isUserMenuOpen, isMenuOpen])
 
   // Lock scroll when mobile menu or user menu is open
   useEffect(() => {
@@ -160,6 +121,25 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
     await signOut({ callbackUrl: '/' })
   }
 
+  // "Join As Company" is only for unauthenticated visitors. Authenticated
+  // users see their role dashboard (Broker/Company) or no extra item (USER/ADMIN).
+  const dashboardNavItem = !user
+    ? { name: 'Join As Company', href: '/company/register', icon: Building }
+    // : user.isBroker
+    //   ? { name: 'Broker Dashboard', href: '/broker/dashboard', icon: LayoutDashboard }
+    //   : user.isCompany
+    //     ? { name: 'Company Dashboard', href: '/company/dashboard', icon: LayoutDashboard }
+        : null
+
+  const navItems = [
+    navigation[0],
+    navigation[1],
+    navigation[2],
+    ...(dashboardNavItem ? [dashboardNavItem] : []),
+    navigation[3],
+    navigation[4],
+  ]
+
   return (
     <>
       <header
@@ -178,15 +158,16 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
             >
               <Link href="/" className="flex items-center gap-2">
                 {settings?.siteLogo ? (
-                  <Image width={300} height={100} src={settings.siteLogo} alt={settings.siteName} className="h-9 max-w-40 object-contain" />
+                  <Image width={300} height={100} src={settings.siteLogo} alt={settings.siteName}
+                   className="h-12 max-w-48 object-contain" />
                 ) : (
                   <>
                     <Image
-                      width={300}
+                      width={350}
                       height={200}
                       src="/assets/logo.png"
                       alt="HomeLoanMarket"
-                      className="h-12 max-w-40 md:max-w-48 object-contain"
+                      className="h-12 max-w-48 md:max-w-56 object-contain"
                     />
 
                   </>
@@ -199,7 +180,7 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
               className="hidden items-center gap-1 lg:flex"
               aria-label="Main navigation"
             >
-              {navigation.map((item) =>
+              {navItems.map((item) =>
                 // item.children ? (
                 //   <div key={item.name} className="relative">
                 //     <button
@@ -361,6 +342,7 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 aria-label="Toggle menu"
                 aria-expanded={isMenuOpen}
+                aria-controls="mobile-menu"
               >
                 <motion.div
                   animate={{ rotate: isMenuOpen ? 180 : 0 }}
@@ -382,10 +364,11 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
       <AnimatePresence>
         {isMenuOpen && (
           <MobileMenu
-            navigation={navigation}
+            navigation={navItems}
             user={user}
             onSignOut={handleSignOut}
             onClose={() => setIsMenuOpen(false)}
+            menuRef={mobileMenuRef}
           />
         )}
       </AnimatePresence>
@@ -437,6 +420,15 @@ function UserDropdown({
             Subscription
           </Link>
         )}
+        {user.isCompany && (
+          <Link
+            href="/company/dashboard"
+            className="block rounded-lg px-3 py-2 text-sm text-text-main transition-colors hover:bg-muted"
+            onClick={onClose}
+          >
+            Dashboard
+          </Link>
+        )}
         <div className="my-1 border-t border-border" />
         <button
           onClick={onSignOut}
@@ -455,6 +447,7 @@ function MobileMenu({
   user,
   onSignOut,
   onClose,
+  menuRef,
 }: {
   navigation: Array<{
     name: string
@@ -470,14 +463,17 @@ function MobileMenu({
   user: ReturnType<typeof useCurrentUser> | null
   onSignOut: () => void
   onClose: () => void
+  menuRef: React.RefObject<HTMLDivElement | null>
 }) {
   return (
     <motion.div
+      id="mobile-menu"
+      ref={menuRef}
       initial={{ opacity: 0, height: 0 }}
       animate={{ opacity: 1, height: 'auto' }}
       exit={{ opacity: 0, height: 0 }}
       transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-      className="overflow-hidden border-b border-border bg-card lg:hidden"
+      className="fixed inset-x-0 top-16 z-30 overflow-hidden border-b border-border bg-card shadow-large md:top-[72px] lg:hidden"
     >
       <div className="container-custom space-y-1 py-3">
         {navigation.map((item) => (
@@ -518,15 +514,6 @@ function MobileMenu({
         <div className="border-t border-border pt-2">
           {user ? (
             <>
-              {user.isBroker && (
-                <Link
-                  href="/broker/dashboard"
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-text-muted transition-colors hover:bg-muted"
-                  onClick={onClose}
-                >
-                  Dashboard
-                </Link>
-              )}
               <button
                 onClick={() => {
                   onSignOut()

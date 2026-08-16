@@ -5,7 +5,7 @@ import { signIn } from 'next-auth/react'
 import { toast } from 'react-hot-toast'
 import { cn } from '@/lib/utils'
 
-export function GoogleContinueButton({ callbackUrl, className, brokerIntent = false }: { callbackUrl: string; className?: string; brokerIntent?: boolean }) {
+export function GoogleContinueButton({ callbackUrl, className, brokerIntent = false, companyIntent = false }: { callbackUrl: string; className?: string; brokerIntent?: boolean; companyIntent?: boolean }) {
   const [loading, setLoading] = useState(false)
 
   const handleGoogle = async () => {
@@ -17,6 +17,13 @@ export function GoogleContinueButton({ callbackUrl, className, brokerIntent = fa
           headers: { 'Content-Type': 'application/json' },
         })
         if (!intentResponse.ok) throw new Error('Unable to start broker registration')
+      }
+      if (companyIntent) {
+        const intentResponse = await fetch('/api/auth/company-intent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        })
+        if (!intentResponse.ok) throw new Error('Unable to start company registration')
       }
       await signIn('google', { callbackUrl })
     } catch {

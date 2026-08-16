@@ -5,6 +5,7 @@ import { issueBrokerClaimInvitation, ClaimInvitationError } from '@/lib/claim-in
 import prisma from '@/lib/prisma'
 import { sendBrokerClaimInvitationEmail } from '@/actions/email.action'
 import { clientIp, isSameOriginRequest } from '@/lib/origin'
+import { friendlyClaimErrorMessage } from '@/lib/claim-errors'
 
 export async function POST(
   request: Request,
@@ -30,7 +31,7 @@ export async function POST(
     where: { id },
     select: { recipientEmail: true, claim: { select: { brokerId: true } } },
   })
-  if (!invitation) return NextResponse.json({ message: 'Invitation not found' }, { status: 404 })
+  if (!invitation) return NextResponse.json({ message: 'No active invitation is available to resend.', errorCode: 'NOT_FOUND' }, { status: 404 })
 
   const deliveryEmail = suppliedEmail || invitation.recipientEmail
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(deliveryEmail)
@@ -66,9 +67,9 @@ export async function POST(
   } catch (error) {
     if (error instanceof ClaimInvitationError) {
       const status = error.code === 'LOCKED' ? 429 : error.code === 'NOT_FOUND' ? 404 : 409
-      return NextResponse.json({ message: 'Broker is not eligible for an invitation' }, { status })
+      return NextResponse.json({ message: friendlyClaimErrorMessage(error.code), errorCode: error.code }, { status })
     }
     console.error('Admin claim invitation resend failed', error)
-    return NextResponse.json({ message: 'Unable to resend claim invitation' }, { status: 500 })
+    return NextResponse.json({ message: 'Unable to resend the invitation. Please try again.', errorCode: 'UNEXPECTED_ERROR' }, { status: 500 })
   }
 }

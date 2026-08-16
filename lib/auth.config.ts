@@ -185,6 +185,7 @@ export const authOptions = {
         token.role = user.role;
         token.isActive = user.isActive;
         token.brokerProfile = user.brokerProfile;
+        token.isCompany = false;
       }
 
       // Identity claims are NEVER taken from the client. Auth.js fires this
@@ -207,6 +208,10 @@ export const authOptions = {
                 subscription: true
               }
             },
+            companyMemberships: {
+              where: { isActive: true },
+              select: { id: true },
+            },
           },
         });
 
@@ -220,6 +225,7 @@ export const authOptions = {
         token.emailVerified = dbUser.emailVerified as boolean;
 
           token.isActive = dbUser.isActive;
+          token.isCompany = Boolean(dbUser.companyMemberships?.length);
           
           token.brokerProfile = null
           if (dbUser.brokerProfile[0]) {
@@ -255,6 +261,7 @@ export const authOptions = {
           role: token.role as UserRole,
           isActive: token.isActive as boolean,
           brokerProfile: token.brokerProfile,
+          isCompany: token.isCompany as boolean,
           emailVerified: token.emailVerified as any,
         };
       }
@@ -273,16 +280,38 @@ export const authOptions = {
         });
 
         if (!existingUser) {
-          // Create user with Google profile
-          await prisma.user.create({
+          // Create user with Google profile. Google verifies the email address
+          // via OAuth, so the account is treated as email-verified.
+          const created = await prisma.user.create({
             data: {
               email: user.email!,
               name: user.name,
               image: user.image,
               role: "USER", // Default role
               isActive: true,
+              emailVerified: true,
             },
           });
+
+          // Link the Google OAuth identity to the newly created user so claim
+          // reauthentication (which checks user.accounts) can recognize it.
+          if (account.providerAccountId) {
+            await prisma.account
+              .create({
+                data: {
+                  userId: created.id,
+                  type: account.type || "oauth",
+                  provider: "google",
+                  providerAccountId: account.providerAccountId,
+                },
+              })
+              .catch((error: { code?: string }) => {
+                // If the provider account already exists (e.g. the provider
+                // email changed), leave the existing linkage untouched — never
+                // reassign an Account to a different user.
+                if (error?.code !== "P2002") throw error;
+              });
+          }
         }
       }
 

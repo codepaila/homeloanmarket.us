@@ -44,6 +44,7 @@ export const useAllBrokers = (
     queryParams.append('latitude', location.latitude.toString())
     queryParams.append('longitude', location.longitude.toString())
     queryParams.append('radius', String(radius || 0))
+    if (location.city) queryParams.append('locationCity', location.city)
     if (location.state) queryParams.append('locationState', location.state)
     if (location.zip) queryParams.append('locationZip', location.zip)
     if (location.token) queryParams.append('locationToken', location.token)

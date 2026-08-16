@@ -28,6 +28,7 @@ import Image from 'next/image'
 import { RatingStars, RatingBadge } from '@/components/design/RatingStars'
 import { BrokerGridCard } from '@/components/brokers'
 import { BrokerAvatar } from '@/components/brokers/BrokerAvatar'
+import { BrokerSubscriptionBadge } from '@/components/brokers/BrokerSubscriptionBadge'
 import { PremiumButton } from '@/components/design/PremiumButton'
 import { cn } from '@/lib/utils'
 
@@ -103,12 +104,14 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
     isFeatured,
     averageResponseTime,
     canShowContact,
+    hasOwner,
     stats,
   } = currentBroker
 
   const totalReviewsCount = _count?.reviews || totalReviews || 0
   const isPremium = false
   const isFeaturedBroker = isFeatured
+  const showDescription = hasOwner !== false
 
   const tabs = [
     { id: 'about', label: 'About', icon: Building },
@@ -156,7 +159,7 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
       <div className="mx-auto max-w-7xl px-4 pb-12">
         {/* Profile Header */}
         <motion.header
-          className="mt-20 space-y-4 text-center md:mt-12 md:text-left"
+          className="mt-20 space-y-4 text-center md:mt-20 md:text-left"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
@@ -164,9 +167,12 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
           <div className="flex flex-col items-center md:items-start md:flex-row md:justify-between gap-3 md:gap-4">
             <div className="text-center md:text-left">
               {displayName && (
-                <h1 className="text-3xl font-bold text-text-main md:text-4xl">
-                  {displayName}
-                </h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-3xl font-bold text-text-main md:text-4xl">
+                    {displayName}
+                  </h1>
+                  {isFeaturedBroker && <BrokerSubscriptionBadge className="h-7 w-7" />}
+                </div>
               )}
               {companyName && (
                 <p className="mt-1 text-lg text-text-muted">
@@ -337,6 +343,7 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
                     experienceYears={experienceYears}
                     profileViews={profileViews}
                     totalLeads={totalLeads || stats?.totalLeads || 0}
+                    showDescription={showDescription}
                   />
 
                   {/* Experience Timeline */}
@@ -440,19 +447,9 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
                     slug={broker.profileSlug}
                     name={broker.displayName || broker.companyName || 'Mortgage Broker'}
                     company={broker.companyName || 'Mortgage Broker'}
-                    location={broker.city || 'United States'}
+                    location={[broker.city, broker.state].filter(Boolean).join(', ') || 'United States'}
+                    nmls={broker.nmls}
                     logo={broker.logo}
-                    rating={broker.avgRating || 0}
-                    reviewCount={broker.totalReviews || broker._count?.reviews || 0}
-                    yearsExperience={broker.experienceYears || 0}
-                    isVerified={broker.verificationStatus === 'VERIFIED'}
-                    isFeatured={broker.isFeatured}
-                    description={broker.description}
-                    supportedBanks={(broker.bankPartners || []).map(
-                      (bp: any) => bp.bankName
-                    )}
-                    phone={broker.canShowContact ? broker.phone : undefined}
-                    email={broker.canShowContact ? broker.email : undefined}
                   />
                 ))}
               </div>
@@ -661,24 +658,28 @@ function AboutSection({
   experienceYears,
   profileViews,
   totalLeads,
+  showDescription = true,
 }: {
   displayName?: string
   description?: string
   experienceYears?: number
   profileViews?: number
   totalLeads?: number
+  showDescription?: boolean
 }) {
   return (
     <div className="space-y-8">
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold text-text-main">
-          About {displayName || 'this broker'}
-        </h2>
-        <p className="text-text-muted leading-relaxed whitespace-pre-line">
-          {description ||
-            'Professional broker providing expert loan services with years of experience in the industry.'}
-        </p>
-      </div>
+      {showDescription && (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-text-main">
+            About {displayName || 'this broker'}
+          </h2>
+          <p className="text-text-muted leading-relaxed whitespace-pre-line">
+            {description ||
+              'Professional broker providing expert loan services with years of experience in the industry.'}
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <StatBox label="Years Experience" value={`${experienceYears || 0}+`} />

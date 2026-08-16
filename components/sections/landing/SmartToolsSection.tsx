@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'motion/react'
 import Link from 'next/link'
 import { ArrowRight, Calculator } from 'lucide-react'
 import { PremiumButton } from '@/components/design/PremiumButton'
+import { Button } from '@/components/ui/button'
 
 export default function SmartToolsSection() {
   const prefersReducedMotion = useReducedMotion()
@@ -15,7 +16,7 @@ export default function SmartToolsSection() {
   })
 
   return (
-    <section className="py-16 md:py-20 lg:py-24 bg-gradient-to-b from-secondary to-secondary/95">
+    <section className="py-16 md:py-20 lg:py-24 bg-primary/20">
       <div className="container-custom">
         <div className="mx-auto max-w-4xl text-center">
           {/* Section Badge */}
@@ -34,12 +35,12 @@ export default function SmartToolsSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={motionTransition(0.1)}
-            className="mt-4 text-3xl font-bold text-white sm:text-4xl md:text-5xl lg:text-5xl"
+            className="mt-4 text-3xl font-bold text-foreground sm:text-4xl md:text-5xl lg:text-5xl"
           >
-            <span className="bg-gradient-to-r from-primary to-emerald-500 bg-clip-text text-transparent">
+            <span className="text-primary">
               Smart Tools
             </span>
-            <span className="text-white"> for Smarter Home Buying Decisions</span>
+            <span > for Smarter Home Buying Decisions</span>
           </motion.h2>
 
           {/* Description */}
@@ -47,7 +48,7 @@ export default function SmartToolsSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={motionTransition(0.2)}
-            className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-white/70 sm:text-lg"
+            className="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg"
           >
             Estimate monthly payments, check affordability, and plan your home financing 
             journey with confidence.
@@ -60,7 +61,7 @@ export default function SmartToolsSection() {
             transition={motionTransition(0.25)}
             className="mt-8 mx-auto max-w-md"
           >
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center backdrop-blur-sm transition-all hover:border-primary/30 hover:bg-white/10">
+            <div className="rounded-2xl border border-white/10 bg-secondary p-8 text-center backdrop-blur-sm transition-all hover:border-primary/30 hover:bg-secondary">
               <div className="mb-4 flex justify-center">
                 <div className="rounded-full bg-primary/20 p-4">
                   <Calculator className="h-8 w-8 text-primary" />
@@ -69,17 +70,17 @@ export default function SmartToolsSection() {
               <h4 className="text-xl font-semibold text-white">Monthly Payment Calculator</h4>
               <p className="mt-2 text-sm text-white/60">Estimate your monthly mortgage payment</p>
               <Link href="/calculator" className="group mt-6 inline-flex items-center justify-center">
-                <PremiumButton
-                  variant="primary"
-                  size="lg"
-                  className="relative overflow-hidden bg-gradient-to-r from-primary to-emerald-600 px-8 py-3.5 text-base shadow-lg hover:shadow-2xl"
+                <Button
+                  // variant="primary"
+                  // size="lg"
+                  className="relative overflow-hidden"
                 >
                   <span className="relative z-10 flex items-center">
                     Calculate Now
                     <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </span>
                   <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
-                </PremiumButton>
+                </Button>
               </Link>
             </div>
           </motion.div>

@@ -4,6 +4,7 @@ import { getCurrentCompany } from '@/lib/company-policy'
 import { isSameOriginRequest } from '@/lib/origin'
 import { SubscriptionService } from '@/lib/subscription'
 import { resolveCompanyPlanForCheckout, COMPANY_PLAN_DEFAULT_NAME } from '@/lib/company-plan'
+import { validateCompanyCoupon } from '@/lib/company-coupon'
 import prisma from '@/lib/prisma'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
@@ -15,11 +16,16 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json().catch(() => ({}))
   const requestedPlanId = typeof body?.planId === 'string' ? body.planId : null
+  const couponCode = typeof body?.couponCode === 'string' ? body.couponCode.trim() : ''
 
   const plan = await resolveCompanyPlanForCheckout(requestedPlanId)
   if (!plan) return NextResponse.json({ error: 'No active company advertising plan is available' }, { status: 503 })
-  const priceId = plan.stripePriceId || process.env.STRIPE_COMPANY_AD_PRICE_ID
-  if (!priceId) return NextResponse.json({ error: 'Company advertising price is not configured' }, { status: 503 })
+  const priceId = plan.stripePriceId
+  if (!priceId) return NextResponse.json({ error: 'Company advertising plan is not configured for checkout.' }, { status: 503 })
+
+  // Validate any coupon server-side before applying it to the checkout session.
+  const coupon = couponCode ? await validateCompanyCoupon(couponCode) : null
+  if (coupon && !coupon.valid) return NextResponse.json({ error: coupon.reason }, { status: 400 })
 
   try {
     const session = await SubscriptionService.withBillingLock(`company:${current.company.id}`, async () => {
@@ -50,6 +56,7 @@ export async function POST(request: NextRequest) {
         line_items: [{ price: priceId, quantity: 1 }],
         mode: 'subscription',
         allow_promotion_codes: true,
+        ...(coupon && coupon.valid ? { discounts: [{ coupon: coupon.id }] } : {}),
         success_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/company/dashboard?subscription=success`,
         cancel_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/company/dashboard`,
         metadata: { userId: current.user.id, companyId: current.company.id, plan: plan.name, ownerType: 'COMPANY', planId: plan.id },

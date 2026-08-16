@@ -2,6 +2,8 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
+import { toast } from "react-hot-toast";
+import { classifyImport, type ToastKind } from "@/lib/operation-toast";
 import {
   Check,
   FileSpreadsheet,
@@ -10,6 +12,12 @@ import {
   UploadCloud,
   X,
 } from "lucide-react";
+
+function showToast(result: { kind: ToastKind; message: string }) {
+  if (result.kind === "success") toast.success(result.message);
+  else if (result.kind === "error") toast.error(result.message);
+  else toast(result.message, { icon: "⚠️" });
+}
 
 type Preview = {
   sheetName: string;
@@ -121,6 +129,7 @@ export default function BrokerImportPage() {
       setMessage("Preview ready. Review the rows before confirming the import.");
     } catch (error) {
       setMessage(`Preview failed: ${error instanceof Error ? error.message : "Unable to parse workbook"}`);
+      toast.error("Broker import failed — please fix the validation errors.");
     } finally {
       setLoading(false);
     }
@@ -143,11 +152,15 @@ export default function BrokerImportPage() {
         body: form,
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || "Import failed");
+      if (!response.ok) {
+        toast.error(response.status === 422 ? "Broker import failed — please fix the validation errors." : "Broker import failed — please try again.");
+        throw new Error(data.message || "Import failed");
+      }
       setImportErrors(data.result.errors || []);
       setMessage(
         `Import complete: ${data.result.imported} created, ${data.result.updated} updated, ${data.result.skipped} skipped, ${data.result.failed} failed.`,
       );
+      showToast(classifyImport(data.result));
     } catch (error) {
       setMessage(`Import failed: ${error instanceof Error ? error.message : "Unable to import workbook"}`);
     } finally {

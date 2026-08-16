@@ -118,6 +118,7 @@ async function handleStripeEvent(event: Stripe.Event) {
         subscription.id,
         subscription.status,
         subscription.items.data[0]?.price.id,
+        subscription.metadata?.ownerType || session.metadata?.ownerType || null,
       )
       return
     }
@@ -128,12 +129,19 @@ async function handleStripeEvent(event: Stripe.Event) {
         subscription.id,
         subscription.status,
         subscription.items.data[0]?.price.id,
+        subscription.metadata?.ownerType || null,
       )
       return
     }
     case 'customer.subscription.deleted': {
       const subscription = event.data.object as Stripe.Subscription
-      await SubscriptionService.updateSubscriptionFromStripe(subscription.customer as string, subscription.id, 'canceled')
+      await SubscriptionService.updateSubscriptionFromStripe(
+        subscription.customer as string,
+        subscription.id,
+        'canceled',
+        subscription.items.data[0]?.price.id,
+        subscription.metadata?.ownerType || null,
+      )
       return
     }
     case 'invoice.payment_failed':
@@ -146,6 +154,7 @@ async function handleStripeEvent(event: Stripe.Event) {
         subscription.id,
         event.type === 'invoice.payment_failed' ? 'past_due' : subscription.status,
         subscription.items.data[0]?.price.id,
+        subscription.metadata?.ownerType || null,
       )
       return
     }

@@ -95,6 +95,7 @@ export const appSidebarData = (user: any) => {
       { title: "Media Library", url: "/admin/media" },
       { title: "Folders", url: "/admin/folders" },
     ] },
+    { title: "Company Ad Plans", url: "/admin/company-advertising-plans", icon: Tag },
     { title: "Content", url: "/admin/content", icon: FileSpreadsheet },
     { title: "FAQs", url: "/admin/faqs", icon: HelpCircle },
     { title: "Settings", url: "/admin/settings", icon: Settings },

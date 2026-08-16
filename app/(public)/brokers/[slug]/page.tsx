@@ -107,7 +107,7 @@ export default async function PublicBrokerPage({ params }: PageProps) {
     notFound()
   }
 
-  const publicBroker = toPublicBrokerRecord(broker)
+  const publicBroker = { ...toPublicBrokerRecord(broker), hasOwner: Boolean(broker.userId) }
 
   return (
     <>

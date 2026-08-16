@@ -15,9 +15,9 @@ import { verifySearchLocationToken } from '@/lib/location/search-token'
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
+    const pageParam = parseInt(searchParams.get('page') || '1')
+    const requestedPage = Number.isInteger(pageParam) && pageParam >= 1 ? pageParam : 1
     const take = TABLE_ROW_PAGE
-    const skip = TABLE_ROW_PAGE * (page - 1)
 
     const state = searchParams.get('state')
     const zip = searchParams.get('zip')
@@ -31,6 +31,7 @@ export async function GET(request: Request) {
     const radiusParam = searchParams.get('radius')
     const locationState = searchParams.get('locationState')
     const locationZip = searchParams.get('locationZip')
+    const locationCity = searchParams.get('locationCity')
     const locationToken = searchParams.get('locationToken')
 
     const currentUser = await getCurrentUser()
@@ -80,9 +81,17 @@ export async function GET(request: Request) {
       return NextResponse.json({ message: 'Valid location coordinates and a radius from 0 to 100 are required' }, { status: 400 })
     }
 
+    // radius === 0 means "exact selected-location search without radius
+    // expansion". A verified city selection constrains city + state; a ZIP
+    // selection constrains pinCode + state. Never reduce a city selection to
+    // state-only, and never filter by a service-area array.
     if (radius === 0) {
-      if (!state && (locationState || verifiedLocation?.state)) where.state = { contains: locationState || verifiedLocation?.state, mode: 'insensitive' }
-      if (!zip && (locationZip || verifiedLocation?.zip)) where.pinCode = { contains: locationZip || verifiedLocation?.zip, mode: 'insensitive' }
+      const resolvedCity = locationCity || verifiedLocation?.city
+      const resolvedState = locationState || verifiedLocation?.state
+      const resolvedZip = locationZip || verifiedLocation?.zip
+      if (resolvedCity) where.city = { contains: resolvedCity, mode: 'insensitive' }
+      if (!state && resolvedState) where.state = { contains: resolvedState, mode: 'insensitive' }
+      if (!zip && resolvedZip) where.pinCode = { contains: resolvedZip, mode: 'insensitive' }
     }
 
     const geoWhere: any = {
@@ -90,8 +99,11 @@ export async function GET(request: Request) {
       ...buildSearchFilter(search),
     }
 
-    const geoResult = radius > 0
-      ? await findBrokerIdsWithinRadius({
+    let page = requestedPage
+    let geoResult: any = null
+
+    if (radius > 0) {
+      geoResult = await findBrokerIdsWithinRadius({
         latitude: latitude!,
         longitude: longitude!,
         radiusMiles: radius,
@@ -100,11 +112,34 @@ export async function GET(request: Request) {
         search,
         admin: isAdmin,
       })
-      : null
+    }
 
-    const [brokers, total] = await Promise.all([
+    // Resolve the total page count against the SAME visibility/search/filter
+    // conditions as the broker query, then clamp the requested page to a valid
+    // range so an out-of-range page never renders an empty result set.
+    const total = geoResult
+      ? geoResult.total
+      : await prisma.broker.count({ where })
+    const totalPages = total > 0 ? Math.ceil(total / take) : 1
+    if (page > totalPages) page = totalPages
+
+    // Re-run the geo facet if the page was clamped so the returned IDs match
+    // the corrected page.
+    if (radius > 0 && page !== requestedPage) {
+      geoResult = await findBrokerIdsWithinRadius({
+        latitude: latitude!,
+        longitude: longitude!,
+        radiusMiles: radius,
+        page,
+        take,
+        search,
+        admin: isAdmin,
+      })
+    }
+
+    const [brokers] = await Promise.all([
       prisma.broker.findMany({
-        skip: geoResult ? 0 : skip,
+        skip: geoResult ? 0 : take * (page - 1),
         take: geoResult ? Math.max(geoResult.ids.length, 1) : take,
         where: geoResult ? { ...geoWhere, id: { in: geoResult.ids } } : where,
         include: {
@@ -148,10 +183,10 @@ export async function GET(request: Request) {
           { brokerStatus: 'desc' }, // FEATURED first
           { featuredRank: 'desc' },
           { avgRating: 'desc' },
-          { experienceYears: 'desc' }
+          { experienceYears: 'desc' },
+          { id: 'asc' },
         ]
       }),
-      geoResult ? Promise.resolve(geoResult.total) : prisma.broker.count({ where })
     ])
 
     const orderedBrokers = geoResult
@@ -166,17 +201,29 @@ export async function GET(request: Request) {
       }
     })
 
+    const mode = radius > 0
+      ? 'RADIUS'
+      : (locationCity || verifiedLocation?.city) ? 'CITY'
+      : (locationZip || verifiedLocation?.zip) ? 'ZIP'
+      : search ? 'TEXT'
+      : 'ALL'
+
     console.log('[BROKER API]', {
       role: currentUser?.role ?? 'ANONYMOUS',
+      mode,
       dbCount: brokers.length,
       total,
       publicCount: publicBrokers.length,
       hasRadius: radius > 0,
+      radius,
+      locationCity: locationCity || verifiedLocation?.city || null,
+      locationState: locationState || verifiedLocation?.state || null,
+      hasLocationToken: Boolean(locationToken),
     })
     return NextResponse.json({
       brokers: publicBrokers,
       total,
-      totalPages: Math.ceil(total / take),
+      totalPages,
       currentPage: page
     })
   } catch (error: any) {

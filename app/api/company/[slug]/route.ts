@@ -125,6 +125,7 @@ export async function GET(
       canShowContact: canShowContactFlag,
       isFeatured,
       isOwner,
+      hasOwner: Boolean(broker.userId),
       stats: {
         totalReviews: broker._count.reviews,
         totalLeads: broker.totalLeads,

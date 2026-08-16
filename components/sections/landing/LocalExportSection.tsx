@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from 'motion/react'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { PremiumButton } from '@/components/design/PremiumButton'
+import { Button } from '@/components/ui/button'
 
 export default function LocalExpertSection() {
   const prefersReducedMotion = useReducedMotion()
@@ -25,7 +26,7 @@ export default function LocalExpertSection() {
             transition={motionTransition(0.1)}
             className="text-4xl font-bold text-secondary sm:text-5xl md:text-5xl lg:text-6xl"
           >
-            <span className="bg-gradient-to-r from-primary to-emerald-500 bg-clip-text text-transparent">
+            <span className="text-primary">
               Find Your Expert
             </span>
           </motion.h2>
@@ -72,17 +73,16 @@ export default function LocalExpertSection() {
             className="mt-8"
           >
             <Link href="/brokers" className="group inline-block">
-              <PremiumButton
-                variant="primary"
+              <Button
                 size="lg"
-                className="relative overflow-hidden bg-gradient-to-r from-primary to-emerald-600 px-8 py-3.5 text-base shadow-lg hover:shadow-2xl"
+                className="relative overflow-hidden "
               >
                 <span className="relative z-10 flex items-center">
                   Find Your Local Expert
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </span>
                 <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 group-hover:translate-x-full" />
-              </PremiumButton>
+              </Button>
             </Link>
           </motion.div>
         </div>

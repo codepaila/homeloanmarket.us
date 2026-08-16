@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
          redirectTo: claimContext
            ? '/claim-broker/continue'
            : updatedUser.brokerRegistration?.id ? '/broker/subscription/select'
-           : updatedUser.companyMemberships?.length ? '/company/dashboard'
+           : updatedUser.companyMemberships?.length ? '/company/subscription/select'
            : updatedUser.brokerProfile?.[0]?.id ? '/setup' : '/'
       }
     })
