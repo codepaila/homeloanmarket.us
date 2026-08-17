@@ -77,6 +77,7 @@ export async function POST(request: Request) {
       panNumber: typeof body.panNumber === 'string' ? body.panNumber : undefined,
       logo: typeof body.logo === 'string' ? body.logo : undefined,
       coverImage: typeof body.coverImage === 'string' ? body.coverImage : undefined,
+      profileImage: typeof body.profileImage === 'string' ? body.profileImage : undefined,
     })
     const errors = validateAdminBrokerInput(input)
 
@@ -122,6 +123,7 @@ export async function POST(request: Request) {
           profileSlug,
           logo: input.logo,
           coverImage: input.coverImage,
+          profileImage: input.profileImage,
           description: input.description,
           phone: input.phone,
           email: input.email,

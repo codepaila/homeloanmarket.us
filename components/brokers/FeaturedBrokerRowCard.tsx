@@ -29,6 +29,7 @@ interface FeaturedBrokerRowCardProps {
     displayName: string
     companyName?: string
     logo?: string
+    profileImage?: string
     avgRating?: number
     totalReviews?: number
     experienceYears?: number
@@ -68,7 +69,7 @@ export default function FeaturedBrokerRowCard({ broker }: FeaturedBrokerRowCardP
   const company = broker.companyName || ''
   const location =
     broker.city || broker.state || ''
-  const logo = broker.logo
+  const logo = broker.profileImage || broker.logo
   const rating = broker.avgRating || 0
   const reviewCount = broker.totalReviews || 0
   const yearsExperience = broker.experienceYears || 0

@@ -30,8 +30,8 @@ export default function SubscriptionPage() {
       if (data.url) {
         window.location.href = data.url
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to start checkout')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to start checkout')
     } finally {
       setLoadingPlan(null)
     }

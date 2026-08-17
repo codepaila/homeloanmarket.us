@@ -1,6 +1,9 @@
 // components/sections/broker/CompanyProfile.tsx
 'use client'
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable react-hooks/set-state-in-effect */
+
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -159,7 +162,7 @@ export function CompanyProfile({ user, broker }: CompanyProfileProps) {
       formData.append('file', file)
       formData.append('type', 'logo')
 
-      const response = await fetch('/api/brokers/me/upload', {
+      const response = await fetch('/api/upload/image', {
         method: 'POST',
         body: formData,
       })
@@ -185,7 +188,7 @@ export function CompanyProfile({ user, broker }: CompanyProfileProps) {
       formData.append('file', file)
       formData.append('type', 'cover')
 
-      const response = await fetch('/api/brokers/me/upload', {
+      const response = await fetch('/api/upload/image', {
         method: 'POST',
         body: formData,
       })

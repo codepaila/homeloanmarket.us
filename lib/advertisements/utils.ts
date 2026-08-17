@@ -96,3 +96,14 @@ export function isDateWithinRange(startDate: Date | null | undefined, endDate: D
   if (endDate && now > endDate) return false
   return true
 }
+
+// Canonical advertisement title normalization. Title is optional: empty and
+// whitespace-only values collapse to null. `undefined` means "no value
+// provided" (preserve on update, store null on create); `null` is an explicit
+// clear. This is the single source of truth for create/update/duplicate.
+export function normalizeAdvertisementTitle(value: string | null | undefined): string | null | undefined {
+  if (value === undefined) return undefined
+  if (value === null) return null
+  const trimmed = value.trim()
+  return trimmed === '' ? null : trimmed
+}

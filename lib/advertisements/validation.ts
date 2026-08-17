@@ -48,7 +48,7 @@ export const MediaQuerySchema = z.object({
 })
 
 const CreateAdBaseSchema = z.object({
-  title: z.string().min(1, "Title is required").max(200),
+  title: z.string().max(200).nullish(),
   slug: z.string().optional(),
   description: z.string().max(1000).optional(),
   placement: z.nativeEnum(AdvertisementPlacement),

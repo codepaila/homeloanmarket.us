@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { useRouter } from 'next/navigation'
 import { MapPin, Search } from 'lucide-react'
+import { buildBrokerSearchUrl } from '@/lib/search'
+import type { ResolvedLocation } from '@/lib/search'
 
 
 function SearchSection() {
@@ -18,15 +20,7 @@ function SearchSection() {
   const searchRef = useRef<HTMLDivElement>(null)
   const suggestionsOpenRef = useRef(false)
 
-  const [selectedLocation, setSelectedLocation] = useState<{
-    normalizedAddress: string
-    city: string
-    state: string
-    zip: string
-    latitude: number
-    longitude: number
-    token: string
-  } | null>(null)
+  const [selectedLocation, setSelectedLocation] = useState<ResolvedLocation | null>(null)
 
   useEffect(() => {
     const value = query.trim()
@@ -61,21 +55,6 @@ function SearchSection() {
     }
   }, [query, selectedLocation])
 
-  function buildBrokerSearchUrl(
-    location: { normalizedAddress: string; city: string; state: string; zip: string; latitude: number; longitude: number; token: string } | null,
-    text: string,
-  ) {
-    const params = new URLSearchParams()
-    if (location) {
-      params.set('location', location.normalizedAddress)
-      params.set('radius', '25')
-    } else if (text) {
-      params.set('search', text)
-    }
-    const queryString = params.toString()
-    return queryString ? `/brokers?${queryString}` : '/brokers'
-  }
-
   async function selectLocation(suggestion: { placeId: string; label: string }) {
     try {
       const response = await fetch('/api/location/resolve', {
@@ -89,7 +68,8 @@ function SearchSection() {
       setQuery(data.location.normalizedAddress || suggestion.label)
       setLocationSuggestions([])
       setActiveSuggestionIndex(-1)
-      // Clicking a suggestion navigates straight to the broker listing for that location.
+      // Selecting a Google suggestion is a confirmed location: radius search is
+      // active immediately (default 25 miles) and navigates to the listing.
       router.push(buildBrokerSearchUrl(data.location, ''))
     } catch {
       setSelectedLocation(null)
@@ -148,23 +128,9 @@ function SearchSection() {
   const handleSearch = async (event: React.FormEvent) => {
     event.preventDefault()
     const text = query.trim()
-    let location = selectedLocation
-    if (!location && /^\d{5}$/.test(text)) {
-      try {
-        const response = await fetch('/api/location/geocode', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ address: `${text}, USA` }),
-        })
-        if (response.ok) {
-          const data = await response.json()
-          location = data.location
-        }
-      } catch {
-        location = null
-      }
-    }
-    router.push(buildBrokerSearchUrl(location, text))
+    // Manual free-text (including ZIP codes) is a plain text search: radius is
+    // only activated by a confirmed Google autocomplete selection.
+    router.push(buildBrokerSearchUrl(selectedLocation, text))
   }
 
   const motionTransition = (delay: number) => ({
@@ -174,7 +140,7 @@ function SearchSection() {
   })
 
   return (
-    <div className="max-w-8xl mx-auto px-4 py-16 md:py-20  bg-primary/20 ">
+    <div className="max-w-8xl mx-auto px-4 py-16 md:py-20 ">
       {/* Heading */}
       <motion.h2
         initial={{ opacity: 0, y: 20 }}

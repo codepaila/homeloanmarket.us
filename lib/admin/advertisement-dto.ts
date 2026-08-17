@@ -21,7 +21,7 @@ export type AdvertisementCreativeDto = {
 
 export type AdvertisementAdminDTO = {
   id: string
-  title: string
+  title: string | null
   slug: string
   description: string | null
   placement: string

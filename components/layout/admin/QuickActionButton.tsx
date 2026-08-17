@@ -2,14 +2,10 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/utils'
+import type { QuickAction } from '@/types/nav'
 
 interface QuickActionButtonProps {
-  action: {
-    title: string
-    url: string
-    icon: any
-    color: string
-  }
+  action: QuickAction
 }
 
 export function QuickActionButton({ action }: QuickActionButtonProps) {

@@ -81,7 +81,7 @@ test('MediaSelector renders selected asset details and compatibility', () => {
   assert.ok(html.includes('1600 × 300px'), 'dimensions shown')
   assert.ok(html.includes('2.00 MB'), 'file size shown')
   assert.ok(html.includes('WEBP'), 'file type shown')
-  assert.ok(html.includes('✓ Compatible'), 'compatible state shown')
+  assert.ok(html.includes('✓ Image matches required resolution 1600 × 300 px'), 'compatible state shown')
   assert.ok(html.includes('Select from Media Library'), 'asset picker path present')
   assert.ok(html.includes('Upload from Device'), 'device upload path present')
 })
@@ -119,5 +119,5 @@ test('MediaSelector flags an incompatible asset', () => {
       format="HORIZONTAL"
     />,
   )
-  assert.ok(html.includes('✕ Not compatible'), 'incompatible state shown')
+  assert.ok(html.includes('✕ Incorrect image resolution. Required 1600 × 300 px · Uploaded 800 × 800 px'), 'incompatible state shown')
 })

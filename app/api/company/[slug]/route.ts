@@ -91,13 +91,13 @@ export async function GET(
 
 
 
-    // Calculate response time and features based on subscription
+    // Calculate response time and features based on subscription. Subscription
+    // only drives the FEATURED presentation (badge + response time); it does
+    // NOT gate contact/email visibility.
     let averageResponseTime = 'Within 24 hours'
-    let canShowContact = false
     let isFeatured = false
 
     if (hasPaidEntitlement(broker.subscription)) {
-      canShowContact = true
       const plan = broker.subscription?.plan || 'FREE'
       
       switch (plan) {
@@ -117,12 +117,12 @@ export async function GET(
       ? isBrokerOwner(broker.userId, currentUser.id)
       : false
 
-    // Prepare response data
-    const canShowContactFlag = canShowContact || isOwner || currentUser?.role === 'ADMIN'
+    // Contact details (phone/email) are public for every eligible broker,
+    // regardless of subscription or ownership.
     const responseData = {
-      ...toPublicBrokerRecord(broker, { includeContact: canShowContactFlag }),
+      ...toPublicBrokerRecord(broker, { includeContact: true }),
       averageResponseTime,
-      canShowContact: canShowContactFlag,
+      canShowContact: true,
       isFeatured,
       isOwner,
       hasOwner: Boolean(broker.userId),

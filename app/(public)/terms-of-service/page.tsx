@@ -73,8 +73,8 @@ export default function TermsPage() {
               <div className="p-8">
                 <div className="prose dark:prose-invert max-w-none">
                   <p className="text-text-muted leading-relaxed mb-6">
-                    These Terms of Service ("Terms") govern your access to and use of the HomeLoanMarket
-                    website and mobile application (collectively, the "Service"). Please read these Terms
+                    These Terms of Service (&quot;Terms&quot;) govern your access to and use of the HomeLoanMarket
+                    website and mobile application (collectively, the &quot;Service&quot;). Please read these Terms
                     carefully before using the Service.
                   </p>
                 </div>

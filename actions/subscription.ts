@@ -118,7 +118,7 @@ export async function getSubscription(subscriptionId: string) {
     throw new Error('Unauthorized subscription')
   }
   await SubscriptionService.assertStripeCustomerOwnership(user.id, user.brokerProfile.id, user.stripeCustomerId)
-  const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId)
   if (subscription.customer !== user.stripeCustomerId) throw new Error('Unauthorized subscription')
   return subscription
 }
@@ -130,11 +130,11 @@ export async function cancelSubscription(subscriptionId: string) {
   }
   await SubscriptionService.assertStripeCustomerOwnership(user.id, user.brokerProfile.id, user.stripeCustomerId)
   const result = await SubscriptionService.withCheckoutLock(user.brokerProfile.id, async () => {
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId)
     if (subscription.customer !== user.stripeCustomerId) throw new Error('Unauthorized subscription')
     return await stripe.subscriptions.cancel(subscriptionId, {}, {
       idempotencyKey: `cancel_${user.id}_${user.stripeCustomerId}_${subscriptionId}`,
-    }) as any
+    })
   })
   await SubscriptionService.syncWithStripe(user.brokerProfile.id)
   return result
@@ -154,7 +154,7 @@ export async function updateSubscription(
   }
   await SubscriptionService.assertStripeCustomerOwnership(user.id, user.brokerProfile.id, user.stripeCustomerId)
   return SubscriptionService.withCheckoutLock(user.brokerProfile.id, async () => {
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId) as any
+    const subscription = await stripe.subscriptions.retrieve(subscriptionId)
     if (subscription.customer !== user.stripeCustomerId) throw new Error('Unauthorized subscription')
     return await stripe.subscriptions.update(subscriptionId, {
       items: [

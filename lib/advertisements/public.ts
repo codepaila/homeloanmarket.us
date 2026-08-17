@@ -44,7 +44,7 @@ export function isValidPublicAd(value: unknown): value is PublicAdResponse {
   return (
     typeof ad.id === 'string' &&
     ad.id.length > 0 &&
-    typeof ad.title === 'string' &&
+    (typeof ad.title === 'string' || ad.title === null) &&
     typeof ad.type === 'string' &&
     typeof ad.placement === 'string' &&
     typeof ad.action === 'string' &&

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'react-hot-toast'
 import { FormInput } from '@/components/design/FormInput'
 import { PremiumButton } from '@/components/design/PremiumButton'
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react'
@@ -58,8 +59,10 @@ export default function CompanyOnboardingPage() {
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Unable to complete onboarding')
+      toast.success('Company onboarding completed.')
       router.push('/company/dashboard')
-    } catch {
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to complete onboarding. Please try again.')
       setLoading(false)
     }
   }

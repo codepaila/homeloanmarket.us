@@ -6,7 +6,7 @@ import { useClickTracker, useImpressionTracker } from '@/lib/advertisements/trac
 interface AdvertisementWrapperProps {
   ad: {
     id: string
-    title: string
+    title: string | null
     action: string
     buttonLabel?: string | null
     buttonUrl?: string | null
@@ -49,7 +49,7 @@ export const AdvertisementWrapper = memo(function AdvertisementWrapper({ ad, chi
       className={className}
       onClick={ad.action !== 'DISPLAY_ONLY' ? handleClick : undefined}
       role={ad.action !== 'DISPLAY_ONLY' ? 'button' : 'region'}
-      aria-label={ad.title}
+      aria-label={ad.title || 'Advertisement'}
       tabIndex={ad.action !== 'DISPLAY_ONLY' ? 0 : undefined}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {

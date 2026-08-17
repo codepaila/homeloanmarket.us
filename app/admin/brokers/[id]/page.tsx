@@ -25,6 +25,9 @@ export default async function AdminBrokerDetailPage({ params }: { params: Promis
       userId: true,
       creationSource: true,
       verificationStatus: true,
+      logo: true,
+      coverImage: true,
+      profileImage: true,
       subscription: { select: { plan: true, isActive: true } },
       claim: {
         select: {
@@ -56,6 +59,9 @@ export default async function AdminBrokerDetailPage({ params }: { params: Promis
     pinCode: broker.pinCode || '',
     isVisible: broker.isVisible,
     verificationStatus: broker.verificationStatus,
+    logo: broker.logo,
+    coverImage: broker.coverImage,
+    profileImage: broker.profileImage,
     claim: broker.claim,
   }
 

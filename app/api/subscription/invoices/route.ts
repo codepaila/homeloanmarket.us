@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/currentUser'
 import Stripe from 'stripe'
 import { SubscriptionService } from '@/lib/subscription'
+import type { ExpandedInvoice, SubscriptionWithPeriod } from '@/types/stripe'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
     ])
 
     // Format invoices
-    const formattedInvoices = invoices.data.map((invoice: any) => ({
+    const formattedInvoices = invoices.data.map((invoice: ExpandedInvoice) => ({
       id: invoice.id,
       number: invoice.number || `INV-${invoice.created}`,
       date: new Date(invoice.created * 1000).toISOString(),
@@ -78,7 +79,7 @@ export async function GET(request: NextRequest) {
     }))
 
     // Format subscriptions
-    const formattedSubscriptions = subscriptions.data.map((sub: any) => ({
+    const formattedSubscriptions = (subscriptions.data as unknown as SubscriptionWithPeriod[]).map((sub) => ({
       id: sub.id,
       status: sub.status,
       currentPeriodStart: new Date(sub.current_period_start * 1000),
@@ -128,12 +129,13 @@ export async function GET(request: NextRequest) {
         paidAmount
       }
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching billing info:', error)
+    const message = error instanceof Error ? error.message : 'Failed to fetch billing information'
     return NextResponse.json(
       { 
         success: false, 
-        error: error.message || 'Failed to fetch billing information' 
+        error: message
       },
       { status: 500 }
     )

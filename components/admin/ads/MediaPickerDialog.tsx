@@ -8,7 +8,10 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMediaAssets, useMediaFolders } from '@/hooks/useAdminAds'
+import { validateCreativeDimensions } from '@/lib/advertisements/placementSpecs'
+import type { AdvertisementFormat } from '@/lib/advertisements/formats'
 import type { MediaAsset } from '@/lib/advertisements/types'
+import { toast } from 'react-hot-toast'
 import { motion, AnimatePresence } from 'motion/react'
 import { cn } from '@/lib/utils'
 
@@ -19,6 +22,8 @@ interface MediaPickerDialogProps {
   selectedAssetId?: string | null
   title?: string
   description?: string
+  placement?: string
+  format?: AdvertisementFormat
   requiredWidth?: number
   requiredHeight?: number
 }
@@ -41,6 +46,8 @@ export function MediaPickerDialog({
   selectedAssetId,
   title = 'Select Media',
   description = 'Choose an image from your media library',
+  placement,
+  format,
   requiredWidth,
   requiredHeight,
 }: MediaPickerDialogProps) {
@@ -61,10 +68,11 @@ export function MediaPickerDialog({
 
   const isAssetCompatible = useCallback((asset: MediaAsset) => {
     if (!requiredWidth || !requiredHeight || !asset.width || !asset.height) return null
-    const actualRatio = asset.width / asset.height
-    const requiredRatio = requiredWidth / requiredHeight
-    return Math.abs(actualRatio - requiredRatio) / requiredRatio <= 0.25
-  }, [requiredWidth, requiredHeight])
+    if (!placement || !format) {
+      return asset.width === requiredWidth && asset.height === requiredHeight
+    }
+    return validateCreativeDimensions(placement, format, asset.width, asset.height).ok
+  }, [requiredWidth, requiredHeight, placement, format])
 
   const sortedAssets = useMemo(() => {
     const sorted = [...assets]
@@ -88,11 +96,15 @@ export function MediaPickerDialog({
 
   const handleSelect = useCallback(
     (asset: MediaAsset) => {
+      if (requiredWidth && requiredHeight && isAssetCompatible(asset) === false) {
+        toast.error(`This image does not match the required ${requiredWidth} × ${requiredHeight} creative.`)
+        return
+      }
       setSelectedId(asset.id)
       onSelect(asset)
       onOpenChange(false)
     },
-    [onSelect, onOpenChange]
+    [onSelect, onOpenChange, requiredWidth, requiredHeight, isAssetCompatible]
   )
 
   const formatFileSize = (bytes: number) => {
@@ -110,7 +122,12 @@ export function MediaPickerDialog({
       <DialogContent className="sm:max-w-4xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
+          <DialogDescription>
+            {description}
+            {requiredWidth && requiredHeight ? (
+              <span className="ml-1 font-medium">Creative requires {requiredWidth} × {requiredHeight} px.</span>
+            ) : null}
+          </DialogDescription>
         </DialogHeader>
 
         {/* Toolbar */}
@@ -259,8 +276,9 @@ export function MediaPickerDialog({
 
                         {/* Compatibility badge */}
                         {requiredWidth && requiredHeight && isAssetCompatible(asset) === false && (
-                          <div className="absolute top-2 right-2">
+                          <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
                             <Badge variant="destructive" className="text-[10px]">Not compatible</Badge>
+                            <Badge variant="destructive" className="text-[10px] opacity-90">Requires {requiredWidth} × {requiredHeight} px</Badge>
                           </div>
                         )}
 

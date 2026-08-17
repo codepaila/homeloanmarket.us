@@ -9,15 +9,15 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
-  CreditCard, 
+import {
+  CreditCard,
   ArrowUp,
-  ArrowRight, 
-  Check, 
-  Zap, 
-  Star, 
-  Shield, 
-  Globe, 
+  ArrowRight,
+  Check,
+  Zap,
+  Star,
+  Shield,
+  Globe,
   TrendingUp,
   AlertCircle,
   ChevronRight,
@@ -39,19 +39,11 @@ export default function UpgradePlanPage() {
   const [comparisonMode, setComparisonMode] = useState(false)
   const [isAnnual, setIsAnnual] = useState(false)
 
-  useEffect(() => {
-    if (sessionStatus === 'unauthenticated') {
-      router.push('/login')
-    } else if (sessionStatus === 'authenticated') {
-      fetchCurrentPlan()
-    }
-  }, [sessionStatus, router])
-
   const fetchCurrentPlan = async () => {
     try {
       const response = await fetch('/api/subscription/details')
       const data = await response.json()
-      
+
       if (data.success) {
         setCurrentPlan(data.data.plan || 'FREE')
       }
@@ -62,6 +54,14 @@ export default function UpgradePlanPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (sessionStatus === 'unauthenticated') {
+      router.push('/login')
+    } else if (sessionStatus === 'authenticated') {
+      fetchCurrentPlan()
+    }
+  }, [sessionStatus, router])
 
   const getPlanIndex = (planName: string): number => {
     const planNames = ['FREE', 'FEATURED']
@@ -84,22 +84,22 @@ export default function UpgradePlanPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          priceId: plan.stripePriceId, 
+        body: JSON.stringify({
+          priceId: plan.stripePriceId,
           plan: planName,
-          isAnnual 
+          isAnnual
         }),
       })
 
       const data = await response.json()
-      
+
       if (data.success && data.url) {
-        window.location.href = data.url
+        window.location.assign(data.url)
       } else {
         throw new Error(data.error || 'Failed to upgrade plan')
       }
-    } catch (error: any) {
-      toast.error(error.message)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to upgrade plan')
       console.error(error)
     }
   }
@@ -118,7 +118,7 @@ export default function UpgradePlanPage() {
   const getMonthlyPrice = (price: number) => isAnnual ? Math.round(price * 11) : price
   const getPricePeriod = () => isAnnual ? '/year' : '/month'
   const currentPlanConfig = subscriptionPlans.find(p => p.name.toUpperCase() === currentPlan) || subscriptionPlans[0]
-  const availablePlans = subscriptionPlans.filter(plan => 
+  const availablePlans = subscriptionPlans.filter(plan =>
     getPlanIndex(plan.name.toUpperCase()) > getPlanIndex(currentPlan)
   )
 
@@ -172,9 +172,9 @@ export default function UpgradePlanPage() {
             <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
               <Award className="h-8 w-8 text-success" />
             </div>
-            <h3 className="text-2xl font-bold text-foreground mb-2">You're on the highest plan!</h3>
+            <h3 className="text-2xl font-bold text-foreground mb-2">You&apos;re on the highest plan!</h3>
             <p className="text-muted-foreground max-w-md mx-auto mb-6">
-              You're already subscribed to our Enterprise plan. Contact our sales team for custom enterprise solutions.
+              You&apos;re already subscribed to our Enterprise plan. Contact our sales team for custom enterprise solutions.
             </p>
             <Button onClick={() => router.push('/broker/subscription')}>
               Back to Subscription
@@ -289,9 +289,9 @@ export default function UpgradePlanPage() {
                 const isPopular = plan.name === 'FEATURED'
                 const isRecommended = plan.name === 'FEATURED'
                 const savings = isAnnual ? Math.round(plan.price * 12 - (plan.price * 11)) : 0
-                
+
                 return (
-                  <Card 
+                  <Card
                     key={plan.name}
                     className={`h-full relative transition-all hover:shadow-lg cursor-pointer ${
                       selectedPlan === plan.name ? 'border-2 border-primary ring-2 ring-primary/20' : ''
@@ -353,7 +353,7 @@ export default function UpgradePlanPage() {
                             </li>
                           ))}
                         </ul>
-                        
+
                         <div className="pt-4">
                           <div className="text-sm font-medium text-foreground mb-2">
                             Key Improvements from {currentPlanConfig.name}:
@@ -464,7 +464,7 @@ export default function UpgradePlanPage() {
                           {availablePlans.map(plan => {
                             const value = plan.limits[feature.key as keyof typeof plan.limits]
                             const currentValue = currentPlanConfig.limits[feature.key as keyof typeof currentPlanConfig.limits]
-                            
+
                             return (
                               <td key={`${plan.name}-${index}`} className="text-center py-3 px-4">
                                 <div className="flex flex-col items-center">
@@ -507,32 +507,32 @@ export default function UpgradePlanPage() {
                 <div>
                   <h4 className="font-medium mb-2">Will I be charged immediately when I upgrade?</h4>
                   <p className="text-sm text-muted-foreground">
-                    Yes, you'll be charged the prorated amount for the remainder of your current billing cycle, 
-                    plus the new plan's price for the next full cycle. The proration ensures you only pay for what you use.
+                    Yes, you&apos;ll be charged the prorated amount for the remainder of your current billing cycle,
+                    plus the new plan&apos;s price for the next full cycle. The proration ensures you only pay for what you use.
                   </p>
                 </div>
-                
+
                 <div>
                   <h4 className="font-medium mb-2">What happens to my existing limits when I upgrade?</h4>
                   <p className="text-sm text-muted-foreground">
-                    Your limits increase immediately after upgrade. You'll have access to all new features 
+                    Your limits increase immediately after upgrade. You&apos;ll have access to all new features
                     and higher limits right away.
                   </p>
                 </div>
-                
+
                 <div>
                   <h4 className="font-medium mb-2">Can I downgrade later if needed?</h4>
                   <p className="text-sm text-muted-foreground">
-                    Yes, you can downgrade at any time. The downgrade will take effect at the end of your 
-                    current billing cycle, and you won't be charged for the lower plan until then.
+                    Yes, you can downgrade at any time. The downgrade will take effect at the end of your
+                    current billing cycle, and you won&apos;t be charged for the lower plan until then.
                   </p>
                 </div>
-                
+
                 <div>
                   <h4 className="font-medium mb-2">What if I exceed my new limits before upgrade?</h4>
                   <p className="text-sm text-muted-foreground">
-                    Your account will be grandfathered in, meaning you won't lose access to anything you're 
-                    already using. However, you won't be able to create new items that exceed the old limits 
+                    Your account will be grandfathered in, meaning you won&apos;t lose access to anything you&apos;re
+                    already using. However, you won&apos;t be able to create new items that exceed the old limits
                     until the upgrade is complete.
                   </p>
                 </div>
@@ -550,7 +550,7 @@ export default function UpgradePlanPage() {
               <div>
                 <h3 className="text-2xl font-bold text-foreground mb-2">Need Custom Enterprise Solutions?</h3>
                 <p className="text-foreground">
-                  Contact our sales team for custom pricing, additional features, 
+                  Contact our sales team for custom pricing, additional features,
                   and enterprise-grade solutions tailored to your business.
                 </p>
               </div>

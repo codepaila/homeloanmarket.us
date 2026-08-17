@@ -3,6 +3,7 @@
 
 import { useSession } from "next-auth/react"
 import { UserRole, VerificationStatus, BrokerStatus, SubscriptionPlan } from "@prisma/client"
+import type { UserPermissions } from "@/types/nav"
 
 interface SessionUser {
   id: string;
@@ -70,7 +71,7 @@ export function useCurrentUser() {
   }
 }
 
-export function useUserPermissions() {
+export function useUserPermissions(): UserPermissions {
   const user = useCurrentUser()
 
   if (!user) {
@@ -79,23 +80,44 @@ export function useUserPermissions() {
       canViewDashboard: false,
       canBrowseBrokers: true,
       canContactBrokers: false,
-      
+
       // Admin permissions
       canManageBrokers: false,
       canManageUsers: false,
       canManageSubscriptions: false,
       canViewAdminPanel: false,
-      
+      canVerifyBrokers: false,
+      canManageFeaturedListings: false,
+
       // Broker permissions
       canCreateBrokerProfile: false,
       canEditProfile: false,
       canViewBrokerPanel: false,
       canAccessAnalytics: false,
-      
+
       // Feature access
       canUseAdvancedFeatures: false,
       canAccessSupport: true,
       canAccessSettings: false,
+
+      // Subscription features
+      canShowContactDetails: false,
+      canGetVerifiedBadge: false,
+      canCreateFeaturedListing: false,
+      canAccessPremiumSupport: false,
+      canViewAllLeads: false,
+
+      // Feature flags
+      canExportData: false,
+      canAddMultipleBanks: false,
+
+      // Role checks
+      isAdmin: false,
+      isBroker: false,
+      isUser: false,
+      hasActiveSubscription: false,
+      isVerifiedBroker: false,
+      isFeaturedBroker: false,
     }
   }
 
@@ -112,7 +134,7 @@ export function useUserPermissions() {
     canContactBrokers: true,
     canAccessSupport: true,
     canAccessSettings: true,
-    
+
     // Admin permissions
     canManageBrokers: isAdmin,
     canManageUsers: isAdmin,
@@ -120,25 +142,25 @@ export function useUserPermissions() {
     canViewAdminPanel: isAdmin,
     canVerifyBrokers: isAdmin,
     canManageFeaturedListings: isAdmin,
-    
+
     // Broker permissions
     canCreateBrokerProfile: !user.brokerProfile, // Can create if doesn't have profile
     canEditProfile: isBroker,
     canViewBrokerPanel: isBroker,
     canAccessAnalytics: false,
-    
+
     // Subscription features
     canShowContactDetails: isBroker && isFeatured,
       canGetVerifiedBadge: false,
       canCreateFeaturedListing: isBroker && subscriptionPlan === "FEATURED",
       canAccessPremiumSupport: false,
     canViewAllLeads: isBroker && user.isVerifiedBroker,
-    
+
     // Feature flags
     canUseAdvancedFeatures: false,
     canExportData: false,
     canAddMultipleBanks: isBroker && hasActiveSubscription,
-    
+
     // Role checks
     isAdmin,
     isBroker,

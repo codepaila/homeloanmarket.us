@@ -13,6 +13,7 @@ interface BrokerCardProps {
   location: string
   nmls?: string | null
   logo?: string | null
+  profileImage?: string | null
   isPremium?: boolean
   className?: string
 }
@@ -24,6 +25,7 @@ export default function BrokerCard({
   location,
   nmls,
   logo,
+  profileImage,
   isPremium = false,
   className,
 }: BrokerCardProps) {
@@ -31,7 +33,7 @@ export default function BrokerCard({
     <Link
       href={`/brokers/${slug}`}
       className={cn(
-        'relative group flex h-full flex-col rounded-2xl border border-border bg-card p-3 md:p-6 transition-colors hover:border-primary/30 hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30',
+        'relative group flex h-full flex-col rounded border border-border bg-card p-3 md:p-3 transition-colors hover:border-primary/30 hover:shadow-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30',
         className,
       )}
       aria-label={`View profile of ${name}`}
@@ -39,12 +41,12 @@ export default function BrokerCard({
       <span className="  absolute right-4 top-[50%] -translate-x-1/2 -translate-y-1/2 transition-all group-hover:text-primary group-hover:right-3 "><ChevronRight  size={20} /></span>
       <div className="flex items-start gap-4">
         <BrokerAvatar
-          src={logo}
+          src={profileImage || logo}
           alt={company || name || 'Mortgage Broker'}
-          name={company || name}
-          className="h-20 w-20"
+          name={name || company}
+          className="h-24 w-24"
         />
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 space-y-1">
           <div className="flex items-center gap-1.5">
             <h3 className="truncate text-base md:text-lg font-bold text-text-main transition-colors group-hover:text-primary">
               {name}
@@ -53,15 +55,16 @@ export default function BrokerCard({
           </div>
           <p className="truncate text-sm text-text-muted">{company}</p>
           {nmls && (
-            <p className="mt-1 text-xs font-medium text-text-muted">NMLS #{nmls}</p>
+            <p className=" text-xs font-medium text-text-muted">NMLS #{nmls}</p>
           )}
+
+      <div className=" flex items-center gap-1.5 text-sm text-text-muted">
+        {/* <MapPin className="h-3 w-3 flex-shrink-0" /> */}
+        <span className="truncate">{location}</span>
+      </div>
         </div>
       </div>
 
-      {/* <div className="mt-4 flex items-center gap-1.5 border-t border-border pt-4 text-sm text-text-muted">
-        <MapPin className="h-4 w-4 flex-shrink-0" />
-        <span className="truncate">{location}</span>
-      </div> */}
     </Link>
   )
 }

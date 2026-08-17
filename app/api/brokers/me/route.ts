@@ -165,6 +165,7 @@ export async function PATCH(request: Request) {
     // Images
     if (body.logo !== undefined) updateData.logo = body.logo
     if (body.coverImage !== undefined) updateData.coverImage = body.coverImage
+    if (body.profileImage !== undefined) updateData.profileImage = body.profileImage
     
     // Settings
     if (body.isVisible !== undefined) updateData.isVisible = body.isVisible

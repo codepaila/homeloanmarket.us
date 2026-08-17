@@ -21,7 +21,7 @@ declare module 'resend' {
   export class Resend {
     constructor(apiKey: string);
     emails: {
-      send(options: SendEmailOptions): Promise<{ data: SendEmailResponse | null; error: any }>;
+      send(options: SendEmailOptions): Promise<{ data: SendEmailResponse | null; error: Error | null }>;
     };
   }
 }

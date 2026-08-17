@@ -76,7 +76,7 @@ test('Clean seed has no public-facing demo/test/sample naming', { skip: !databas
     assert.equal(containsForbidden(user.name || ''), false, `User forbidden naming: ${user.name}`)
   }
   for (const ad of ads) {
-    assert.equal(containsForbidden(ad.title), false, `Ad forbidden naming: ${ad.title}`)
+    assert.equal(containsForbidden(ad.title || ''), false, `Ad forbidden naming: ${ad.title}`)
     assert.equal(containsForbidden(ad.description || ''), false)
   }
   for (const blog of blogs) {

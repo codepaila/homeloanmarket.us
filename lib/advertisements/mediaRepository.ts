@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma"
+import { Prisma } from "@prisma/client"
 import type { MediaAsset, MediaFolderWithCount } from "./types"
 
 export class MediaRepository {
@@ -47,7 +48,7 @@ export class MediaRepository {
     const { page, limit, search, folderId } = params
     const skip = (page - 1) * limit
 
-    const where: any = { isDeleted: false }
+    const where: Prisma.MediaAssetWhereInput = { isDeleted: false }
 
     if (folderId) {
       where.folderId = folderId
@@ -104,7 +105,7 @@ export class MediaRepository {
     const { page, limit, search } = params
     const skip = (page - 1) * limit
 
-    const where: any = { isDeleted: true }
+    const where: Prisma.MediaAssetWhereInput = { isDeleted: true }
 
     if (search) {
       where.OR = [

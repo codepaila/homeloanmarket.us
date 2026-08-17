@@ -14,7 +14,7 @@ const fetcher = async (url: string) => {
 }
 
 // ==================== USERS ====================
-export const fetchAllUsers = (page: number = 1, pageSize: number = 10, search?: string, role?: string) => {
+export const useAllUsers = (page: number = 1, pageSize: number = 10, search?: string, role?: string) => {
   const queryParams = new URLSearchParams()
   queryParams.append('page', page.toString())
   queryParams.append('pageSize', pageSize.toString())
@@ -30,7 +30,7 @@ export const fetchAllUsers = (page: number = 1, pageSize: number = 10, search?: 
   return { users, total, totalPages, error, mutate, isLoading }
 }
 
-export const fetchUser = (id: string) => {
+export const useUser = (id: string) => {
   const { data, error, mutate, isLoading } = useSWR(
     id ? `${baseUrl}/api/users/${id}` : null,
     fetcher
@@ -39,7 +39,7 @@ export const fetchUser = (id: string) => {
 }
 
 // ==================== BROKERS ====================
-export const fetchAllBrokers = (
+export const useAllBrokers = (
   page: number = 1,
   minRating?: number,
   verificationStatus?: string,
@@ -62,7 +62,7 @@ export const fetchAllBrokers = (
   return { brokers, total, totalPages, error, mutate, isLoading }
 }
 
-export const fetchFeaturedBrokers = () => {
+export const useFeaturedBrokers = () => {
   const { data, error, mutate, isLoading } = useSWR(
     `${baseUrl}/api/brokers/featured`,
     fetcher
@@ -72,7 +72,7 @@ export const fetchFeaturedBrokers = () => {
   return { brokers, error, mutate, isLoading }
 }
 
-export const fetchBroker = (id: string) => {
+export const useBroker = (id: string) => {
   const { data, error, mutate, isLoading } = useSWR(
     id ? `${baseUrl}/api/brokers/${id}` : null,
     fetcher
@@ -81,7 +81,7 @@ export const fetchBroker = (id: string) => {
   return { broker, error, mutate, isLoading }
 }
 
-export const fetchMyBrokerProfile = () => {
+export const useMyBrokerProfile = () => {
   const { data, error, mutate, isLoading } = useSWR(
     `${baseUrl}/api/brokers/me`,
     fetcher
@@ -90,7 +90,7 @@ export const fetchMyBrokerProfile = () => {
 }
 
 // ==================== LOAN APPLICATIONS ====================
-export const fetchLoanApplications = (
+export const useLoanApplications = (
   page: number = 1,
   status?: string,
   loanType?: string,
@@ -121,7 +121,7 @@ export const fetchLoanApplications = (
   return { applications, total, totalPages, isLoading, error, mutate }
 }
 
-export const fetchMyLoanApplications = (page: number = 1, status?: string) => {
+export const useMyLoanApplications = (page: number = 1, status?: string) => {
   const queryParams = new URLSearchParams()
   queryParams.append('page', page.toString())
   if (status) queryParams.append('status', status)
@@ -135,7 +135,7 @@ export const fetchMyLoanApplications = (page: number = 1, status?: string) => {
   return { applications, total, totalPages, isLoading, error, mutate }
 }
 
-export const fetchLoanApplication = (id: string) => {
+export const useLoanApplication = (id: string) => {
   const { data, error, mutate, isLoading } = useSWR(
     id ? `${baseUrl}/api/loan-applications/${id}` : null,
     fetcher
@@ -144,7 +144,7 @@ export const fetchLoanApplication = (id: string) => {
 }
 
 // ==================== REVIEWS ====================
-export const fetchBrokerReviews = (brokerId: string, page: number = 1) => {
+export const useBrokerReviews = (brokerId: string, page: number = 1) => {
   const { data, error, mutate, isLoading } = useSWR(
     brokerId ? `${baseUrl}/api/brokers/${brokerId}/reviews?page=${page}` : null,
     fetcher
@@ -154,7 +154,7 @@ export const fetchBrokerReviews = (brokerId: string, page: number = 1) => {
   return { reviews, total, avgRating, error, mutate, isLoading }
 }
 
-export const fetchMyReviews = () => {
+export const useMyReviews = () => {
   const { data, error, mutate, isLoading } = useSWR(
     `${baseUrl}/api/reviews/my`,
     fetcher
@@ -164,7 +164,7 @@ export const fetchMyReviews = () => {
 
 
 // ==================== BROKER COMMUNICATIONS ====================
-export const fetchBrokerContacts = (
+export const useBrokerContacts = (
   brokerId: string,
   page: number = 1,
   status?: string,
@@ -186,7 +186,7 @@ export const fetchBrokerContacts = (
   return { leads, total, totalPages, error, mutate, isLoading }
 }
 
-export const fetchBrokerCommunications = (
+export const useBrokerCommunications = (
   brokerId: string,
   page: number = 1,
   type?: string,
@@ -207,7 +207,7 @@ export const fetchBrokerCommunications = (
 }
 
 // ==================== SEND MESSAGE ====================
-export const sendMessage = async (brokerId: string, messageData: any) => {
+export const sendMessage = async (brokerId: string, messageData: Record<string, unknown>) => {
   try {
     const response = await fetch(`${baseUrl}/api/brokers/${brokerId}/communications`, {
       method: 'POST',
@@ -230,7 +230,7 @@ export const sendMessage = async (brokerId: string, messageData: any) => {
   }
 }
 // ==================== LEADS ====================
-export const fetchLeads = (brokerId?: string, status?: string, page: number = 1) => {
+export const useLeads = (brokerId?: string, status?: string, page: number = 1) => {
   const queryParams = new URLSearchParams()
   queryParams.append('page', page.toString())
   if (status) queryParams.append('status', status)
@@ -245,7 +245,7 @@ export const fetchLeads = (brokerId?: string, status?: string, page: number = 1)
   return { leads, total, totalPages, error, mutate, isLoading }
 }
 
-export const fetchMyLeads = (page: number = 1, status?: string) => {
+export const useMyLeads = (page: number = 1, status?: string) => {
   const queryParams = new URLSearchParams()
   queryParams.append('page', page.toString())
   if (status) queryParams.append('status', status)
@@ -260,7 +260,7 @@ export const fetchMyLeads = (page: number = 1, status?: string) => {
 }
 
 // ==================== CALCULATOR & RATE ALERTS ====================
-export const fetchCalculatorHistory = (page: number = 1) => {
+export const useCalculatorHistory = (page: number = 1) => {
   const { data, error, mutate, isLoading } = useSWR(
     `${baseUrl}/api/calculator/history?page=${page}`,
     fetcher
@@ -270,7 +270,7 @@ export const fetchCalculatorHistory = (page: number = 1) => {
   return { history, total, totalPages, error, mutate, isLoading }
 }
 
-export const fetchRateAlerts = () => {
+export const useRateAlerts = () => {
   const { data, error, mutate, isLoading } = useSWR(
     `${baseUrl}/api/rate-alerts`,
     fetcher
@@ -279,7 +279,7 @@ export const fetchRateAlerts = () => {
 }
 
 // ==================== SAVED BROKERS ====================
-export const fetchSavedBrokers = () => {
+export const useSavedBrokers = () => {
   const { data, error, mutate, isLoading } = useSWR(
     `${baseUrl}/api/saved-brokers`,
     fetcher
@@ -290,7 +290,7 @@ export const fetchSavedBrokers = () => {
 }
 
 // ==================== DASHBOARD & ANALYTICS ====================
-export const fetchDashboardStats = (timeRange: string = '30days') => {
+export const useDashboardStats = (timeRange: string = '30days') => {
   const { data, error, mutate, isLoading } = useSWR(
     `${baseUrl}/api/dashboard/stats?range=${timeRange}`,
     fetcher
@@ -298,7 +298,7 @@ export const fetchDashboardStats = (timeRange: string = '30days') => {
   return { data, error, mutate, isLoading }
 }
 
-export const fetchBrokerAnalytics = (brokerId?: string, startDate?: string, endDate?: string) => {
+export const useBrokerAnalytics = (brokerId?: string, startDate?: string, endDate?: string) => {
   const queryParams = new URLSearchParams()
   if (startDate) queryParams.append('startDate', startDate)
   if (endDate) queryParams.append('endDate', endDate)
@@ -312,7 +312,7 @@ export const fetchBrokerAnalytics = (brokerId?: string, startDate?: string, endD
 }
 
 // ==================== BANK RELATIONS & LOAN PRODUCTS ====================
-export const fetchBrokerBankRelations = (brokerId?: string) => {
+export const useBrokerBankRelations = (brokerId?: string) => {
   const url = brokerId 
     ? `${baseUrl}/api/brokers/${brokerId}/bank-relations`
     : `${baseUrl}/api/brokers/me/bank-relations`
@@ -323,7 +323,7 @@ export const fetchBrokerBankRelations = (brokerId?: string) => {
   return { bankRelations, error, mutate, isLoading }
 }
 
-export const fetchBrokerLoanProducts = (brokerId?: string) => {
+export const useBrokerLoanProducts = (brokerId?: string) => {
   const url = brokerId 
     ? `${baseUrl}/api/brokers/${brokerId}/loan-products`
     : `${baseUrl}/api/brokers/me/loan-products`
@@ -337,7 +337,7 @@ export const fetchBrokerLoanProducts = (brokerId?: string) => {
 
 
 // ==================== NOTIFICATIONS & SUPPORT ====================
-export const fetchNotifications = (page: number = 1, read?: boolean) => {
+export const useNotifications = (page: number = 1, read?: boolean) => {
   const queryParams = new URLSearchParams()
   queryParams.append('page', page.toString())
   if (read !== undefined) queryParams.append('read', read.toString())
@@ -351,7 +351,7 @@ export const fetchNotifications = (page: number = 1, read?: boolean) => {
   return { notifications, total, totalPages, error, mutate, isLoading }
 }
 
-export const fetchSupportTickets = (page: number = 1, status?: string) => {
+export const useSupportTickets = (page: number = 1, status?: string) => {
   const queryParams = new URLSearchParams()
   queryParams.append('page', page.toString())
   if (status) queryParams.append('status', status)
@@ -366,7 +366,7 @@ export const fetchSupportTickets = (page: number = 1, status?: string) => {
 }
 
 // ==================== MESSAGES ====================
-export const fetchMessages = (conversationId?: string, page: number = 1) => {
+export const useMessages = (conversationId?: string, page: number = 1) => {
   const queryParams = new URLSearchParams()
   queryParams.append('page', page.toString())
   
@@ -483,7 +483,7 @@ export const usePropertyTypes = () => {
 //   return { cities, error, mutate, isLoading }
 // }
 
-export const fetchStates = () => {
+export const useStates = () => {
   const { data, error, mutate, isLoading } = useSWR(
     `${baseUrl}/api/states`,
     fetcher
@@ -494,7 +494,7 @@ export const fetchStates = () => {
 }
 
 // ==================== BANK & LOAN TYPES ====================
-export const fetchBanks = () => {
+export const useBanks = () => {
   const { data, error, mutate, isLoading } = useSWR(
     `${baseUrl}/api/banks`,
     fetcher
@@ -504,7 +504,7 @@ export const fetchBanks = () => {
   return { banks, error, mutate, isLoading }
 }
 
-export const fetchLoanTypes = () => {
+export const useLoanTypes = () => {
   const { data, error, mutate, isLoading } = useSWR(
     `${baseUrl}/api/loan-types`,
     fetcher
@@ -515,7 +515,7 @@ export const fetchLoanTypes = () => {
 }
 
 // ==================== QUICK STATS ====================
-export const fetchQuickStats = () => {
+export const useQuickStats = () => {
   const { data, error, mutate, isLoading } = useSWR(
     `${baseUrl}/api/stats/quick`,
     fetcher

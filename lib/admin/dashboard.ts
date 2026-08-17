@@ -290,7 +290,7 @@ export async function getOperationalActivity(limit = 8): Promise<ActivityItem[]>
   for (const broker of brokers) items.push({ kind: 'BROKER', title: broker.displayName, detail: broker.profileSlug, date: broker.createdAt.toISOString() })
   for (const contact of contacts) items.push({ kind: 'CONTACT', title: contact.name || 'Inquiry', detail: contact.email || '', date: contact.createdAt.toISOString() })
   for (const claim of claims) items.push({ kind: 'CLAIM', title: `Claim ${claim.status}`, detail: claim.brokerId, date: claim.createdAt.toISOString() })
-  for (const advertisement of advertisements) items.push({ kind: 'ADVERTISEMENT', title: advertisement.title, detail: advertisement.placement, date: advertisement.createdAt.toISOString() })
+  for (const advertisement of advertisements) items.push({ kind: 'ADVERTISEMENT', title: advertisement.title || 'Untitled', detail: advertisement.placement, date: advertisement.createdAt.toISOString() })
 
   return items.sort((left, right) => right.date.localeCompare(left.date)).slice(0, limit)
 }
@@ -321,7 +321,7 @@ export async function getTopAdvertisements(limit = 6): Promise<TopAdvertisement[
       const countsForAd = byAdvertisement.get(advertisement.id) || { impressions: 0, clicks: 0 }
       return {
         id: advertisement.id,
-        title: advertisement.title,
+        title: advertisement.title || 'Untitled',
         placement: advertisement.placement,
         impressions: countsForAd.impressions,
         clicks: countsForAd.clicks,
@@ -354,7 +354,7 @@ export async function getRecentClaims(limit = 10): Promise<RecentClaim[]> {
 
 export async function getRecentAdvertisements(limit = 10): Promise<RecentAdvertisement[]> {
   const advertisements = await prisma.advertisement.findMany({ select: { title: true, placement: true, isEnabled: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: limit })
-  return advertisements.map((advertisement) => ({ title: advertisement.title, placement: advertisement.placement, isEnabled: advertisement.isEnabled, createdAt: advertisement.createdAt.toISOString() }))
+  return advertisements.map((advertisement) => ({ title: advertisement.title || 'Untitled', placement: advertisement.placement, isEnabled: advertisement.isEnabled, createdAt: advertisement.createdAt.toISOString() }))
 }
 
 export async function getAdminDashboardData(): Promise<AdminDashboardData> {

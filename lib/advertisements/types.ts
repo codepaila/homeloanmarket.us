@@ -35,7 +35,7 @@ export type MediaAsset = {
 
 export type Advertisement = {
   id: string
-  title: string
+  title: string | null
   slug: string
   description: string | null
   placement: string
@@ -119,7 +119,7 @@ export type AdvertisementWithMedia = Omit<Prisma.AdvertisementGetPayload<{
 
 export type PublicAdResponse = {
   id: string
-  title: string
+  title: string | null
   description: string | null
   type: string
   action: string

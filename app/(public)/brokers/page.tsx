@@ -20,6 +20,7 @@ import { useAllBrokers } from '@/hooks/useClient'
 import { PAGE_SIZE } from '@/utils'
 import { cn } from '@/lib/utils'
 import { AdvertisementRenderer } from '@/components/advertisements'
+import { parseResolvedLocation, DEFAULT_RADIUS_MILES } from '@/lib/search'
 
 const sortOptions = [
   { value: 'relevance', label: 'Relevance' },
@@ -49,7 +50,6 @@ export default function BrokersPage() {
   const [committedSearch, setCommittedSearch] = useState('')
   const [locationSuggestions, setLocationSuggestions] = useState<Array<{ placeId: string; label: string }>>([])
   const [locationError, setLocationError] = useState('')
-  const [resolvingLocation, setResolvingLocation] = useState(false)
   const [selectedLocation, setSelectedLocation] = useState<{
     placeId?: string
     normalizedAddress: string
@@ -78,45 +78,34 @@ export default function BrokersPage() {
   // Hydrate filters from URL query parameters
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const resolveLocationText = async (text: string) => {
-      setResolvingLocation(true)
-      try {
-        const response = await fetch('/api/location/geocode', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ address: `${text}, USA` }),
-        })
-        const data = await response.json()
-        if (!response.ok) throw new Error(data.error || 'Location could not be resolved')
-        setSelectedLocation(data.location)
-        setSearchInput(data.location.normalizedAddress || text)
-        setLocationError('')
-      } catch (error) {
-        setSelectedLocation(null)
-        setLocationError(error instanceof Error ? error.message : 'Location could not be resolved')
-      } finally {
-        setResolvingLocation(false)
-      }
-    }
     const syncFromUrl = () => {
       const params = new URLSearchParams(window.location.search)
       const q = params.get('search') || params.get('q') || ''
-      // New canonical `location` param, with legacy `locationLabel` fallback.
       const locationText = params.get('location') || params.get('locationLabel') || ''
+      // A confirmed Google location carries coordinates (+ token). Bare city
+      // text in the URL is NOT a confirmed location — it is a free-text search.
+      const resolvedLocation = parseResolvedLocation(params)
       const radiusParamStr = params.get('radius')
       const radiusParam = radiusParamStr === null ? null : Number(radiusParamStr)
-      const radiusValue = radiusParam !== null && Number.isFinite(radiusParam) && radiusParam >= 0 && radiusParam <= 100 ? radiusParam : 25
+      const radiusValue = radiusParam !== null && Number.isFinite(radiusParam) && radiusParam >= 0 && radiusParam <= 100 ? radiusParam : DEFAULT_RADIUS_MILES
       setRadius(radiusValue)
-      setSearch(q)
-      setCommittedSearch(q)
-      setSearchInput(locationText || q)
-      setSelectedLocation(null)
+      if (resolvedLocation) {
+        setSelectedLocation(resolvedLocation)
+        setSearchInput(resolvedLocation.normalizedAddress || locationText)
+        setSearch(q || '')
+        setCommittedSearch(q || '')
+      } else {
+        setSelectedLocation(null)
+        const searchTerm = q || locationText || ''
+        setSearch(searchTerm)
+        setCommittedSearch(searchTerm)
+        setSearchInput(locationText || searchTerm)
+      }
       setMinExperience(params.get('experience') || '')
       setMinRating(params.get('rating') || '0')
       setFeaturedOnly(params.get('featured') === 'true')
       const pageParam = Number(params.get('page'))
       setPage(Number.isInteger(pageParam) && pageParam > 1 ? pageParam : 1)
-      if (locationText) resolveLocationText(locationText)
     }
     syncFromUrl()
     window.addEventListener('popstate', syncFromUrl)
@@ -142,7 +131,6 @@ export default function BrokersPage() {
 
   // Keep the input immediate; only the remote broker query is debounced.
   useEffect(() => {
-    if (resolvingLocation) return
     const timeout = window.setTimeout(() => {
       if (selectedLocation?.normalizedAddress === searchInput.trim()) {
         setSearch('')
@@ -151,11 +139,11 @@ export default function BrokersPage() {
       setSearch(searchInput.trim())
     }, 200)
     return () => window.clearTimeout(timeout)
-  }, [searchInput, selectedLocation, resolvingLocation])
+  }, [searchInput, selectedLocation])
 
   useEffect(() => {
     const value = searchInput.trim()
-    if (resolvingLocation || value.length < 2 || selectedLocation?.normalizedAddress === value) {
+    if (value.length < 2 || selectedLocation?.normalizedAddress === value) {
       autocompleteRequestRef.current += 1
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocationSuggestions([])
@@ -183,7 +171,7 @@ export default function BrokersPage() {
       window.clearTimeout(timeout)
       controller.abort()
     }
-  }, [searchInput, selectedLocation, resolvingLocation])
+  }, [searchInput, selectedLocation])
 
   // Track whether the autocomplete dropdown is open in a ref so the
   // once-registered outside-click listener can read it without re-subscribing.
@@ -223,32 +211,12 @@ export default function BrokersPage() {
       setLocationError('')
       setActiveSuggestionIndex(-1)
       setPage(1)
+      // A Google-selected location is a confirmed location: radius defaults to 25.
+      setRadius(DEFAULT_RADIUS_MILES)
     } catch (error) {
       setSelectedLocation(null)
       setLocationSuggestions([])
       setLocationError(error instanceof Error ? error.message : 'Selected location could not be resolved')
-    }
-  }
-
-  const resolveZip = async () => {
-    if (!/^\d{5}$/.test(searchInput.trim()) || selectedLocation?.zip === searchInput.trim()) return
-    try {
-      const response = await fetch('/api/location/geocode', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: `${searchInput.trim()}, USA` }),
-      })
-      const data = await response.json()
-       if (response.ok) {
-         setSelectedLocation(data.location)
-         setSearchInput(data.location.normalizedAddress || searchInput.trim())
-         setSearch('')
-         setCommittedSearch('')
-         setLocationError('')
-       }
-    } catch (error) {
-      setSelectedLocation(null)
-      setLocationError(error instanceof Error ? error.message : 'Location could not be resolved')
     }
   }
 
@@ -501,7 +469,6 @@ export default function BrokersPage() {
                   setLocationError('')
                   setActiveSuggestionIndex(-1)
                 }}
-              onBlur={resolveZip}
               onKeyDown={(e) => {
                 if (e.key === 'ArrowDown' && locationSuggestions.length > 0) {
                   e.preventDefault()
@@ -768,6 +735,7 @@ export default function BrokersPage() {
                     location={[broker.city, broker.state].filter(Boolean).join(', ') || 'United States'}
                     nmls={broker.nmls}
                     logo={broker.logo}
+                    profileImage={broker.profileImage}
                     isPremium={broker.isFeatured === true}
                   />
                 ))}

@@ -353,7 +353,7 @@ export function useDuplicateAdvertisement() {
   const [isPending, setIsPending] = useState(false)
   const { mutate } = useSWRConfig()
 
-  const duplicate = async (params: { id: string; title?: string; copyImages?: boolean; copySchedule?: boolean; copyPriority?: boolean; copyStatus?: boolean; copyButtonSettings?: boolean }) => {
+  const duplicate = async (params: { id: string; title?: string; copyImages?: boolean; copySchedule?: boolean; copyPriority?: boolean; copyStatus?: boolean; copyButtonSettings?: boolean; generateNewSlug?: boolean }) => {
     const { id, ...data } = params
     setIsPending(true)
     try {

@@ -2,6 +2,7 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
+import { toast } from 'react-hot-toast'
 import { useMediaAssets, useMediaFolders } from '@/hooks/useAdminAds'
 import type { MediaAsset } from '@/lib/advertisements/types'
 import { MediaToolbar } from '@/components/admin/media/MediaToolbar'
@@ -40,6 +41,7 @@ export default function MediaLibraryPage() {
   const [showUpload, setShowUpload] = useState(false)
   const [showDeleted, setShowDeleted] = useState(false)
   const [activeTab, setActiveTab] = useState('library')
+  const [bulkBusy, setBulkBusy] = useState(false)
 
   const { assets, total, isLoading, mutate } = useMediaAssets({
     limit: 50,
@@ -90,33 +92,68 @@ export default function MediaLibraryPage() {
   }, [])
 
   const handleClearSelection = useCallback(() => setSelectedIds(new Set()), [])
-  const handleBulkDelete = useCallback(() => {
-    selectedIds.forEach((id) => {
-      fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/admin/media/${id}`, { method: 'DELETE' })
-    })
-    setSelectedIds(new Set())
-    mutate()
-  }, [selectedIds, mutate])
-  const handleBulkMove = useCallback(() => {
+  const handleBulkDelete = useCallback(async () => {
+    if (bulkBusy || selectedIds.size === 0) return
+    setBulkBusy(true)
+    try {
+      const results = await Promise.allSettled([...selectedIds].map((id) =>
+        fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/admin/media/${id}`, { method: 'DELETE' }).then((r) => r.ok),
+      ))
+      const failed = results.filter((r) => r.status === 'rejected' || r.value === false).length
+      const succeeded = results.length - failed
+      if (failed === 0) toast.success(`${succeeded} media item${succeeded === 1 ? '' : 's'} deleted.`)
+      else toast.error(`${succeeded} deleted, ${failed} failed.`)
+      setSelectedIds(new Set())
+      mutate()
+    } catch {
+      toast.error('Unable to delete media. Please try again.')
+    } finally {
+      setBulkBusy(false)
+    }
+  }, [bulkBusy, selectedIds, mutate])
+  const handleBulkMove = useCallback(async () => {
     const folderId = prompt('Enter folder ID to move to:')
-    if (!folderId) return
-    selectedIds.forEach((id) => {
-      fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/admin/media/${id}/move`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ folderId }),
-      })
-    })
-    setSelectedIds(new Set())
-    mutate()
-  }, [selectedIds, mutate])
-  const handleBulkRestore = useCallback(() => {
-    selectedIds.forEach((id) => {
-      fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/admin/media/${id}/restore`, { method: 'POST' })
-    })
-    setSelectedIds(new Set())
-    mutate()
-  }, [selectedIds, mutate])
+    if (!folderId || bulkBusy || selectedIds.size === 0) return
+    setBulkBusy(true)
+    try {
+      const results = await Promise.allSettled([...selectedIds].map((id) =>
+        fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/admin/media/${id}/move`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folderId }),
+        }).then((r) => r.ok),
+      ))
+      const failed = results.filter((r) => r.status === 'rejected' || r.value === false).length
+      const succeeded = results.length - failed
+      if (failed === 0) toast.success(`${succeeded} media item${succeeded === 1 ? '' : 's'} moved.`)
+      else toast.error(`${succeeded} moved, ${failed} failed.`)
+      setSelectedIds(new Set())
+      mutate()
+    } catch {
+      toast.error('Unable to move media. Please try again.')
+    } finally {
+      setBulkBusy(false)
+    }
+  }, [bulkBusy, selectedIds, mutate])
+  const handleBulkRestore = useCallback(async () => {
+    if (bulkBusy || selectedIds.size === 0) return
+    setBulkBusy(true)
+    try {
+      const results = await Promise.allSettled([...selectedIds].map((id) =>
+        fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/admin/media/${id}/restore`, { method: 'POST' }).then((r) => r.ok),
+      ))
+      const failed = results.filter((r) => r.status === 'rejected' || r.value === false).length
+      const succeeded = results.length - failed
+      if (failed === 0) toast.success(`${succeeded} media item${succeeded === 1 ? '' : 's'} restored.`)
+      else toast.error(`${succeeded} restored, ${failed} failed.`)
+      setSelectedIds(new Set())
+      mutate()
+    } catch {
+      toast.error('Unable to restore media. Please try again.')
+    } finally {
+      setBulkBusy(false)
+    }
+  }, [bulkBusy, selectedIds, mutate])
 
   const handleViewModeChange = useCallback((mode: ViewMode) => {
     setViewMode(mode)

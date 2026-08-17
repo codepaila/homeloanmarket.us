@@ -33,7 +33,7 @@ export default function NotFoundPage() {
             className="mb-8"
           >
             <p className="text-lg text-text-muted max-w-md mx-auto leading-relaxed">
-              The page you're looking for doesn't exist or has been moved. Try searching
+              The page you&apos;re looking for doesn&apos;t exist or has been moved. Try searching
               for what you need or use the navigation above.
             </p>
           </motion.div>

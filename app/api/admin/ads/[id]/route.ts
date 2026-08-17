@@ -196,6 +196,12 @@ export async function POST(
           title: body.title,
           placement: body.placement,
           createdById: user.id,
+          copyImages: body.copyImages,
+          copySchedule: body.copySchedule,
+          copyPriority: body.copyPriority,
+          copyButtonSettings: body.copyButtonSettings,
+          copyStatus: body.copyStatus,
+          generateNewSlug: body.generateNewSlug,
         })
         return NextResponse.json({ success: true, ad }, { status: 201 })
       }

@@ -302,7 +302,7 @@ function AdminAdsListContent() {
   )
 
   const handleDelete = useCallback((ad: Advertisement) => {
-    setDeleteTarget({ id: ad.id, title: ad.title })
+    setDeleteTarget({ id: ad.id, title: ad.title || 'Untitled' })
   }, [])
 
   const confirmDelete = useCallback(async () => {

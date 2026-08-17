@@ -72,14 +72,6 @@ export default function PaymentMethodsPage() {
     isDefault: false
   })
 
-  useEffect(() => {
-    if (sessionStatus === 'unauthenticated') {
-      router.push('/login')
-    } else if (sessionStatus === 'authenticated') {
-      fetchPaymentMethods()
-    }
-  }, [sessionStatus, router])
-
   const fetchPaymentMethods = async () => {
     try {
       const [methodsRes, transactionsRes] = await Promise.all([
@@ -99,6 +91,14 @@ export default function PaymentMethodsPage() {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (sessionStatus === 'unauthenticated') {
+      router.push('/login')
+    } else if (sessionStatus === 'authenticated') {
+      fetchPaymentMethods()
+    }
+  }, [sessionStatus, router])
 
   const handleAddPaymentMethod = async () => {
     try {
@@ -131,8 +131,8 @@ export default function PaymentMethodsPage() {
       } else {
         throw new Error(data.error || 'Failed to add payment method')
       }
-    } catch (error: any) {
-      toast.error(error.message)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'An error occurred')
       console.error(error)
     }
   }
@@ -151,8 +151,8 @@ export default function PaymentMethodsPage() {
       } else {
         throw new Error(data.error || 'Failed to update default payment method')
       }
-    } catch (error: any) {
-      toast.error(error.message)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'An error occurred')
       console.error(error)
     }
   }
@@ -173,8 +173,8 @@ export default function PaymentMethodsPage() {
       } else {
         throw new Error(data.error || 'Failed to delete payment method')
       }
-    } catch (error: any) {
-      toast.error(error.message)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'An error occurred')
       console.error(error)
     }
   }
@@ -363,7 +363,7 @@ export default function PaymentMethodsPage() {
                 <div className="space-y-6">
                   <RadioGroup 
                     value={newPaymentMethod.type} 
-                    onValueChange={(value: any) => setNewPaymentMethod({...newPaymentMethod, type: value})}
+                    onValueChange={(value: string) => setNewPaymentMethod({...newPaymentMethod, type: value as 'card' | 'bank_account' | 'paypal'})}
                     className="flex gap-4"
                   >
                     <div className="flex items-center space-x-2">
@@ -481,7 +481,7 @@ export default function PaymentMethodsPage() {
                     <div className="text-center py-8">
                       <Globe className="h-16 w-16 text-blue-500 mx-auto mb-4" />
                       <p className="text-muted-foreground mb-4">
-                        You'll be redirected to PayPal to complete the payment method setup.
+                        You&apos;ll be redirected to PayPal to complete the payment method setup.
                       </p>
                       <Button variant="outline" className="w-full">
                         Connect PayPal
@@ -626,7 +626,7 @@ export default function PaymentMethodsPage() {
                 Open Billing Portal
               </Button>
               <p className="text-sm text-muted-foreground">
-                Access invoices, update billing information, and manage subscriptions in Stripe's secure portal.
+                Access invoices, update billing information, and manage subscriptions in Stripe&apos;s secure portal.
               </p>
             </CardContent>
           </Card>

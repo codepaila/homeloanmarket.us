@@ -11,7 +11,7 @@ function fileFromBuffer(buffer: Buffer, name: string, type: string): File {
 }
 
 function makeImage(type: 'png' | 'jpeg' | 'webp' | 'gif'): Promise<Buffer> {
-  return sharp({ create: { width: 200, height: 50, channels: 3, background: { r: 74, g: 162, b: 86 } } })
+  return sharp({ create: { width: 1600, height: 300, channels: 3, background: { r: 74, g: 162, b: 86 } } })
     .toFormat(type)
     .toBuffer()
 }

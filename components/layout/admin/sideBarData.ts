@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Home,
   Users,
@@ -40,26 +39,38 @@ import {
   XCircle,
   AlertCircle,
 } from 'lucide-react'
+import type { SidebarItem, SidebarSection, QuickAction, SidebarData, UserRole } from '@/types/nav'
 
-export type SidebarItem = {
-  title: string;
-  url: string;
-  icon?: any;
-  items?: SidebarItem[];
-  badge?: string | number;
-  enabled?: boolean;
-  roles?: ("ADMIN" | "BROKER" | "USER")[];
-  requiresSubscription?: boolean;
-};
+export type { SidebarItem, SidebarSection }
 
-export type SidebarSection = {
-  label: string;
-  items: SidebarItem[];
-  enabled?: boolean;
-  roles?: ("ADMIN" | "BROKER" | "USER")[];
-};
+// Loose shape of the authenticated user consumed by the sidebar builder. The
+// source is the transformed current-user object (see hooks/useCurrentUser).
+export type SidebarUserInput = {
+  id?: string
+  name?: string | null
+  email?: string | null
+  phone?: string | null
+  image?: string | null
+  role?: UserRole
+  isActive?: boolean
+  unreadContacts?: number
+  unreadNotifications?: number
+  brokerProfile?: {
+    id?: string
+    displayName?: string
+    companyName?: string | null
+    verificationStatus?: string
+    brokerStatus?: string
+    profileSlug?: string
+    avgRating?: number
+    totalReviews?: number
+    totalLeads?: number
+    profileViews?: number
+    subscription?: { plan?: string; isActive?: boolean; startDate?: Date; endDate?: Date | null } | null
+  } | null
+} | null
 
-export const appSidebarData = (user: any) => {
+export const appSidebarData = (user: SidebarUserInput): SidebarData => {
   // Helper functions based on your schema
   const isAdmin = user?.role === "ADMIN"
   const isBroker = user?.role === "BROKER"
@@ -332,7 +343,7 @@ export const appSidebarData = (user: any) => {
   // Filter items based on user role and enabled status
   const filteredNavItems = allNavItems.filter(item => {
     // Filter by role
-    if (item.roles && !item.roles.includes(user?.role)) {
+    if (item.roles && user?.role && !item.roles.includes(user.role)) {
       return false
     }
     
@@ -376,7 +387,7 @@ export const appSidebarData = (user: any) => {
         totalReviews: brokerProfile.totalReviews,
         totalLeads: brokerProfile.totalLeads,
         profileViews: brokerProfile.profileViews,
-        subscription: subscription,
+        subscription: subscription ?? null,
       } : null,
       
       // Subscription info
@@ -392,14 +403,14 @@ export const appSidebarData = (user: any) => {
 }
 
 // Helper function for quick actions
-function getQuickActions(user: any, options: {
+function getQuickActions(user: SidebarUserInput, options: {
   isAdmin: boolean;
   isBroker: boolean;
   isUser: boolean;
   hasActiveSubscription: boolean;
   isVerifiedBroker: boolean;
   subscriptionPlan: string;
-}) {
+}): QuickAction[] {
   const {
     isAdmin,
     isBroker,
@@ -409,7 +420,7 @@ function getQuickActions(user: any, options: {
     subscriptionPlan,
   } = options
 
-  const actions = []
+  const actions: QuickAction[] = []
 
   if (isBroker) {
     actions.push(

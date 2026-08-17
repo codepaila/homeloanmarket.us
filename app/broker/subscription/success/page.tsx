@@ -17,20 +17,8 @@ import { toast } from 'react-hot-toast'
 function SubscriptionSuccessContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const [sessionId, setSessionId] = useState<string | null>(null)
   const [planName, setPlanName] = useState<string>('')
   const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const session_id = searchParams.get('session_id')
-    if (!session_id) {
-      router.push('/broker/subscription')
-      return
-    }
-
-    setSessionId(session_id)
-    verifySubscription(session_id)
-  }, [searchParams, router])
 
   const verifySubscription = async (sessionId: string) => {
     try {
@@ -39,17 +27,28 @@ function SubscriptionSuccessContent() {
       
       if (data.success) {
         setPlanName(data.data.planName)
+        setLoading(false)
         toast.success('Subscription activated successfully!')
       } else {
+        setLoading(false)
         toast.error('Failed to verify subscription')
       }
     } catch (error) {
+      setLoading(false)
       toast.error('Error verifying subscription')
       console.error(error)
-    } finally {
-      setLoading(false)
     }
   }
+
+  useEffect(() => {
+    const session_id = searchParams.get('session_id')
+    if (!session_id) {
+      router.push('/broker/subscription')
+      return
+    }
+
+    verifySubscription(session_id)
+  }, [searchParams, router])
 
   if (loading) {
     return (

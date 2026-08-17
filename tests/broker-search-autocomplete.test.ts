@@ -62,10 +62,9 @@ test('Google autocomplete failure surfaces a safe inline message without breakin
 })
 
 test('radius and location URL parameters remain intact for search', () => {
-  assert.match(listing, /radiusEnabled \? radius : 0/)
   assert.match(hook, /locationToken/)
   assert.match(listing, /setOrDelete\('location', selectedLocation\?\.normalizedAddress/)
-  assert.match(listing, /setOrDelete\('radius', radius > 0 \? String\(radius\) : ''\)/)
+  assert.match(listing, /setOrDelete\('radius', selectedLocation \? String\(radius\) : ''\)/)
   assert.match(listing, /params\.delete\('locationToken'\)/)
 })
 

@@ -61,13 +61,18 @@ test('H1: listing route gates contact fields by paid entitlement', () => {
   assert.ok(source.includes('includeContact: canShowContact'), 'listing must pass the flag to the DTO')
 })
 
-test('H1: detail routes gate contact fields by paid/owner/admin', () => {
-  for (const file of ['app/api/brokers/[id]/route.ts', 'app/api/company/[slug]/route.ts']) {
-    const source = read(file)
-    assert.ok(source.includes('includeContact: canShowContactFlag'), `${file} must pass the entitlement flag`)
-    assert.ok(source.includes("currentUser?.role === 'ADMIN'"), `${file} must treat admins as entitled`)
-    assert.ok(source.includes('canShowContact || isOwner'), `${file} must treat owners as entitled`)
-  }
+test('H1: admin detail route gates contact fields by paid/owner/admin', () => {
+  const source = read('app/api/brokers/[id]/route.ts')
+  assert.ok(source.includes('includeContact: canShowContactFlag'), 'admin detail route must pass the entitlement flag')
+  assert.ok(source.includes("currentUser?.role === 'ADMIN'"), 'admin detail route must treat admins as entitled')
+  assert.ok(source.includes('canShowContact || isOwner'), 'admin detail route must treat owners as entitled')
+})
+
+test('H1: public profile route exposes contact for every eligible broker', () => {
+  const source = read('app/api/company/[slug]/route.ts')
+  assert.ok(source.includes('includeContact: true'), 'public profile must always include contact fields')
+  assert.ok(source.includes('canShowContact: true'), 'public profile must always expose canShowContact')
+  assert.equal(source.includes('canShowContact = hasPaidEntitlement'), false, 'public profile must not gate contact by subscription')
 })
 
 test('H1: featured feed applies the public DTO instead of leaking raw records', () => {

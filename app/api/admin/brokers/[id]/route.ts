@@ -59,7 +59,7 @@ export async function PATCH(
   const allowedFields = [
     'displayName', 'companyName', 'nmls', 'description', 'phone', 'email', 'website',
     'officeAddress', 'city', 'state', 'pinCode', 'experienceYears',
-    'registrationNumber', 'panNumber', 'logo', 'coverImage', 'isVisible', 'verificationStatus',
+    'registrationNumber', 'panNumber', 'logo', 'coverImage', 'profileImage', 'isVisible', 'verificationStatus',
   ] as const
   const data: Record<string, unknown> = {}
 

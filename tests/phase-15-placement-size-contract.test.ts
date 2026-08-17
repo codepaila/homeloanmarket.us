@@ -42,10 +42,10 @@ test('valid desktop creative is accepted', () => {
   assert.equal(result.ok, true)
 })
 
-test('excessively tall creative is rejected', () => {
+test('excessively tall creative is rejected (exact resolution contract)', () => {
   const result = validateCreativeDimensions('HOMEPAGE_HERO', 'HORIZONTAL', 1600, 1400, 'desktop')
   assert.equal(result.ok, false)
-  if (!result.ok) assert.match(result.reason, /too tall/)
+  if (!result.ok) assert.match(result.reason, /requires exactly 1600 × 300 px/)
 })
 
 test('wrong aspect ratio is rejected', () => {

@@ -2,6 +2,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import { useEffect, useState } from 'react'
+import { toast } from 'react-hot-toast'
 
 type CompanyAdvertisingPlan = {
   id: string
@@ -18,7 +19,7 @@ type CompanyAdvertisingPlan = {
 export default function CompanyAdvertisingPlansAdminPage() {
   const [plans, setPlans] = useState<CompanyAdvertisingPlan[]>([])
   const [loading, setLoading] = useState(true)
-  const [message, setMessage] = useState('')
+  const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<Record<string, string>>({ name: '', description: '', price: '0', billingInterval: 'month', stripeProductId: '', stripePriceId: '', features: '' })
 
   async function load() {
@@ -34,33 +35,52 @@ export default function CompanyAdvertisingPlansAdminPage() {
 
   async function create(event: React.FormEvent) {
     event.preventDefault()
-    const response = await fetch('/api/admin/company-advertising-plans', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: form.name,
-        description: form.description,
-        price: Number(form.price),
-        billingInterval: form.billingInterval,
-        stripeProductId: form.stripeProductId,
-        stripePriceId: form.stripePriceId,
-        features: form.features.split('\n').map((f) => f.trim()).filter(Boolean),
-      }),
-    })
-    const data = await response.json()
-    setMessage(response.ok ? 'Plan created.' : data.error || 'Unable to create plan')
-    if (response.ok) { setForm({ name: '', description: '', price: '0', billingInterval: 'month', stripeProductId: '', stripePriceId: '', features: '' }); await load() }
+    if (saving) return
+    setSaving(true)
+    try {
+      const response = await fetch('/api/admin/company-advertising-plans', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          description: form.description,
+          price: Number(form.price),
+          billingInterval: form.billingInterval,
+          stripeProductId: form.stripeProductId,
+          stripePriceId: form.stripePriceId,
+          features: form.features.split('\n').map((f) => f.trim()).filter(Boolean),
+        }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Unable to create plan')
+      toast.success('Plan created.')
+      setForm({ name: '', description: '', price: '0', billingInterval: 'month', stripeProductId: '', stripePriceId: '', features: '' })
+      await load()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to create plan')
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function toggle(plan: CompanyAdvertisingPlan) {
-    const response = await fetch('/api/admin/company-advertising-plans', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: plan.id, isActive: !plan.isActive }),
-    })
-    const data = await response.json()
-    setMessage(response.ok ? 'Plan updated.' : data.error || 'Unable to update plan')
-    if (response.ok) await load()
+    if (saving) return
+    setSaving(true)
+    try {
+      const response = await fetch('/api/admin/company-advertising-plans', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: plan.id, isActive: !plan.isActive }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Unable to update plan')
+      toast.success('Plan updated.')
+      await load()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Unable to update plan')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -78,7 +98,7 @@ export default function CompanyAdvertisingPlansAdminPage() {
           </div>
           <input className="rounded-lg border px-3 py-2 text-sm" placeholder="Description" value={form.description} onChange={(e) => set('description', e.target.value)} />
           <textarea className="rounded-lg border px-3 py-2 text-sm" placeholder="Features (one per line)" value={form.features} onChange={(e) => set('features', e.target.value)} />
-          <button type="submit" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white">Create plan</button>
+          <button type="submit" disabled={saving} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">{saving ? 'Creating…' : 'Create plan'}</button>
         </form>
       </section>
       <section className="rounded-xl border p-5">
@@ -98,7 +118,6 @@ export default function CompanyAdvertisingPlansAdminPage() {
           </div>
         )}
       </section>
-      {message && <p className="rounded-lg bg-primary/10 p-3 text-sm">{message}</p>}
     </main>
   )
 }

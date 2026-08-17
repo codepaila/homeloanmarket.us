@@ -17,8 +17,6 @@ export type PlacementSpec = {
   displayLabel: string
 }
 
-const RATIO_TOLERANCE = 0.25
-
 // Canonical responsive display heights for the full-width top banner strip.
 // Desktop is capped at 150px; tablet and mobile scale down proportionally.
 export const FULL_WIDTH_BANNER_DISPLAY = { mobile: 90, tablet: 120, desktop: 150 }
@@ -71,16 +69,6 @@ export function getDisplayHeight(placement: string, device: 'desktop' | 'tablet'
   return 150
 }
 
-export function aspectRatioToNumber(aspectRatio: string): number {
-  const [w, h] = aspectRatio.split(':').map(Number)
-  if (!w || !h) return 4
-  return w / h
-}
-
-export function getAspectRatio(placement: string, format: AdvertisementFormat, device: 'desktop' | 'mobile' = 'desktop'): number {
-  return aspectRatioToNumber(getRequiredDimensions(placement, format, device).aspectRatio)
-}
-
 export type CreativeValidationResult =
   | { ok: true }
   | {
@@ -88,10 +76,18 @@ export type CreativeValidationResult =
       requiredWidth: number
       requiredHeight: number
       requiredAspectRatio: string
+      actualWidth: number
+      actualHeight: number
       actualRatio: number
       reason: string
     }
 
+// EXACT creative resolution contract. Creative requirements are exact pixel
+// dimensions (e.g. SQUARE = 800 × 800). An image that is not exactly the
+// required width and height is rejected — creatives are never resized or
+// cropped to fit. This single function is shared by the admin UI (device
+// upload, media library) and the backend (AdvertisementService), so the
+// backend can never accept a creative the UI would reject.
 export function validateCreativeDimensions(
   placement: string,
   format: AdvertisementFormat,
@@ -101,18 +97,28 @@ export function validateCreativeDimensions(
 ): CreativeValidationResult {
   const required = getRequiredDimensions(placement, format, device)
   if (!width || !height) {
-    return { ok: false, requiredWidth: required.width, requiredHeight: required.height, requiredAspectRatio: required.aspectRatio, actualRatio: 0, reason: 'Uploaded creative has no measurable dimensions.' }
+    return {
+      ok: false,
+      requiredWidth: required.width,
+      requiredHeight: required.height,
+      requiredAspectRatio: required.aspectRatio,
+      actualWidth: 0,
+      actualHeight: 0,
+      actualRatio: 0,
+      reason: `Uploaded creative has no measurable dimensions. Required exactly ${required.width} × ${required.height} (${required.aspectRatio}).`,
+    }
   }
-  const requiredRatio = aspectRatioToNumber(required.aspectRatio)
-  const actualRatio = width / height
-  const lower = requiredRatio * (1 - RATIO_TOLERANCE)
-  const upper = requiredRatio * (1 + RATIO_TOLERANCE)
-
-  if (actualRatio < lower) {
-    return { ok: false, requiredWidth: required.width, requiredHeight: required.height, requiredAspectRatio: required.aspectRatio, actualRatio, reason: `This creative is too tall for ${placement}. Required ${format} aspect ratio is ${required.aspectRatio} (${required.width} × ${required.height}).` }
-  }
-  if (actualRatio > upper) {
-    return { ok: false, requiredWidth: required.width, requiredHeight: required.height, requiredAspectRatio: required.aspectRatio, actualRatio, reason: `This creative is too wide for ${placement}. Required ${format} aspect ratio is ${required.aspectRatio} (${required.width} × ${required.height}).` }
+  if (width !== required.width || height !== required.height) {
+    return {
+      ok: false,
+      requiredWidth: required.width,
+      requiredHeight: required.height,
+      requiredAspectRatio: required.aspectRatio,
+      actualWidth: width,
+      actualHeight: height,
+      actualRatio: width / height,
+      reason: `This creative is ${width} × ${height} px but ${placement} requires exactly ${required.width} × ${required.height} px (${required.aspectRatio}).`,
+    }
   }
   return { ok: true }
 }

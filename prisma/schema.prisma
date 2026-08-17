@@ -256,6 +256,7 @@ model Broker {
   profileSlug String  @unique
   logo        String?
   coverImage  String?
+  profileImage String?
   description String
 
   phone         String
@@ -840,7 +841,7 @@ model MediaAsset {
 
 model Advertisement {
   id             String                 @id @default(auto()) @map("_id") @db.ObjectId
-  title          String
+  title          String?
   slug           String                 @unique // Auto-generated from title; admin should not set manually
   description    String?
   placement      AdvertisementPlacement

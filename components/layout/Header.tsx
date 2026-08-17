@@ -20,6 +20,9 @@ import {
   Building,
   Plus,
   LayoutDashboard,
+  Settings,
+  Users,
+  BarChart3,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
@@ -121,15 +124,9 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
     await signOut({ callbackUrl: '/' })
   }
 
-  // "Join As Company" is only for unauthenticated visitors. Authenticated
-  // users see their role dashboard (Broker/Company) or no extra item (USER/ADMIN).
   const dashboardNavItem = !user
     ? { name: 'Join As Company', href: '/company/register', icon: Building }
-    // : user.isBroker
-    //   ? { name: 'Broker Dashboard', href: '/broker/dashboard', icon: LayoutDashboard }
-    //   : user.isCompany
-    //     ? { name: 'Company Dashboard', href: '/company/dashboard', icon: LayoutDashboard }
-        : null
+    : null
 
   const navItems = [
     navigation[0],
@@ -140,22 +137,101 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
     navigation[4],
   ]
 
+  // Get user initials for avatar
+  const getUserInitials = () => {
+    if (user?.name) {
+      const names = user.name.split(' ')
+      if (names.length >= 2) {
+        return `${names[0][0]}${names[1][0]}`.toUpperCase()
+      }
+      return names[0][0].toUpperCase()
+    }
+    return user?.email?.[0]?.toUpperCase() || 'U'
+  }
+
+  // Get user role display name
+  const getRoleDisplay = (role?: string) => {
+    if (!role) return 'User'
+    const roleMap: Record<string, string> = {
+      ADMIN: 'Administrator',
+      BROKER: 'Broker',
+      COMPANY: 'Company',
+      USER: 'User',
+    }
+    return roleMap[role.toUpperCase()] || role
+  }
+
+  // Get user menu items based on role
+  const getUserMenuItems = () => {
+    const items = []
+
+    // Dashboard for admin
+    if (user?.role === 'ADMIN') {
+      items.push({
+        label: 'Admin Dashboard',
+        href: '/admin',
+        icon: LayoutDashboard,
+      })
+      items.push({
+        label: 'Manage Brokers',
+        href: '/admin/brokers',
+        icon: Users,
+      })
+
+      items.push({
+        label: 'Settings',
+        href: '/admin/settings',
+        icon: Settings,
+      })
+    }
+
+    // Dashboard for broker
+    if (user?.isBroker) {
+      items.push({
+        label: 'Broker Dashboard',
+        href: '/broker/dashboard',
+        icon: LayoutDashboard,
+      })
+      items.push({
+        label: 'Subscription',
+        href: '/broker/subscription',
+        icon: Building,
+      })
+    }
+
+    // Dashboard for company
+    if (user?.isCompany) {
+      items.push({
+        label: 'Company Dashboard',
+        href: '/company/dashboard',
+        icon: LayoutDashboard,
+      })
+    }
+
+    // Profile for all users
+    // items.push({
+    //   label: 'Profile',
+    //   href: '/profile',
+    //   icon: User,
+    // })
+
+    return items
+  }
+
   return (
     <>
       <header
         ref={headerRef}
         className={cn(
           'sticky top-0 z-40 border-b bg-background',
-          scrolled ? 'border-border/80 shadow-soft' : 'border-transparent',
+          scrolled ? 'border-border shadow-soft' : 'border-transparent',
           reducedMotion ? '' : 'transition-[background-color,border-color,box-shadow] duration-200 ease-out',
         )}
       >
         <div className="container-custom">
           <div className="flex h-16 items-center justify-between md:h-[72px] w-full">
             {/* Logo */}
-            <div
-              className="flex-shrink-0"
-            >
+            <div className="flex-shrink-0">
               <Link href="/" className="flex items-center gap-2">
                 {settings?.siteLogo ? (
                   <Image width={300} height={100} src={settings.siteLogo} alt={settings.siteName}
@@ -167,9 +243,8 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
                       height={200}
                       src="/assets/logo.png"
                       alt="HomeLoanMarket"
-                      className="h-12 max-w-48 md:max-w-56 object-contain"
+                      className="h-12 max-w-52 md:max-w-56 object-contain"
                     />
-
                   </>
                 )}
               </Link>
@@ -180,96 +255,30 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
               className="hidden items-center gap-1 lg:flex"
               aria-label="Main navigation"
             >
-              {navItems.map((item) =>
-                // item.children ? (
-                //   <div key={item.name} className="relative">
-                //     <button
-                //       onClick={() =>
-                //         setOpenDropdown(
-                //           openDropdown === item.name ? null : item.name
-                //         )
-                //       }
-                //       aria-expanded={openDropdown === item.name}
-                //       aria-haspopup="true"
-                //       className={cn(
-                //         'flex items-center gap-1 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors',
-                //         isActive(item.href)
-                //           ? 'text-primary'
-                //           : 'text-text-muted hover:text-text-main',
-                //       )}
-                //     >
-                //       {item.name}
-                //       <ChevronDown
-                //         className={cn(
-                //           'h-3.5 w-3.5 transition-transform duration-200',
-                //           openDropdown === item.name && 'rotate-180',
-                //         )}
-                //       />
-                //     </button>
-
-                //     <AnimatePresence>
-                //       {openDropdown === item.name && (
-                //         <motion.div
-                //           initial={{ opacity: 0, y: 8, scale: 0.98 }}
-                //           animate={{ opacity: 1, y: 0, scale: 1 }}
-                //           exit={{ opacity: 0, y: 8, scale: 0.98 }}
-                //           transition={{ duration: 0.15, ease: 'easeOut' }}
-                //           className="absolute left-0 top-full mt-2 w-72 overflow-hidden rounded-2xl border border-border bg-card p-2 shadow-large"
-                //         >
-                //           {item.children.map((child) => (
-                //             <Link
-                //               key={child.name}
-                //               href={child.href}
-                //               className="group flex items-start gap-3 rounded-xl p-3 transition-colors hover:bg-muted/60"
-                //               onClick={() => setOpenDropdown(null)}
-                //             >
-                //               <span className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
-                //                 <child.icon className="h-4 w-4" />
-                //               </span>
-                //               <span>
-                //                 <span className="block text-sm font-semibold text-text-main">
-                //                   {child.name}
-                //                 </span>
-                //                 <span className="block text-xs text-text-muted">
-                //                   {child.description}
-                //                 </span>
-                //               </span>
-                //             </Link>
-                //           ))}
-                //         </motion.div>
-                //       )}
-                //     </AnimatePresence>
-                //   </div>
-                // ) : 
-                (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={cn(
-                      'relative rounded-lg px-3.5 py-2 text-sm font-medium transition-colors',
-                      isActive(item.href)
-                        ? 'text-primary'
-                        : 'text-text-muted hover:text-text-main',
-                    )}
-                  >
-                    {item.name}
-                    {isActive(item.href) && (
-                      <motion.div
-                        layoutId="nav-indicator"
-                        className="absolute inset-x-3 bottom-0.5 h-0.5 rounded-full bg-primary"
-                      />
-                    )}
-                  </Link>
-                ),
-              )}
+              {navItems.map((item) => (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={cn(
+                    'relative rounded-lg px-3.5 py-2 text-sm font-medium transition-colors',
+                    isActive(item.href)
+                      ? 'text-foreground'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {item.name}
+                  {isActive(item.href) && (
+                    <motion.div
+                      layoutId="nav-indicator"
+                      className="absolute inset-x-3 bottom-0.5 h-0.5 rounded-full bg-foreground"
+                    />
+                  )}
+                </Link>
+              ))}
             </nav>
 
             {/* Right Side: Auth/User */}
-            <div className="flex items-center gap-2.5">
-              {/* <div className="hidden md:block">
-                <ThemeToggle />
-              </div> */}
-
+            <div className="flex items-center gap-2">
               {user ? (
                 <div className="relative">
                   <motion.button
@@ -277,29 +286,22 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
                     whileTap={{ scale: 0.97 }}
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     aria-expanded={isUserMenuOpen}
-                    className="flex items-center gap-2 rounded-xl bg-muted/50 px-2.5 py-1.5 text-sm font-medium text-text-main transition-colors hover:bg-accent"
+                    className="flex items-center gap-2 rounded-lg bg-surface p-1 transition-colors hover:bg-muted "
                   >
-                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/10">
+                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-foreground text-sm font-semibold text-background">
                       {user.image ? (
                         <img
                           src={user.image}
                           alt={user.name || 'User'}
-                          className="h-8 w-8 rounded-full object-cover"
+                          className="h-full w-full object-cover"
                         />
                       ) : (
-                        <span className="font-semibold text-primary">
-                          {user.name?.charAt(0) ||
-                            user.email?.charAt(0) ||
-                            'U'}
-                        </span>
+                        <span>{getUserInitials()}</span>
                       )}
                     </div>
-                    <span className="hidden lg:inline">
-                      {user.name || user.email?.split('@')[0]}
-                    </span>
                     <ChevronDown
                       className={cn(
-                        'h-4 w-4 text-text-muted transition-transform duration-200',
+                        'h-4 w-4 text-muted-foreground transition-transform duration-200',
                         isUserMenuOpen && 'rotate-180',
                       )}
                     />
@@ -309,6 +311,7 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
                     {isUserMenuOpen && (
                       <UserDropdown
                         user={user}
+                        menuItems={getUserMenuItems()}
                         onSignOut={handleSignOut}
                         onClose={() => setIsUserMenuOpen(false)}
                       />
@@ -316,21 +319,17 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
                   </AnimatePresence>
                 </div>
               ) : (
-                <div
-                  className="hidden md:flex items-center gap-2"
-                >
-                  <Link
-                    href="/auth/signin"
-                    className=" rounded-xl  text-base font-medium text-text-muted transition-colors hover:text-text-main"
-                  >
-                    <Button variant="outline">
-
-                      <span>Sign In</span><User />
+                <div className="hidden md:flex items-center gap-2">
+                  <Link href="/auth/signin">
+                    <Button variant="outline" className="text-sm">
+                      <User className="h-4 w-4 mr-1.5" />
+                      Sign In
                     </Button>
                   </Link>
                   <Link href="/auth/signup">
-                    <Button  >
-                      <Plus /> Get Listed
+                    <Button className="text-sm">
+                      <Plus className="h-4 w-4 mr-1.5" />
+                      Get Listed
                     </Button>
                   </Link>
                 </div>
@@ -338,7 +337,7 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
 
               {/* Mobile Menu Button */}
               <button
-                className="rounded-xl p-2 text-text-main transition-colors hover:bg-muted lg:hidden"
+                className="rounded-xl p-2  text-foreground transition-colors hover:bg-muted lg:hidden"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 aria-label="Toggle menu"
                 aria-expanded={isMenuOpen}
@@ -378,61 +377,78 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
 
 function UserDropdown({
   user,
+  menuItems,
   onSignOut,
   onClose,
 }: {
   user: NonNullable<ReturnType<typeof useCurrentUser>>
+  menuItems: Array<{ label: string; href: string; icon: React.ElementType }>
   onSignOut: () => void
   onClose: () => void
 }) {
+  const pathname = usePathname()
+
+  const isActive = (href: string) =>
+    pathname === href || pathname.startsWith(href + '/')
+
+  const getRoleDisplay = (role?: string) => {
+    if (!role) return 'User'
+    const roleMap: Record<string, string> = {
+      ADMIN: 'Administrator',
+      BROKER: 'Broker',
+      COMPANY: 'Company',
+      USER: 'User',
+    }
+    return roleMap[role.toUpperCase()] || role
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: -10, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -10, scale: 0.95 }}
       transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-      className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-border bg-card shadow-large"
+      className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-lg border border-border bg-card shadow-large"
     >
-      <div className="border-b p-3">
-        <p className="font-semibold text-text-main">
+      {/* User Info */}
+      <div className="border-b border-border px-4 py-3">
+        <p className="text-base font-semibold text-foreground">
           {user.name || user.email}
         </p>
-        <p className="text-xs capitalize text-text-muted">
-          {user.role.toLowerCase()}
+        <p className="text-xs text-muted-foreground">
+          {getRoleDisplay(user.role)}
         </p>
       </div>
+
+      {/* Navigation Items */}
       <div className="p-1.5">
-        {user.isBroker && (
+        {menuItems.map((item) => (
           <Link
-            href="/broker/dashboard"
-            className="block rounded-lg px-3 py-2 text-sm text-text-main transition-colors hover:bg-muted"
+            key={item.label}
+            href={item.href}
+            className={cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
+              isActive(item.href)
+                ? 'bg-surface text-foreground font-medium'
+                : 'text-foreground hover:bg-muted'
+            )}
             onClick={onClose}
           >
-            Dashboard
+            <item.icon className={cn(
+              'h-4 w-4',
+              isActive(item.href) ? 'text-foreground' : 'text-muted-foreground'
+            )} />
+            {item.label}
           </Link>
-        )}
-        {user.isBroker && (
-          <Link
-            href="/broker/subscription"
-            className="block rounded-lg px-3 py-2 text-sm text-text-main transition-colors hover:bg-muted"
-            onClick={onClose}
-          >
-            Subscription
-          </Link>
-        )}
-        {user.isCompany && (
-          <Link
-            href="/company/dashboard"
-            className="block rounded-lg px-3 py-2 text-sm text-text-main transition-colors hover:bg-muted"
-            onClick={onClose}
-          >
-            Dashboard
-          </Link>
-        )}
+        ))}
+
+        {/* Divider */}
         <div className="my-1 border-t border-border" />
+
+        {/* Sign Out */}
         <button
           onClick={onSignOut}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-destructive transition-colors hover:bg-destructive/5"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-destructive transition-colors hover:bg-destructive/5"
         >
           <LogOut className="h-4 w-4" />
           Sign Out
@@ -480,10 +496,10 @@ function MobileMenu({
           <div key={item.name}>
             <Link
               href={item.href}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-text-main transition-colors hover:bg-muted"
+              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
               onClick={onClose}
             >
-              <item.icon className="h-5 w-5 text-text-muted" />
+              <item.icon className="h-5 w-5 text-muted-foreground" />
               {item.name}
             </Link>
             {item.children && (
@@ -492,7 +508,7 @@ function MobileMenu({
                   <Link
                     key={child.name}
                     href={child.href}
-                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-text-muted transition-colors hover:bg-muted hover:text-text-main"
+                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                     onClick={onClose}
                   >
                     <child.icon className="h-4 w-4" />
@@ -503,13 +519,6 @@ function MobileMenu({
             )}
           </div>
         ))}
-
-        {/* <div className="flex items-center justify-between rounded-lg px-3 py-2">
-          <span className="text-sm font-medium text-text-main">
-            Appearance
-          </span>
-          <ThemeToggle />
-        </div> */}
 
         <div className="border-t border-border pt-2">
           {user ? (
@@ -527,17 +536,16 @@ function MobileMenu({
             </>
           ) : (
             <div className="grid grid-cols-2 gap-2 pt-1">
-              <Link
-                href="/auth/signin"
-                onClick={onClose}
-              >
-                <Button variant="outline" className="w-full">
-                  Sign In <User />
+              <Link href="/auth/signin" onClick={onClose}>
+                <Button variant="outline" className="w-full text-sm">
+                  <User className="h-4 w-4 mr-1.5" />
+                  Sign In
                 </Button>
               </Link>
               <Link href="/auth/signup" onClick={onClose}>
-                <Button className=" w-full">
-                  <Plus /> Get Listed
+                <Button className="w-full text-sm">
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Get Listed
                 </Button>
               </Link>
             </div>

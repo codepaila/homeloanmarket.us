@@ -4,15 +4,16 @@ import { ChevronRight, Lock } from 'lucide-react'
 import { cn } from '@/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import type { SidebarItem, UserPermissions } from '@/types/nav'
 
 interface NavItemProps {
-  item: any
+  item: SidebarItem
   isActive: boolean
   isExpanded: boolean
   hasChildren: boolean
   onToggle: () => void
   isChild?: boolean
-  permissions: any
+  permissions: UserPermissions
   onNavigate?: () => void
 }
 
@@ -55,7 +56,7 @@ export function NavItem({
       <span className="flex-1 text-left">{item.title}</span>
       
       {/* Badges */}
-      {item.badge && item.badge > 0 && (
+      {Number(item.badge) > 0 && (
         <Badge variant="secondary" className="ml-2">
           {item.badge}
         </Badge>
@@ -83,7 +84,7 @@ export function NavItem({
   }
 
   return (
-    <Link href={item.url} className="block">
+    <Link href={item.url ?? ''} className="block">
       {content}
     </Link>
   )

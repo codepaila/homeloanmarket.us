@@ -37,7 +37,7 @@ export const subscriptionPlans = [
   {
     name: 'FEATURED',
     description: 'Get featured in listings and direct leads',
-    price: 99, // ₹99/month
+    price: 15, // $15/month
     stripePriceId: stripePriceIds.FEATURED,
     features: [
       'Featured in search results (priority ranking)',

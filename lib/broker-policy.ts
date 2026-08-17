@@ -85,6 +85,7 @@ export const BROKER_EDITABLE_FIELDS = [
   'panNumber',
   'logo',
   'coverImage',
+  'profileImage',
 ] as const
 
 // Fields only an ADMIN may set (and only through an admin-authorized PATCH).

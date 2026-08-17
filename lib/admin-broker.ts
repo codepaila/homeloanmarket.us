@@ -15,6 +15,7 @@ export type AdminBrokerInput = {
   panNumber?: string
   logo?: string
   coverImage?: string
+  profileImage?: string
 }
 
 export function normalizeAdminBrokerInput(input: AdminBrokerInput) {
@@ -35,6 +36,7 @@ export function normalizeAdminBrokerInput(input: AdminBrokerInput) {
     panNumber: input.panNumber?.trim() || null,
     logo: input.logo?.trim() || null,
     coverImage: input.coverImage?.trim() || null,
+    profileImage: input.profileImage?.trim() || null,
   }
 }
 

@@ -1,7 +1,7 @@
 import { AdvertisementRepository, AdEventRepository } from "./advertisementRepository"
 import { MediaRepository } from "./mediaRepository"
 import type { Advertisement, AdEvent, MediaAsset, MediaFolderWithCount, PaginatedAds, AdminAdsStats, PlacementStat, TopAdvertisementStat, DailyEngagementPoint } from "./types"
-import { generateUniqueSlug } from "./utils"
+import { generateUniqueSlug, normalizeAdvertisementTitle } from "./utils"
 import { createMediaAsset } from "./imageProcessor"
 import { isSafeAdvertisementUrl } from "./validation"
 import { isFormatCompatible, type AdvertisementFormat } from './formats'
@@ -33,7 +33,7 @@ export class AdvertisementService {
   }
 
   static async create(data: {
-    title: string
+    title?: string | null
     description?: string
     placement: string
     type: string
@@ -56,6 +56,7 @@ export class AdvertisementService {
     showMobile?: boolean
     internalNotes?: string
     isDismissible?: boolean
+    companyId?: string | null
     locationTarget?: {
       locationLabel: string
       countryCode: string
@@ -73,7 +74,8 @@ export class AdvertisementService {
     const { creativeAssignments = [], ...advertisementData } = data
     if (advertisementData.desktopMediaId === '') advertisementData.desktopMediaId = null
     if (advertisementData.mobileMediaId === '') advertisementData.mobileMediaId = null
-    const slug = await generateUniqueSlug(data.title)
+    advertisementData.title = normalizeAdvertisementTitle(advertisementData.title as string | null | undefined)
+    const slug = await generateUniqueSlug((advertisementData.title as string | null | undefined) || '')
 
     const existingSlug = await AdvertisementRepository.findBySlug(slug)
     if (existingSlug) {
@@ -125,6 +127,10 @@ export class AdvertisementService {
     delete advertisementData.locationTarget
     if (advertisementData.desktopMediaId === '') advertisementData.desktopMediaId = null
     if (advertisementData.mobileMediaId === '') advertisementData.mobileMediaId = null
+    // Title semantics: omitted → preserve existing; null → clear; "" → clear.
+    if ('title' in advertisementData) {
+      advertisementData.title = normalizeAdvertisementTitle(advertisementData.title as string | null | undefined)
+    }
     if (creativeAssignments !== undefined) await this.validateCreativeAssignments(typeof data.placement === 'string' ? data.placement : ad.placement, creativeAssignments)
     if (locationTarget && (locationTarget.countryCode !== 'US' || locationTarget.radiusMiles <= 0 || locationTarget.radiusMiles > 100)) {
       throw new Error('Invalid US advertisement location target')
@@ -139,6 +145,9 @@ export class AdvertisementService {
   }
 
   private static async validateCreativeAssignments(placement: string, assignments: { mediaAssetId: string; format: AdvertisementFormat }[]) {
+    if (placement === 'BROKER_LISTING_LOCAL' && !assignments.some((assignment) => assignment.format === 'SQUARE')) {
+      throw new Error('BROKER_LISTING_LOCAL advertisements require a SQUARE creative')
+    }
     for (const assignment of assignments) {
       if (!isFormatCompatible(placement, assignment.format)) throw new Error(`${assignment.format} creative is not compatible with ${placement}`)
       const asset = await MediaRepository.findAsset(assignment.mediaAssetId)
@@ -205,13 +214,37 @@ export class AdvertisementService {
 
   static async duplicate(
     id: string,
-    data: { title?: string; placement?: string; createdById: string }
+    data: {
+      title?: string
+      placement?: string
+      createdById: string
+      copyImages?: boolean
+      copySchedule?: boolean
+      copyPriority?: boolean
+      copyButtonSettings?: boolean
+      copyStatus?: boolean
+      generateNewSlug?: boolean
+    }
   ): Promise<Advertisement> {
     const ad = await this.getById(id)
     if (!ad) throw new Error("Advertisement not found")
-    const copy = await AdvertisementRepository.duplicate(id, data)
-    if (ad.creatives?.length) {
-      await AdvertisementRepository.syncCreatives(copy.id, ad.creatives.map((creative) => ({ mediaAssetId: creative.mediaAssetId, format: creative.format })))
+
+    // The destination placement is the override if provided, else the original.
+    const placement = data.placement || ad.placement
+    const assignments = (ad.creatives || []).map((creative) => ({ mediaAssetId: creative.mediaAssetId, format: creative.format as AdvertisementFormat }))
+    // Duplicated creatives must satisfy the same canonical contract as any
+    // create/update: format compatibility, exact dimensions, and the
+    // BROKER_LISTING_LOCAL SQUARE requirement. Never silently copy an invalid
+    // or legacy-incompatible creative into a live duplicate.
+    await this.validateCreativeAssignments(placement, assignments)
+
+    const copy = await AdvertisementRepository.duplicate(id, {
+      ...data,
+      placement,
+      title: data.title,
+    })
+    if (assignments.length) {
+      await AdvertisementRepository.syncCreatives(copy.id, assignments)
     }
     return (await this.getById(copy.id)) || copy
   }
@@ -367,7 +400,7 @@ export class AdvertisementService {
         const counts = countsByAd.get(ad.id) || { impressions: 0, clicks: 0 }
         return {
           id: ad.id,
-          title: ad.title,
+          title: ad.title || 'Untitled',
           placement: ad.placement,
           impressions: counts.impressions,
           clicks: counts.clicks,

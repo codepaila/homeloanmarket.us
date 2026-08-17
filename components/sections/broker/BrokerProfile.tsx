@@ -30,13 +30,65 @@ import {
 import Link from 'next/link'
 import { format } from 'date-fns'
 
+interface BrokerProfileReview {
+  id?: string
+  rating: number
+  comment?: string | null
+  createdAt?: string | Date
+  user?: { name?: string | null; image?: string | null } | null
+}
+
+interface BrokerProfileBank {
+  id?: string
+  bankName: string
+  bankType?: string
+  since?: string | Date | null
+}
+
+interface BrokerProfileData {
+  id?: string
+  displayName?: string
+  companyName?: string | null
+  description?: string
+  profileSlug?: string
+  logo?: string | null
+  coverImage?: string | null
+  phone?: string
+  email?: string | null
+  website?: string | null
+  whatsapp?: string | null
+  officeAddress?: string
+  city?: string | null
+  state?: string | null
+  pinCode?: string | null
+  experienceYears?: number
+  registrationNumber?: string | null
+  panNumber?: string | null
+  avgRating?: number
+  totalReviews?: number
+  totalLeads?: number
+  monthlyLeads?: number
+  profileViews?: number
+  verificationStatus?: string
+  brokerStatus?: string
+  subscription?: { plan?: string; isActive?: boolean; startDate?: string | Date | null; endDate?: string | Date | null } | null
+  bankPartners?: BrokerProfileBank[]
+  reviews?: BrokerProfileReview[]
+}
+
 interface BrokerProfileProps {
-  user: any
+  user: {
+    id: string
+    email?: string | null
+    name?: string | null
+    image?: string | null
+    brokerProfile: BrokerProfileData
+  }
 }
 
 export function BrokerProfile({ user }: BrokerProfileProps) {
   const [activeTab, setActiveTab] = useState('overview')
-  
+
   const broker = user.brokerProfile
   const subscription = broker.subscription
 
@@ -67,9 +119,9 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
           <div className="flex items-start gap-4">
             {broker?.logo ? (
-              <img 
-                src={broker.logo} 
-                alt={broker.companyName} 
+              <img
+                src={broker.logo}
+                alt={broker.companyName ?? undefined}
                 className="h-20 w-20 rounded-xl border-4 border-white/20"
               />
             ) : (
@@ -99,7 +151,7 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
               <p className="mt-2 text-white/90">{broker?.description}</p>
             </div>
           </div>
-          
+
           <div className="mt-4 md:mt-0 flex gap-2">
             <Button variant="secondary" className="gap-2" asChild>
               <Link href={`/brokers/${broker?.profileSlug}`}>
@@ -173,9 +225,9 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
                     <Globe className="h-4 w-4 text-muted-foreground" />
                     <div>
                       <p className="text-sm text-muted-foreground">Website</p>
-                      <a 
-                        href={broker.website} 
-                        target="_blank" 
+                      <a
+                        href={broker.website}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="font-medium text-primary hover:underline"
                       >
@@ -208,10 +260,10 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
                   <div>
                     <p className="text-sm text-muted-foreground">Bank Partnerships</p>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {broker?.bankPartners?.slice(0, 3).map((bank: any) => (
+                      {broker?.bankPartners?.slice(0, 3).map((bank: BrokerProfileBank) => (
                         <Badge key={bank.id} variant="secondary">{bank.bankName}</Badge>
                       )) || <span className="text-muted-foreground">Not specified</span>}
-                      {broker?.bankPartners?.length > 3 && (
+                      {broker?.bankPartners && broker.bankPartners.length > 3 && (
                         <Badge variant="outline">+{broker.bankPartners.length - 3} more</Badge>
                       )}
                     </div>
@@ -280,8 +332,8 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
               <div className="space-y-4">
                 <div>
                   <h4 className="font-medium mb-2">Verification Status</h4>
-                  <div className={`p-4 rounded-lg border ${verificationStatus.color === 'success' ? 'bg-green-50 border-green-200' : 
-                    verificationStatus.color === 'warning' ? 'bg-yellow-50 border-yellow-200' : 
+                  <div className={`p-4 rounded-lg border ${verificationStatus.color === 'success' ? 'bg-green-50 border-green-200' :
+                    verificationStatus.color === 'warning' ? 'bg-yellow-50 border-yellow-200' :
                     'bg-muted border-border'}`}>
                     <div className="flex items-center gap-2 mb-2">
                       <verificationStatus.icon className={`h-5 w-5 ${
@@ -338,7 +390,7 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
             <CardContent>
               {broker?.bankPartners?.length ? (
                 <div className="grid gap-4 md:grid-cols-2">
-                  {broker.bankPartners.map((bank: any) => (
+                  {broker.bankPartners.map((bank: BrokerProfileBank) => (
                     <Card key={bank.id}>
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start">
@@ -385,7 +437,7 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
             <CardContent>
               {broker?.reviews?.length ? (
                 <div className="space-y-4">
-                  {broker.reviews.map((review: any) => (
+                  {broker.reviews.map((review: BrokerProfileReview) => (
                     <Card key={review.id}>
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between mb-3">
@@ -397,19 +449,19 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
                               <p className="font-medium">{review.user?.name || "Anonymous"}</p>
                               <div className="flex items-center gap-1">
                                 {[...Array(5)].map((_, i) => (
-                                  <Star 
-                                    key={i} 
+                                  <Star
+                                    key={i}
                                     className={`h-4 w-4 ${i < review.rating ? 'text-yellow-400 fill-yellow-400' : 'text-muted-foreground'}`}
                                   />
                                 ))}
                                 <span className="text-sm text-muted-foreground ml-2">
-                                  {format(new Date(review.createdAt), 'MMM d, yyyy')}
+                                  {format(new Date(review.createdAt ?? ''), 'MMM d, yyyy')}
                                 </span>
                               </div>
                             </div>
                           </div>
                         </div>
-                        
+
                         {review.comment && (
                           <p className="text-muted-foreground mb-3">{review.comment}</p>
                         )}
@@ -422,7 +474,7 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
                   <MessageSquare className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
                    <h3 className="text-lg font-medium text-foreground mb-2">No reviews at this time</h3>
                   <p className="text-muted-foreground max-w-md mx-auto">
-                    You haven't received any reviews yet. Complete more applications to start getting feedback from clients.
+                    You haven&apos;t received any reviews yet. Complete more applications to start getting feedback from clients.
                   </p>
                 </div>
               )}
@@ -468,9 +520,9 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
                     {[5, 4, 3, 2, 1].map((rating) => {
                       // Calculate percentage for each rating
                       const totalReviews = broker?.reviews?.length || 0
-                      const ratingCount = broker?.reviews?.filter((r: any) => r.rating === rating).length || 0
+                      const ratingCount = broker?.reviews?.filter((r: BrokerProfileReview) => r.rating === rating).length || 0
                       const percentage = totalReviews > 0 ? (ratingCount / totalReviews) * 100 : 0
-                      
+
                       return (
                         <div key={rating} className="flex items-center gap-3">
                           <div className="flex items-center gap-1 w-16">
@@ -478,8 +530,8 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
                             <span className="font-medium">{rating}</span>
                           </div>
                           <div className="flex-1 bg-muted rounded-full h-2">
-                            <div 
-                              className="bg-yellow-400 h-2 rounded-full" 
+                            <div
+                              className="bg-yellow-400 h-2 rounded-full"
                               style={{ width: `${percentage}%` }}
                             />
                           </div>

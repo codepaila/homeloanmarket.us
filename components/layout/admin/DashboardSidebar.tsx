@@ -5,9 +5,9 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/utils'
-import { 
-  ChevronDown, 
-  Home, 
+import {
+  ChevronDown,
+  Home,
   LogOut,
   Shield,
   Crown,
@@ -19,10 +19,11 @@ import { Button } from '@/components/ui/button'
 import { signOut } from 'next-auth/react'
 import { NavItem } from './NavItem'
 import { SubscriptionBadge } from './SubscriptionBadge'
+import type { SidebarData, SidebarItem, UserPermissions } from '@/types/nav'
 
 interface DashboardSidebarProps {
-  data: any
-  permissions: any
+  data: SidebarData
+  permissions: UserPermissions
   className?: string
 }
 
@@ -67,7 +68,7 @@ export function DashboardSidebar({ data, permissions, className }: DashboardSide
               </div>
             )}
           </div>
-          
+
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">
               {data.user.name}
@@ -95,17 +96,17 @@ export function DashboardSidebar({ data, permissions, className }: DashboardSide
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4">
         <div className="px-3 space-y-1">
-          {data.navMain.map((item: any) => {
-            const isActive = pathname === item.url || 
-              (item.items && item.items.some((subItem: any) => 
-                subItem.url === pathname || 
-                (subItem.items && subItem.items.some((nested: any) => 
+          {data.navMain.map((item: SidebarItem) => {
+            const isActive = Boolean(pathname === item.url ||
+              (item.items && item.items.some((subItem: SidebarItem) =>
+                subItem.url === pathname ||
+                (subItem.items && subItem.items.some((nested: SidebarItem) =>
                   nested.url === pathname
                 ))
-              ))
+              )))
 
             const isExpanded = expandedItems.has(item.title)
-            const hasChildren = item.items && item.items.length > 0
+            const hasChildren = Boolean(item.items && item.items.length > 0)
 
             return (
               <div key={item.title}>
@@ -117,17 +118,17 @@ export function DashboardSidebar({ data, permissions, className }: DashboardSide
                   onToggle={() => hasChildren && toggleItem(item.title)}
                   permissions={permissions}
                 />
-                
+
                 {/* Child Items */}
                 {hasChildren && isExpanded && (
                   <div className="ml-9 mt-1 space-y-1">
-                    {item.items.map((child: any) => (
+                    {item.items?.map((child: SidebarItem) => (
                       <NavItem
                         key={child.title}
                         item={child}
                         isActive={pathname === child.url}
                         isExpanded={expandedItems.has(child.title)}
-                        hasChildren={child.items && child.items.length > 0}
+                        hasChildren={Boolean(child.items && child.items.length > 0)}
                         onToggle={() => child.items && toggleItem(child.title)}
                         isChild={true}
                         permissions={permissions}

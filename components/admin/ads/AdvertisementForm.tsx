@@ -65,10 +65,12 @@ import { CreateAdSchema, UpdateAdSchema } from '@/lib/advertisements/validation'
 import type { CreateAdInput, UpdateAdInput } from '@/lib/advertisements/validation'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
-import { ADVERTISEMENT_FORMAT_INFO, getPlacementFormats, isFormatCompatible, type AdvertisementFormat } from '@/lib/advertisements/formats'
+import { getPlacementFormats, isFormatCompatible, type AdvertisementFormat } from '@/lib/advertisements/formats'
 import { getPlacementSpec, getRequiredDimensions, getDisplayHeight } from '@/lib/advertisements/placementSpecs'
+import { getValidTypesForPlacement, getCreativeRequirementForFormat, AD_TYPE_LABELS } from '@/lib/advertisements/requirements'
 import { getAdvertisementLayout } from '@/components/advertisements/ad-layout'
 import { USLocationPicker } from '@/components/location/USLocationPicker'
+import type { AdType } from '@prisma/client'
 
 type FormMode = 'create' | 'edit'
 
@@ -83,18 +85,12 @@ interface AdvertisementFormProps {
   ad?: Advertisement | null
   onSuccess?: (ad: Advertisement) => void
   onCancel?: () => void
+  /** When creating an advertisement from a company request, pre-link the ad to
+   * this company and pre-fill the location target from the request. */
+  companyId?: string
+  requestId?: string
+  initialLocationTarget?: CreateAdInput['locationTarget']
 }
-
-const AD_TYPE_OPTIONS = [
-  { value: 'HERO_BANNER', label: 'Hero Banner' },
-  { value: 'SECTION_BANNER', label: 'Section Banner' },
-  { value: 'INLINE_BANNER', label: 'Inline Banner' },
-  { value: 'SIDEBAR_BANNER', label: 'Sidebar Banner' },
-  { value: 'FOOTER_BANNER', label: 'Footer Banner' },
-  { value: 'SPONSORED_BANNER', label: 'Sponsored Banner' },
-  { value: 'POPUP_CAMPAIGN', label: 'Popup Campaign' },
-  { value: 'ANNOUNCEMENT_BAR', label: 'Announcement Bar' },
-]
 
 const ACTION_OPTIONS = [
   { value: 'DISPLAY_ONLY', label: 'Display Only', needsButton: false, needsUrl: false },
@@ -123,7 +119,7 @@ const PREVIEW_BACKGROUNDS = [
 
 type PreviewBackground = typeof PREVIEW_BACKGROUNDS[number]
 
-export function AdvertisementForm({ mode, ad, onSuccess, onCancel }: AdvertisementFormProps) {
+export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, requestId, initialLocationTarget }: AdvertisementFormProps) {
   const router = useRouter()
   const user = useCurrentUser()
   const { status: sessionStatus } = useSession()
@@ -141,10 +137,22 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel }: Advertiseme
   const isEditMode = mode === 'edit'
   const [creativeAssignments, setCreativeAssignments] = useState<CreativeAssignmentState[]>(() => {
     if (ad?.creatives?.length) return ad.creatives.map((creative) => ({ mediaAssetId: creative.mediaAssetId, format: creative.format, asset: creative.mediaAsset || undefined }))
-    return [
-      ...(ad?.desktopMediaId ? [{ mediaAssetId: ad.desktopMediaId, format: 'HORIZONTAL' as AdvertisementFormat }] : []),
-      ...(ad?.mobileMediaId ? [{ mediaAssetId: ad.mobileMediaId, format: 'MOBILE' as AdvertisementFormat }] : []),
-    ]
+    const placementFormats = getPlacementFormats(ad?.placement || '')
+    const primaryFormat = placementFormats[0] || ('HORIZONTAL' as AdvertisementFormat)
+    const supportsMobile = placementFormats.includes('MOBILE')
+    const assignments: CreativeAssignmentState[] = []
+    if (ad?.desktopMediaId) assignments.push({ mediaAssetId: ad.desktopMediaId, format: primaryFormat })
+    if (ad?.mobileMediaId && supportsMobile) assignments.push({ mediaAssetId: ad.mobileMediaId, format: 'MOBILE' })
+    if (ad?.mobileMediaId && !supportsMobile && !ad?.desktopMediaId) assignments.push({ mediaAssetId: ad.mobileMediaId, format: primaryFormat })
+    return assignments
+  })
+
+  // Progressive creative editing: only ONE format is shown at a time. When the
+  // placement supports a single format it is auto-selected.
+  const [selectedCreativeFormat, setSelectedCreativeFormat] = useState<AdvertisementFormat | null>(() => {
+    const placementFormats = getPlacementFormats(ad?.placement || '')
+    if (placementFormats.length === 1) return placementFormats[0]
+    return creativeAssignments[0]?.format || placementFormats[0] || null
   })
 
   const createResolver = zodResolver(CreateAdSchema)
@@ -178,14 +186,13 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel }: Advertiseme
       showMobile: ad?.showMobile ?? true,
       internalNotes: ad?.internalNotes || '',
       isDismissible: ad?.isDismissible ?? false,
-      locationTarget: ad?.locationTarget || undefined,
+      locationTarget: ad?.locationTarget || initialLocationTarget,
+      companyId: ad?.companyId || companyId,
       creativeAssignments: creativeAssignments.map(({ mediaAssetId, format }) => ({ mediaAssetId, format })),
     } as any,
   })
 
   const watchAction = form.watch('action')
-  const watchDesktopMediaId = form.watch('desktopMediaId')
-  const watchMobileMediaId = form.watch('mobileMediaId')
   const watchTitle = form.watch('title')
   const watchDescription = form.watch('description')
   const watchBannerUrl = form.watch('bannerUrl')
@@ -196,8 +203,41 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel }: Advertiseme
   const needsButton = useMemo(() => watchAction === 'BUTTON_ONLY' || watchAction === 'BANNER_AND_BUTTON', [watchAction])
 
   const { assets: mediaAssets } = useMediaAssets({ limit: 50 })
-  const desktopMedia = useMemo(() => mediaAssets.find((a: MediaAsset) => a.id === watchDesktopMediaId), [mediaAssets, watchDesktopMediaId])
-  const mobileMedia = useMemo(() => mediaAssets.find((a: MediaAsset) => a.id === watchMobileMediaId), [mediaAssets, watchMobileMediaId])
+
+  // Preview / validation panels consume the assigned creatives so they always
+  // reflect what is currently assigned, not a separate legacy media field.
+  const desktopMedia = useMemo(() => {
+    const assignment = creativeAssignments.find((a) => a.format !== 'MOBILE') || creativeAssignments[0]
+    if (!assignment) return undefined
+    return assignment.asset || mediaAssets.find((a: MediaAsset) => a.id === assignment.mediaAssetId)
+  }, [creativeAssignments, mediaAssets])
+  const mobileMedia = useMemo(() => {
+    const assignment = creativeAssignments.find((a) => a.format === 'MOBILE') || creativeAssignments[0]
+    if (!assignment) return undefined
+    return assignment.asset || mediaAssets.find((a: MediaAsset) => a.id === assignment.mediaAssetId)
+  }, [creativeAssignments, mediaAssets])
+
+  // When the placement changes, reset the active creative format and
+  // auto-select the single supported format when applicable.
+  useEffect(() => {
+    const placementFormats = getPlacementFormats(watchPlacement || '')
+    setSelectedCreativeFormat((current) => {
+      if (placementFormats.length === 1) return placementFormats[0]
+      return current && placementFormats.includes(current) ? current : placementFormats[0] || null
+    })
+  }, [watchPlacement])
+
+  // Only the advertisement types valid for the selected placement are shown.
+  // If a single type is valid it is selected automatically.
+  useEffect(() => {
+    const valid = getValidTypesForPlacement(watchPlacement || '')
+    const current = form.getValues('type')
+    if (valid.length === 1 && current !== valid[0]) {
+      form.setValue('type', valid[0], { shouldDirty: false })
+    } else if (valid.length > 1 && current && !valid.includes(current as AdType)) {
+      form.setValue('type', valid[0], { shouldDirty: false })
+    }
+  }, [watchPlacement, form])
 
   const dirtyFields = useMemo(() => {
     const fields = form.formState.dirtyFields
@@ -305,6 +345,19 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel }: Advertiseme
       toast.success(`Advertisement ${isEditMode ? 'updated' : 'created'} successfully`)
       clearDraft()
       form.reset(data)
+      // When created from a company request, link the ad to the request and
+      // mark it FULFILLED so the audit trail is complete.
+      if (!isEditMode && requestId && result.ad?.id) {
+        try {
+          await fetch(`/api/admin/company-ad-requests/${requestId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ advertisementId: result.ad.id, status: 'FULFILLED' }),
+          })
+        } catch {
+          // Linking is best-effort; the advertisement itself was created.
+        }
+      }
       onSuccess?.(result.ad)
       router.push('/admin/ads/list')
       router.refresh()
@@ -313,7 +366,7 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel }: Advertiseme
     } finally {
       setIsSubmitting(false)
     }
-  }, [user, sessionStatus, isEditMode, ad, form, onSuccess, router, clearDraft, creativeAssignments, watchPlacement])
+  }, [user, sessionStatus, isEditMode, ad, form, onSuccess, router, clearDraft, creativeAssignments, watchPlacement, requestId])
 
   const availableCreativeFormats = getPlacementFormats(watchPlacement || '')
   const updateCreative = useCallback((format: AdvertisementFormat, asset: MediaAsset | null) => {
@@ -415,7 +468,7 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel }: Advertiseme
                   <CardHeader><CardTitle>Advertisement Information</CardTitle><CardDescription>Basic information about your advertisement</CardDescription></CardHeader>
                   <CardContent className="space-y-4">
                     <FormField control={form.control} name="title" render={({ field }) => (
-                      <FormItem><FormLabel>Title *</FormLabel><FormControl><Input placeholder="e.g., Summer Home Loan Special" {...field} maxLength={200} /></FormControl><FormDescription>{field.value?.length || 0}/200 characters</FormDescription><FormMessage /></FormItem>
+                      <FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="e.g., Summer Home Loan Special" {...field} value={field.value ?? ''} maxLength={200} /></FormControl><FormDescription>Optional · {field.value?.length || 0}/200 characters</FormDescription><FormMessage /></FormItem>
                     )} />
                     <FormField control={form.control} name="slug" render={({ field }) => (
                       <FormItem><FormLabel>Slug</FormLabel><FormControl><Input placeholder="auto-generated-from-title" {...field} disabled={isEditMode} /></FormControl><FormDescription>{isEditMode ? 'Slug cannot be changed after creation' : 'Auto-generated from title'}</FormDescription><FormMessage /></FormItem>
@@ -533,14 +586,14 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel }: Advertiseme
                 </Card>
 
                 <Card>
-                  <CardHeader><CardTitle>Advertisement Type</CardTitle><CardDescription>Select the type of advertisement</CardDescription></CardHeader>
+                  <CardHeader><CardTitle>Advertisement Type</CardTitle><CardDescription>Only types valid for the selected placement are shown</CardDescription></CardHeader>
                   <CardContent>
                     <FormField control={form.control} name="type" render={({ field }) => (
                       <FormItem>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                          {AD_TYPE_OPTIONS.map((option) => (
-                            <button key={option.value} type="button" onClick={() => field.onChange(option.value)} className={cn('flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all', field.value === option.value ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50')}>
-                              <span className="text-sm font-medium text-center">{option.label}</span>
+                          {getValidTypesForPlacement(watchPlacement || '').map((type) => (
+                            <button key={type} type="button" aria-pressed={field.value === type} onClick={() => field.onChange(type)} className={cn('flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all', field.value === type ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50')}>
+                              <span className="text-sm font-medium text-center">{AD_TYPE_LABELS[type]}</span>
                             </button>
                           ))}
                         </div>
@@ -736,76 +789,119 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel }: Advertiseme
                 })() : null}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Responsive Creatives</CardTitle>
-                    <CardDescription>Assign format-aware media to this placement. Exact formats are preferred, then compatible fallbacks are used.</CardDescription>
+                    <CardTitle>Assigned Creatives</CardTitle>
+                    <CardDescription>Existing creative assignments are preserved when you edit. Replacing a creative only changes that format — nothing else is removed.</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-5">
-                    {availableCreativeFormats.map((format) => {
-                      const assignment = creativeAssignments.find((creative) => creative.format === format)
-                      const asset = assignment?.asset || mediaAssets.find((candidate: MediaAsset) => candidate.id === assignment?.mediaAssetId) || null
-                      const info = ADVERTISEMENT_FORMAT_INFO[format]
-                      const required = getRequiredDimensions(watchPlacement || 'BROKER_LISTING', format, format === 'MOBILE' ? 'mobile' : 'desktop')
-                      return (
-                        <div key={format} className="rounded-lg border border-border p-4">
-                          <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-                            <div>
-                              <p className="text-sm font-semibold">{info.label} Creative</p>
-                              <p className="text-xs text-text-muted">{info.description}</p>
+                  <CardContent className="space-y-2">
+                    {creativeAssignments.length === 0 ? (
+                      <p className="text-sm text-text-muted">No creative is assigned yet. Use the Creative Editor below.</p>
+                    ) : (
+                      creativeAssignments.map((assignment) => {
+                        const supported = isFormatCompatible(watchPlacement || '', assignment.format)
+                        const required = getRequiredDimensions(watchPlacement || 'BROKER_LISTING', assignment.format, assignment.format === 'MOBILE' ? 'mobile' : 'desktop')
+                        const asset = assignment.asset || mediaAssets.find((candidate: MediaAsset) => candidate.id === assignment.mediaAssetId)
+                        const matches = asset?.width && asset?.height ? asset.width === required.width && asset.height === required.height : null
+                        return (
+                          <div key={assignment.format} className="flex flex-wrap items-center gap-3 rounded-lg border border-border p-3">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-medium">
+                                {assignment.format}
+                                <span className="text-xs text-text-muted"> · {required.width} × {required.height} px ({required.aspectRatio})</span>
+                              </p>
+                              <p className="truncate text-xs text-text-muted">{asset?.fileName || assignment.mediaAssetId}</p>
+                              {asset?.width && asset?.height ? <p className="text-xs text-text-muted">Uploaded {asset.width} × {asset.height} px</p> : null}
                             </div>
-                            <span className="text-xs text-text-muted">{required.width} × {required.height} · {required.aspectRatio}</span>
+                            {!supported ? (
+                              <Badge variant="destructive">Not supported for placement</Badge>
+                            ) : matches === true ? (
+                              <Badge variant="secondary" className="bg-emerald-100 text-emerald-700">✓ Matches</Badge>
+                            ) : matches === false ? (
+                              <Badge variant="destructive">✕ Mismatch</Badge>
+                            ) : null}
                           </div>
-                          <MediaSelector
-                            value={assignment?.mediaAssetId || null}
-                            selectedAsset={asset}
-                            label={`${info.label} image`}
-                            description={`Required: ${required.width} × ${required.height}px · ${required.aspectRatio}. Select from Media Library or upload a new creative.`}
-                            folder="Advertisements"
-                            placement={watchPlacement}
-                            format={format}
-                            requiredWidth={required.width}
-                            requiredHeight={required.height}
-                            onChange={(selected) => updateCreative(format, selected)}
-                          />
-                        </div>
-                      )
-                    })}
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader><CardTitle>Desktop Media</CardTitle><CardDescription>Select an image for desktop display.</CardDescription></CardHeader>
-                  <CardContent>
-                    <FormField control={form.control} name="desktopMediaId" render={({ field }) => (
-                      <FormItem>
-                        <MediaSelector
-                          value={field.value}
-                          selectedAsset={desktopMedia}
-                          label="Desktop Image"
-                          folder="Advertisements"
-                          onChange={(asset) => field.onChange(asset?.id || '')}
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )} />
+                        )
+                      })
+                    )}
                   </CardContent>
                 </Card>
 
-                <Card>
-                  <CardHeader><CardTitle>Mobile Media</CardTitle><CardDescription>Select an image for mobile display (optional).</CardDescription></CardHeader>
-                  <CardContent>
-                    <FormField control={form.control} name="mobileMediaId" render={({ field }) => (
-                      <FormItem>
-                        <MediaSelector
-                          value={field.value}
-                          selectedAsset={mobileMedia}
-                          label="Mobile Image"
-                          folder="Advertisements"
-                          onChange={(asset) => field.onChange(asset?.id || '')}
-                        />
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                  </CardContent>
-                </Card>
+                {(() => {
+                  const allowedFormats = availableCreativeFormats
+                  const selectedFormat = selectedCreativeFormat && allowedFormats.includes(selectedCreativeFormat) ? selectedCreativeFormat : allowedFormats[0] || null
+                  if (!selectedFormat || !watchPlacement) {
+                    return (
+                      <Card>
+                        <CardHeader><CardTitle>Creative Editor</CardTitle><CardDescription>Select a placement to configure its creative.</CardDescription></CardHeader>
+                      </Card>
+                    )
+                  }
+                  const formatReq = getCreativeRequirementForFormat(watchPlacement, selectedFormat)
+                  const selectedAssignment = creativeAssignments.find((creative) => creative.format === selectedFormat)
+                  const selectedAsset = selectedAssignment?.asset || mediaAssets.find((candidate: MediaAsset) => candidate.id === selectedAssignment?.mediaAssetId) || null
+                  return (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Creative Editor</CardTitle>
+                        <CardDescription>Pick a format, then upload or select an image that matches its exact required resolution. Other assigned creatives are preserved.</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        {allowedFormats.length > 1 ? (
+                          <div>
+                            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">Creative Format</p>
+                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                              {allowedFormats.map((format) => {
+                                const req = getCreativeRequirementForFormat(watchPlacement, format)
+                                const isSelected = selectedFormat === format
+                                const alreadyAssigned = creativeAssignments.some((creative) => creative.format === format)
+                                return (
+                                  <button
+                                    key={format}
+                                    type="button"
+                                    aria-pressed={isSelected}
+                                    onClick={() => setSelectedCreativeFormat(format)}
+                                    className={cn('rounded-xl border p-4 text-left transition-colors', isSelected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:border-primary/50')}
+                                  >
+                                    <span className="font-medium">{req.label}</span>
+                                    <span className="mt-1 block text-xs text-text-muted">{req.width} × {req.height} px</span>
+                                    <span className="block text-xs text-text-muted">Aspect ratio: {req.aspectRatio}</span>
+                                    {alreadyAssigned ? (
+                                      <span className="mt-1 inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">Assigned</span>
+                                    ) : null}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-text-muted">
+                            {formatReq.label} is the only supported format for this placement and is selected automatically.
+                          </p>
+                        )}
+                        <div className="rounded-lg border border-border p-4">
+                          <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                              <p className="text-sm font-semibold">{formatReq.label} Creative</p>
+                              <p className="text-xs text-text-muted">Required resolution: {formatReq.width} × {formatReq.height} px · {formatReq.aspectRatio}</p>
+                            </div>
+                            {selectedAssignment ? <Badge variant="secondary">Assigned</Badge> : null}
+                          </div>
+                          <MediaSelector
+                            value={selectedAssignment?.mediaAssetId || null}
+                            selectedAsset={selectedAsset}
+                            label={`${formatReq.label} image`}
+                            description={`Required: ${formatReq.width} × ${formatReq.height}px · ${formatReq.aspectRatio}. Select from Media Library or upload a new creative.`}
+                            folder="Advertisements"
+                            placement={watchPlacement}
+                            format={selectedFormat}
+                            requiredWidth={formatReq.width}
+                            requiredHeight={formatReq.height}
+                            onChange={(selected) => updateCreative(selectedFormat, selected)}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })()}
 
                 <Card>
                   <CardHeader><CardTitle>Banner URL (Alternative)</CardTitle><CardDescription>Use a direct URL instead of media library (optional)</CardDescription></CardHeader>
@@ -863,7 +959,7 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel }: Advertiseme
                         desktopMedia={desktopMedia}
                         mobileMedia={mobileMedia}
                         bannerUrl={watchBannerUrl}
-                        title={watchTitle}
+                        title={watchTitle || undefined}
                         description={watchDescription}
                         buttonLabel={watchButtonLabel}
                         action={watchAction}
@@ -873,6 +969,49 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel }: Advertiseme
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Summary (review) */}
+              {(() => {
+                const activeFormat = selectedCreativeFormat && availableCreativeFormats.includes(selectedCreativeFormat) ? selectedCreativeFormat : availableCreativeFormats[0] || null
+                const summaryFormatReq = activeFormat && watchPlacement ? getCreativeRequirementForFormat(watchPlacement, activeFormat) : null
+                const summaryAsset = activeFormat ? creativeAssignments.find((c) => c.format === activeFormat)?.asset : undefined
+                const watchType = form.watch('type')
+                const watchIsEnabled = form.watch('isEnabled')
+                const watchStartDate = form.watch('startDate')
+                const watchEndDate = form.watch('endDate')
+                const companyLabel = ad?.companyId || companyId
+                return (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base font-semibold">Summary</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <dl className="space-y-1.5 text-sm">
+                        <div className="flex justify-between gap-2"><dt className="text-text-muted">Placement</dt><dd className="text-right font-medium">{watchPlacement || '—'}</dd></div>
+                        <div className="flex justify-between gap-2"><dt className="text-text-muted">Type</dt><dd className="text-right">{watchType ? AD_TYPE_LABELS[watchType as AdType] : '—'}</dd></div>
+                        <div className="flex justify-between gap-2"><dt className="text-text-muted">Action</dt><dd className="text-right">{watchAction || '—'}</dd></div>
+                        {summaryFormatReq ? (
+                          <>
+                            <div className="flex justify-between gap-2"><dt className="text-text-muted">Creative format</dt><dd className="text-right">{summaryFormatReq.label}</dd></div>
+                            <div className="flex justify-between gap-2"><dt className="text-text-muted">Required resolution</dt><dd className="text-right">{summaryFormatReq.width} × {summaryFormatReq.height} px</dd></div>
+                            <div className="flex justify-between gap-2"><dt className="text-text-muted">Uploaded resolution</dt><dd className="text-right">{summaryAsset?.width && summaryAsset?.height ? `${summaryAsset.width} × ${summaryAsset.height} px` : '—'}</dd></div>
+                          </>
+                        ) : null}
+                        {companyLabel ? <div className="flex justify-between gap-2"><dt className="text-text-muted">Company</dt><dd className="truncate text-right">Linked</dd></div> : null}
+                        {requestId ? <div className="flex justify-between gap-2"><dt className="text-text-muted">Request</dt><dd className="text-right">Linked</dd></div> : null}
+                        {watchPlacement === 'BROKER_LISTING_LOCAL' && watchLocationTarget ? (
+                          <>
+                            <div className="flex justify-between gap-2"><dt className="text-text-muted">Target</dt><dd className="truncate text-right">{watchLocationTarget.locationLabel || `${watchLocationTarget.city || ''}, ${watchLocationTarget.state || ''}`}</dd></div>
+                            <div className="flex justify-between gap-2"><dt className="text-text-muted">Radius</dt><dd className="text-right">{watchLocationTarget.radiusMiles} miles</dd></div>
+                          </>
+                        ) : null}
+                        <div className="flex justify-between gap-2"><dt className="text-text-muted">Schedule</dt><dd className="text-right">{watchStartDate ? new Date(watchStartDate).toLocaleDateString() : '—'} → {watchEndDate ? new Date(watchEndDate).toLocaleDateString() : '—'}</dd></div>
+                        <div className="flex justify-between gap-2"><dt className="text-text-muted">Status</dt><dd className="text-right">{watchIsEnabled ? 'Enabled' : 'Disabled'}</dd></div>
+                      </dl>
+                    </CardContent>
+                  </Card>
+                )
+              })()}
 
               {/* Image Validation */}
               <ImageValidationPanel

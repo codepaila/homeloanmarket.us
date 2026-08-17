@@ -6,6 +6,8 @@ import { toast } from 'react-hot-toast'
 import { Button } from '@/components/ui/button'
 import { MediaPickerDialog } from '@/components/admin/ads/MediaPickerDialog'
 import { useUploadAsset } from '@/hooks/useAdminAds'
+import { validateCreativeDimensions } from '@/lib/advertisements/placementSpecs'
+import type { AdvertisementFormat } from '@/lib/advertisements/formats'
 import type { MediaAsset } from '@/lib/advertisements/types'
 import { cn } from '@/lib/utils'
 
@@ -33,7 +35,7 @@ export function MediaSelector({
   folder?: string
   accept?: string
   placement?: string
-  format?: string
+  format?: AdvertisementFormat
   requiredWidth?: number
   requiredHeight?: number
 }) {
@@ -53,18 +55,13 @@ export function MediaSelector({
     }
   }, [blobPreviewUrl])
 
-  // Mirrors the canonical server rule (validateCreativeDimensions ±25%).
-  // ok = well within tolerance, warn = within tolerance but off-target,
-  // fail = outside tolerance (the server rejects the assignment).
-  const compatibility = (() => {
+  // Shared canonical exact-resolution contract — the same rule the backend
+  // (AdvertisementService) applies. A selected/uploaded asset is compatible
+  // only when its dimensions match the required resolution exactly.
+  const dimensionCheck = (() => {
     if (!displayAsset?.width || !displayAsset?.height || !placement || !format || !requiredWidth || !requiredHeight) return null
-    const actualRatio = displayAsset.width / displayAsset.height
-    const requiredRatio = requiredWidth / requiredHeight
-    const diff = Math.abs(actualRatio - requiredRatio) / requiredRatio
-    if (diff <= 0.1) return 'ok'
-    if (diff <= 0.25) return 'warn'
-    return 'fail'
-  })() as 'ok' | 'warn' | 'fail' | null
+    return validateCreativeDimensions(placement, format, displayAsset.width, displayAsset.height)
+  })()
 
   const handleUpload = async (file: File) => {
     setUploadError(null)
@@ -88,9 +85,18 @@ export function MediaSelector({
       const asset = await uploadAsset(formData)
       setBlobPreviewUrl(null)
       URL.revokeObjectURL(objectUrl)
-      setLocalAsset(asset as MediaAsset)
-      onChange(asset as MediaAsset)
-      toast.success('Image uploaded and selected')
+      const uploaded = asset as MediaAsset
+      const dimensionCheck = placement && format && requiredWidth && requiredHeight
+        ? validateCreativeDimensions(placement, format, uploaded.width, uploaded.height)
+        : null
+      if (dimensionCheck && !dimensionCheck.ok) {
+        setUploadError(dimensionCheck.reason)
+        toast.error(dimensionCheck.reason)
+        return
+      }
+      setLocalAsset(uploaded)
+      onChange(uploaded)
+      toast.success('Creative uploaded successfully.')
     } catch (error) {
       setBlobPreviewUrl(null)
       URL.revokeObjectURL(objectUrl)
@@ -123,20 +129,16 @@ export function MediaSelector({
                 {displayAsset?.fileSize ? ` · ${formatFileSize(displayAsset.fileSize)}` : ''}
                 {displayAsset?.extension ? ` · ${displayAsset.extension.toUpperCase()}` : ''}
               </p>
-              {compatibility !== null ? (
-                <p
-                  className={cn(
-                    'mt-0.5 flex items-center gap-1 text-xs font-medium',
-                    compatibility === 'ok' ? 'text-success' : compatibility === 'warn' ? 'text-amber-600' : 'text-destructive',
-                  )}
-                >
-                  {compatibility === 'ok' ? '✓ Compatible' : compatibility === 'warn' ? '⚠ Needs attention' : `✕ Not compatible — expected ${requiredWidth} × ${requiredHeight}px`}
-                </p>
-              ) : null}
-              {compatibility === 'warn' && requiredWidth && requiredHeight ? (
-                <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  Within tolerance, but off the recommended {requiredWidth} × {requiredHeight}px ratio.
-                </p>
+              {dimensionCheck !== null && requiredWidth && requiredHeight ? (
+                dimensionCheck.ok ? (
+                  <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-success">
+                    ✓ Image matches required resolution {requiredWidth} × {requiredHeight} px
+                  </p>
+                ) : (
+                  <p role="alert" className="mt-0.5 text-xs font-medium text-destructive">
+                    ✕ Incorrect image resolution. Required {requiredWidth} × {requiredHeight} px · Uploaded {displayAsset?.width} × {displayAsset?.height} px
+                  </p>
+                )
               ) : null}
             </div>
             <div className="flex shrink-0 gap-2">
@@ -174,12 +176,22 @@ export function MediaSelector({
         open={pickerOpen}
         onOpenChange={setPickerOpen}
         onSelect={(asset) => {
+          const dimensionCheck = placement && format && requiredWidth && requiredHeight
+            ? validateCreativeDimensions(placement, format, asset.width, asset.height)
+            : null
+          if (dimensionCheck && !dimensionCheck.ok) {
+            toast.error(`This image does not match the required ${requiredWidth} × ${requiredHeight} creative.`)
+            return
+          }
           setLocalAsset(asset)
           onChange(asset)
           setPickerOpen(false)
+          toast.success('Creative selected successfully.')
         }}
         selectedAssetId={value || null}
         title={`Select ${label}`}
+        placement={placement}
+        format={format}
         requiredWidth={requiredWidth}
         requiredHeight={requiredHeight}
       />

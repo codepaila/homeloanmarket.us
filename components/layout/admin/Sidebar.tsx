@@ -15,10 +15,11 @@ import { Button } from '@/components/ui/button'
 import { signOut } from 'next-auth/react'
 import { NavItem } from './Links'
 import { SubscriptionBadge } from './SubscriptionBadge'
+import type { SidebarData, SidebarItem, UserPermissions } from '@/types/nav'
 
 interface DashboardSidebarProps {
-  data: any
-  permissions: any
+  data: SidebarData
+  permissions: UserPermissions
   className?: string
 }
 
@@ -38,7 +39,7 @@ export function DashboardSidebar({
     })
   }
 
-  const isItemActive = (item: any): boolean => {
+  const isItemActive = (item: SidebarItem): boolean => {
     if (item.url === pathname) return true
     if (item.items) {
       return item.items.some(isItemActive)
@@ -97,15 +98,15 @@ export function DashboardSidebar({
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4">
-        {data.navMain.map((section: any) => (
-          <div key={section.label} className="mb-4">
+        {data.navMain.map((section: SidebarItem) => (
+          <div key={section.title} className="mb-4">
             {/* Section Label */}
             <div className="px-6 mb-2 text-xs font-semibold uppercase text-muted-foreground">
-              {section.label}
+              {section.title}
             </div>
 
             <div className="px-3 space-y-1">
-              {section.items.map((item: any) => {
+              {section.items?.map((item: SidebarItem) => {
                 const active = isItemActive(item)
                 const expanded = expandedItems.has(item.title)
                 const hasChildren = !!item.items?.length
@@ -125,7 +126,7 @@ export function DashboardSidebar({
                     {/* Children */}
                     {hasChildren && expanded && (
                       <div className="ml-9 mt-1 space-y-1">
-                         {item.items.map((child: any) => (
+                         {item.items?.map((child: SidebarItem) => (
                            <NavItem
                              key={child.title}
                              item={child}

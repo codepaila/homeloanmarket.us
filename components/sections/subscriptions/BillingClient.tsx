@@ -6,6 +6,8 @@ import { useSession } from 'next-auth/react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+
+type BadgeVariant = React.ComponentProps<typeof Badge>['variant']
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
@@ -119,10 +121,6 @@ export default function BillingHistoryClient() {
   const [syncLoading, setSyncLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('invoices')
 
-  useEffect(() => {
-    fetchBillingData()
-  }, [])
-
   const fetchBillingData = async () => {
     try {
       setLoading(true)
@@ -134,13 +132,17 @@ export default function BillingHistoryClient() {
       } else {
         throw new Error(data.error)
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load billing data')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to load billing data')
       console.error(error)
     } finally {
       setLoading(false)
     }
   }
+
+  useEffect(() => {
+    fetchBillingData()
+  }, [])
 
   const statusConfig = {
     paid: { label: 'Paid', color: 'success', icon: CheckCircle },
@@ -216,8 +218,8 @@ export default function BillingHistoryClient() {
     try {
       await fetchBillingData()
       toast.success('Billing data refreshed from Stripe')
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to sync with Stripe')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to sync with Stripe')
     } finally {
       setSyncLoading(false)
     }
@@ -228,7 +230,7 @@ export default function BillingHistoryClient() {
     const Icon = config.icon
     
     return (
-      <Badge variant={config.color as any} className="gap-1">
+      <Badge variant={config.color as BadgeVariant} className="gap-1">
         <Icon className="h-3 w-3" />
         {config.label}
       </Badge>
@@ -579,7 +581,7 @@ export default function BillingHistoryClient() {
                 <TrendingUp className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-foreground mb-2">No subscriptions</h3>
                 <p className="text-muted-foreground max-w-md mx-auto">
-                  You don't have any active subscriptions.
+                  You don&apos;t have any active subscriptions.
                 </p>
                 <Button className="mt-4" onClick={() => setActiveTab('invoices')}>
                   View Invoices
@@ -657,7 +659,7 @@ export default function BillingHistoryClient() {
                 <CreditCard className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-foreground mb-2">No payment methods</h3>
                 <p className="text-muted-foreground max-w-md mx-auto">
-                  You haven't added any payment methods yet.
+                  You haven&apos;t added any payment methods yet.
                 </p>
                 <Button className="mt-4" onClick={() => setActiveTab('invoices')}>
                   Add Payment Method

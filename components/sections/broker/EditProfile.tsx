@@ -44,6 +44,7 @@ import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { useUserPermissions } from '@/hooks/useCurrentUser'
 import ImageUpload from '@/components/ImageUpload'
+import { ProfileImageUpload } from '@/components/brokers/ProfileImageUpload'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 // Form Schema based on Prisma schema
@@ -298,6 +299,17 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  <div className="space-y-4">
+                    <FormLabel>Professional Profile Image</FormLabel>
+                    <ProfileImageUpload
+                      value={broker?.profileImage}
+                      uploadUrl="/api/brokers/me/profile-image"
+                      removeUrl="/api/brokers/me/profile-image"
+                      label="Profile image"
+                      helperText="Professional broker photo shown on public cards and profile."
+                    />
+                  </div>
+
                   <div className="space-y-4">
                     <FormLabel>Company Logo</FormLabel>
                     <FormField

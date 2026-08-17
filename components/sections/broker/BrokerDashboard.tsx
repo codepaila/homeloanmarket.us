@@ -5,6 +5,8 @@ import { useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+
+type BadgeVariant = React.ComponentProps<typeof Badge>['variant']
 import {
   Users,
   FileText,
@@ -42,10 +44,70 @@ import { useCurrentUser } from '@/hooks/useCurrentUser'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 
+interface DashboardReview {
+  id?: string
+  rating?: number
+  comment?: string | null
+  createdAt?: string | Date
+  user?: { name?: string | null; image?: string | null } | null
+}
+
+interface DashboardBroker {
+  id: string
+  displayName: string
+  companyName?: string | null
+  description: string
+  profileSlug: string
+  phone: string
+  email?: string | null
+  website?: string | null
+  whatsapp?: string | null
+  officeAddress: string
+  city?: string | null
+  state?: string | null
+  pinCode?: string | null
+  experienceYears: number
+  logo?: string | null
+  coverImage?: string | null
+  avgRating: number
+  totalReviews: number
+  totalLeads: number
+  profileViews: number
+  verificationStatus: string
+  reviews?: DashboardReview[]
+  user?: { name?: string | null; image?: string | null } | null
+}
+
+interface DashboardContact {
+  id: string
+  name: string
+  contactType?: string
+  message?: string
+  isRead?: boolean
+  loanAmount?: number
+  createdAt?: string | Date
+}
+
+interface DashboardAnalytics {
+  recentContacts?: number
+  requiresSubscription?: boolean
+  totalContacts30Days?: number
+  avgLoanAmount?: number | null
+  analytics?: {
+    summary: { totalContacts?: number; respondedContacts?: number; responseRate?: number; period?: string }
+    performance: { avgResponseTime?: number; satisfactionScore?: number }
+    charts: { dailyContacts: Array<{ date?: string; count: number }> }
+    insights: {
+      popularLoanTypes: Array<{ type: string; count: number }>
+      topCities: Array<{ city: string; count: number }>
+    }
+  }
+}
+
 interface BrokerDashboardProps {
   initialData?: {
-    broker?: any
-    stats?: any
+    broker?: DashboardBroker
+    stats?: DashboardAnalytics
   }
 }
 
@@ -411,7 +473,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
                     <p className="text-sm text-muted-foreground">Verify your profile to build trust</p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Badge variant={status.color as any}>
+                    <Badge variant={status.color as BadgeVariant}>
                       <status.icon className="h-3 w-3 mr-1" />
                       {status.label}
                     </Badge>
@@ -523,7 +585,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {contacts?.slice(0, 5).map((message: any) => (
+                  {contacts?.slice(0, 5).map((message: DashboardContact) => (
                     <div key={message.id} className="flex items-start justify-between p-3 border rounded-lg hover:bg-muted">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
@@ -540,7 +602,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
                         <p className="text-sm text-muted-foreground truncate">{message.message}</p>
                         <div className="flex items-center gap-3 mt-2">
                           <span className="text-xs text-muted-foreground">
-                            {format(new Date(message.createdAt), 'MMM d, h:mm a')}
+                            {format(new Date(message.createdAt ?? ''), 'MMM d, h:mm a')}
                           </span>
                           {message.loanAmount && (
                             <span className="text-xs font-medium">
@@ -578,8 +640,8 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {currentBroker.reviews.slice(0, 5).map((review: any) => (
-                    <div key={review.id || review.createdAt} className="rounded-lg border p-4">
+                  {currentBroker.reviews.slice(0, 5).map((review: DashboardReview) => (
+                    <div key={review.id || String(review.createdAt ?? '')} className="rounded-lg border p-4">
                       <div className="flex items-center justify-between gap-3">
                         <span className="font-medium">{review.user?.name || 'Client review'}</span>
                         <span aria-label={`${review.rating} out of 5 stars`}>{review.rating}/5</span>
@@ -707,7 +769,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-sm text-muted-foreground">Client Satisfaction</p>
-                            <p className="text-2xl font-bold">{currentAnalytics.analytics.performance.satisfactionScore.toFixed(1)}</p>
+                            <p className="text-2xl font-bold">{(currentAnalytics.analytics.performance.satisfactionScore ?? 0).toFixed(1)}</p>
                           </div>
                           <div className="h-10 w-10 rounded-lg bg-yellow-100 flex items-center justify-center">
                             <Star className="h-5 w-5 text-warning" />
@@ -731,16 +793,16 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
                     <CardContent className="h-80">
                       {/* You can add a chart library here like Recharts or Chart.js */}
                       <div className="flex items-end justify-between h-full pt-8 border-t">
-                         {currentAnalytics.analytics.charts.dailyContacts.map((day: any, index: number) => (
+                         {currentAnalytics.analytics?.charts?.dailyContacts.map((day: { date?: string; count: number }, index: number) => (
                           <div key={index} className="flex flex-col items-center">
                             <div
                               className="w-8 bg-primary rounded-t-lg transition-all duration-300 hover:bg-primary/80"
                               style={{
-                                height: `${Math.max(10, (day.count / Math.max(...currentAnalytics.analytics.charts.dailyContacts.map((d: any) => d.count))) * 200)}px`
+                                height: `${Math.max(10, (day.count / Math.max(...(currentAnalytics.analytics?.charts?.dailyContacts ?? []).map((d: { date?: string; count: number }) => d.count))) * 200)}px`
                               }}
                             />
                             <span className="text-xs mt-2 text-muted-foreground">
-                              {new Date(day.date).getDate()}
+                              {new Date(day.date ?? '').getDate()}
                             </span>
                           </div>
                         ))}
@@ -756,7 +818,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
-                           {currentAnalytics.analytics.insights.popularLoanTypes.map((loanType: any, index: number) => (
+                           {currentAnalytics.analytics.insights.popularLoanTypes.map((loanType: { type: string; count: number }, index: number) => (
                             <div key={index} className="flex items-center justify-between">
                               <span className="text-sm">{loanType.type}</span>
                               <div className="flex items-center gap-3">
@@ -765,7 +827,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
                                   <div
                                     className="h-full bg-primary"
                                     style={{
-                                      width: `${(loanType.count / currentAnalytics.analytics.summary.totalContacts) * 100}%`
+                                      width: `${(loanType.count / (currentAnalytics.analytics?.summary.totalContacts ?? 1)) * 100}%`
                                     }}
                                   />
                                 </div>
@@ -782,7 +844,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
-                           {currentAnalytics.analytics.insights.topCities.map((city: any, index: number) => (
+                           {currentAnalytics.analytics.insights.topCities.map((city: { city: string; count: number }, index: number) => (
                             <div key={index} className="flex items-center justify-between">
                               <div className="flex items-center gap-2">
                                 <MapPin className="h-4 w-4 text-muted-foreground" />

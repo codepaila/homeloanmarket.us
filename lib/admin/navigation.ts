@@ -29,16 +29,22 @@ export const adminNavigation: AdminNavGroup[] = [
     items: [{ label: 'Dashboard', href: '/admin', icon: LayoutDashboard }],
   },
   {
-    label: 'Marketplace',
+    label: 'Brokers',
+    items: [{ label: 'Brokers', href: '/admin/brokers', icon: Building2 }],
+  },
+  {
+    label: 'Companies',
     items: [
-      { label: 'Advertisements', href: '/admin/ads', icon: Megaphone },
-      { label: 'Brokers', href: '/admin/brokers', icon: Building2 },
+      { label: 'Advertisement Requests', href: '/admin/company-ad-requests', icon: Megaphone },
+      { label: 'Advertising Plans', href: '/admin/company-advertising-plans', icon: FileText },
     ],
   },
   {
-    label: 'Media',
+    label: 'Advertisements',
     items: [
-      { label: 'Media', href: '/admin/media', icon: ImageIcon },
+      { label: 'All Advertisements', href: '/admin/ads/list', icon: Megaphone },
+      { label: 'Create Advertisement', href: '/admin/ads/new', icon: Megaphone },
+      { label: 'Media Library', href: '/admin/media', icon: ImageIcon },
       { label: 'Folders', href: '/admin/folders', icon: FolderOpen },
     ],
   },

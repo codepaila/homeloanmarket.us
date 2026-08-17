@@ -20,7 +20,7 @@ import { Separator } from '@/components/ui/separator'
 import { useAdvertisement, useDuplicateAdvertisement, useToast } from '@/hooks/useAdminAds'
 
 const DuplicateSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(200),
+  title: z.string().max(200).optional(),
   copyImages: z.boolean().optional(),
   copySchedule: z.boolean().optional(),
   copyPriority: z.boolean().optional(),
@@ -62,17 +62,18 @@ export function DuplicateDialog({ open, onOpenChange, adId, onSuccess }: Duplica
     try {
       await duplicate.mutateAsync({
         id: adId,
-        title: data.title,
+        title: data.title?.trim() ? data.title.trim() : undefined,
         copyImages: data.copyImages,
         copySchedule: data.copySchedule,
         copyPriority: data.copyPriority,
         copyStatus: data.copyStatus,
         copyButtonSettings: data.copyButtonSettings,
+        generateNewSlug: data.generateNewSlug,
       })
 
       toast({
-        title: 'Advertisement duplicated',
-        description: `"${data.title}" has been created.`,
+        title: 'Advertisement duplicated successfully',
+        description: data.title?.trim() ? `"${data.title.trim()}" has been created.` : 'The duplicate advertisement has been created.',
       })
 
       onOpenChange(false)
@@ -80,7 +81,7 @@ export function DuplicateDialog({ open, onOpenChange, adId, onSuccess }: Duplica
       onSuccess?.()
     } catch {
       toast({
-        title: 'Failed to duplicate',
+        title: 'Failed to duplicate advertisement',
         description: 'Please try again.',
         variant: 'destructive',
       })

@@ -1,8 +1,9 @@
 import prisma from "@/lib/prisma"
 import type { Advertisement, AdEvent, PublicAdResponse, DeviceType, PaginatedAds } from "./types"
 import type { AdvertisementFormat } from './formats'
-import type { AdvertisementFormat as PrismaAdvertisementFormat } from '@prisma/client'
+import { Prisma, AdvertisementPlacement, AdType, AdvertisementAction, ButtonVariant, EventType, AdvertisementFormat as PrismaAdvertisementFormat } from '@prisma/client'
 import { resolveAdvertisementCreative } from './creativeResolver'
+import { normalizeAdvertisementTitle } from './utils'
 
 export class AdvertisementRepository {
   static async findMany(params: {
@@ -18,18 +19,18 @@ export class AdvertisementRepository {
     const { page, limit, placement, adType, isEnabled, isArchived, search, includeTrashed } = params
     const skip = (page - 1) * limit
 
-    const where: any = {}
+    const where: Prisma.AdvertisementWhereInput = {}
 
     if (!includeTrashed) {
       where.isDeleted = false
     }
 
     if (placement) {
-      where.placement = placement
+      where.placement = placement as AdvertisementPlacement
     }
 
     if (adType) {
-      where.type = adType
+      where.type = adType as AdType
     }
 
     if (isEnabled !== undefined) {
@@ -109,7 +110,7 @@ export class AdvertisementRepository {
   }
 
   static async create(data: {
-    title: string
+    title?: string | null
     slug: string
     description?: string
     placement: string
@@ -152,10 +153,10 @@ export class AdvertisementRepository {
         title: data.title,
         slug: data.slug,
         description: data.description,
-        placement: data.placement as any,
-        type: data.type as any,
-        action: data.action as any,
-        buttonVariant: (data.buttonVariant || "PRIMARY") as any,
+        placement: data.placement as AdvertisementPlacement,
+        type: data.type as AdType,
+        action: data.action as AdvertisementAction,
+        buttonVariant: (data.buttonVariant || "PRIMARY") as ButtonVariant,
         desktopMediaId: data.desktopMediaId ?? undefined,
         mobileMediaId: data.mobileMediaId ?? undefined,
         altText: data.altText,
@@ -296,35 +297,62 @@ export class AdvertisementRepository {
       title?: string
       placement?: string
       createdById: string
+      copyImages?: boolean
+      copySchedule?: boolean
+      copyPriority?: boolean
+      copyButtonSettings?: boolean
+      copyStatus?: boolean
+      generateNewSlug?: boolean
     }
   ): Promise<Advertisement> {
     const original = await this.findById(id)
     if (!original) throw new Error("Advertisement not found")
 
-    const slug = `${original.slug}-copy-${Date.now().toString(36)}`
+    const copyImages = data.copyImages !== false
+    const copySchedule = data.copySchedule === true
+    const copyPriority = data.copyPriority !== false
+    const copyButtonSettings = data.copyButtonSettings !== false
+    const copyStatus = data.copyStatus === true
+
+    // Explicit new title wins. An omitted title falls back to "original (Copy)"
+    // for titled ads and stays null for untitled ads.
+    const copyTitle = data.title !== undefined
+      ? normalizeAdvertisementTitle(data.title)
+      : normalizeAdvertisementTitle(original.title ? `${original.title} (Copy)` : null)
+
+    // Always a fresh, unique slug. Derived from the copy title by default, or
+    // from the original slug when generateNewSlug is disabled.
+    const baseSlug = data.generateNewSlug === false
+      ? `${original.slug}-copy`
+      : ((copyTitle || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || `${original.slug}-copy`)
+    let slug = `${baseSlug}-${Date.now().toString(36)}`
+    let collision = 1
+    while (await prisma.advertisement.findUnique({ where: { slug }, select: { slug: true } })) {
+      slug = `${baseSlug}-${Date.now().toString(36)}-${collision++}`
+    }
 
     const ad = await prisma.advertisement.create({
       data: {
-        title: data.title || `${original.title} (Copy)`,
+        title: copyTitle,
         slug,
         description: original.description,
-        placement: (data.placement || original.placement) as any,
-        type: original.type as any,
-        action: original.action as any,
-        buttonVariant: original.buttonVariant as any,
-        desktopMediaId: original.desktopMediaId,
-        mobileMediaId: original.mobileMediaId,
+        placement: (data.placement || original.placement) as AdvertisementPlacement,
+        type: original.type as AdType,
+        action: original.action as AdvertisementAction,
+        buttonVariant: copyButtonSettings ? (original.buttonVariant as ButtonVariant) : undefined,
+        desktopMediaId: copyImages ? original.desktopMediaId : undefined,
+        mobileMediaId: copyImages ? original.mobileMediaId : undefined,
         altText: original.altText,
-        bannerUrl: original.bannerUrl,
-        buttonLabel: original.buttonLabel,
-        buttonUrl: original.buttonUrl,
-        openInNewTab: original.openInNewTab,
-        displayOrder: original.displayOrder,
-        priority: original.priority,
-        startDate: original.startDate,
-        endDate: original.endDate,
-        isEnabled: false,
-        isArchived: false,
+        bannerUrl: copyImages ? original.bannerUrl : undefined,
+        buttonLabel: copyButtonSettings ? original.buttonLabel : undefined,
+        buttonUrl: copyButtonSettings ? original.buttonUrl : undefined,
+        openInNewTab: copyButtonSettings ? original.openInNewTab : undefined,
+        displayOrder: copyPriority ? original.displayOrder : 0,
+        priority: copyPriority ? original.priority : 10,
+        startDate: copySchedule ? original.startDate : undefined,
+        endDate: copySchedule ? original.endDate : undefined,
+        isEnabled: copyStatus ? original.isEnabled : false,
+        isArchived: copyStatus ? original.isArchived : false,
         showDesktop: original.showDesktop,
         showTablet: original.showTablet,
         showMobile: original.showMobile,
@@ -366,11 +394,11 @@ export class AdvertisementRepository {
     now: Date = new Date(),
     location?: { latitude: number; longitude: number },
   ): Promise<PublicAdResponse[]> {
-    const where: any = {
+    const where: Prisma.AdvertisementWhereInput = {
       isEnabled: true,
       isArchived: false,
       isDeleted: false,
-      placement: placement as any,
+      placement: placement as AdvertisementPlacement,
       OR: [
         { bannerUrl: { not: null } },
         { desktopMedia: { isDeleted: false } },
@@ -397,7 +425,6 @@ export class AdvertisementRepository {
           include: { mediaAsset: { select: { fileUrl: true, thumbnailUrl: true, altText: true, width: true, height: true } } },
         },
         locationTarget: true,
-        company: { select: { status: true, subscription: { select: { isActive: true } } } },
       },
       take: 100,
       orderBy: [
@@ -421,7 +448,6 @@ export class AdvertisementRepository {
         if (ad.endDate && ad.endDate < now) return false
         if (placement === 'BROKER_LISTING_LOCAL') {
           if (!location || !ad.locationTarget || ad.locationTarget.countryCode !== 'US') return false
-          if (!ad.companyId || ad.company?.status !== 'ACTIVE' || !ad.company.subscription?.isActive) return false
           if (!ad.creatives.some((creative) => creative.format === 'SQUARE')) return false
           return distanceMiles(location.latitude, location.longitude, ad.locationTarget.latitude, ad.locationTarget.longitude) <= ad.locationTarget.radiusMiles
         }
@@ -508,7 +534,7 @@ export class AdvertisementRepository {
     const { page, limit, search } = params
     const skip = (page - 1) * limit
 
-    const where: any = { isDeleted: true }
+    const where: Prisma.AdvertisementWhereInput = { isDeleted: true }
 
     if (search) {
       where.OR = [
@@ -552,7 +578,7 @@ export class AdEventRepository {
     const event = await prisma.adEvent.create({
       data: {
         advertisementId: data.advertisementId,
-        eventType: data.eventType as any,
+        eventType: data.eventType as EventType,
         ipAddress: data.ipAddress,
         userAgent: data.userAgent,
         referrer: data.referrer,
@@ -585,7 +611,7 @@ export class AdEventRepository {
     startDate?: Date
     endDate?: Date
   }): Promise<{ impressions: number; clicks: number }> {
-    const where: any = {}
+    const where: Prisma.AdEventWhereInput = {}
 
     if (params.advertisementId) {
       where.advertisementId = params.advertisementId

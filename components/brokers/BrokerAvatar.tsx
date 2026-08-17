@@ -34,7 +34,7 @@ export function BrokerAvatar({
     .toUpperCase()
 
   return (
-    <div className={cn('relative flex shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted', className)}>
+    <div className={cn('relative flex shrink-0 items-center justify-center overflow-hidden  border border-border bg-muted', className)}>
       {src && !error ? (
         <Image
           src={src}

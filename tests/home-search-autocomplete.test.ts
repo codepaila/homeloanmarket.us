@@ -5,6 +5,7 @@ import test from 'node:test'
 const read = (path: string) => fs.readFileSync(path, 'utf8')
 
 const searchSection = read('components/sections/landing/SearchSection.tsx')
+const searchLib = read('lib/search.ts')
 const hero = read('components/sections/landing/Hero2.tsx')
 
 test('home search inputs use the "Search by city or ZIP code" placeholder', () => {
@@ -13,17 +14,19 @@ test('home search inputs use the "Search by city or ZIP code" placeholder', () =
   assert.doesNotMatch(hero, /Search by broker, company/)
 })
 
-test('home search submits the canonical `search` parameter, not `q`', () => {
-  assert.match(searchSection, /params\.set\('search', text\)/)
+test('home search builds the canonical `search` parameter (not `q`) for free text', () => {
+  assert.match(searchLib, /params\.set\("search", text\)/)
+  assert.doesNotMatch(searchLib, /params\.set\("q", text\)/)
   assert.match(hero, /params\.set\('search', text\)/)
-  assert.doesNotMatch(searchSection, /params\.set\('q', text\)/)
   assert.doesNotMatch(hero, /params\.set\('q', text\)/)
 })
 
-test('home search geocodes a 5-digit ZIP and applies the default 25-mile radius', () => {
-  assert.match(searchSection, /\/api\/location\/geocode/)
-  assert.match(searchSection, /params\.set\('radius', '25'\)/)
-  assert.match(hero, /\/api\/location\/geocode/)
+test('manual free text never enables radius search', () => {
+  // Typing a city or ZIP must produce a plain text search, not a radius search.
+  assert.doesNotMatch(searchSection, /\/api\/location\/geocode/, 'home search must not geocode free text')
+  assert.match(searchLib, /if \(location\)/, 'radius only applies to a confirmed location')
+  assert.match(searchLib, /else if \(text\)/, 'free text falls into the plain text branch')
+  assert.match(searchLib, /params\.set\("search", text\)/, 'free text is submitted as search only')
 })
 
 test('home search maps the state control to the supported state parameter', () => {
@@ -47,10 +50,18 @@ test('autocomplete guards against stale responses with AbortController and a req
   assert.match(searchSection, /requestRef/)
 })
 
-test('clicking a location suggestion navigates to the broker listing with the location', () => {
+test('clicking a location suggestion activates radius at 25 miles and navigates', () => {
   assert.match(searchSection, /router\.push\(buildBrokerSearchUrl\(data\.location, ''\)\)/)
-  assert.match(searchSection, /params\.set\('location', location\.normalizedAddress\)/)
-  assert.match(searchSection, /params\.set\('radius', '25'\)/)
+  assert.match(searchLib, /params\.set\("location", location\.normalizedAddress\)/)
+  assert.match(searchLib, /params\.set\("radius", String\(radius\)\)/)
+  assert.match(searchLib, /DEFAULT_RADIUS_MILES = 25/)
+  assert.match(searchLib, /radius: number = DEFAULT_RADIUS_MILES/)
+})
+
+test('a confirmed location includes coordinates and a server token in the URL', () => {
+  assert.match(searchLib, /params\.set\("latitude", String\(location\.latitude\)\)/)
+  assert.match(searchLib, /params\.set\("longitude", String\(location\.longitude\)\)/)
+  assert.match(searchLib, /locationToken/)
 })
 
 test('autocomplete closes when clicking outside the search component', () => {

@@ -38,6 +38,21 @@ import { Input } from '@/components/ui/input'
 import { useBillingHistory } from '@/hooks/useSubscription'
 import { format } from 'date-fns'
 
+type BadgeVariant = React.ComponentProps<typeof Badge>['variant']
+
+interface BillingInvoice {
+  id: string
+  number: string
+  date: string
+  description: string
+  amount: number
+  currency: string
+  status: string
+  subscription?: { plan?: string } | null
+  pdfUrl?: string | null
+  hostedInvoiceUrl?: string | null
+}
+
 export default function BillingHistory() {
   const { billing, error, isLoading, mutate } = useBillingHistory()
   const [search, setSearch] = useState('')
@@ -83,7 +98,7 @@ export default function BillingHistory() {
   }
 
   // Filter invoices
-  const filteredInvoices = invoices.filter((invoice: any) => {
+  const filteredInvoices = invoices.filter((invoice: BillingInvoice) => {
     if (filter !== 'all' && invoice.status !== filter) return false
     if (search && !invoice.description.toLowerCase().includes(search.toLowerCase())) return false
     
@@ -109,7 +124,7 @@ export default function BillingHistory() {
     const Icon = config.icon
     
     return (
-      <Badge variant={config.color as any} className="gap-1">
+      <Badge variant={config.color as BadgeVariant} className="gap-1">
         <Icon className="h-3 w-3" />
         {config.label}
       </Badge>
@@ -170,7 +185,7 @@ export default function BillingHistory() {
               <div>
                 <p className="text-sm text-muted-foreground">Active Invoices</p>
                 <p className="text-2xl font-bold mt-1">
-                  {invoices.filter((i: any) => i.status === 'paid').length}
+                  {invoices.filter((i: BillingInvoice) => i.status === 'paid').length}
                 </p>
               </div>
               <CreditCard className="h-10 w-10 text-yellow-100 bg-yellow-500/20 p-2 rounded-lg" />
@@ -259,7 +274,7 @@ export default function BillingHistory() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredInvoices.map((invoice: any) => (
+                {filteredInvoices.map((invoice: BillingInvoice) => (
                   <TableRow key={invoice.id}>
                     <TableCell className="font-medium">
                       {invoice.number}
@@ -290,7 +305,7 @@ export default function BillingHistory() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => window.open(invoice.pdfUrl, '_blank')}
+                            onClick={() => window.open(invoice.pdfUrl ?? undefined, '_blank')}
                             className="h-8 w-8 p-0"
                             title="Download PDF"
                           >
@@ -301,7 +316,7 @@ export default function BillingHistory() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => window.open(invoice.hostedInvoiceUrl, '_blank')}
+                            onClick={() => window.open(invoice.hostedInvoiceUrl ?? undefined, '_blank')}
                             className="h-8 w-8 p-0"
                             title="View on Stripe"
                           >

@@ -51,7 +51,7 @@ function idValue(value: unknown): string | null {
   return value == null ? null : String(value)
 }
 
-export async function findBrokerIdsWithinRadius(input: BrokerGeoSearchInput) {
+export async function findBrokerIdsWithinRadius(input: BrokerGeoSearchInput): Promise<{ ids: string[]; total: number }> {
   if (!Number.isFinite(input.latitude) || !Number.isFinite(input.longitude)) throw new Error('Invalid search coordinates')
   if (input.latitude < -90 || input.latitude > 90 || input.longitude < -180 || input.longitude > 180) throw new Error('Invalid search coordinates')
   if (!Number.isFinite(input.radiusMiles) || input.radiusMiles <= 0 || input.radiusMiles > 100) throw new Error('Invalid search radius')
@@ -76,11 +76,49 @@ export async function findBrokerIdsWithinRadius(input: BrokerGeoSearchInput) {
     )
   }
 
+  // The canonical FEATURED definition is an ACTIVE FEATURED subscription (see
+  // hasPaidEntitlement). Ordering must put those brokers first, then the
+  // admin-managed featuredRank, regardless of whether featuredRank is set.
+  const now = new Date()
+  pipeline.push(
+    { $lookup: { from: 'broker_subscriptions', localField: '_id', foreignField: 'brokerId', as: 'sub' } },
+    {
+      $addFields: {
+        featured: {
+          $cond: [
+            {
+              $gt: [
+                {
+                  $size: {
+                    $filter: {
+                      input: '$sub',
+                      as: 's',
+                      cond: {
+                        $and: [
+                          { $eq: ['$$s.plan', 'FEATURED'] },
+                          { $eq: ['$$s.isActive', true] },
+                          { $or: [{ $eq: ['$$s.endDate', null] }, { $gt: ['$$s.endDate', now] }] },
+                        ],
+                      },
+                    },
+                  },
+                },
+                0,
+              ],
+            },
+            1,
+            0,
+          ],
+        },
+      },
+    },
+  )
+
   pipeline.push({
     $facet: {
       metadata: [{ $count: 'total' }],
       data: [
-        { $sort: { featuredRank: -1, avgRating: -1, experienceYears: -1, _id: 1 } },
+        { $sort: { featured: -1, featuredRank: -1, avgRating: -1, experienceYears: -1, _id: 1 } },
         { $skip: input.take * (input.page - 1) },
         { $limit: input.take },
         { $project: { _id: 1, distanceMeters: 1 } },

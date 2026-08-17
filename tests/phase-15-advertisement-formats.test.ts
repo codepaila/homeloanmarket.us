@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { getFormatFallbackOrder, isAssetCompatibleWithFormat, isFormatCompatible } from '../lib/advertisements/formats'
+import { getFormatFallbackOrder, isFormatCompatible } from '../lib/advertisements/formats'
+import { validateCreativeDimensions } from '../lib/advertisements/placementSpecs'
 import { resolveAdvertisementCreative } from '../lib/advertisements/creativeResolver'
 import { CreateAdSchema } from '../lib/advertisements/validation'
 
@@ -10,9 +11,9 @@ test('format compatibility maps semantic formats to real placements', () => {
   assert.equal(isFormatCompatible('HOMEPAGE_HERO', 'HORIZONTAL'), true)
   assert.equal(isFormatCompatible('BROKER_LISTING_SIDEBAR', 'VERTICAL'), true)
   assert.equal(isFormatCompatible('HOMEPAGE_HERO', 'VERTICAL'), false)
-  assert.equal(isAssetCompatibleWithFormat('SQUARE', 800, 800), true)
-  assert.equal(isAssetCompatibleWithFormat('VERTICAL', 800, 1200), true)
-  assert.equal(isAssetCompatibleWithFormat('HORIZONTAL', 800, 1200), false)
+  assert.equal(validateCreativeDimensions('HOMEPAGE_FEATURED', 'SQUARE', 800, 800).ok, true)
+  assert.equal(validateCreativeDimensions('BROKER_LISTING_SIDEBAR', 'VERTICAL', 800, 1200).ok, true)
+  assert.equal(validateCreativeDimensions('HOMEPAGE_HERO', 'HORIZONTAL', 800, 1200).ok, false)
 })
 
 test('creative resolution prefers exact format then compatible fallback', () => {

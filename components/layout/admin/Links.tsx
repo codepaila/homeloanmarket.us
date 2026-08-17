@@ -4,15 +4,7 @@ import { ChevronRight, Lock } from 'lucide-react'
 import { cn } from '@/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-
-interface SidebarItem {
-  title: string
-  url?: string
-  icon?: any
-  items?: SidebarItem[]
-  badge?: string | number
-  enabled?: boolean
-}
+import type { SidebarItem } from '@/types/nav'
 
 interface NavItemProps {
   item: SidebarItem

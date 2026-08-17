@@ -41,7 +41,7 @@ export function AdvertisementCard({ ad, className }: AdvertisementCardProps) {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={previewUrl}
-                    alt={ad.altText || ad.title}
+                    alt={ad.altText || ad.title || 'Advertisement'}
                     className="h-full w-full object-cover"
                   />
                 </>

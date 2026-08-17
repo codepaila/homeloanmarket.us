@@ -71,8 +71,8 @@ export default function PrivacyPage() {
           <div className="max-w-4xl mx-auto space-y-12">
             <div className="text-center">
               <p className="text-text-muted leading-relaxed">
-                HomeLoanMarket ("we", "us", or "our") operates the HomeLoanMarket.com website and
-                mobile application (the "Service"). This Privacy Policy informs you of our policies
+                HomeLoanMarket (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) operates the HomeLoanMarket.com website and
+                mobile application (the &quot;Service&quot;). This Privacy Policy informs you of our policies
                 regarding the collection, use, and disclosure of personal information we receive
                 from users of the Service.
               </p>

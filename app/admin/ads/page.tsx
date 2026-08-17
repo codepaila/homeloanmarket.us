@@ -130,7 +130,7 @@ export default function AdminAdsOverviewPage() {
                            {/* eslint-disable-next-line @next/next/no-img-element */}
                            <img
                              src={ad.desktopMedia?.thumbnailUrl || ad.desktopMedia?.fileUrl}
-                             alt={ad.title}
+                             alt={ad.title || 'Advertisement'}
                              className="h-full w-full object-cover"
                            />
                          </>

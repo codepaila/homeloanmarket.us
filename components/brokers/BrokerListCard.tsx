@@ -34,6 +34,7 @@ interface BrokerListCardProps {
   company?: string
   location?: string
   logo?: string
+  profileImage?: string
   rating?: number
   reviewCount?: number
   yearsExperience?: number
@@ -51,6 +52,7 @@ export default function BrokerListCard({
   company,
   location,
   logo,
+  profileImage,
   rating = 0,
   reviewCount = 0,
   yearsExperience = 0,
@@ -96,7 +98,7 @@ export default function BrokerListCard({
         {/* ===== Top row: logo · name + rating + badges · View ===== */}
         <div className="flex items-start gap-3">
           <div className="relative h-14 w-14 flex-shrink-0">
-            <BrokerAvatar src={logo} alt={company || name || 'Mortgage Broker'} name={company || name} className="h-full w-full" />
+            <BrokerAvatar src={profileImage || logo} alt={company || name || 'Mortgage Broker'} name={name || company} className="h-full w-full" />
             {isVerified && (
               <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-card">
                 <CheckCircle className="h-3 w-3 text-white" />

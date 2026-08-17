@@ -29,7 +29,7 @@ export function AdvertisementImage({
       )}
       <img
         src={sourceUrl}
-        alt={fallback?.altText || ad.altText || ad.title}
+        alt={fallback?.altText || ad.altText || ad.title || 'Advertisement'}
         className={`block max-w-full object-contain ${className || ''}`}
         loading={loading}
         fetchPriority={fetchPriority}

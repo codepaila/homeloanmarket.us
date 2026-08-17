@@ -6,12 +6,13 @@ import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { NavItem } from "./NavItem"
 import { SubscriptionBadge } from "./SubscriptionBadge"
 import { usePathname } from "next/navigation"
+import type { SidebarData, SidebarItem, UserPermissions } from "@/types/nav"
 
 interface MobileSidebarProps {
   isOpen: boolean
   onClose: () => void
-  data: any
-  permissions: any
+  data: SidebarData
+  permissions: UserPermissions
 }
 
 export function MobileSidebar({ isOpen, onClose, data, permissions }: MobileSidebarProps) {
@@ -69,10 +70,10 @@ export function MobileSidebar({ isOpen, onClose, data, permissions }: MobileSide
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-4">
           <div className="px-3 space-y-1">
-            {data.navMain.map((item: any) => {
+            {data.navMain.map((item: SidebarItem) => {
               const isActive = pathname === item.url
               const isExpanded = expandedItems.has(item.title)
-              const hasChildren = item.items && item.items.length > 0
+              const hasChildren = Boolean(item.items && item.items.length > 0)
 
               return (
                 <div key={item.title}>
@@ -88,13 +89,13 @@ export function MobileSidebar({ isOpen, onClose, data, permissions }: MobileSide
                   
                   {hasChildren && isExpanded && (
                     <div className="ml-9 mt-1 space-y-1">
-                      {item.items.map((child: any) => (
+                      {item.items?.map((child: SidebarItem) => (
                         <NavItem
                           key={child.title}
                           item={child}
                           isActive={pathname === child.url}
                           isExpanded={expandedItems.has(child.title)}
-                          hasChildren={child.items && child.items.length > 0}
+                          hasChildren={Boolean(child.items && child.items.length > 0)}
                           onToggle={() => child.items && toggleItem(child.title)}
                           isChild={true}
                           permissions={permissions}

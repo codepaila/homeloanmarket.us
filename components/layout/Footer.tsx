@@ -4,6 +4,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'motion/react'
+import { toast } from 'react-hot-toast'
 import {
   ArrowRight,
   Phone,
@@ -93,8 +94,11 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
       if (!response.ok) throw new Error(data.error || 'Unable to subscribe')
       setSubscribed(true)
       setEmail('')
+      toast.success('Subscribed successfully.')
     } catch (error) {
-      setNewsletterError(error instanceof Error ? error.message : 'Unable to subscribe')
+      const message = error instanceof Error ? error.message : 'Unable to subscribe'
+      setNewsletterError(message)
+      toast.error(message)
     } finally {
       setNewsletterLoading(false)
     }
@@ -160,11 +164,11 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
               ) : (
                 <>
                   <Image
-                    width={300}
-                    height={100}
+                    width={350}
+                    height={200}
                     src="/assets/logo.png"
                     alt="HomeLoanMarket"
-                    className="h-9 max-w-40 object-contain"
+                    className="h-12 max-w-52 md:max-w-56 object-contain"
                   />
                 </>
               )}

@@ -1,6 +1,7 @@
 // app/api/contacts/my/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { getCurrentUser } from '@/lib/currentUser'
 
 export async function GET(request: NextRequest) {
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     const skip = (page - 1) * limit
 
-    const where: any = {
+    const where: Prisma.ContactMessageWhereInput = {
       brokerId
     }
 

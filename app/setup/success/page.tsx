@@ -59,7 +59,7 @@ export default function SetupSuccessPage() {
                   <div>
                     <h3 className="font-medium text-foreground mb-1">Email Confirmation</h3>
                     <p className="text-muted-foreground text-sm">
-                      You'll receive an email confirmation with your application details
+                      You&apos;ll receive an email confirmation with your application details
                     </p>
                   </div>
                 </div>
@@ -83,7 +83,7 @@ export default function SetupSuccessPage() {
                   <div>
                     <h3 className="font-medium text-foreground mb-1">Verification Status</h3>
                     <p className="text-muted-foreground text-sm">
-                      You'll be notified via email once your profile is verified
+                      You&apos;ll be notified via email once your profile is verified
                     </p>
                   </div>
                 </div>
@@ -95,7 +95,7 @@ export default function SetupSuccessPage() {
                   <div>
                     <h3 className="font-medium text-foreground mb-1">Start Receiving Leads</h3>
                     <p className="text-muted-foreground text-sm">
-                      Once verified, you'll start receiving loan applications and leads
+                      Once verified, you&apos;ll start receiving loan applications and leads
                     </p>
                   </div>
                 </div>

@@ -1,22 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useSyncExternalStore } from 'react'
 import { SectionHeader } from '@/components/admin/ads/SectionHeader'
-import { AdvertisementForm } from '@/components/admin/ads/AdvertisementForm'
+import { AdvertisementWizard } from '@/components/admin/ads/AdvertisementWizard'
 
 export default function NewAdPage() {
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  )
 
   if (!mounted) {
     return (
       <div className="space-y-6">
         <SectionHeader
           title="New Advertisement"
-          description="Create a new advertisement campaign"
+          description="Create a new advertisement"
           backHref="/admin/ads/list"
         />
         <div className="flex items-center justify-center py-12">
@@ -30,16 +30,10 @@ export default function NewAdPage() {
     <div className="space-y-6">
       <SectionHeader
         title="New Advertisement"
-        description="Create a new advertisement campaign"
+        description="Choose a placement and the system will show only the configuration that applies."
         backHref="/admin/ads/list"
       />
-
-      <AdvertisementForm
-        mode="create"
-        onSuccess={() => {
-          // Navigation handled by form
-        }}
-      />
+      <AdvertisementWizard />
     </div>
   )
 }

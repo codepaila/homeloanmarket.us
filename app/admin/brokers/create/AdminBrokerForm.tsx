@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'react-hot-toast'
 
 const fields = [
   ['displayName', 'Display name', true],
@@ -45,10 +46,13 @@ export default function AdminBrokerForm() {
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.message || 'Unable to create broker')
+      toast.success('Broker created successfully.')
       router.push(`/admin/brokers/${data.broker.id}`)
       router.refresh()
     } catch (submissionError) {
-      setError(submissionError instanceof Error ? submissionError.message : 'Unable to create broker')
+      const message = submissionError instanceof Error ? submissionError.message : 'Unable to create broker'
+      setError(message)
+      toast.error(message)
     } finally {
       setLoading(false)
     }

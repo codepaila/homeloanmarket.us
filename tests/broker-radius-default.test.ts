@@ -6,7 +6,7 @@ const read = (path: string) => fs.readFileSync(path, 'utf8')
 
 const brokersPage = read('app/(public)/brokers/page.tsx')
 const searchSection = read('components/sections/landing/SearchSection.tsx')
-const hero = read('components/sections/landing/Hero2.tsx')
+const searchLib = read('lib/search.ts')
 
 test('broker listing defaults to a 25-mile radius', () => {
   assert.match(brokersPage, /useState\(25\)/)
@@ -19,14 +19,23 @@ test('radius toggle/checkbox has been removed', () => {
 
 test('hydration defaults to 25 miles when no radius param and preserves explicit radius', () => {
   assert.match(brokersPage, /const radiusParamStr = params\.get\('radius'\)/)
-  assert.match(brokersPage, /: 25/)
+  assert.match(brokersPage, /DEFAULT_RADIUS_MILES/)
 })
 
 test('URL stores the radius only when a location is selected', () => {
   assert.match(brokersPage, /setOrDelete\('radius', selectedLocation \? String\(radius\) : ''\)/)
 })
 
-test('home search navigates with the default 25-mile radius', () => {
-  assert.match(searchSection, /params\.set\('radius', '25'\)/)
-  assert.match(hero, /params\.set\('radius', '25'\)/)
+test('a Google location selection resets radius to the default 25 miles', () => {
+  assert.match(brokersPage, /setRadius\(DEFAULT_RADIUS_MILES\)/)
+})
+
+test('shared search helper defaults radius to 25 miles for confirmed locations', () => {
+  assert.match(searchLib, /DEFAULT_RADIUS_MILES = 25/)
+  assert.match(searchLib, /radius: number = DEFAULT_RADIUS_MILES/)
+})
+
+test('home search navigates with the default 25-mile radius for a confirmed location', () => {
+  assert.match(searchSection, /buildBrokerSearchUrl/)
+  assert.match(searchLib, /params\.set\("radius", String\(radius\)\)/)
 })

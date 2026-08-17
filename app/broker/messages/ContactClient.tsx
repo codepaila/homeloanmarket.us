@@ -45,11 +45,26 @@ import {
 } from '@/components/ui/table'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { format } from 'date-fns'
-import { fetchBrokerContacts, fetchMyLeads } from '@/lib/fetchClient'
+import { useBrokerContacts } from '@/lib/fetchClient'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 
+interface ContactLead {
+  id: string
+  name?: string
+  source?: string
+  email?: string
+  phone?: string
+  city?: string
+  state?: string
+  loanAmount?: number
+  propertyType?: string
+  timeline?: string
+  status: string
+  followUpDate?: string | null
+}
+
 interface ContactClientProps {
-  initialContacts: any[]
+  initialContacts: ContactLead[]
   initialCounts: {
     total: number
     new: number
@@ -69,7 +84,7 @@ export default function ContactsClient({ initialContacts, initialCounts, userId 
   const [selectedContacts, setSelectedContacts] = useState<string[]>([])
 const user = useCurrentUser();
   // Use SWR for real-time updates
-  const { leads, total, totalPages, isLoading } = fetchBrokerContacts(user?.brokerProfile?.id as string ,page , statusFilter === 'all' ? undefined : statusFilter)
+  const { leads, total, totalPages, isLoading } = useBrokerContacts(user?.brokerProfile?.id as string ,page , statusFilter === 'all' ? undefined : statusFilter)
 
   const contacts = leads || initialContacts
   const counts = initialCounts
@@ -288,7 +303,7 @@ const user = useCurrentUser();
                           checked={selectedContacts.length === contacts.length}
                           onChange={(e) => {
                             if (e.target.checked) {
-                               setSelectedContacts(contacts.map((c: any) => c.id))
+                               setSelectedContacts(contacts.map((c: ContactLead) => c.id))
                             } else {
                               setSelectedContacts([])
                             }
@@ -305,7 +320,7 @@ const user = useCurrentUser();
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                     {contacts.map((contact: any) => (
+                     {contacts.map((contact: ContactLead) => (
                       <TableRow key={contact.id}>
                         <TableCell>
                           <input
