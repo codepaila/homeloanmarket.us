@@ -8,6 +8,7 @@ import {
   FileText,
   Search,
   HelpCircle,
+  Star,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -30,7 +31,10 @@ export const adminNavigation: AdminNavGroup[] = [
   },
   {
     label: 'Brokers',
-    items: [{ label: 'Brokers', href: '/admin/brokers', icon: Building2 }],
+    items: [
+      { label: 'Brokers', href: '/admin/brokers', icon: Building2 },
+      { label: 'Reviews', href: '/admin/reviews', icon: Star },
+    ],
   },
   {
     label: 'Companies',

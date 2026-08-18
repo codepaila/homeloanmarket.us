@@ -10,6 +10,7 @@ import {
   BrokerStatus,
   ButtonVariant,
   Prisma,
+  ReviewStatus,
   SubscriptionPlan,
   VerificationStatus,
 } from '@prisma/client'
@@ -235,7 +236,7 @@ async function seedReviewsAndContacts(brokers: SeedBroker[], users: Record<strin
           userId: reviewer.id,
           rating: 4 + ((reviewIndex + i) % 2),
           comment: reviewTexts[(reviewIndex + i) % reviewTexts.length],
-          isPublished: true,
+          status: 'APPROVED' as ReviewStatus,
           createdAt: daysAgo(30 + ((reviewIndex + i) % 25)),
         }
       const existingReview = await prisma.review.findFirst({ where: { brokerId: broker.id, userId: reviewer.id, comment: reviewData.comment } })
@@ -277,7 +278,7 @@ async function seedReviewsAndContacts(brokers: SeedBroker[], users: Record<strin
   }
 
   for (const broker of publicBrokers) {
-    const reviews = await prisma.review.findMany({ where: { brokerId: broker.id, isPublished: true }, select: { rating: true } })
+    const reviews = await prisma.review.findMany({ where: { brokerId: broker.id, status: 'APPROVED' }, select: { rating: true } })
     await prisma.broker.update({
       where: { id: broker.id },
       data: {

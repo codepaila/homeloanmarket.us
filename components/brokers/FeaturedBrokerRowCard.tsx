@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import { RatingStars } from '@/components/design/RatingStars'
 import { PremiumButton } from '@/components/design/PremiumButton'
 import { BrokerAvatar } from '@/components/brokers/BrokerAvatar'
+import { MortgageExpertBadge } from '@/components/brokers/MortgageExpertBadge'
 import { Badge } from '@/components/ui/badge'
 
 const FAVORITES_KEY = 'hlm-favorite-brokers'
@@ -43,6 +44,7 @@ interface FeaturedBrokerRowCardProps {
     user?: { name?: string; phone?: string; email?: string }
     bankPartners?: { bankName: string }[]
     subscription?: { plan?: string; isActive?: boolean; endDate?: string | Date | null }
+    isMortgageExpert?: boolean
   }
 }
 
@@ -144,6 +146,7 @@ export default function FeaturedBrokerRowCard({ broker }: FeaturedBrokerRowCardP
                 Verified
               </Badge>
             )}
+            {broker.isMortgageExpert && <MortgageExpertBadge />}
           </div>
 
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-muted">

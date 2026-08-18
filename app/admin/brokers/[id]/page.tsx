@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/currentUser'
 import prisma from '@/lib/prisma'
 import AdminBrokerActions from './AdminBrokerActions'
+import MortgageExpertControl from './MortgageExpertControl'
 
 export default async function AdminBrokerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser()
@@ -28,7 +29,8 @@ export default async function AdminBrokerDetailPage({ params }: { params: Promis
       logo: true,
       coverImage: true,
       profileImage: true,
-      subscription: { select: { plan: true, isActive: true } },
+      mortgageExpertEnabled: true,
+      subscription: { select: { plan: true, isActive: true, startDate: true, endDate: true } },
       claim: {
         select: {
           status: true,
@@ -62,6 +64,8 @@ export default async function AdminBrokerDetailPage({ params }: { params: Promis
     logo: broker.logo,
     coverImage: broker.coverImage,
     profileImage: broker.profileImage,
+    mortgageExpertEnabled: broker.mortgageExpertEnabled,
+    subscription: broker.subscription,
     claim: broker.claim,
   }
 
@@ -82,6 +86,12 @@ export default async function AdminBrokerDetailPage({ params }: { params: Promis
         ].map(([label, value]) => <div key={label} className="rounded-xl border bg-card p-4"><p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-2 font-semibold">{value}</p></div>)}
       </div>
       <AdminBrokerActions broker={brokerDto} />
+
+      <MortgageExpertControl
+        brokerId={broker.id}
+        mortgageExpertEnabled={broker.mortgageExpertEnabled}
+        subscription={broker.subscription}
+      />
 
       {broker.claim?.events && broker.claim.events.length > 0 && (
         <section className="rounded-xl border bg-card p-6">

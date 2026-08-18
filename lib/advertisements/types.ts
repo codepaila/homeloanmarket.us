@@ -211,3 +211,20 @@ export type AdminAdsStats = {
   topAds: TopAdvertisementStat[]
   dailyEngagement: DailyEngagementPoint[]
 }
+
+// Ownership contract for advertisement creation. Company ownership is OPTIONAL
+// for direct admin creation (platform ads) but REQUIRED/DERIVED when creating
+// from a CompanyAdRequest. This is the single shared type used by the wizard,
+// the owner selector, the edit form, and the API.
+export type AdvertisementOwner =
+  | { type: 'PLATFORM'; companyId: null }
+  | { type: 'COMPANY'; companyId: string }
+
+// Server-derived context when creating an advertisement from a company request.
+// The company is locked to the request's company and the request relationship
+// is managed server-side (never trusted from the client).
+export type AdvertisementRequestContext = {
+  requestId: string
+  companyId: string
+  locked: true
+}

@@ -98,6 +98,12 @@ enum CompanyAdRequestStatus {
   CANCELED
 }
 
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum BrokerClaimStatus {
   INVITED
   IN_PROGRESS
@@ -284,6 +290,11 @@ model Broker {
   brokerStatus BrokerStatus @default(FREE)
   featuredRank Int?
   isVisible    Boolean      @default(true)
+
+  // Admin-controlled badge. Independent of the FEATURED subscription; a broker
+  // qualifies for Mortgage Expert when they hold an active FEATURED
+  // subscription OR this flag is enabled by an admin.
+  mortgageExpertEnabled Boolean @default(false)
 
   avgRating    Float @default(0)
   totalReviews Int   @default(0)
@@ -655,14 +666,14 @@ model Review {
   rating  Int
   comment String?
 
-  isPublished Boolean @default(true)
+  status ReviewStatus @default(PENDING)
 
   broker Broker @relation(fields: [brokerId], references: [id])
   user   User?  @relation(fields: [userId], references: [id])
 
   createdAt DateTime @default(now())
 
-  @@index([brokerId])
+  @@index([brokerId, status])
   @@map("reviews")
 }
 

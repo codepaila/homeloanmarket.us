@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { toPublicBrokerRecord } from '@/lib/public-broker'
+import { isMortgageExpertBroker } from '@/lib/broker-policy'
 
 export async function GET() {
   try {
@@ -57,7 +58,10 @@ export async function GET() {
     // they are entitled to contact display. Still, never leak the raw broker or
     // the account user object — apply the canonical public DTO.
     return NextResponse.json({
-      brokers: brokers.map((broker) => toPublicBrokerRecord(broker, { includeContact: true })),
+      brokers: brokers.map((broker) => ({
+        ...toPublicBrokerRecord(broker, { includeContact: true }),
+        isMortgageExpert: isMortgageExpertBroker(broker),
+      })),
     })
   } catch (error) {
     console.error('GET /api/brokers/featured error:', error)

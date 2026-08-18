@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
 import { useRouter } from 'next/navigation'
 import { MapPin, Search } from 'lucide-react'
-import { buildBrokerSearchUrl } from '@/lib/search'
+import { buildBrokerSearchUrl, resolveSearchSubmission } from '@/lib/search'
 import type { ResolvedLocation } from '@/lib/search'
 
 
@@ -128,9 +128,25 @@ function SearchSection() {
   const handleSearch = async (event: React.FormEvent) => {
     event.preventDefault()
     const text = query.trim()
-    // Manual free-text (including ZIP codes) is a plain text search: radius is
-    // only activated by a confirmed Google autocomplete selection.
-    router.push(buildBrokerSearchUrl(selectedLocation, text))
+    if (!text) return
+    setSearching(true)
+    try {
+      // Manual text (city, "City, ST", or ZIP) is resolved through the
+      // server-side geocoder. Radius activates only when valid coordinates are
+      // returned; otherwise this is a plain text search with no radius.
+      const result = await resolveSearchSubmission(text, selectedLocation)
+      if (result.status === 'resolved') {
+        setSelectedLocation(result.location)
+        setQuery(result.location.normalizedAddress || text)
+        setLocationSuggestions([])
+        setActiveSuggestionIndex(-1)
+        router.push(buildBrokerSearchUrl(result.location, ''))
+      } else {
+        router.push(buildBrokerSearchUrl(null, text))
+      }
+    } finally {
+      setSearching(false)
+    }
   }
 
   const motionTransition = (delay: number) => ({
@@ -194,11 +210,14 @@ function SearchSection() {
               )}
             </div>
           )}
-          {/* <Button type="submit" className="shrink-0 bg-gradient-to-r from-primary to-emerald-600 px-6 shadow-md hover:shadow-lg">
-            <span className="flex items-center">
-              <Search className="mr-2 h-4 w-4" />
-            </span>
-          </Button> */}
+          {/* <button
+            type="submit"
+            disabled={searching || !query.trim()}
+            aria-label="Search brokers"
+            className="shrink-0 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:opacity-50"
+          >
+            {searching ? 'Searching…' : 'Search'}
+          </button> */}
         </div>
       </motion.form>
     </div>

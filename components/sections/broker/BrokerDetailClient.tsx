@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import ContactForm from '@/components/forms/BrokerContactForm'
+import { signIn, useSession } from 'next-auth/react'
 import {
   Building,
   MapPin,
@@ -13,20 +13,21 @@ import {
   Award,
   Star,
   Users,
-  Clock,
   MessageCircle,
   ArrowRight,
   Shield,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useBroker, useAllBrokers } from '@/hooks/useClient'
+import { useBroker, useAllBrokers, useBrokerReviews } from '@/hooks/useClient'
 import Image from 'next/image'
 import { RatingStars, RatingBadge } from '@/components/design/RatingStars'
 import { BrokerGridCard } from '@/components/brokers'
 import { BrokerAvatar } from '@/components/brokers/BrokerAvatar'
 import { BrokerSubscriptionBadge } from '@/components/brokers/BrokerSubscriptionBadge'
+import { MortgageExpertBadge } from '@/components/brokers/MortgageExpertBadge'
 import { PremiumButton } from '@/components/design/PremiumButton'
+import { BrokerReviewDialog } from '@/components/sections/broker/BrokerReviewDialog'
 import { cn } from '@/lib/utils'
 
 interface BrokerDetailClientProps {
@@ -38,7 +39,12 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
   const { broker, isLoading: isLoadingBroker } = useBroker(brokerSlug)
   const currentBroker = broker || initialBroker
   const [activeTab, setActiveTab] = useState('about')
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
+  const [reviewKey, setReviewKey] = useState(0)
   const targetRef = useRef(null)
+  const { status: sessionStatus } = useSession()
+
+  const { mutate: mutateReviews } = useBrokerReviews(brokerSlug, 1, 10)
 
   // Deep-link to the contact tab (e.g. /brokers/{slug}#contact)
   useEffect(() => {
@@ -57,6 +63,19 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
   const similar = (similarBrokers || [])
     .filter((b: any) => b.id !== currentBroker?.id && b.profileSlug !== brokerSlug)
     .slice(0, 3)
+
+  const handleWriteReview = () => {
+    if (sessionStatus === 'authenticated') {
+      setReviewDialogOpen(true)
+    } else {
+      signIn()
+    }
+  }
+
+  const handleReviewSubmitted = () => {
+    setReviewKey((k) => k + 1)
+    mutateReviews()
+  }
 
   if (isLoadingBroker) {
     return (
@@ -86,9 +105,6 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
     email,
     website,
     officeAddress,
-    city,
-    state,
-    pinCode,
     nmls,
     avgRating,
     totalReviews,
@@ -101,7 +117,7 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
     coverImage,
     profileImage,
     isFeatured,
-    averageResponseTime,
+    isMortgageExpert,
     hasOwner,
     stats,
   } = currentBroker
@@ -121,7 +137,7 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
     <div ref={targetRef} className="min-h-screen bg-background">
       {/* Hero Banner */}
       <section className="relative">
-        <div className="relative h-56 w-full md:h-72 lg:h-80 overflow-hidden rounded-b-3xl">
+        <div className="relative h-48 w-full md:h-72 lg:h-80 overflow-hidden rounded-b-3xl">
           {coverImage ? (
             <Image
               src={coverImage}
@@ -153,17 +169,18 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
         </div>
       </section>
 
-      <div className="mx-auto max-w-7xl px-4 pb-12">
+      <div className="mx-auto max-w-7xl px-4 ">
         {/* Profile Header */}
         <header className="mt-20 space-y-4 text-center md:mt-20 md:text-left">
           <div className="flex flex-col items-center md:items-start md:flex-row md:justify-between gap-3 md:gap-4">
             <div className="text-center md:text-left">
               {displayName && (
-                <div className="flex items-center justify-center gap-2 md:justify-start">
+                <div className="flex flex-col items-start justify-center gap-2 md:justify-start">
                   <h1 className="text-3xl font-bold text-text-main md:text-4xl">
                     {displayName}
                   </h1>
                   {isFeaturedBroker && <BrokerSubscriptionBadge className="h-7 w-7" />}
+                  {isMortgageExpert && <MortgageExpertBadge />}
                 </div>
               )}
               {nmls && (
@@ -194,56 +211,13 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
             </div>
           </div>
 
-          {/* Rating & Stats */}
-          <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-4 justify-center sm:justify-start">
-              <RatingBadge
-                rating={avgRating || 0}
-                totalReviews={totalReviewsCount}
-              />
-              {totalReviewsCount > 0 && (
-                <span className="text-sm text-text-muted">
-                  {totalReviewsCount} review{totalReviewsCount !== 1 ? 's' : ''}
-                </span>
-              )}
-            </div>
-
-            <div className="flex flex-wrap gap-4 text-center">
-              <div>
-                <div className="text-xl font-bold text-primary">
-                  {experienceYears || 0}+
-                </div>
-                <div className="text-xs text-text-muted">Years Experience</div>
-              </div>
-              <div>
-                <div className="text-xl font-bold text-primary">
-                  {totalLeads || stats?.totalLeads || 0}
-                </div>
-                <div className="text-xs text-text-muted">Leads Assisted</div>
-              </div>
-              <div>
-                <div className="text-xl font-bold text-primary">
-                  {profileViews || stats?.profileViews || 0}
-                </div>
-                <div className="text-xs text-text-muted">Profile Views</div>
-              </div>
-            </div>
-          </div>
+       
         </header>
 
-        <div className="mt-5 flex flex-col items-center gap-2 sm:flex-row sm:justify-center md:justify-start">
-          <button type="button" onClick={() => setActiveTab('contact')} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-primary/90 sm:w-auto">
-            <MessageCircle className="h-4 w-4" />
-            Request Information
-          </button>
-          <button type="button" onClick={() => setActiveTab('reviews')} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-5 py-3 text-sm font-semibold text-text-main transition hover:border-primary hover:text-primary sm:w-auto">
-            <Star className="h-4 w-4" />
-            Read Reviews
-          </button>
-        </div>
+
 
         {/* Main Content Layout */}
-        <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-3">
+        <div className="mt-8 grid grid-cols-1 ">
           {/* Left - Contact */}
           <aside className="lg:col-span-1 space-y-8 lg:sticky lg:top-24 lg:self-start">
             <ContactSection
@@ -252,107 +226,14 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
               email={email}
               website={website}
               officeAddress={officeAddress}
-              city={city}
-              state={state}
-              pinCode={pinCode}
-              averageResponseTime={averageResponseTime}
             />
 
-            {bankPartners.length > 0 && (
-              <BankPartnersSection bankPartners={bankPartners} />
-            )}
           </aside>
 
-          {/* Right Content - Main Info */}
-          <div className="lg:col-span-2 space-y-8">
-            {/* Tabs */}
-            <div className="border-b border-border">
-              <nav className="-mb-px flex items-center gap-6 overflow-x-auto" aria-label="Broker information">
-                {tabs.map((tab) => {
-                  const Icon = tab.icon
-                  const isActive = activeTab === tab.id
-                  return (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setActiveTab(tab.id)}
-                      aria-current={isActive ? 'page' : undefined}
-                      className={cn(
-                        'flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-medium transition-colors',
-                        isActive
-                          ? 'border-primary text-primary'
-                          : 'border-transparent text-text-muted hover:text-text-main',
-                      )}
-                    >
-                      <Icon className="h-4 w-4" />
-                      {tab.label}
-                    </button>
-                  )
-                })}
-              </nav>
-            </div>
 
-            {/* Tab Content */}
-            {activeTab === 'about' && (
-              <div className="space-y-8">
-                <AboutSection
-                  displayName={displayName}
-                  description={description}
-                  experienceYears={experienceYears}
-                  profileViews={profileViews}
-                  totalLeads={totalLeads || stats?.totalLeads || 0}
-                  showDescription={showDescription}
-                />
-
-                {experienceYears > 0 && (
-                  <ExperienceSection experienceYears={experienceYears} />
-                )}
-
-                {totalReviewsCount > 0 && (
-                  <ReviewsSummary
-                    avgRating={avgRating || 0}
-                    totalReviews={totalReviewsCount}
-                    reviews={reviews}
-                    onViewAllReviews={() => setActiveTab('reviews')}
-                  />
-                )}
-              </div>
-            )}
-
-            {activeTab === 'reviews' && (
-              <div className="space-y-8">
-                <ReviewsSection
-                  avgRating={avgRating || 0}
-                  totalReviews={totalReviewsCount}
-                  reviews={reviews}
-                />
-              </div>
-            )}
-
-            {activeTab === 'contact' && (
-              <div id="contact" className="scroll-mt-28 space-y-6">
-                <section className="space-y-4">
-                  <h2 className="text-xl font-bold text-text-main mb-1">
-                    Contact {displayName?.split(' ')[0] || companyName}
-                  </h2>
-                  <p className="text-sm text-text-muted mb-6">
-                    Send a message and they&apos;ll get back to you within{' '}
-                    {averageResponseTime || '24 hours'}.
-                  </p>
-                  <ContactForm
-                    brokerId={currentBroker.id}
-                    brokerSlug={brokerSlug}
-                    brokerName={displayName || companyName}
-                    brokerEmail={email}
-                    brokerPhone={phone}
-                  />
-                </section>
-              </div>
-            )}
-          </div>
         </div>
 
-        {/* Similar Brokers */}
+
         {similar.length > 0 && (
           <section className="mt-16">
             <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -391,8 +272,8 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
         )}
 
         {/* Directory prompt */}
-        <section className="mt-16">
-          <div className="border-t border-border px-6 py-14 text-center md:py-16">
+        <section className="">
+          <div className=" px-6 py-14 text-center md:py-16">
             <h2 className="text-balance text-2xl font-bold text-text-main md:text-3xl">
               Still comparing mortgage brokers?
             </h2>
@@ -412,6 +293,13 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
           </div>
         </section>
       </div>
+
+      <BrokerReviewDialog
+        open={reviewDialogOpen}
+        onOpenChange={setReviewDialogOpen}
+        brokerSlug={brokerSlug}
+        onSubmitted={handleReviewSubmitted}
+      />
     </div>
   )
 }
@@ -426,24 +314,15 @@ function ContactSection({
   email,
   website,
   officeAddress,
-  city,
-  state,
-  pinCode,
-  averageResponseTime,
 }: {
   phone?: string
   whatsapp?: string
   email?: string
   website?: string
   officeAddress?: string
-  city?: string
-  state?: string
-  pinCode?: string
-  averageResponseTime?: string
 }) {
   const websiteHref = website && !/^https?:\/\//i.test(website) ? `https://${website}` : website
   const websiteDisplay = (website || '').replace(/^https?:\/\//, '')
-  const addressLines = [officeAddress, city, state, pinCode].filter(Boolean).join(', ')
 
   return (
     <section className="space-y-4">
@@ -451,7 +330,7 @@ function ContactSection({
       <div className="divide-y divide-border border-y border-border">
         {phone && (
           <ContactRow icon={<Phone className="h-4 w-4" />} label="Phone">
-            <a href={`tel:${phone}`} className="text-text-main transition-colors hover:text-primary">
+            <a href={`tel:${phone}`} className="break-all text-text-main transition-colors hover:text-primary">
               {phone}
             </a>
           </ContactRow>
@@ -463,7 +342,7 @@ function ContactSection({
               href={`https://wa.me/${whatsapp?.replace(/\D/g, '')}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-text-main transition-colors hover:text-primary"
+              className="break-all text-text-main transition-colors hover:text-primary"
             >
               {whatsapp}
             </a>
@@ -491,15 +370,9 @@ function ContactSection({
           </ContactRow>
         )}
 
-        {addressLines && (
+        {officeAddress && (
           <ContactRow icon={<MapPin className="h-4 w-4" />} label="Office Location">
-            <p className="break-words text-text-main">{addressLines}</p>
-          </ContactRow>
-        )}
-
-        {averageResponseTime && (
-          <ContactRow icon={<Clock className="h-4 w-4" />} label="Avg. Response Time">
-            <p className="text-text-main">{averageResponseTime}</p>
+            <p className="break-words text-text-main">{officeAddress}</p>
           </ContactRow>
         )}
       </div>
@@ -522,8 +395,8 @@ function ContactRow({
         {icon}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-xs text-text-muted">{label}</p>
-        <div className="text-sm font-medium text-text-main">{children}</div>
+        <p className="text-xs font-medium uppercase tracking-wide text-text-muted">{label}</p>
+        <div className="mt-0.5 min-w-0 break-words text-sm font-medium text-text-main">{children}</div>
       </div>
     </div>
   )
@@ -646,18 +519,34 @@ function ReviewsSection({
   avgRating,
   totalReviews,
   reviews,
+  onWriteReview,
 }: {
   avgRating: number
   totalReviews: number
   reviews: any[]
+  onWriteReview: () => void
 }) {
   return (
     <div className="space-y-8" id="reviews">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h2 className="text-2xl font-bold text-text-main">
-          Customer Reviews
-        </h2>
-        <RatingBadge rating={avgRating} totalReviews={totalReviews} />
+        <div>
+          <h2 className="text-2xl font-bold text-text-main">
+            Customer Reviews
+          </h2>
+          <p className="mt-1 text-sm text-text-muted">
+            <RatingStars rating={avgRating} totalReviews={0} size="sm" showCount={false} className="inline-flex" />
+            <span className="ml-1 font-semibold text-text-main">{avgRating > 0 ? avgRating.toFixed(1) : '—'}</span>
+            <span className="ml-1">· {totalReviews} review{totalReviews === 1 ? '' : 's'}</span>
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onWriteReview}
+          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90"
+        >
+          <Star className="h-4 w-4" />
+          Write a Review
+        </button>
       </div>
 
       {reviews && reviews.length > 0 ? (

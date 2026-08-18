@@ -45,17 +45,63 @@ test('website URL is normalized to a valid external href', () => {
   assert.match(detail, /\.replace\(\/\^https\?:/)
 })
 
-test('address composes street, city, state, and zip without empty parts', () => {
-  assert.match(detail, /\[officeAddress, city, state, pinCode\]\.filter\(Boolean\)\.join\(', '\)/)
+test('office location displays the full officeAddress only (no appended city/state/zip)', () => {
+  assert.match(detail, /\{officeAddress && \(/)
+  assert.match(detail, /label="Office Location"/)
+  assert.doesNotMatch(detail, /\[officeAddress, city, state, pinCode\]/)
+  assert.doesNotMatch(detail, /addressLines/)
+})
+
+test('missing officeAddress hides the office location row', () => {
+  const contactSection = detail.slice(detail.indexOf('function ContactSection'), detail.indexOf('function ContactRow'))
+  assert.match(contactSection, /\{officeAddress && \(/)
+  assert.doesNotMatch(contactSection, /city &&/)
+  assert.doesNotMatch(contactSection, /state &&/)
+  assert.doesNotMatch(contactSection, /pinCode &&/)
 })
 
 test('missing optional fields render no empty rows', () => {
   assert.match(detail, /\{phone && \(/)
   assert.match(detail, /\{email && \(/)
   assert.match(detail, /\{website && websiteHref && \(/)
-  assert.match(detail, /addressLines && \(/)
-  assert.match(detail, /\{averageResponseTime && \(/)
+  assert.match(detail, /\{officeAddress && \(/)
   assert.doesNotMatch(detail, />Phone:<|>Email:<|>Website:<|>Address:</)
+})
+
+test('response time is not rendered inside the contact details area', () => {
+  const contactSection = detail.slice(detail.indexOf('function ContactSection'), detail.indexOf('function ContactRow'))
+  assert.doesNotMatch(contactSection, /averageResponseTime/)
+  assert.doesNotMatch(contactSection, /Avg\. Response Time/)
+  assert.doesNotMatch(contactSection, /<Clock/)
+})
+
+test('contact section exposes only phone, whatsapp, email, website, and office location', () => {
+  const contactSection = detail.slice(detail.indexOf('function ContactSection'), detail.indexOf('function ContactRow'))
+  assert.match(contactSection, /label="Phone"/)
+  assert.match(contactSection, /label="WhatsApp"/)
+  assert.match(contactSection, /label="Email"/)
+  assert.match(contactSection, /label="Website"/)
+  assert.match(contactSection, /label="Office Location"/)
+  assert.doesNotMatch(contactSection, /label="Avg\. Response Time"/)
+})
+
+test('whatsapp uses the safe external wa.me link with noopener', () => {
+  assert.match(detail, /https:\/\/wa\.me\/\$\{whatsapp\?\.replace\(\/\\D\/g, ''\)\}/)
+  assert.match(detail, /target="_blank"/)
+  assert.match(detail, /rel="noopener noreferrer"/)
+})
+
+test('office location is display-only text, not a map link', () => {
+  const officeRow = detail.slice(detail.indexOf('label="Office Location"'), detail.indexOf('function ContactRow'))
+  assert.match(officeRow, /<p className="break-words text-text-main">\{officeAddress\}<\/p>/)
+  assert.doesNotMatch(officeRow, /href=.*officeAddress/)
+})
+
+test('long phone and whatsapp values are wrapped to stay in the viewport', () => {
+  const contactSection = detail.slice(detail.indexOf('function ContactSection'), detail.indexOf('function ContactRow'))
+  assert.match(contactSection, /href=\{`tel:\$\{phone\}`\} className="break-all/)
+  assert.match(contactSection, /href=\{`https:\/\/wa\.me\/\$\{whatsapp/)
+  assert.match(contactSection, /break-all/)
 })
 
 test('long contact values never overflow horizontally', () => {

@@ -15,6 +15,11 @@ export type BrokerEntitlement = {
   endDate?: Date | null
 }
 
+export type BrokerMortgageExpertState = {
+  mortgageExpertEnabled?: boolean | null
+  subscription?: BrokerEntitlement | null
+}
+
 export type BrokerContactIdentity = {
   email?: string | null
   user?: { email?: string | null } | null
@@ -62,6 +67,16 @@ export function hasPaidEntitlement(subscription?: BrokerEntitlement | null) {
     subscription.plan === 'FEATURED' &&
     (!subscription.endDate || subscription.endDate > new Date()),
   )
+}
+
+// Canonical Mortgage Expert rule, shared by the public listing, broker detail
+// pages, and the admin UI. A broker is a Mortgage Expert when they hold an
+// active FEATURED subscription (server-side entitlement, never client input)
+// OR an admin has explicitly enabled the badge. The two paths are independent:
+// disabling the admin badge does not revoke FEATURED auto-qualification, and
+// an enabled badge survives a FEATURED expiry.
+export function isMortgageExpertBroker(state: BrokerMortgageExpertState) {
+  return hasPaidEntitlement(state.subscription) || state.mortgageExpertEnabled === true
 }
 
 // Canonical server-side allowlist of Broker fields an owning broker may edit

@@ -15,7 +15,7 @@ test('published broker reviews are public-safe and sourced from real records', {
   const { default: prisma } = await import('../lib/prisma')
   const broker = await prisma.broker.findFirst({ where: { isVisible: true, verificationStatus: 'VERIFIED' }, select: { id: true } })
   assert.ok(broker)
-  const reviews = await prisma.review.findMany({ where: { brokerId: broker.id, isPublished: true }, select: { rating: true, comment: true } })
+  const reviews = await prisma.review.findMany({ where: { brokerId: broker.id, status: 'APPROVED' }, select: { rating: true, comment: true } })
   assert.ok(reviews.length > 0)
   assert.ok(reviews.every((review) => review.rating >= 1 && review.rating <= 5))
   await prisma.$disconnect()

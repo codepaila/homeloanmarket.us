@@ -32,6 +32,9 @@ export function toPublicBrokerRecord(value: unknown, options?: PublicBrokerOptio
     verifiedAt: _verifiedAt,
     featuredRank: _featuredRank,
     isVisible: _isVisible,
+    // Admin-controlled badge flag — never leaks to public callers. Public
+    // consumers receive the derived `isMortgageExpert` boolean instead.
+    mortgageExpertEnabled: _mortgageExpertEnabled,
     // Protected contact fields — dropped unless includeContact is true.
     phone: _phone,
     whatsapp: _whatsapp,

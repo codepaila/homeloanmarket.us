@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 import { Loader2 } from 'lucide-react'
 import { ProfileImageUpload } from '@/components/brokers/ProfileImageUpload'
+import { CoverImageUpload } from '@/components/brokers/CoverImageUpload'
 
 type AdminInvitation = {
   id: string
@@ -132,6 +133,14 @@ export default function AdminBrokerActions({ broker }: { broker: AdminBroker }) 
             removeUrl={`/api/admin/brokers/${broker.id}/profile-image`}
             label="Profile image"
             helperText="Professional broker photo shown on public cards and profile."
+          />
+        </div>
+        <div className="border-t pt-4">
+          <CoverImageUpload
+            value={broker.coverImage}
+            uploadUrl={`/api/admin/brokers/${broker.id}/cover-image`}
+            removeUrl={`/api/admin/brokers/${broker.id}/cover-image`}
+            label="Cover image"
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">

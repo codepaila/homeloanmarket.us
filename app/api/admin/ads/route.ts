@@ -5,6 +5,7 @@ import { AdvertisementService } from "@/lib/advertisements/services"
 import { CreateAdSchema, AdQuerySchema } from "@/lib/advertisements/validation"
 import { serializeAdvertisement, serializeAdvertisementList } from "@/lib/admin/advertisement-dto"
 import { resolveAdvertisementTarget } from '@/lib/location/advertisement-target'
+import prisma from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
@@ -93,20 +94,37 @@ export async function POST(request: NextRequest) {
     if (parsed.data.locationTarget && parsed.data.placement !== 'BROKER_LISTING_LOCAL') {
       return NextResponse.json({ success: false, error: 'Location targets are only supported on local broker-listing ads' }, { status: 422 })
     }
+
+    // Ownership is resolved server-side. When creating from a company request
+    // the company is DERIVED from the request and any client-supplied companyId
+    // is ignored — the client can never create a mismatched relationship.
+    const { requestId, ...createData } = parsed.data
     const locationTarget = parsed.data.locationTarget
       ? await resolveAdvertisementTarget(parsed.data.locationTarget)
       : undefined
 
-    const ad = await AdvertisementService.create({
-      ...parsed.data,
-      locationTarget,
-      createdById: user.id,
-    })
+    let response
+    if (requestId) {
+      const { ad, requestId: linkedRequestId } = await AdvertisementService.createFromRequest({
+        ...createData,
+        locationTarget,
+        requestId,
+        createdById: user.id,
+      })
+      response = { success: true, ad: serializeAdvertisement(ad), requestId: linkedRequestId }
+    } else {
+      const companyId = createData.companyId || null
+      if (companyId) {
+        const company = await prisma.company.findUnique({ where: { id: companyId }, select: { status: true } })
+        if (!company || company.status !== 'ACTIVE') {
+          return NextResponse.json({ success: false, error: 'The selected company is not active' }, { status: 422 })
+        }
+      }
+      const ad = await AdvertisementService.create({ ...createData, companyId, locationTarget, createdById: user.id })
+      response = { success: true, ad: serializeAdvertisement(ad) }
+    }
 
-    return NextResponse.json({
-      success: true,
-      ad: serializeAdvertisement(ad),
-    }, { status: 201 })
+    return NextResponse.json(response, { status: 201 })
   } catch (error: any) {
     console.error("POST /api/admin/ads error:", error)
     if (error.message?.includes("not found")) {

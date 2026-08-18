@@ -39,9 +39,10 @@ test('review exposes required and uploaded creative resolution', () => {
   assert.match(wizard, /formatReq\.width\} × \{formatReq\.height\} px/)
 })
 
-test('review shows company and request linkage when present', () => {
-  assert.match(wizard, /\{\(companyId \|\| requestId\) &&/)
-  assert.match(wizard, /Fulfilled by this advertisement/)
+test('review shows owner and request linkage when present', () => {
+  assert.match(wizard, /\(requestContext \|\| state\.owner\.type === 'COMPANY'\) &&/)
+  assert.match(wizard, /REQUEST-\{requestContext\.requestId\.slice\(-8\)\.toUpperCase\(\)\}/)
+  assert.match(wizard, /Platform \/ No Company/)
 })
 
 test('step indicator exposes the current step to assistive technology', () => {

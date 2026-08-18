@@ -83,6 +83,7 @@ export function useAdminAd(id: string) {
   return {
     ad: data?.ad || null,
     metrics: data?.metrics || null,
+    requestContext: data?.requestContext || undefined,
     error,
     mutate,
     isLoading,
@@ -397,3 +398,22 @@ export function useToast() {
   }
 }
 
+
+export type AdminCompanyOption = {
+  id: string
+  name: string
+  type: string
+}
+
+export function useAdminCompanies() {
+  const { data, error, mutate, isLoading } = useSWR<{ companies: AdminCompanyOption[] }>(
+    `${baseUrl}/api/admin/companies`,
+    fetcher,
+  )
+  return {
+    companies: data?.companies || [],
+    error,
+    mutate,
+    isLoading,
+  }
+}

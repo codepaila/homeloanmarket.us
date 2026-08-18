@@ -68,6 +68,8 @@ import { cn } from '@/lib/utils'
 import { getPlacementFormats, isFormatCompatible, type AdvertisementFormat } from '@/lib/advertisements/formats'
 import { getPlacementSpec, getRequiredDimensions, getDisplayHeight } from '@/lib/advertisements/placementSpecs'
 import { getValidTypesForPlacement, getCreativeRequirementForFormat, AD_TYPE_LABELS } from '@/lib/advertisements/requirements'
+import { OwnerSelector } from '@/components/admin/ads/OwnerSelector'
+import type { AdvertisementOwner, AdvertisementRequestContext } from '@/lib/advertisements/types'
 import { getAdvertisementLayout } from '@/components/advertisements/ad-layout'
 import { USLocationPicker } from '@/components/location/USLocationPicker'
 import type { AdType } from '@prisma/client'
@@ -89,6 +91,9 @@ interface AdvertisementFormProps {
    * this company and pre-fill the location target from the request. */
   companyId?: string
   requestId?: string
+  /** Server-derived context when this advertisement is linked to a fulfilled
+   * company request. Ownership is locked and cannot be changed in edit. */
+  requestContext?: AdvertisementRequestContext
   initialLocationTarget?: CreateAdInput['locationTarget']
 }
 
@@ -119,11 +124,15 @@ const PREVIEW_BACKGROUNDS = [
 
 type PreviewBackground = typeof PREVIEW_BACKGROUNDS[number]
 
-export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, requestId, initialLocationTarget }: AdvertisementFormProps) {
+export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, requestId, requestContext, initialLocationTarget }: AdvertisementFormProps) {
   const router = useRouter()
   const user = useCurrentUser()
   const { status: sessionStatus } = useSession()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [owner, setOwner] = useState<AdvertisementOwner>(() => {
+    const currentCompanyId = ad?.companyId || companyId || null
+    return currentCompanyId ? { type: 'COMPANY', companyId: currentCompanyId } : { type: 'PLATFORM', companyId: null }
+  })
   const [showDraftPrompt, setShowDraftPrompt] = useState(false)
   const [previewDevice, setPreviewDevice] = useState<'desktop' | 'mobile'>('desktop')
   const [previewBackground, setPreviewBackground] = useState<PreviewBackground>(PREVIEW_BACKGROUNDS[0])
@@ -337,7 +346,14 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
       const assignments = creativeAssignments.filter((assignment) => isFormatCompatible(watchPlacement || '', assignment.format)).map(({ mediaAssetId, format }) => ({ mediaAssetId, format }))
       const desktopFallback = assignments.find((assignment) => assignment.format !== 'MOBILE')?.mediaAssetId || assignments[0]?.mediaAssetId || ''
       const mobileFallback = assignments.find((assignment) => assignment.format === 'MOBILE')?.mediaAssetId || desktopFallback
-      const payloadData = { ...data, creativeAssignments: assignments, desktopMediaId: desktopFallback, mobileMediaId: mobileFallback }
+      const payloadData = {
+        ...data,
+        creativeAssignments: assignments,
+        desktopMediaId: desktopFallback,
+        mobileMediaId: mobileFallback,
+        companyId: requestContext ? requestContext.companyId : (owner.type === 'COMPANY' ? owner.companyId : null),
+        ...(requestId ? { requestId } : {}),
+      }
       const payload = isEditMode ? payloadData : { ...payloadData, createdById: user.id }
       const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       const result = await response.json()
@@ -366,7 +382,7 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
     } finally {
       setIsSubmitting(false)
     }
-  }, [user, sessionStatus, isEditMode, ad, form, onSuccess, router, clearDraft, creativeAssignments, watchPlacement, requestId])
+  }, [user, sessionStatus, isEditMode, ad, form, onSuccess, router, clearDraft, creativeAssignments, watchPlacement, requestId, owner, requestContext])
 
   const availableCreativeFormats = getPlacementFormats(watchPlacement || '')
   const updateCreative = useCallback((format: AdvertisementFormat, asset: MediaAsset | null) => {
@@ -579,9 +595,19 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                         <FormControl>
                           <PlacementPicker value={field.value} onChange={field.onChange} />
                         </FormControl>
-                        <FormMessage />
+                         <FormMessage />
                       </FormItem>
                     )} />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="pt-5">
+                    <OwnerSelector
+                      value={owner}
+                      onChange={setOwner}
+                      requestContext={requestContext}
+                    />
                   </CardContent>
                 </Card>
 

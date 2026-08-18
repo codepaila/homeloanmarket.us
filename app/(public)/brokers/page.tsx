@@ -20,7 +20,7 @@ import { useAllBrokers } from '@/hooks/useClient'
 import { PAGE_SIZE } from '@/utils'
 import { cn } from '@/lib/utils'
 import { AdvertisementRenderer } from '@/components/advertisements'
-import { parseResolvedLocation, DEFAULT_RADIUS_MILES } from '@/lib/search'
+import { parseResolvedLocation, DEFAULT_RADIUS_MILES, type ResolvedLocation } from '@/lib/search'
 
 const sortOptions = [
   { value: 'relevance', label: 'Relevance' },
@@ -50,16 +50,7 @@ export default function BrokersPage() {
   const [committedSearch, setCommittedSearch] = useState('')
   const [locationSuggestions, setLocationSuggestions] = useState<Array<{ placeId: string; label: string }>>([])
   const [locationError, setLocationError] = useState('')
-  const [selectedLocation, setSelectedLocation] = useState<{
-    placeId?: string
-    normalizedAddress: string
-    city: string
-    state: string
-    zip: string
-    latitude: number
-    longitude: number
-    token?: string
-  } | null>(null)
+  const [selectedLocation, setSelectedLocation] = useState<ResolvedLocation | null>(null)
   const [radius, setRadius] = useState(25)
   const [minExperience, setMinExperience] = useState('')
   const [minRating, setMinRating] = useState('0')
@@ -129,17 +120,9 @@ export default function BrokersPage() {
      radius,
   )
 
-  // Keep the input immediate; only the remote broker query is debounced.
-  useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      if (selectedLocation?.normalizedAddress === searchInput.trim()) {
-        setSearch('')
-        return
-      }
-      setSearch(searchInput.trim())
-    }, 200)
-    return () => window.clearTimeout(timeout)
-  }, [searchInput, selectedLocation])
+  // Typing only updates local input state. The broker query, location
+  // resolution, and advertisement lookup run exclusively on explicit submit
+  // (Enter or the Search button) — never on every keystroke.
 
   useEffect(() => {
     const value = searchInput.trim()
@@ -220,6 +203,28 @@ export default function BrokersPage() {
     }
   }
 
+  // Selection-driven search: location search is ONLY initiated by choosing an
+  // autocomplete suggestion (click or Enter). Typing text never geocodes, never
+  // runs a broker/radius search, and never reuses stale coordinates. When no
+  // suggestion is available, Enter/Search shows a non-blocking hint instead.
+  const selectSuggestion = (index: number) => {
+    const suggestion = locationSuggestions[index]
+    if (suggestion) selectLocation(suggestion)
+  }
+
+  const handleSearchSubmit = () => {
+    const value = searchInput.trim()
+    if (!value) return
+    if (locationSuggestions.length > 0) {
+      // Prefer the highlighted suggestion, otherwise the first valid one.
+      const index = activeSuggestionIndex >= 0 && activeSuggestionIndex < locationSuggestions.length ? activeSuggestionIndex : 0
+      selectSuggestion(index)
+    } else {
+      // No suggestion: never fall back to a free-text geocode/radius search.
+      setLocationError('Select a location from the suggestions to search nearby brokers.')
+    }
+  }
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPage(1)
@@ -243,15 +248,17 @@ export default function BrokersPage() {
     setOrDelete('experience', minExperience)
     setOrDelete('rating', minRating === '0' ? '' : minRating)
     setOrDelete('featured', featuredOnly ? 'true' : '')
+    // Persist the full canonical location so refresh, pagination, and
+    // back/forward navigation restore the radius search. This mirrors
+    // buildBrokerSearchUrl.
     setOrDelete('location', selectedLocation?.normalizedAddress || '')
+    setOrDelete('locationCity', selectedLocation?.city || '')
+    setOrDelete('locationState', selectedLocation?.state || '')
+    setOrDelete('locationZip', selectedLocation?.zip || '')
+    setOrDelete('latitude', selectedLocation ? String(selectedLocation.latitude) : '')
+    setOrDelete('longitude', selectedLocation ? String(selectedLocation.longitude) : '')
+    setOrDelete('locationToken', selectedLocation?.token || '')
     setOrDelete('radius', selectedLocation ? String(radius) : '')
-    params.delete('locationToken')
-    params.delete('locationLabel')
-    params.delete('locationLatitude')
-    params.delete('locationLongitude')
-    params.delete('locationCity')
-    params.delete('locationState')
-    params.delete('locationZip')
     setOrDelete('page', page > 1 ? String(page) : '')
     const query = params.toString()
     window.history.replaceState({}, '', `${window.location.pathname}${query ? `?${query}` : ''}`)
@@ -481,11 +488,7 @@ export default function BrokersPage() {
                 if (e.key === 'Enter') {
                   e.preventDefault()
                   if (activeSuggestionIndex >= 0 && locationSuggestions[activeSuggestionIndex]) selectLocation(locationSuggestions[activeSuggestionIndex])
-                  else {
-                    const value = searchInput.trim()
-                    setSearch(value)
-                    setCommittedSearch(value)
-                  }
+                  else void handleSearchSubmit()
                 }
                 if (e.key === 'Escape') {
                   setLocationSuggestions([])
@@ -514,15 +517,17 @@ export default function BrokersPage() {
               </div>
             )}
             {locationError && <p role="status" className="absolute inset-x-0 top-full z-50 mt-2 rounded-xl border border-destructive/30 bg-card p-3 text-sm text-destructive">{locationError}</p>}
-            {searchInput && (
-              <button type="button"
-               onClick={() => { setSearchInput(''); setSearch(''); setCommittedSearch(''); setSelectedLocation(null); setRadius(25); setLocationSuggestions([]); setLocationError(''); setActiveSuggestionIndex(-1) }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-text-muted hover:bg-muted hover:text-text-main"
-                aria-label="Clear search"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
+            <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
+              {searchInput && (
+                <button type="button"
+                 onClick={() => { setSearchInput(''); setSearch(''); setCommittedSearch(''); setSelectedLocation(null); setRadius(25); setLocationSuggestions([]); setLocationError(''); setActiveSuggestionIndex(-1) }}
+                  className="rounded-full p-1 text-text-muted hover:bg-muted hover:text-text-main"
+                  aria-label="Clear search"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -594,22 +599,6 @@ export default function BrokersPage() {
               )}
             </div>
           </div>
-
-          {hasActiveFilters && (
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              {search && <FilterChip label={`Search: "${search}"`} onRemove={() => { setSearchInput(''); setSearch(''); setCommittedSearch(''); setLocationSuggestions([]); setActiveSuggestionIndex(-1) }} />}
-              {selectedLocation && <FilterChip label={`${radius} mile radius`} onRemove={() => setRadius(25)} />}
-              {minExperience && <FilterChip label={`${minExperience}+ years`} onRemove={() => setMinExperience('')} />}
-              {minRating !== '0' && <FilterChip label={`Rating: ${minRating}+`} onRemove={() => setMinRating('0')} />}
-              {featuredOnly && <FilterChip label="Featured partners" onRemove={() => setFeaturedOnly(false)} />}
-              <button type="button"
-                onClick={clearAllFilters}
-                className="text-xs font-medium text-primary hover:underline"
-              >
-                Clear all
-              </button>
-            </div>
-          )}
         </div>
       </section>
 
@@ -737,6 +726,7 @@ export default function BrokersPage() {
                     logo={broker.logo}
                     profileImage={broker.profileImage}
                     isPremium={broker.isFeatured === true}
+                    isMortgageExpert={broker.isMortgageExpert === true}
                   />
                 ))}
               </motion.div>

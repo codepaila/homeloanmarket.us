@@ -37,7 +37,8 @@ test('wizard builds the canonical advertisement payload', () => {
   assert.match(wizard, /creativeAssignments/)
   assert.match(wizard, /locationTarget/)
   assert.match(wizard, /showMobile/)
-  assert.match(wizard, /companyId: companyId \|\| undefined/)
+  assert.match(wizard, /companyId: effectiveCompanyId \|\| undefined/)
+  assert.match(wizard, /requestId: requestContext\?\.requestId/)
 })
 
 test('creative upload delegates to the reusable creative upload component for the single slot', () => {
@@ -56,9 +57,9 @@ test('location targeting is only shown for placements that support it', () => {
   assert.match(wizard, /USLocationPicker/)
 })
 
-test('wizard links a created advertisement back to a company request', () => {
-  assert.match(wizard, /company-ad-requests\/\$\{requestId\}/)
-  assert.match(wizard, /status: 'FULFILLED'/)
+test('wizard sends the requestId so the server links + fulfills atomically', () => {
+  assert.match(wizard, /requestId: requestContext\?\.requestId/)
+  assert.match(wizard, /Advertisement created and request fulfilled successfully\./)
 })
 
 test('new advertisement page uses the wizard instead of the monolithic form', () => {
@@ -77,6 +78,6 @@ test('requirements module exposes canonical placement metadata and types', () =>
 
 test('wizard prevents submission while running and toasts success/error', () => {
   assert.match(wizard, /setSubmitting\(true\)/)
-  assert.match(wizard, /toast\.success\('Advertisement created successfully\.'\)/)
+  assert.match(wizard, /toast\.success\(requestContext \? 'Advertisement created and request fulfilled successfully\.' : 'Advertisement created successfully\.'\)/)
   assert.match(wizard, /toast\.error\(/)
 })

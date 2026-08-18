@@ -5,7 +5,7 @@ import { getCurrentUser } from '@/lib/currentUser'
 import prisma from '@/lib/prisma'
 import { TABLE_ROW_PAGE } from '@/utils'
 import { VerificationStatus, BrokerStatus } from '@prisma/client'
-import { hasPaidEntitlement, publicBrokerWhere } from '@/lib/broker-policy'
+import { hasPaidEntitlement, isMortgageExpertBroker, publicBrokerWhere } from '@/lib/broker-policy'
 import { toPublicBrokerRecord } from '@/lib/public-broker'
 import { createBrokerForExistingUser } from '@/lib/broker-registration'
 import { findBrokerIdsWithinRadius } from '@/lib/location/broker-geo'
@@ -151,7 +151,7 @@ export async function GET(request: Request) {
             }
           },
           reviews: {
-            where: { isPublished: true },
+            where: { status: 'APPROVED' },
             take: 5,
             orderBy: { createdAt: 'desc' },
             include: {
@@ -180,8 +180,9 @@ export async function GET(request: Request) {
           }
         },
         orderBy: [
-          { featuredRank: 'desc' }, // subscribed/featured brokers first
-          { avgRating: 'desc' },
+          { featuredRank: 'desc' },           // Tier 1: active FEATURED subscribers
+          { mortgageExpertEnabled: 'desc' },  // Tier 2: admin-enabled Mortgage Expert brokers
+          { profileImage: 'desc' },           // Tier 3: brokers with an uploaded profile photo
           { experienceYears: 'desc' },
           { id: 'asc' },
         ]
@@ -196,6 +197,7 @@ export async function GET(request: Request) {
       return {
         ...toPublicBrokerRecord(broker, { includeContact: canShowContact }),
         isFeatured: canShowContact && broker.subscription?.plan === 'FEATURED',
+        isMortgageExpert: isMortgageExpertBroker(broker),
         canShowContact,
       }
     })

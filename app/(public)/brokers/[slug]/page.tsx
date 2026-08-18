@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import prisma from '@/lib/prisma'
 import BrokerDetailClient from '@/components/sections/broker/BrokerDetailClient'
-import { isPublicBroker } from '@/lib/broker-policy'
+import { isPublicBroker, isMortgageExpertBroker } from '@/lib/broker-policy'
 import { canonicalUrl, safeJsonLd } from '@/lib/seo'
 import { toPublicBrokerRecord } from '@/lib/public-broker'
 
@@ -81,12 +81,15 @@ export default async function PublicBrokerPage({ params }: PageProps) {
           orderBy: { bankName: 'asc' },
         },
         reviews: {
-          where: { isPublished: true },
+          where: { status: 'APPROVED' },
           select: { rating: true, comment: true, createdAt: true, user: { select: { name: true, image: true } } },
           orderBy: { createdAt: 'desc' },
           take: 10,
         },
-        _count: { select: { reviews: { where: { isPublished: true } } } },
+        _count: { select: { reviews: { where: { status: 'APPROVED' } } } },
+        subscription: {
+          select: { plan: true, isActive: true, endDate: true },
+        },
       }
     })
 
@@ -107,7 +110,11 @@ export default async function PublicBrokerPage({ params }: PageProps) {
     notFound()
   }
 
-  const publicBroker = { ...toPublicBrokerRecord(broker, { includeContact: true }), hasOwner: Boolean(broker.userId) }
+  const publicBroker = {
+    ...toPublicBrokerRecord(broker, { includeContact: true }),
+    hasOwner: Boolean(broker.userId),
+    isMortgageExpert: isMortgageExpertBroker(broker),
+  }
 
   return (
     <>

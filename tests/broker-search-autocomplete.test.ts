@@ -12,9 +12,12 @@ test('search input value updates immediately from local state', () => {
   assert.doesNotMatch(listing, /setSearchInput\(e\.target\.value\).*setTimeout/)
 })
 
-test('remote broker query and autocomplete are debounced', () => {
+test('autocomplete is debounced; typing never triggers a broker query', () => {
+  // Only the autocomplete fetch is debounced. The broker query must NOT be
+  // fired from a typing debounce (it runs exclusively on explicit submit).
   const debounceCount = (listing.match(/\}, 200\)/g) || []).length
-  assert.ok(debounceCount >= 2, 'both broker query and autocomplete debounce to ~200ms')
+  assert.ok(debounceCount >= 1, 'autocomplete debounces to ~200ms')
+  assert.doesNotMatch(listing, /setSearch\(searchInput\.trim\(\)\)/, 'typing must not commit the broker query')
   assert.doesNotMatch(listing, /\}, (400|500|750|1000)\)/)
 })
 
@@ -38,16 +41,15 @@ test('typing does not write URL search params; only committed search does', () =
   assert.doesNotMatch(urlEffect, /searchInput/)
 })
 
-test('Enter commits the search and triggers the broker listing query', () => {
-  assert.match(listing, /setCommittedSearch\(value\)/)
-  assert.match(listing, /setSearch\(value\)/)
+test('Enter selects a suggestion and never free-text geocodes', () => {
+  assert.match(listing, /else void handleSearchSubmit\(\)/)
+  assert.doesNotMatch(listing, /resolveSearchSubmission\(text, selectedLocation\)/)
+  assert.match(listing, /locationSuggestions\[activeSuggestionIndex\]/)
 })
 
 test('clear search resets input, query, URL, and suggestions', () => {
-  const clear = listing.slice(listing.indexOf('aria-label="Clear search"'))
-  assert.match(clear, /setCommittedSearch\(''\)/)
-  assert.match(clear, /setLocationSuggestions\(\[\]\)/)
-  assert.match(clear, /setActiveSuggestionIndex\(-1\)/)
+  assert.match(listing, /aria-label="Clear search"/)
+  assert.match(listing, /onClick=\{\(\) => \{ setSearchInput\(''\); setSearch\(''\); setCommittedSearch\(''\); setSelectedLocation\(null\); setRadius\(25\); setLocationSuggestions\(\[\]\); setLocationError\(''\); setActiveSuggestionIndex\(-1\) \}\}/)
 })
 
 test('browser back and forward restore search state from URL', () => {
@@ -65,7 +67,11 @@ test('radius and location URL parameters remain intact for search', () => {
   assert.match(hook, /locationToken/)
   assert.match(listing, /setOrDelete\('location', selectedLocation\?\.normalizedAddress/)
   assert.match(listing, /setOrDelete\('radius', selectedLocation \? String\(radius\) : ''\)/)
-  assert.match(listing, /params\.delete\('locationToken'\)/)
+  // The canonical location (coordinates + signed token) is persisted in the URL
+  // so refresh, pagination, and back/forward restore the radius search.
+  assert.match(listing, /setOrDelete\('latitude', selectedLocation \? String\(selectedLocation\.latitude\) : ''\)/)
+  assert.match(listing, /setOrDelete\('longitude', selectedLocation \? String\(selectedLocation\.longitude\) : ''\)/)
+  assert.match(listing, /setOrDelete\('locationToken', selectedLocation\?\.token \|\| ''\)/)
 })
 
 test('suggestions support keyboard navigation and ARIA combobox semantics', () => {

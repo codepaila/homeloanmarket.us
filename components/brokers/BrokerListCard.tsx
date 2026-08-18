@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 import { RatingStars } from '@/components/design/RatingStars'
 import { PremiumButton } from '@/components/design/PremiumButton'
 import { BrokerAvatar } from '@/components/brokers/BrokerAvatar'
+import { MortgageExpertBadge } from '@/components/brokers/MortgageExpertBadge'
 
 const FAVORITES_KEY = 'hlm-favorite-brokers'
 
@@ -41,6 +42,7 @@ interface BrokerListCardProps {
   isVerified?: boolean
   isFeatured?: boolean
   isPremium?: boolean
+  isMortgageExpert?: boolean
   description?: string
   supportedBanks?: string[]
   className?: string
@@ -59,6 +61,7 @@ export default function BrokerListCard({
   isVerified = false,
   isFeatured = false,
   isPremium = false,
+  isMortgageExpert = false,
   description,
   supportedBanks = [],
   className,
@@ -147,6 +150,7 @@ export default function BrokerListCard({
                   Verified
                 </span>
               )}
+              {isMortgageExpert && <MortgageExpertBadge />}
             </div>
           </div>
 

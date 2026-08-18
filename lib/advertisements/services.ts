@@ -8,6 +8,46 @@ import { isFormatCompatible, type AdvertisementFormat } from './formats'
 import { validateCreativeDimensions } from './placementSpecs'
 import prisma from "@/lib/prisma"
 
+export type CreateAdvertisementData = {
+  title?: string | null
+  description?: string
+  placement: string
+  type: string
+  action: string
+  buttonVariant?: string
+  desktopMediaId?: string | null
+  mobileMediaId?: string | null
+  altText?: string
+  bannerUrl?: string
+  buttonLabel?: string
+  buttonUrl?: string
+  openInNewTab?: boolean
+  displayOrder?: number
+  priority?: number
+  startDate?: Date | null
+  endDate?: Date | null
+  isEnabled?: boolean
+  showDesktop?: boolean
+  showTablet?: boolean
+  showMobile?: boolean
+  internalNotes?: string
+  isDismissible?: boolean
+  companyId?: string | null
+  locationTarget?: {
+    locationLabel: string
+    countryCode: string
+    city?: string
+    state?: string
+    zip?: string
+    googlePlaceId?: string
+    latitude: number
+    longitude: number
+    radiusMiles: number
+  }
+  creativeAssignments?: { mediaAssetId: string; format: AdvertisementFormat }[]
+  createdById: string
+}
+
 export class AdvertisementService {
   static async list(params: {
     page: number
@@ -32,45 +72,7 @@ export class AdvertisementService {
     return AdvertisementRepository.findBySlug(slug)
   }
 
-  static async create(data: {
-    title?: string | null
-    description?: string
-    placement: string
-    type: string
-    action: string
-    buttonVariant?: string
-    desktopMediaId?: string | null
-    mobileMediaId?: string | null
-    altText?: string
-    bannerUrl?: string
-    buttonLabel?: string
-    buttonUrl?: string
-    openInNewTab?: boolean
-    displayOrder?: number
-    priority?: number
-    startDate?: Date | null
-    endDate?: Date | null
-    isEnabled?: boolean
-    showDesktop?: boolean
-    showTablet?: boolean
-    showMobile?: boolean
-    internalNotes?: string
-    isDismissible?: boolean
-    companyId?: string | null
-    locationTarget?: {
-      locationLabel: string
-      countryCode: string
-      city?: string
-      state?: string
-      zip?: string
-      googlePlaceId?: string
-      latitude: number
-      longitude: number
-      radiusMiles: number
-    }
-    creativeAssignments?: { mediaAssetId: string; format: AdvertisementFormat }[]
-    createdById: string
-  }): Promise<Advertisement> {
+  static async create(data: CreateAdvertisementData): Promise<Advertisement> {
     const { creativeAssignments = [], ...advertisementData } = data
     if (advertisementData.desktopMediaId === '') advertisementData.desktopMediaId = null
     if (advertisementData.mobileMediaId === '') advertisementData.mobileMediaId = null
@@ -156,6 +158,38 @@ export class AdvertisementService {
       const result = validateCreativeDimensions(placement, assignment.format, asset.width, asset.height, device)
       if (!result.ok) throw new Error(result.reason)
     }
+  }
+
+  // Server-authoritative request → advertisement flow. The company is DERIVED
+  // from the request (never trusted from the client) and the request is linked
+  // and marked FULFILLED atomically AFTER the advertisement is created. If the
+  // link fails, the advertisement is removed so no partial relationship remains.
+  static async createFromRequest(data: { requestId: string } & Omit<CreateAdvertisementData, 'companyId' | 'createdById'> & { createdById: string }) {
+    const requestRecord = await prisma.companyAdRequest.findUnique({
+      where: { id: data.requestId },
+      select: { id: true, companyId: true, advertisementId: true },
+    })
+    if (!requestRecord) throw new Error('Advertisement request not found')
+    if (requestRecord.advertisementId) throw new Error('This request is already fulfilled by an advertisement')
+
+    const { requestId: _requestId, ...adFields } = data
+    void _requestId
+    const ad = await this.create({ ...adFields, companyId: requestRecord.companyId })
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.companyAdRequest.update({
+          where: { id: requestRecord.id },
+          data: { advertisementId: ad.id, status: 'FULFILLED', reviewedById: data.createdById, reviewedAt: new Date() },
+        })
+        await tx.company.update({ where: { id: requestRecord.companyId }, data: { status: 'ACTIVE' } })
+      })
+    } catch {
+      await this.delete(ad.id).catch(() => {})
+      throw new Error('Advertisement created but could not be linked to the company request')
+    }
+
+    return { ad, requestId: requestRecord.id, companyId: requestRecord.companyId }
   }
 
   static async publish(id: string): Promise<Advertisement> {

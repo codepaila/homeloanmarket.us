@@ -6,17 +6,19 @@ import { toast } from 'react-hot-toast'
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { AdType, AdvertisementAction, ButtonVariant } from '@prisma/client'
-import type { MediaAsset } from '@/lib/advertisements/types'
+import type { MediaAsset, AdvertisementOwner, AdvertisementRequestContext } from '@/lib/advertisements/types'
 import type { AdvertisementFormat } from '@/lib/advertisements/formats'
 import { getAdvertisementRequirements, getCreativeRequirementForFormat, getValidTypesForPlacement, getPlacementMeta, AD_TYPE_LABELS, ACTION_META } from '@/lib/advertisements/requirements'
 import { PLACEMENT_SIZE_SPECS } from '@/lib/advertisements/placementSpecs'
 import { AdvertisementCreativeUpload } from '@/components/admin/ads/AdvertisementCreativeUpload'
+import { OwnerSelector } from '@/components/admin/ads/OwnerSelector'
 import { USLocationPicker } from '@/components/location/USLocationPicker'
 
 type WizardState = {
   title: string
   description: string
   internalNotes: string
+  owner: AdvertisementOwner
   placement: string | null
   type: AdType | null
   action: AdvertisementAction
@@ -37,6 +39,7 @@ const INITIAL_STATE: WizardState = {
   title: '',
   description: '',
   internalNotes: '',
+  owner: { type: 'PLATFORM', companyId: null },
   placement: null,
   type: null,
   action: 'DISPLAY_ONLY',
@@ -85,12 +88,21 @@ export function AdvertisementWizard({
   const [step, setStep] = useState(0)
   const [submitting, setSubmitting] = useState(false)
 
+  // When creating from a company request, ownership is locked to the request's
+  // company and the request relationship is managed server-side.
+  const requestContext: AdvertisementRequestContext | undefined = useMemo(
+    () => (requestId && companyId ? { requestId, companyId, locked: true } : undefined),
+    [requestId, companyId],
+  )
+
   const requirements = state.placement ? getAdvertisementRequirements(state.placement) : null
   const validTypes = state.placement ? getValidTypesForPlacement(state.placement) : []
 
   // Build the ordered step list, skipping irrelevant steps.
   const steps = useMemo(() => {
-    const list: { key: string; label: string }[] = [{ key: 'basic', label: 'Details' }, { key: 'placement', label: 'Placement' }]
+    const list: { key: string; label: string }[] = [{ key: 'basic', label: 'Details' }]
+    if (!requestContext) list.push({ key: 'owner', label: 'Owner' })
+    list.push({ key: 'placement', label: 'Placement' })
     if (state.placement) {
       if (validTypes.length > 1) list.push({ key: 'type', label: 'Type' })
       if (requirements?.supportsCta) list.push({ key: 'action', label: 'Action' })
@@ -101,7 +113,7 @@ export function AdvertisementWizard({
       list.push({ key: 'review', label: 'Review' })
     }
     return list
-  }, [state.placement, requirements, validTypes.length])
+  }, [state.placement, requirements, validTypes.length, requestContext])
 
   const current = steps[step]
 
@@ -132,6 +144,9 @@ export function AdvertisementWizard({
       : []
     const desktopAssignment = creativeAssignments.find((a) => a.format !== 'MOBILE')?.mediaAssetId || creativeAssignments[0]?.mediaAssetId || ''
     const mobileAssignment = creativeAssignments.find((a) => a.format === 'MOBILE')?.mediaAssetId || desktopAssignment
+    const effectiveCompanyId = requestContext
+      ? requestContext.companyId
+      : (state.owner.type === 'COMPANY' ? state.owner.companyId : null)
     return {
       title: state.title.trim() || undefined,
       description: state.description || undefined,
@@ -169,7 +184,8 @@ export function AdvertisementWizard({
           }
         : undefined,
       creativeAssignments,
-      companyId: companyId || undefined,
+      companyId: effectiveCompanyId || undefined,
+      requestId: requestContext?.requestId,
     }
   }
 
@@ -197,19 +213,8 @@ export function AdvertisementWizard({
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Unable to create advertisement')
-      toast.success('Advertisement created successfully.')
-      // Link to the originating company request if applicable.
-      if (requestId && result.ad?.id) {
-        try {
-          await fetch(`/api/admin/company-ad-requests/${requestId}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ advertisementId: result.ad.id, status: 'FULFILLED' }),
-          })
-        } catch {
-          // best-effort linking
-        }
-      }
+      // Request linking + FULFILLED is handled server-side atomically.
+      toast.success(requestContext ? 'Advertisement created and request fulfilled successfully.' : 'Advertisement created successfully.')
       router.push('/admin/ads/list')
       router.refresh()
     } catch (error) {
@@ -221,6 +226,10 @@ export function AdvertisementWizard({
 
   function canContinue(): boolean {
     if (current.key === 'basic') return true
+    if (current.key === 'owner') {
+      if (state.owner.type === 'COMPANY' && !state.owner.companyId) return false
+      return true
+    }
     if (current.key === 'placement') return Boolean(state.placement)
     if (current.key === 'type') return Boolean(state.type)
     if (current.key === 'action') return !needsUrl || state.buttonUrl.trim().length > 0
@@ -257,6 +266,15 @@ export function AdvertisementWizard({
           <label className="block space-y-1"><span className="text-sm font-medium">Advertisement title</span><input value={state.title} onChange={(e) => set('title', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" /></label>
           <label className="block space-y-1"><span className="text-sm font-medium">Description</span><textarea value={state.description} onChange={(e) => set('description', e.target.value)} rows={3} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" /></label>
           <label className="block space-y-1"><span className="text-sm font-medium">Internal notes</span><textarea value={state.internalNotes} onChange={(e) => set('internalNotes', e.target.value)} rows={2} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" /></label>
+        </section>
+      )}
+
+      {current.key === 'owner' && (
+        <section className="rounded-xl border bg-card p-5">
+          <OwnerSelector
+            value={state.owner}
+            onChange={(owner) => set('owner', owner)}
+          />
         </section>
       )}
 
@@ -425,10 +443,19 @@ export function AdvertisementWizard({
               </div>
             )
           })()}
-          {(companyId || requestId) && (
+          {(requestContext || state.owner.type === 'COMPANY') && (
             <dl className="grid gap-3 text-sm sm:grid-cols-2">
-              {companyId && <div><dt className="text-muted-foreground">Company</dt><dd className="break-all">Linked to company {companyId}</dd></div>}
-              {requestId && <div><dt className="text-muted-foreground">Request</dt><dd className="break-all">Fulfilled by this advertisement ({requestId})</dd></div>}
+              <div>
+                <dt className="text-muted-foreground">Owner</dt>
+                <dd className="font-medium">
+                  {requestContext
+                    ? (requestContext.companyId ? 'Company-owned (from request)' : '—')
+                    : state.owner.type === 'COMPANY' ? 'Specific Company' : 'Platform / No Company'}
+                </dd>
+              </div>
+              {requestContext && (
+                <div><dt className="text-muted-foreground">Request</dt><dd className="break-all">REQUEST-{requestContext.requestId.slice(-8).toUpperCase()}</dd></div>
+              )}
             </dl>
           )}
         </section>

@@ -21,7 +21,7 @@ export default function HeroImageSection() {
   return (
     <section
       //  className="relative isolate  overflow-hidden bg-secondary"
-      className="relative isolate min-h-80 sm:min-h-100 md:min-h-150 overflow-hidden bg-secondary"
+      className="relative isolate min-h-80 sm:min-h-100 md:min-h-150 lg:min-h-155 overflow-hidden bg-secondary"
     >
       {/* Background Image */}
       <div className="absolute inset-0">
@@ -40,9 +40,9 @@ export default function HeroImageSection() {
       </div>
       <div className="container-custom relative z-10">
         <div
-         className="flex items-center py-12 md:py-16 lg:py-20 mt-10 md:mt-12"
+         className=" pt-12 md:pt-16 lg:pt-20 mt-12 md:mt-12"
         >
-          <div className="mx-auto max-w-4xl text-left lg:mx-0">
+          <div className="mx-auto max-w-8xl text-left lg:mx-0">
 
             <motion.div
               initial={{ opacity: 1, x: 0 }}
@@ -53,10 +53,10 @@ export default function HeroImageSection() {
               <Image
                 src="/assets/images/5-profiles-cover-icon.png"
                 alt="Verified mortgage professionals"
-                width={800}
-                height={100}
+                width={900}
+                height={400}
                 priority
-                className="h-auto w-full max-w-[800px] object-contain object-left"
+                className="h-auto w-full max-w-[900px] object-contain object-left"
               />
             </motion.div>
           </div>

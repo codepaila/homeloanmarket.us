@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/currentUser'
 import prisma from '@/lib/prisma'
-import { hasPaidEntitlement, isBrokerOwner, isPublicBroker, pickBrokerEditableFields } from '@/lib/broker-policy'
+import { hasPaidEntitlement, isBrokerOwner, isMortgageExpertBroker, isPublicBroker, pickBrokerEditableFields } from '@/lib/broker-policy'
 import { toPublicBrokerRecord } from '@/lib/public-broker'
 
 export async function GET(
@@ -42,7 +42,7 @@ export async function GET(
         },
         reviews: {
           where: {
-            isPublished: true
+            status: 'APPROVED'
           },
           include: {
             user: {
@@ -58,7 +58,7 @@ export async function GET(
         _count: {
           select: {
             reviews: {
-              where: { isPublished: true }
+              where: { status: 'APPROVED' }
             },
             contactMessages: true
           }
@@ -132,6 +132,7 @@ export async function GET(
       averageResponseTime,
       canShowContact: canShowContactFlag,
       isFeatured,
+      isMortgageExpert: isMortgageExpertBroker(broker),
       stats: {
         totalReviews: broker._count.reviews,
         totalLeads: broker.totalLeads,

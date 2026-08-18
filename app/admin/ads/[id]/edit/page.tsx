@@ -15,7 +15,7 @@ interface EditAdPageProps {
 
 export default function EditAdPage({ params }: EditAdPageProps) {
   const { id } = use(params)
-  const { ad, isLoading, error, mutate } = useAdminAd(id)
+  const { ad, isLoading, error, mutate, requestContext } = useAdminAd(id)
 
   if (isLoading) {
     return (
@@ -69,6 +69,7 @@ export default function EditAdPage({ params }: EditAdPageProps) {
       <AdvertisementForm
         mode="edit"
         ad={ad}
+        requestContext={requestContext}
         onSuccess={() => {
           mutate()
         }}

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { BrokerAvatar } from '@/components/brokers/BrokerAvatar'
 import { BrokerSubscriptionBadge } from '@/components/brokers/BrokerSubscriptionBadge'
+import { MortgageExpertBadge } from '@/components/brokers/MortgageExpertBadge'
 import {  ChevronRight, MapPin } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -15,6 +16,7 @@ interface BrokerCardProps {
   logo?: string | null
   profileImage?: string | null
   isPremium?: boolean
+  isMortgageExpert?: boolean
   className?: string
 }
 
@@ -27,6 +29,7 @@ export default function BrokerCard({
   logo,
   profileImage,
   isPremium = false,
+  isMortgageExpert = false,
   className,
 }: BrokerCardProps) {
   return (
@@ -47,11 +50,11 @@ export default function BrokerCard({
           className="h-24 w-24"
         />
         <div className="min-w-0 flex-1 space-y-1">
-          <div className="flex items-center gap-1.5">
+          <div className="flex min-w-0 items-center gap-1.5">
             <h3 className="truncate text-base md:text-lg font-bold text-text-main transition-colors group-hover:text-primary">
               {name}
             </h3>
-            {isPremium && <BrokerSubscriptionBadge className="h-5 w-5" />}
+            {isPremium && <BrokerSubscriptionBadge className="h-5 w-5 shrink-0" />}
           </div>
           <p className="truncate text-sm text-text-muted">{company}</p>
           {nmls && (
@@ -59,8 +62,9 @@ export default function BrokerCard({
           )}
 
       <div className=" flex items-center gap-1.5 text-sm text-text-muted">
+          {isMortgageExpert && <MortgageExpertBadge />}
         {/* <MapPin className="h-3 w-3 flex-shrink-0" /> */}
-        <span className="truncate">{location}</span>
+        {/* <span className="truncate">{location}</span> */}
       </div>
         </div>
       </div>

@@ -15,9 +15,10 @@ test('broker listing uses the main search as the only location selector', () => 
 test('listing location selection preserves the existing token and coordinates', () => {
   const source = read('app/(public)/brokers/page.tsx')
   assert.match(source, /locationToken/)
-  assert.match(source, /locationLatitude/)
-  assert.match(source, /locationLongitude/)
   assert.match(source, /setSelectedLocation\(data\.location\)/)
+  // Coordinates are persisted in the URL as latitude/longitude (canonical).
+  assert.match(source, /setOrDelete\('latitude', selectedLocation \? String\(selectedLocation\.latitude\) : ''\)/)
+  assert.match(source, /setOrDelete\('longitude', selectedLocation \? String\(selectedLocation\.longitude\) : ''\)/)
 })
 
 test('homepage uses the shared location endpoints and carries resolved state to brokers', () => {

@@ -56,15 +56,17 @@ test('changing the radius is committed to the URL and keeps the location', () =>
 test('clearing a location disables radius and drops stale params', () => {
   assert.match(listing, /setSelectedLocation\(null\)/)
   assert.match(listing, /setRadius\(25\)/)
-  assert.match(listing, /params\.delete\('locationToken'\)/)
-  assert.match(listing, /params\.delete\('locationLatitude'\)/)
-  assert.match(listing, /params\.delete\('locationLongitude'\)/)
+  // Clearing sets the location params to empty (setOrDelete deletes them).
+  assert.match(listing, /setOrDelete\('locationToken', selectedLocation\?\.token \|\| ''\)/)
+  assert.match(listing, /setOrDelete\('latitude', selectedLocation \? String\(selectedLocation\.latitude\) : ''\)/)
+  assert.match(listing, /setOrDelete\('longitude', selectedLocation \? String\(selectedLocation\.longitude\) : ''\)/)
 })
 
-// E. Ordering: FEATURED (active subscription) first, then FEATURED brokers by
-// featuredRank, then FREE — all after geographic filtering.
+// E. Ordering: FEATURED (active subscription) first, then admin-enabled
+// Mortgage Expert brokers, then brokers with an uploaded profile image, then
+// the rest — all after geographic filtering.
 test('radius geo pipeline orders FEATURED brokers before FREE before pagination', () => {
-  assert.match(geo, /\$sort: \{ featured: -1, featuredRank: -1, avgRating: -1, experienceYears: -1, _id: 1 \}/)
+  assert.match(geo, /\$sort: \{ featured: -1, featuredRank: -1, mortgageExpertEnabled: -1, profileImage: -1, experienceYears: -1, _id: 1 \}/)
   assert.ok(geo.indexOf('$sort') < geo.indexOf('$skip'), 'ordering happens before pagination')
 })
 
@@ -73,7 +75,12 @@ test('FEATURED status in geo ordering comes from the active FEATURED subscriptio
   assert.match(geo, /\$eq: \['\$\$s\.plan', 'FEATURED'\]/, 'featured requires the FEATURED plan')
   assert.match(geo, /\$eq: \['\$\$s\.isActive', true\]/, 'featured requires an active subscription')
   assert.match(geo, /\$gt: \['\$\$s\.endDate', now\]/, 'featured respects the endDate')
-  assert.match(geo, /featured: -1, featuredRank: -1/, 'featured subscription sorts before featuredRank')
+  assert.match(geo, /featured: -1, featuredRank: -1, mortgageExpertEnabled: -1/, 'featured subscription sorts before featuredRank')
+})
+
+test('radius geo ordering never ranks by rating or reviews', () => {
+  assert.doesNotMatch(geo, /avgRating: -1/)
+  assert.doesNotMatch(geo, /totalReviews: -1/)
 })
 
 test('non-geo listing orders by featuredRank descending', () => {

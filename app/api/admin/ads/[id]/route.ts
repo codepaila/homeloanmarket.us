@@ -5,6 +5,7 @@ import { AdvertisementService } from "@/lib/advertisements/services"
 import { UpdateAdSchema } from "@/lib/advertisements/validation"
 import { serializeAdvertisement } from "@/lib/admin/advertisement-dto"
 import { resolveAdvertisementTarget } from '@/lib/location/advertisement-target'
+import prisma from '@/lib/prisma'
 
 export async function GET(
   request: NextRequest,
@@ -32,10 +33,21 @@ export async function GET(
 
     const stats = await AdvertisementService.getStats(ad.id)
 
+    // A fulfilled CompanyAdRequest linked to this ad locks ownership: changing
+    // the company would break the request relationship, so the edit UI treats
+    // it as read-only.
+    const linkedRequest = await prisma.companyAdRequest.findFirst({
+      where: { advertisementId: ad.id },
+      select: { id: true, companyId: true, status: true },
+    })
+
     return NextResponse.json({
       success: true,
       ad: serializeAdvertisement(ad),
       metrics: stats,
+      requestContext: linkedRequest
+        ? { requestId: linkedRequest.id, companyId: linkedRequest.companyId, locked: true }
+        : undefined,
     })
   } catch (error) {
     console.error("GET /api/admin/ads/[id] error:", error)

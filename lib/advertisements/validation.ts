@@ -89,6 +89,7 @@ const CreateAdBaseSchema = z.object({
     radiusMiles: z.number().positive().max(100),
   }).optional(),
   companyId: z.string().optional(),
+  requestId: z.string().optional(),
 })
 
 function validateAdDates(data: { startDate?: Date; endDate?: Date; creativeAssignments?: { format: string }[] }, context: z.RefinementCtx) {

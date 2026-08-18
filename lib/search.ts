@@ -70,3 +70,52 @@ export function parseResolvedLocation(params: URLSearchParams): ResolvedLocation
     token: params.get("locationToken") || undefined,
   }
 }
+
+export type SearchSubmissionResult =
+  | { status: "resolved"; location: ResolvedLocation }
+  | { status: "text-only"; text: string }
+  | { status: "error"; text: string; message: string }
+
+/**
+ * Resolve a broker search submission into a canonical location. This is the
+ * single entry point for BOTH Google-autocomplete selections (already resolved)
+ * and manually typed text:
+ *
+ * - If the typed text already matches the currently resolved location, reuse it
+ *   (no extra geocode request).
+ * - Otherwise resolve the text through the server-side geocoder. A successful
+ *   geocode returns coordinates + a signed token so radius search activates.
+ * - If the text cannot be resolved to a location, the caller falls back to a
+ *   plain text search WITHOUT radius — stale coordinates are never reused.
+ *
+ * Manual resolution only ever runs on explicit submit (Enter / search button),
+ * never on every keystroke.
+ */
+export async function resolveSearchSubmission(
+  text: string,
+  currentLocation: ResolvedLocation | null,
+): Promise<SearchSubmissionResult> {
+  const value = text.trim()
+  if (!value) return { status: "text-only", text: value }
+
+  // Dedupe: an unchanged, already-selected location must not be geocoded again.
+  if (currentLocation && currentLocation.normalizedAddress === value) {
+    return { status: "resolved", location: currentLocation }
+  }
+
+  try {
+    const response = await fetch("/api/location/geocode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address: value }),
+    })
+    const data = await response.json()
+    if (!response.ok || !data.location) {
+      // Unresolvable text: text-only search, no radius, no stale coordinates.
+      return { status: "text-only", text: value }
+    }
+    return { status: "resolved", location: data.location as ResolvedLocation }
+  } catch {
+    return { status: "error", text: value, message: "Location could not be resolved. Please try again." }
+  }
+}

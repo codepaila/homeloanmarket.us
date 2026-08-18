@@ -5,12 +5,14 @@ import test from 'node:test'
 const listing = fs.readFileSync('app/(public)/brokers/page.tsx', 'utf8')
 const searchLib = fs.readFileSync('lib/search.ts', 'utf8')
 
-test('canonical URL uses human-readable location and radius instead of an opaque token', () => {
+test('canonical URL persists the human-readable location, radius, coordinates, and token', () => {
   assert.match(listing, /setOrDelete\('location', selectedLocation\?\.normalizedAddress/)
   assert.match(listing, /setOrDelete\('radius', selectedLocation \? String\(radius\) : ''\)/)
-  assert.match(listing, /params\.delete\('locationToken'\)/)
-  assert.match(listing, /params\.delete\('locationLatitude'\)/)
-  assert.match(listing, /params\.delete\('locationLongitude'\)/)
+  // The signed token + coordinates must survive in the URL so refresh,
+  // pagination, and back/forward navigation restore the radius search.
+  assert.match(listing, /setOrDelete\('locationToken', selectedLocation\?\.token \|\| ''\)/)
+  assert.match(listing, /setOrDelete\('latitude', selectedLocation \? String\(selectedLocation\.latitude\) : ''\)/)
+  assert.match(listing, /setOrDelete\('longitude', selectedLocation \? String\(selectedLocation\.longitude\) : ''\)/)
 })
 
 test('hydration restores location and radius from URL params', () => {
@@ -28,7 +30,6 @@ test('hydration restores a confirmed location from URL coordinates, not geocodin
 
 test('legacy locationLabel URLs fall back to the new location param', () => {
   assert.match(searchLib, /params\.get\("locationLabel"\)/)
-  assert.match(listing, /params\.delete\('locationLabel'\)/)
 })
 
 test('clearing search removes location and resets radius state', () => {
