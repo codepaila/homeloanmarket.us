@@ -5,9 +5,13 @@ import Stripe from 'stripe'
 import prisma from '@/lib/prisma'
 import { SubscriptionService } from '@/lib/subscription'
 import { getCorrelationId } from '@/lib/correlation'
+import { getStripeSecretKey, getStripeWebhookSecret } from '@/lib/stripe-config'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
+async function getStripe(): Promise<Stripe> {
+  const key = await getStripeSecretKey()
+  if (!key) throw new Error('STRIPE_SECRET_KEY is not configured')
+  return new Stripe(key)
+}
 
 export function getStripeEventTarget(event: Stripe.Event) {
   const object = event.data.object as any
@@ -108,11 +112,27 @@ async function processEvent(event: Stripe.Event) {
 }
 
 async function handleStripeEvent(event: Stripe.Event) {
+  // Server-side event gate: only allowlisted events the app handles are
+  // processed. Critical billing events are always processed; optional events
+  // that an admin disabled are skipped (still idempotently logged as PROCESSED
+  // with a skipped note by the caller).
+  const { SUPPORTED_STRIPE_EVENTS, getEnabledStripeEvents } = await import('@/lib/stripe-config')
+  const meta = SUPPORTED_STRIPE_EVENTS.find((supported) => supported.type === event.type)
+  if (meta) {
+    const enabled = await getEnabledStripeEvents()
+    if (!meta.critical && !enabled.has(event.type)) {
+      // Event disabled by admin — skip processing. Billing-critical events are
+      // never disabled.
+      console.info('Stripe webhook event skipped (disabled by config)', { eventId: event.id, eventType: event.type })
+      return
+    }
+  }
+
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session
       if (!session.customer || !session.subscription) return
-      const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+      const subscription = await (await getStripe()).subscriptions.retrieve(session.subscription as string)
       await SubscriptionService.updateSubscriptionFromStripe(
         session.customer as string,
         subscription.id,
@@ -148,7 +168,7 @@ async function handleStripeEvent(event: Stripe.Event) {
     case 'invoice.payment_succeeded': {
       const invoice = event.data.object as any
       if (!invoice.subscription) return
-      const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string)
+      const subscription = await (await getStripe()).subscriptions.retrieve(invoice.subscription as string)
       await SubscriptionService.updateSubscriptionFromStripe(
         subscription.customer as string,
         subscription.id,
@@ -170,7 +190,9 @@ export async function POST(request: NextRequest) {
   if (!signature) return NextResponse.json({ error: 'Missing signature' }, { status: 400 })
 
   try {
-    const event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+    const webhookSecret = await getStripeWebhookSecret()
+    if (!webhookSecret) return NextResponse.json({ error: 'Webhook signature verification is not configured' }, { status: 500 })
+    const event = (await getStripe()).webhooks.constructEvent(body, signature, webhookSecret)
     const result = await processEvent(event)
     console.info('Stripe webhook processed', { correlationId, eventId: event.id, eventType: event.type, ...result })
     return NextResponse.json({ received: true })

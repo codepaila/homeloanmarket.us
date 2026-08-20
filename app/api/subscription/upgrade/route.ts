@@ -2,14 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/currentUser'
 import Stripe from 'stripe'
 import { BillingUnavailableError, CheckoutConflictError, SubscriptionService } from '@/lib/subscription'
-import { validatePlanPrice } from '@/lib/stripe'
-import { SubscriptionPlan } from '@prisma/client'
+import { validateBrokerPlanForCheckout } from '@/lib/broker-plans'
 import { getCorrelationId } from '@/lib/correlation'
+import { getStripeSecretKey } from '@/lib/stripe-config'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+async function getStripe(): Promise<Stripe> {
+  const key = await getStripeSecretKey()
+  if (!key) throw new Error('STRIPE_SECRET_KEY is not configured')
+  return new Stripe(key)
+}
 
 export async function POST(request: NextRequest) {
   try {
+    const stripe = await getStripe()
     const correlationId = getCorrelationId(request)
     const user = await getCurrentUser()
     
@@ -36,9 +41,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    const targetPlan = validatePlanPrice(plan, priceId)
-    if (!targetPlan) return NextResponse.json({ success: false, error: 'Invalid subscription plan or price' }, { status: 400 })
-    const upgradeCheck = await SubscriptionService.canUpgrade(user.brokerProfile.id, targetPlan.name as SubscriptionPlan)
+    const checkoutPlan = await validateBrokerPlanForCheckout(String(plan), String(priceId))
+    if (!checkoutPlan.ok) return NextResponse.json({ success: false, error: checkoutPlan.reason }, { status: 400 })
+    const upgradeCheck = await SubscriptionService.canUpgrade(user.brokerProfile.id, checkoutPlan.plan.code)
     if (!upgradeCheck.canUpgrade) return NextResponse.json({ success: false, error: upgradeCheck.reason }, { status: 409 })
 
     if (!user.subscriptionId) {
@@ -65,7 +70,7 @@ export async function POST(request: NextRequest) {
         proration_behavior: 'create_prorations',
         metadata: {
           ...subscription.metadata,
-          plan: plan,
+          plan: checkoutPlan.plan.code,
         }
       }, {
         idempotencyKey: `upgrade_${user.id}_${subscription.id}_${priceId}`,
@@ -77,7 +82,7 @@ export async function POST(request: NextRequest) {
       return updated
     })
 
-    console.info('Subscription upgraded', { correlationId, brokerId: user.brokerProfile.id, plan: targetPlan.name })
+    console.info('Subscription upgraded', { correlationId, brokerId: user.brokerProfile.id, plan: checkoutPlan.plan.code })
 
     return NextResponse.json({
       success: true,

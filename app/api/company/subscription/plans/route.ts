@@ -9,7 +9,9 @@ export async function GET() {
       name: plan.name,
       description: plan.description,
       price: plan.price,
+      currency: plan.currency,
       billingInterval: plan.billingInterval,
+      displayOrder: plan.displayOrder,
       features: plan.features,
     })),
   })

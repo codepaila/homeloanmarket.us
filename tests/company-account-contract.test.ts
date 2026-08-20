@@ -19,13 +19,17 @@ test('company accounts use dedicated models without a broker or advertiser role'
   assert.match(dashboard, /Advertisement Request/)
 })
 
-test('company billing is separate, recurring, and promotion-code capable', () => {
+test('company billing is separate, recurring, and coupon-capable', () => {
   const checkout = read('app/api/company/subscription/checkout/route.ts')
   const cancel = read('app/api/company/subscription/cancel/route.ts')
   const webhook = read('lib/subscription.ts')
   assert.match(checkout, /companySubscription/)
   assert.match(checkout, /mode: 'subscription'/)
-  assert.match(checkout, /allow_promotion_codes: true/)
+  // The discount is server-validated and server-applied (coupon). Client
+  // promotion codes entered at the Stripe UI are disabled so the client cannot
+  // inject an arbitrary discount.
+  assert.match(checkout, /validateCompanyCoupon/)
+  assert.match(checkout, /allow_promotion_codes: false/)
   assert.match(cancel, /company:/)
   assert.match(webhook, /updateCompanySubscriptionFromStripe/)
 })

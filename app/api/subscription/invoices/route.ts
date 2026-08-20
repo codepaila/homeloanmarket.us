@@ -3,11 +3,17 @@ import { getCurrentUser } from '@/lib/currentUser'
 import Stripe from 'stripe'
 import { SubscriptionService } from '@/lib/subscription'
 import type { ExpandedInvoice, SubscriptionWithPeriod } from '@/types/stripe'
+import { getStripeSecretKey } from '@/lib/stripe-config'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+async function getStripe(): Promise<Stripe> {
+  const key = await getStripeSecretKey()
+  if (!key) throw new Error('STRIPE_SECRET_KEY is not configured')
+  return new Stripe(key)
+}
 
 export async function GET(request: NextRequest) {
   try {
+    const stripe = await getStripe()
     const user = await getCurrentUser()
     
     if (!user) {

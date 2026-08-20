@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     const completed = await completeClaimForUser(context, session.user.id, session.user.email)
 
     await clearClaimContext()
-    return NextResponse.json({ success: true, ...completed, subscriptionPlan: 'FREE', redirectTo: '/broker/dashboard' })
+    return NextResponse.json({ success: true, ...completed, redirectTo: '/broker/dashboard' })
   } catch (error) {
     const status = error instanceof ClaimFlowError && error.code === 'EXPIRED' ? 410 : error instanceof ClaimFlowError ? 409 : 500
     return NextResponse.json({ message: status === 500 ? 'Unable to complete claim' : 'Claim is no longer available' }, { status })

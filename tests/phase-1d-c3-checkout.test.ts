@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
-import { getAuthoritativePlan, validatePlanPrice } from '../lib/stripe'
+import { stripePriceIds, validatePlanPrice } from '../lib/stripe'
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 const read = (relative: string): string => fs.readFileSync(path.join(ROOT, relative), 'utf8')
@@ -36,11 +36,11 @@ test('Phase 1D checkout: public pricing UI sends the selected plan with its pric
 test('Phase 1D checkout: server plan-price mapping remains authoritative', () => {
   const source = read('app/api/subscription/checkout/route.ts')
   assert.ok(source.includes('const { priceId, plan } = await request.json()'))
-  assert.ok(source.includes('validatePlanPrice(plan, priceId)'))
+  // Checkout validates the plan against the DB-backed dynamic plan system.
+  assert.ok(source.includes('validateBrokerPlanForCheckout'))
   assert.equal(validatePlanPrice('FEATURED', 'tampered-price'), null)
-  const featured = getAuthoritativePlan('FEATURED')
-  assert.ok(featured?.stripePriceId)
-  assert.equal(validatePlanPrice('FEATURED', featured?.stripePriceId)?.name, 'FEATURED')
+  assert.equal(validatePlanPrice('FEATURED', stripePriceIds.FEATURED)?.name, 'FEATURED')
+  assert.equal(validatePlanPrice('FREE', ''), null)
 })
 
 test('Phase 1D checkout: API returns the URL shape consumed by the pricing UI', () => {

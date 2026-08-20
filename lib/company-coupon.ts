@@ -1,4 +1,5 @@
 import Stripe from 'stripe'
+import { getStripeSecretKey } from '@/lib/stripe-config'
 
 export type CompanyCouponResult =
   | { valid: true; id: string; name: string | null; percentOff: number | null; amountOff: number | null; currency: string | null }
@@ -10,9 +11,10 @@ export type CompanyCouponResult =
 export async function validateCompanyCoupon(code: string): Promise<CompanyCouponResult> {
   const normalized = code.trim()
   if (!normalized) return { valid: false, reason: 'Coupon code is required' }
-  if (!process.env.STRIPE_SECRET_KEY) return { valid: false, reason: 'Coupon validation is unavailable' }
+  const secretKey = await getStripeSecretKey()
+  if (!secretKey) return { valid: false, reason: 'Coupon validation is unavailable' }
 
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+  const stripe = new Stripe(secretKey)
   try {
     const coupon = await stripe.coupons.retrieve(normalized)
     if (!coupon.valid) return { valid: false, reason: 'Coupon is not valid' }

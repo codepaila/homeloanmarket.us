@@ -3,8 +3,13 @@ import Stripe from 'stripe'
 import { getCurrentCompany } from '@/lib/company-policy'
 import { isSameOriginRequest } from '@/lib/origin'
 import { SubscriptionService } from '@/lib/subscription'
+import { getStripeSecretKey } from '@/lib/stripe-config'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+async function getStripe(): Promise<Stripe> {
+  const key = await getStripeSecretKey()
+  if (!key) throw new Error('STRIPE_SECRET_KEY is not configured')
+  return new Stripe(key)
+}
 
 export async function POST(request: NextRequest) {
   if (!isSameOriginRequest(request)) return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 })
@@ -12,6 +17,7 @@ export async function POST(request: NextRequest) {
   if (!current?.company.subscription?.stripeSubId || !current.company.subscription.stripeCustomerId) return NextResponse.json({ error: 'Active company subscription not found' }, { status: 404 })
   try {
     await SubscriptionService.withBillingLock(`company:${current.company.id}`, async () => {
+      const stripe = await getStripe()
       const subscription = await stripe.subscriptions.retrieve(current.company.subscription!.stripeSubId!)
       if (subscription.customer !== current.company.subscription!.stripeCustomerId) throw new Error('Stripe customer does not belong to this company')
       const customer = await stripe.customers.retrieve(current.company.subscription!.stripeCustomerId!)

@@ -15,10 +15,16 @@ test('company advertising plans use a dedicated model, not the broker Subscripti
   assert.match(schema, /advertisingPlan\s+CompanyAdvertisingPlan\?/)
 })
 
-test('broker subscription plan remains the separate SubscriptionPlan enum', () => {
+test('broker subscription plan remains separate from the company advertising plan model', () => {
+  // BrokerSubscription now uses a String plan code and links to the dedicated
+  // BrokerSubscriptionPlan model; it must never reference CompanyAdvertisingPlan.
   const brokerSub = schema.slice(schema.indexOf('model BrokerSubscription'), schema.indexOf('model BrokerRegistration'))
-  assert.match(brokerSub, /plan\s+SubscriptionPlan/)
+  assert.match(brokerSub, /plan\s+String/)
+  assert.match(brokerSub, /planRef\s+BrokerSubscriptionPlan\?/)
   assert.doesNotMatch(brokerSub, /CompanyAdvertisingPlan/)
+  // The two billing domains use dedicated plan models.
+  assert.match(schema, /model CompanyAdvertisingPlan \{/)
+  assert.match(schema, /model BrokerSubscriptionPlan \{/)
 })
 
 test('company checkout resolves a company advertising plan and uses its Stripe price', () => {

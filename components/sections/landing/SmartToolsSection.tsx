@@ -33,7 +33,7 @@ export default function SmartToolsSection() {
   ]
 
   return (
-    <section className="section-spacing bg-bg-deep">
+    <section className="section-spacing bg-white">
       <div className="container-custom">
         <div className="mx-auto max-w-4xl text-center">
           {/* Section Badge */}

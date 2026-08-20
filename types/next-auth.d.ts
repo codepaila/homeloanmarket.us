@@ -23,7 +23,7 @@ declare module "next-auth" {
         brokerStatus: string; // Changed to string for flexibility
         profileSlug: string;
         subscription?: {
-          plan: SubscriptionPlan;
+          plan: string;
           isActive: boolean;
           startDate: Date;
           endDate?: Date | null;
@@ -50,7 +50,7 @@ declare module "next-auth" {
       brokerStatus: string; // Changed to string for flexibility
       profileSlug: string;
       subscription?: {
-        plan: SubscriptionPlan;
+        plan: string;
         isActive: boolean;
         startDate: Date;
         endDate?: Date | null;
@@ -79,7 +79,7 @@ declare module "next-auth/jwt" {
       brokerStatus: string; // Changed to string for flexibility
       profileSlug: string;
       subscription?: {
-        plan: SubscriptionPlan;
+        plan: string;
         isActive: boolean;
         startDate: Date;
         endDate?: Date | null;

@@ -50,6 +50,13 @@ export async function completeClaimForUser(context: ClaimContext, userId: string
       data: { brokerClaimId: currentInvitation.claim.id, invitationId: currentInvitation.id, actorUserId: userId, eventType: 'COMPLETED', metadata: { ownership: 'attached' } },
     })
     if (user.role !== 'BROKER') await tx.user.update({ where: { id: userId }, data: { role: 'BROKER' } })
-    return { brokerId: currentInvitation.claim.brokerId, profileSlug: currentInvitation.claim.broker.profileSlug }
+    // The claim attaches the User to the existing Broker without touching its
+    // BrokerSubscription. Return the broker's current subscription plan so
+    // callers never assume a hard-coded plan.
+    const broker = await tx.broker.findUnique({
+      where: { id: currentInvitation.claim.brokerId },
+      select: { subscription: { select: { plan: true } } },
+    })
+    return { brokerId: currentInvitation.claim.brokerId, profileSlug: currentInvitation.claim.broker.profileSlug, subscriptionPlan: broker?.subscription?.plan || null }
   })
 }

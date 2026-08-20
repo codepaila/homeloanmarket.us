@@ -35,14 +35,14 @@ function SignInContent() {
     <AuthFormWrapper
       title="Welcome Back"
       subtitle="Sign in to your account to continue"
-      showBackLink
+      showBackLink={false}
       backHref="/"
       backLabel="Back to Home"
       footer={
         <p className="text-sm text-text-muted">
           Don&apos;t have an account?{' '}
           <Link
-            href="/register"
+            href="/auth/signup"
             className="font-medium text-primary transition-colors hover:text-primary/80"
           >
             Create account

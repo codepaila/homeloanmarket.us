@@ -95,7 +95,10 @@ test('Phase 1J 17: Redis failure does not continue unsafe checkout', () => {
 })
 
 test('Phase 1J 18: duplicate checkout retry retains server validation', () => {
-  assert.ok(checkout().includes('validatePlanPrice(plan, priceId)'))
+  // The checkout API validates against the DB-backed dynamic plan; the server
+  // action retains the registration plan/price validator. Both are
+  // server-authoritative and never trust client values.
+  assert.ok(checkout().includes('validateBrokerPlanForCheckout'))
   assert.ok(action().includes('validatePlanPrice(plan, priceId)'))
 })
 

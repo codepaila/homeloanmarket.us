@@ -5,7 +5,7 @@ import { motion, useReducedMotion } from 'motion/react'
 import Image from 'next/image'
 
 // Beautiful Unsplash background image - modern home exterior
-const heroBackground = '/assets/images/home-cover.jpeg'
+const heroBackground = '/assets/images/cover.PNG'
 
 export default function HeroImageSection() {
 
@@ -21,7 +21,7 @@ export default function HeroImageSection() {
   return (
     <section
       //  className="relative isolate  overflow-hidden bg-secondary"
-      className="relative isolate min-h-80 sm:min-h-100 md:min-h-150 lg:min-h-155 overflow-hidden bg-secondary"
+      className="relative isolate min-h-80 sm:min-h-90 md:min-h-130 lg:min-h-150  overflow-hidden bg-secondary"
     >
       {/* Background Image */}
       <div className="absolute inset-0">
@@ -33,14 +33,14 @@ export default function HeroImageSection() {
           fill
           sizes="100vw"
           priority
-          className="object-fit"
+          className="object-cover object-center"
           aria-hidden="true"
         />
 
       </div>
       <div className="container-custom relative z-10">
         <div
-         className=" pt-12 md:pt-16 lg:pt-20 mt-12 md:mt-12"
+          className=" py-12 md:pt-16 lg:pt-20 mt-12 md:mt-12"
         >
           <div className="mx-auto max-w-8xl text-left lg:mx-0">
 
@@ -53,12 +53,34 @@ export default function HeroImageSection() {
               <Image
                 src="/assets/images/5-profiles-cover-icon.png"
                 alt="Verified mortgage professionals"
-                width={900}
+                width={750}
                 height={400}
                 priority
-                className="h-auto w-full max-w-[900px] object-contain object-left"
+                className="h-auto w-full max-w-187.5 object-contain object-center"
               />
             </motion.div>
+            <div className="mt-8 sm:mt-10 md:mt-16 lg:mt-24">
+
+              <motion.h1
+                initial={{ opacity: 1, x: 0 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={motionTransition(0.2)}
+                className=" text-lg sm:text-xl  md:text-3xl lg:text-[40px]   font-bold  tracking-tighter md:tracking-wide text-white text-shadow-xs text-shadow-black"
+              >
+                You Could Save Thousands on Your Home Loan.
+              </motion.h1>
+
+              {/* Subtitle - Exact text from image */}
+              <motion.p
+                initial={{ opacity: 1, x: 0 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={motionTransition(0.3)}
+                className=" text-lg sm:text-2xl  md:text-3xl lg:text-[40px]  font-bold  tracking-tighter sm:tracking-wide text-white text-shadow-xs text-shadow-black"
+              >
+                Talk To Local Home Loan Experts
+              </motion.p>
+            </div>
+
           </div>
         </div>
       </div>

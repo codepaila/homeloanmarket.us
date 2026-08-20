@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/currentUser'
 import prisma from '@/lib/prisma'
 import AdminBrokerActions from './AdminBrokerActions'
 import MortgageExpertControl from './MortgageExpertControl'
+import { brokerSubscriptionHasFeature, BROKER_PLAN_FEATURES } from '@/lib/broker-plans'
 
 export default async function AdminBrokerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser()
@@ -30,7 +31,16 @@ export default async function AdminBrokerDetailPage({ params }: { params: Promis
       coverImage: true,
       profileImage: true,
       mortgageExpertEnabled: true,
-      subscription: { select: { plan: true, isActive: true, startDate: true, endDate: true } },
+      subscription: {
+        select: {
+          plan: true,
+          planId: true,
+          isActive: true,
+          startDate: true,
+          endDate: true,
+          planRef: { include: { features: true } },
+        },
+      },
       claim: {
         select: {
           status: true,
@@ -66,6 +76,7 @@ export default async function AdminBrokerDetailPage({ params }: { params: Promis
     profileImage: broker.profileImage,
     mortgageExpertEnabled: broker.mortgageExpertEnabled,
     subscription: broker.subscription,
+    profileBadge: brokerSubscriptionHasFeature(broker.subscription, BROKER_PLAN_FEATURES.PROFILE_BADGE),
     claim: broker.claim,
   }
 
@@ -90,6 +101,7 @@ export default async function AdminBrokerDetailPage({ params }: { params: Promis
       <MortgageExpertControl
         brokerId={broker.id}
         mortgageExpertEnabled={broker.mortgageExpertEnabled}
+        profileBadge={brokerDto.profileBadge}
         subscription={broker.subscription}
       />
 

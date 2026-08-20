@@ -203,6 +203,10 @@ export default function BrokerImportPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             Review and validate broker data before it reaches the database.
           </p>
+          <p className="mt-2 text-sm font-medium text-[#17213C]">
+            Default Subscription: FREE
+            <span className="ml-2 font-normal text-[#596579]">Admin-imported brokers automatically receive the active FREE plan.</span>
+          </p>
         </div>
         <Link
           href="/admin/brokers"

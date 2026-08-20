@@ -265,6 +265,7 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
                   nmls={broker.nmls}
                   logo={broker.logo}
                   profileImage={broker.profileImage}
+                  isMortgageExpert={broker.isMortgageExpert === true}
                 />
               ))}
             </div>

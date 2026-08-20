@@ -21,24 +21,41 @@ export default function CompanySubscriptionSelectPage() {
   const [error, setError] = useState('')
   const [loadingPlans, setLoadingPlans] = useState(true)
   const [couponCode, setCouponCode] = useState('')
+  const [couponState, setCouponState] = useState<'idle' | 'applying' | 'applied' | 'error'>('idle')
   const [couponMessage, setCouponMessage] = useState('')
-  const [couponApplied, setCouponApplied] = useState(false)
+  const [couponAppliedCode, setCouponAppliedCode] = useState('')
 
   async function applyCoupon() {
-    if (!couponCode.trim()) return
-    const response = await fetch('/api/company/subscription/coupon/validate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: couponCode }),
-    })
-    const data = await response.json()
-    if (data.valid) {
-      setCouponApplied(true)
-      setCouponMessage('Coupon applied.')
-    } else {
-      setCouponApplied(false)
-      setCouponMessage(data.reason || 'Invalid coupon code')
+    const code = couponCode.trim()
+    if (!code || couponState === 'applying' || couponState === 'applied') return
+    setCouponState('applying')
+    setCouponMessage('')
+    try {
+      const response = await fetch('/api/company/subscription/coupon/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      })
+      const data = await response.json()
+      if (data.valid) {
+        setCouponState('applied')
+        setCouponAppliedCode(code)
+        setCouponMessage(`Coupon applied.`)
+      } else {
+        setCouponState('error')
+        setCouponMessage(data.reason || 'Invalid or unavailable coupon')
+      }
+    } catch {
+      setCouponState('error')
+      setCouponMessage('Unable to validate coupon. Please try again.')
     }
+  }
+
+  function removeCoupon() {
+    setCouponState('idle')
+    setCouponCode('')
+    setCouponAppliedCode('')
+    setCouponMessage('')
   }
 
   useEffect(() => {
@@ -66,7 +83,7 @@ export default function CompanySubscriptionSelectPage() {
       const response = await fetch('/api/company/subscription/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId: plan.id, couponCode: couponApplied ? couponCode : '' }),
+        body: JSON.stringify({ planId: plan.id, couponCode: couponState === 'applied' ? couponAppliedCode : '' }),
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Unable to start checkout')
@@ -87,17 +104,42 @@ export default function CompanySubscriptionSelectPage() {
             Select a company advertising plan to request local broker-listing advertisements.
           </p>
         </div>
-        <div className="mx-auto mt-6 max-w-2xl">
-          <div className="flex gap-2">
-            <input
-              value={couponCode}
-              onChange={(event) => setCouponCode(event.target.value)}
-              placeholder="Coupon code"
-              className="flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
-            />
-            <button type="button" onClick={applyCoupon} className="rounded-xl border px-4 py-2.5 text-sm font-semibold">Apply</button>
-          </div>
-          {couponMessage && <p className="mt-2 text-sm text-muted-foreground">{couponMessage}</p>}
+        <div className="mx-auto mt-6 max-w-2xl rounded-xl border border-border bg-card p-4">
+          <p className="mb-2 text-sm font-medium">Promo code (optional)</p>
+          {couponState === 'applied' ? (
+            <div className="flex items-center justify-between gap-2">
+              <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-sm font-medium text-emerald-700">
+                Coupon applied: {couponAppliedCode}
+              </span>
+              <button type="button" onClick={removeCoupon} className="rounded-lg border px-3 py-1 text-xs font-semibold text-muted-foreground hover:text-destructive">
+                Remove
+              </button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <input
+                value={couponCode}
+                onChange={(event) => { setCouponCode(event.target.value); setCouponState('idle'); setCouponMessage('') }}
+                placeholder="Enter promo code"
+                className="flex-1 rounded-xl border border-border bg-background px-3 py-2.5 text-sm"
+                disabled={couponState === 'applying'}
+              />
+              <button
+                type="button"
+                onClick={applyCoupon}
+                disabled={couponState === 'applying' || !couponCode.trim()}
+                className="rounded-xl border px-4 py-2.5 text-sm font-semibold disabled:opacity-50"
+              >
+                {couponState === 'applying' ? 'Checking…' : 'Apply'}
+              </button>
+            </div>
+          )}
+          {couponMessage && (
+            <p className={`mt-2 text-sm ${couponState === 'error' ? 'text-destructive' : 'text-emerald-700'}`}>{couponMessage}</p>
+          )}
+          {couponState === 'applied' && (
+            <p className="mt-1 text-xs text-muted-foreground">The discount will be applied at Stripe checkout. The final amount is set by the server, not the browser.</p>
+          )}
         </div>
         {error && <p className="mx-auto mt-6 max-w-2xl rounded-lg bg-destructive/10 p-3 text-center text-sm text-destructive">{error}</p>}
         {loadingPlans ? (

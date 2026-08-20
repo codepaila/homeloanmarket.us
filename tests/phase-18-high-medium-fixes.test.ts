@@ -99,7 +99,7 @@ test('H6: per-subscription serialization lock exists with graceful fallback', ()
 
 test('H6: Stripe signature verification and unique eventId idempotency are preserved', () => {
   const source = read('app/api/stripe/webhook/route.ts')
-  assert.ok(source.includes('stripe.webhooks.constructEvent'), 'signature verification must remain')
+  assert.ok(source.includes('webhooks.constructEvent'), 'signature verification must remain')
   assert.ok(source.includes("error?.code === 'P2002'"), 'unique eventId duplicate handling must remain')
   assert.ok(source.includes("existing?.status === 'PROCESSED'"), 'PROCESSED idempotency must remain')
 })

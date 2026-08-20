@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict'
 import test, { after, before } from 'node:test'
 import { PrismaClient, StripeWebhookEventStatus } from '@prisma/client'
-import { subscriptionPlans, validatePlanPrice } from '../lib/stripe'
+import { stripePriceIds, validatePlanPrice } from '../lib/stripe'
 import { SubscriptionService } from '../lib/subscription'
+import { validateBrokerPlanForCheckout } from '../lib/broker-plans'
 
 const prisma = new PrismaClient()
 const prefix = `phase81-${Date.now()}`
@@ -17,12 +18,29 @@ after(async () => {
   await prisma.$disconnect()
 })
 
-test('authoritative plan catalog maps valid pairs and rejects tampering', () => {
-  for (const plan of subscriptionPlans.filter((item) => item.name !== 'FREE')) {
-    assert.equal(validatePlanPrice(plan.name, plan.stripePriceId)?.name, plan.name)
-    assert.equal(validatePlanPrice(plan.name, 'price_tampered'), null)
-  }
+test('registration plan/price validation maps valid pairs and rejects tampering', () => {
+  assert.equal(validatePlanPrice('FEATURED', stripePriceIds.FEATURED)?.name, 'FEATURED')
+  assert.equal(validatePlanPrice('FEATURED', 'price_tampered'), null)
+  assert.equal(validatePlanPrice('FREE', ''), null)
   assert.equal(validatePlanPrice('UNKNOWN', 'price_tampered'), null)
+})
+
+test('dynamic plan checkout validation resolves active plans by code and price', async () => {
+  // Requires the dynamic BrokerSubscriptionPlan records to be seeded.
+  const featured = await prisma.brokerSubscriptionPlan.findFirst({ where: { code: 'FEATURED' } })
+  if (featured?.stripePriceId) {
+    const ok = await validateBrokerPlanForCheckout('FEATURED', featured.stripePriceId)
+    assert.equal(ok.ok, true)
+    const tampered = await validateBrokerPlanForCheckout('FEATURED', 'price_tampered')
+    assert.equal(tampered.ok, false)
+    const inactive = await validateBrokerPlanForCheckout('UNKNOWN', 'price_tampered')
+    assert.equal(inactive.ok, false)
+  } else {
+    // No Stripe price configured in this environment — the check still resolves
+    // the plan existence/activity but must fail on the price mismatch.
+    const tampered = await validateBrokerPlanForCheckout('FEATURED', 'price_tampered')
+    assert.equal(tampered.ok, false)
+  }
 })
 
 test('effective entitlement resolves missing, FREE, inactive paid, and active paid states', () => {

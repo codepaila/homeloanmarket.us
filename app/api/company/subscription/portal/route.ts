@@ -1,13 +1,19 @@
 import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getCurrentCompany } from '@/lib/company-policy'
+import { getStripeSecretKey } from '@/lib/stripe-config'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+async function getStripe(): Promise<Stripe> {
+  const key = await getStripeSecretKey()
+  if (!key) throw new Error('STRIPE_SECRET_KEY is not configured')
+  return new Stripe(key)
+}
 
 export async function POST() {
   const current = await getCurrentCompany()
   if (!current?.company.subscription?.stripeCustomerId) return NextResponse.json({ error: 'Company billing is not configured' }, { status: 404 })
   try {
+    const stripe = await getStripe()
     const customer = await stripe.customers.retrieve(current.company.subscription.stripeCustomerId)
     if ('deleted' in customer && customer.deleted) return NextResponse.json({ error: 'Company billing is unavailable' }, { status: 409 })
     if (customer.metadata?.companyId && customer.metadata.companyId !== current.company.id) return NextResponse.json({ error: 'Stripe customer does not belong to this company' }, { status: 403 })

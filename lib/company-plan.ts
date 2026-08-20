@@ -5,7 +5,7 @@ export const COMPANY_PLAN_DEFAULT_NAME = 'ADVERTISING'
 export async function getActiveCompanyAdvertisingPlans() {
   return prisma.companyAdvertisingPlan.findMany({
     where: { isActive: true },
-    orderBy: [{ price: 'asc' }, { name: 'asc' }],
+    orderBy: [{ displayOrder: 'asc' }, { price: 'asc' }, { name: 'asc' }],
   })
 }
 

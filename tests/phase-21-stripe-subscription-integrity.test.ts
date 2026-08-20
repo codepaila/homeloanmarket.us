@@ -13,7 +13,7 @@ test('Phase 1I: checkout paths share a server-side lock and existing-subscriptio
   assert.ok(route.includes('SubscriptionService.withCheckoutLock'))
   assert.ok(action.includes('SubscriptionService.withCheckoutLock'))
   assert.ok(service.includes('findCheckoutConflict'))
-  assert.ok(service.includes('stripe.checkout.sessions.list'))
+  assert.ok(service.includes('checkout.sessions.list'))
   assert.ok(service.includes("['active', 'trialing', 'incomplete', 'past_due', 'unpaid', 'paused']"))
 })
 

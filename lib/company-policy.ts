@@ -6,7 +6,7 @@ export async function getCurrentCompany() {
   if (!user || !user.isActive) return null
   const membership = await prisma.companyMembership.findFirst({
     where: { userId: user.id, isActive: true, company: { status: { not: 'SUSPENDED' } } },
-    include: { company: { include: { subscription: true } } },
+    include: { company: { include: { subscription: { include: { advertisingPlan: true } } } } },
   })
   return membership ? { user, membership, company: membership.company } : null
 }

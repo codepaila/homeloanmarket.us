@@ -244,6 +244,7 @@ model User {
   uploadedMedia MediaAsset[]    @relation("UploadedMedia")
   createdAds    Advertisement[] @relation("CreatedBy")
   updatedAds    Advertisement[] @relation("UpdatedBy")
+  secureConfigs SecureConfig[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -327,7 +328,10 @@ model BrokerSubscription {
   id       String @id @default(auto()) @map("_id") @db.ObjectId
   brokerId String @unique @db.ObjectId
 
-  plan     SubscriptionPlan
+  // Stable plan code (FREE/FEATURED/PREMIUM or an admin-created plan code).
+  // The authoritative plan configuration lives in BrokerSubscriptionPlan.
+  plan     String
+  planId   String? @db.ObjectId
   isActive Boolean          @default(true)
 
   startDate DateTime  @default(now())
@@ -336,12 +340,59 @@ model BrokerSubscription {
   stripeCustomerId String?
   stripeSubId      String?
 
-  broker Broker @relation(fields: [brokerId], references: [id])
+  broker   Broker                  @relation(fields: [brokerId], references: [id])
+  planRef  BrokerSubscriptionPlan? @relation(fields: [planId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([planId])
   @@map("broker_subscriptions")
+}
+
+// Admin-managed broker subscription plans. This is the authoritative source
+// for plan configuration (pricing, billing, Stripe mapping, and feature
+// availability). The legacy `SubscriptionPlan` enum remains for the broker
+// registration flow only and is no longer the source of truth for broker
+// subscription entitlement.
+model BrokerSubscriptionPlan {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  code           String   @unique
+  description    String?
+  price          Int      @default(0) // price in cents
+  billingInterval String   @default("month")
+  currency       String   @default("usd")
+  stripeProductId String?
+  stripePriceId   String?
+  isActive       Boolean  @default(true)
+  displayOrder   Int      @default(0)
+
+  subscriptions BrokerSubscription[]
+  features      BrokerSubscriptionPlanFeature[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([displayOrder])
+  @@map("broker_subscription_plans")
+}
+
+model BrokerSubscriptionPlanFeature {
+  id      String  @id @default(auto()) @map("_id") @db.ObjectId
+  planId  String  @db.ObjectId
+  code    String
+  enabled Boolean @default(false)
+
+  plan BrokerSubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([planId, code])
+  @@index([planId])
+  @@map("broker_subscription_plan_features")
 }
 
 model BrokerRegistration {
@@ -472,11 +523,13 @@ model CompanyAdvertisingPlan {
   name            String   @unique
   description     String?
   price           Int      @default(0) // price in cents
+  currency        String   @default("usd")
   billingInterval String   @default("month")
   stripeProductId String?
   stripePriceId   String?  @unique
   features        String[] @default([])
   isActive        Boolean  @default(true)
+  displayOrder    Int      @default(0)
 
   subscriptions CompanySubscription[]
 
@@ -484,6 +537,7 @@ model CompanyAdvertisingPlan {
   updatedAt DateTime @updatedAt
 
   @@index([isActive])
+  @@index([displayOrder])
   @@map("company_advertising_plans")
 }
 
@@ -1143,4 +1197,40 @@ model Setting {
 
   @@index([category])
   @@map("settings")
+}
+
+// ============================================================
+// Secure configuration (secrets encrypted at rest)
+// ============================================================
+// Dedicated store for runtime secrets that must be encrypted at rest (e.g.
+// Stripe API secret key, Stripe webhook signing secret). These are NOT stored
+// in the generic `Setting` model. `value` holds AES-256-GCM ciphertext
+// (base64) and is never returned to any client.
+model SecureConfig {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  key         String   @unique
+  value       String // encrypted ciphertext (base64) — never plaintext
+  algorithm   String   @default("aes-256-gcm")
+  updatedById String?  @db.ObjectId
+  updatedBy   User?    @relation(fields: [updatedById], references: [id], onDelete: NoAction)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("secure_config")
+}
+
+// Audit trail for changes to secure configuration. Records only non-secret
+// metadata (which key changed, when, by whom) — never the secret value.
+model SecureConfigAudit {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  configKey String
+  action    String // SET | REPLACE | CLEAR
+  actorId   String?  @db.ObjectId
+  note      String?
+
+  createdAt DateTime @default(now())
+
+  @@index([configKey, createdAt])
+  @@map("secure_config_audits")
 }

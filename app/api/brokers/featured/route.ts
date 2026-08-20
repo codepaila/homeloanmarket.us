@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { toPublicBrokerRecord } from '@/lib/public-broker'
 import { isMortgageExpertBroker } from '@/lib/broker-policy'
+import { BROKER_PLAN_FEATURES, brokerSubscriptionHasFeature } from '@/lib/broker-plans'
 
 export async function GET() {
   try {
@@ -41,8 +42,10 @@ export async function GET() {
         subscription: {
           select: {
             plan: true,
+            planId: true,
             isActive: true,
             endDate: true,
+            planRef: { include: { features: true } },
           },
         },
       },
@@ -60,7 +63,10 @@ export async function GET() {
     return NextResponse.json({
       brokers: brokers.map((broker) => ({
         ...toPublicBrokerRecord(broker, { includeContact: true }),
-        isMortgageExpert: isMortgageExpertBroker(broker),
+        isMortgageExpert: isMortgageExpertBroker({
+          mortgageExpertEnabled: broker.mortgageExpertEnabled,
+          profileBadge: brokerSubscriptionHasFeature(broker.subscription, BROKER_PLAN_FEATURES.PROFILE_BADGE),
+        }),
       })),
     })
   } catch (error) {

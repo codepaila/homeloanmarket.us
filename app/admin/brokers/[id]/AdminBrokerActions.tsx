@@ -140,6 +140,8 @@ export default function AdminBrokerActions({ broker }: { broker: AdminBroker }) 
             value={broker.coverImage}
             uploadUrl={`/api/admin/brokers/${broker.id}/cover-image`}
             removeUrl={`/api/admin/brokers/${broker.id}/cover-image`}
+            mediaSelectUrl={`/api/admin/brokers/${broker.id}/cover-image/media`}
+            onUploaded={() => router.refresh()}
             label="Cover image"
           />
         </div>

@@ -156,13 +156,13 @@ function SearchSection() {
   })
 
   return (
-    <div className="max-w-8xl mx-auto px-4 py-16 md:py-20 ">
+    <div className="max-w-8xl mx-auto px-4 py-16 md:py-20 bg-white ">
       {/* Heading */}
       <motion.h2
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={motionTransition(0.1)}
-        className="text-center text-2xl font-bold text-secondary sm:text-3xl md:text-4xl"
+        className="text-center text-3xl font-bold text-secondary sm:text-4xl md:text-5xl"
       >
         <span className="text-primary">
           Find Home Loan Experts
@@ -175,7 +175,7 @@ function SearchSection() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={motionTransition(0.25)}
-        className="mt-6 mx-auto max-w-4xl"
+        className="mt-8 mx-auto max-w-4xl"
       >
         {/* Main Search Bar */}
         <div ref={searchRef} className="relative flex items-center gap-3 rounded-xl bg-white px-4 py-2.5 shadow-sm ring-1 ring-black/5 transition-all focus-within:ring-2 focus-within:ring-primary/50">

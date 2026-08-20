@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client'
 import { buildBrokerImportData, buildBrokerImportIdentity, normalizeEmail, normalizeNmls, normalizePhoneForMatch, type BrokerImportRow } from './broker-import'
 import { adminCreatedBrokerDefaults } from '@/lib/admin-broker'
 import { resolveBrokerLocation, locationHasValidCoordinates, type BrokerLocationPatch } from '@/lib/location/broker-location'
+import { ensureAdminCreatedBrokerFreeSubscription } from '@/lib/broker-plans'
 
 export type BrokerImportResultError = {
   row: number
@@ -225,7 +226,7 @@ export async function importBrokerRows(rows: BrokerImportRow[], mode: 'CREATE_ON
         let profileSlug = baseSlug
         let suffix = 2
         while (await tx.broker.findUnique({ where: { profileSlug } })) profileSlug = `${baseSlug}-${suffix++}`
-        await tx.broker.create({
+        const created = await tx.broker.create({
           data: {
             ...data,
             profileSlug,
@@ -236,9 +237,11 @@ export async function importBrokerRows(rows: BrokerImportRow[], mode: 'CREATE_ON
             brokerStatus: adminCreatedBrokerDefaults.brokerStatus,
             isVisible: adminCreatedBrokerDefaults.isVisible,
             ...mergeLocationPatch(patch),
-            subscription: { create: { plan: 'FREE', isActive: true, startDate: new Date(), endDate: null } },
           },
         })
+        // Admin-imported brokers automatically receive the active dynamic FREE
+        // plan (linked via planId). No Stripe objects are created.
+        await ensureAdminCreatedBrokerFreeSubscription(tx as never, created.id)
       })
       result.imported += 1
     } catch (error) {

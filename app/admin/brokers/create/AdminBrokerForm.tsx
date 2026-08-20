@@ -64,6 +64,10 @@ export default function AdminBrokerForm() {
         <p className="text-sm font-medium text-muted-foreground">Broker Management</p>
         <h1 className="text-3xl font-semibold tracking-tight">Create Admin Broker Profile</h1>
         <p className="mt-1 text-sm text-muted-foreground">The profile will be unowned, verified, published, and FREE. No User account is created.</p>
+        <p className="mt-2 inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary">
+          Default Subscription: FREE
+          <span className="text-xs text-muted-foreground">Admin-created brokers automatically receive the active FREE plan.</span>
+        </p>
       </div>
       <form onSubmit={submit} className="space-y-6 rounded-xl border bg-card p-6">
         <div className="grid gap-4 sm:grid-cols-2">

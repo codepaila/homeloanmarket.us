@@ -9,6 +9,7 @@ import {
   Search,
   HelpCircle,
   Star,
+  CreditCard,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -46,10 +47,20 @@ export const adminNavigation: AdminNavGroup[] = [
   {
     label: 'Advertisements',
     items: [
-      { label: 'All Advertisements', href: '/admin/ads/list', icon: Megaphone },
+      { label: 'All Advertisements', href: '/admin/ads', icon: Megaphone },
       { label: 'Create Advertisement', href: '/admin/ads/new', icon: Megaphone },
       { label: 'Media Library', href: '/admin/media', icon: ImageIcon },
       { label: 'Folders', href: '/admin/folders', icon: FolderOpen },
+    ],
+  },
+  {
+    label: 'Billing',
+    items: [
+      { label: 'Broker Plans', href: '/admin/billing/broker-plans', icon: CreditCard },
+      { label: 'Broker Subscriptions', href: '/admin/billing/broker-subscriptions', icon: CreditCard },
+      { label: 'Company Advertising Plans', href: '/admin/billing/company-advertising-plans', icon: FileText },
+      { label: 'Company Subscriptions', href: '/admin/billing/company-subscriptions', icon: FileText },
+      { label: 'Stripe Configuration', href: '/admin/billing/stripe', icon: CreditCard },
     ],
   },
   {

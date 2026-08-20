@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import prisma from '@/lib/prisma'
 import BrokerDetailClient from '@/components/sections/broker/BrokerDetailClient'
 import { isPublicBroker, isMortgageExpertBroker } from '@/lib/broker-policy'
+import { BROKER_PLAN_FEATURES, brokerSubscriptionHasFeature } from '@/lib/broker-plans'
 import { canonicalUrl, safeJsonLd } from '@/lib/seo'
 import { toPublicBrokerRecord } from '@/lib/public-broker'
 
@@ -88,7 +89,7 @@ export default async function PublicBrokerPage({ params }: PageProps) {
         },
         _count: { select: { reviews: { where: { status: 'APPROVED' } } } },
         subscription: {
-          select: { plan: true, isActive: true, endDate: true },
+          select: { plan: true, planId: true, isActive: true, endDate: true, planRef: { include: { features: true } } },
         },
       }
     })
@@ -113,7 +114,10 @@ export default async function PublicBrokerPage({ params }: PageProps) {
   const publicBroker = {
     ...toPublicBrokerRecord(broker, { includeContact: true }),
     hasOwner: Boolean(broker.userId),
-    isMortgageExpert: isMortgageExpertBroker(broker),
+    isMortgageExpert: isMortgageExpertBroker({
+      mortgageExpertEnabled: broker.mortgageExpertEnabled,
+      profileBadge: brokerSubscriptionHasFeature(broker.subscription, BROKER_PLAN_FEATURES.PROFILE_BADGE),
+    }),
   }
 
   return (

@@ -1,19 +1,47 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { toast } from 'react-hot-toast'
 import { AnimatedContainer } from '@/components/design/AnimatedContainer'
 import { Section } from '@/components/design/Section'
 import { PricingCard } from '@/components/design/PricingCard'
-import { subscriptionPlans } from '@/lib/stripe'
-import { Check, Star, Zap, Shield, BarChart3 } from 'lucide-react'
+import { Zap, Shield, BarChart3 } from 'lucide-react'
+
+type PublicPlan = {
+  id: string
+  code: string
+  name: string
+  description: string | null
+  price: number // cents
+  currency: string
+  billingInterval: string
+  displayOrder: number
+  stripePriceId: string | null
+  features: string[]
+}
 
 export default function SubscriptionPage() {
-  const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
+  const [plans, setPlans] = useState<PublicPlan[]>([])
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let active = true
+    async function load() {
+      try {
+        const response = await fetch('/api/subscription/plans')
+        const data = await response.json()
+        if (!response.ok) throw new Error(data.error || 'Unable to load plans')
+        if (active) setPlans(Array.isArray(data.plans) ? data.plans : [])
+      } catch (cause) {
+        if (active) setError(cause instanceof Error ? cause.message : 'Unable to load plans')
+      }
+    }
+    void load()
+    return () => { active = false }
+  }, [])
 
   const handleSelect = async (priceId: string, planName: string) => {
-    setLoadingPlan(planName)
     try {
       const response = await fetch('/api/subscription/checkout', {
         method: 'POST',
@@ -32,8 +60,6 @@ export default function SubscriptionPage() {
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to start checkout')
-    } finally {
-      setLoadingPlan(null)
     }
   }
 
@@ -55,24 +81,28 @@ export default function SubscriptionPage() {
 
       <Section className="bg-background">
         <AnimatedContainer>
+          {error ? (
+            <p className="text-center text-sm text-destructive">{error}</p>
+          ) : plans.length === 0 ? (
+            <p className="text-center text-sm text-muted-foreground">Loading plans…</p>
+          ) : (
           <div className="grid lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {subscriptionPlans.map((plan, index) => (
+            {plans.map((plan) => (
               <PricingCard
-                key={plan.name}
+                key={plan.id}
                 name={plan.name}
-                description={plan.description}
-                price={plan.price}
+                description={plan.description || ''}
+                price={plan.price / 100}
+                priceSuffix={`/${plan.billingInterval}`}
                 features={plan.features}
-                limits={Object.fromEntries(
-                  Object.entries(plan.limits).filter(([, v]) => v !== undefined)
-                )}
-                isPopular={plan.name === 'FEATURED'}
-                stripePriceId={plan.stripePriceId}
+                isPopular={plan.code === 'FEATURED'}
+                stripePriceId={plan.stripePriceId || undefined}
                 onSelect={handleSelect}
-                isCurrent={plan.name === 'FREE'}
+                isCurrent={false}
               />
             ))}
           </div>
+          )}
         </AnimatedContainer>
       </Section>
 

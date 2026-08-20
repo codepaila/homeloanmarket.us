@@ -4,12 +4,17 @@ import Stripe from 'stripe'
 import crypto from 'crypto'
 import { Redis } from '@upstash/redis'
 import prisma from '@/lib/prisma'
-import { getAuthoritativePlan, subscriptionPlans } from '@/lib/stripe'
+import { listBrokerPlansPublic } from '@/lib/broker-plans'
 import { resolveCompanyPlanByStripePrice } from '@/lib/company-plan'
+import { getStripeSecretKey } from '@/lib/stripe-config'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  // apiVersion: '2024-06-20',
-})
+// Resolves the authoritative Stripe client from the configured secret key
+// (encrypted DB value first, then environment fallback).
+async function getStripe(): Promise<Stripe> {
+  const key = await getStripeSecretKey()
+  if (!key) throw new Error('STRIPE_SECRET_KEY is not configured')
+  return new Stripe(key)
+}
 
 export class CheckoutConflictError extends Error {
   constructor(message: string) {
@@ -25,10 +30,25 @@ export class BillingUnavailableError extends Error {
   }
 }
 
-export function getPlanForStripePrice(priceId: unknown): SubscriptionPlan {
-  return subscriptionPlans.find((plan) => plan.stripePriceId === priceId)?.name === 'FEATURED'
-    ? 'FEATURED'
-    : 'FREE'
+// Resolves the plan code for a Stripe price from the database. Returns the
+// matched plan code, or falls back to 'FREE' for an unmatched/unknown price.
+export async function getPlanForStripePrice(priceId: unknown): Promise<string> {
+  const plan = await prisma.brokerSubscriptionPlan.findFirst({
+    where: { stripePriceId: typeof priceId === 'string' ? priceId : '' },
+    select: { code: true },
+  })
+  return plan?.code || 'FREE'
+}
+
+// Resolve the database plan for a Stripe price. Falls back to FREE when the
+// database is not yet reconciled so existing Stripe flows keep working.
+async function resolvePlanForStripePrice(priceId: string): Promise<{ code: string; id: string | null }> {
+  const plan = await prisma.brokerSubscriptionPlan.findFirst({
+    where: { stripePriceId: priceId },
+    select: { id: true, code: true },
+  })
+  if (plan) return { code: plan.code, id: plan.id }
+  return { code: await getPlanForStripePrice(priceId), id: null }
 }
 
 export class SubscriptionService {
@@ -91,7 +111,7 @@ export class SubscriptionService {
     if (!local?.stripeCustomerId || local.stripeCustomerId !== customerId) {
       throw new Error('Stripe customer does not belong to this account')
     }
-    const customer = await stripe.customers.retrieve(customerId)
+    const customer = await (await getStripe()).customers.retrieve(customerId)
     if ('deleted' in customer && customer.deleted) throw new Error('Stripe customer is unavailable')
     if (customer.metadata?.userId && customer.metadata.userId !== userId) {
       throw new Error('Stripe customer does not belong to this account')
@@ -110,24 +130,24 @@ export class SubscriptionService {
     if (local?.plan === 'FEATURED' && local.isActive) {
       return { reason: 'An existing subscription must be managed before another checkout.' }
     }
-    const subscriptions = await stripe.subscriptions.list({ customer: customerId, status: 'all', limit: 20 })
+    const subscriptions = await (await getStripe()).subscriptions.list({ customer: customerId, status: 'all', limit: 20 })
     const blockingSubscription = subscriptions.data.find((subscription) =>
       ['active', 'trialing', 'incomplete', 'past_due', 'unpaid', 'paused'].includes(subscription.status),
     )
     if (blockingSubscription) {
       return { reason: 'An existing subscription must be managed before another checkout.' }
     }
-    const sessions = await stripe.checkout.sessions.list({ customer: customerId, status: 'open', limit: 20 })
+    const sessions = await (await getStripe()).checkout.sessions.list({ customer: customerId, status: 'open', limit: 20 })
     const openSession = sessions.data.find((session) => session.mode === 'subscription')
     if (openSession?.url) return { checkoutUrl: openSession.url }
     return null
   }
 
-  static effectiveSubscription(subscription: { plan: SubscriptionPlan; isActive: boolean; startDate?: Date; endDate?: Date | null; stripeCustomerId?: string | null; stripeSubId?: string | null } | null) {
+  static effectiveSubscription(subscription: { plan: string; isActive: boolean; startDate?: Date; endDate?: Date | null; stripeCustomerId?: string | null; stripeSubId?: string | null } | null) {
     const expired = Boolean(subscription?.endDate && subscription.endDate <= new Date())
     if (!subscription || subscription.plan === 'FREE' || subscription.plan !== 'FEATURED' || !subscription.isActive || expired) {
       return {
-        plan: 'FREE' as SubscriptionPlan,
+        plan: 'FREE',
         isActive: true,
         startDate: subscription?.startDate || new Date(),
         endDate: null,
@@ -152,7 +172,7 @@ export class SubscriptionService {
     
     if (subscription.stripeSubId) {
       try {
-        const stripeSub = await stripe.subscriptions.retrieve(subscription.stripeSubId) as any
+        const stripeSub = await (await getStripe()).subscriptions.retrieve(subscription.stripeSubId) as any
         stripeStatus = stripeSub.status.toUpperCase()
         
         // Sync with Stripe status
@@ -207,7 +227,7 @@ export class SubscriptionService {
   }
 
   // Calculate featured rank
-  static calculateFeaturedRank(broker: any, plan: SubscriptionPlan): number {
+  static calculateFeaturedRank(broker: any, plan: string): number {
     let rank = 0
 
     // Base rank from subscription
@@ -239,7 +259,7 @@ export class SubscriptionService {
     const broker = await prisma.broker.findUnique({
       where: { id: brokerId },
       include: {
-        subscription: true,
+        subscription: { include: { planRef: true } },
         bankPartners: true,
    
         contactMessages: {
@@ -259,7 +279,11 @@ export class SubscriptionService {
 
     const subscription = this.effectiveSubscription(broker.subscription)
     const plan = subscription.plan
-    const planConfig = getAuthoritativePlan(plan) || subscriptionPlans[0]
+
+    // Current plan display info is derived from the database plan, never the
+    // static catalog.
+    const publicPlans = await listBrokerPlansPublic()
+    const planInfo = publicPlans.find((p) => p.code === plan) || null
 
     return {
       usage: {
@@ -272,14 +296,14 @@ export class SubscriptionService {
         teamMembers: 1, // Default, can be expanded
         branches: 1 // Default, can be expanded
       },
-      limits: planConfig.limits,
+      planInfo,
       plan,
       isActive: subscription.isActive
     }
   }
 
   // Check if can upgrade
-  static async canUpgrade(brokerId: string, targetPlan: SubscriptionPlan) {
+  static async canUpgrade(brokerId: string, targetPlan: string) {
     const broker = await prisma.broker.findUnique({
       where: { id: brokerId },
       include: { subscription: true }
@@ -290,10 +314,16 @@ export class SubscriptionService {
     }
 
     const currentPlan = this.effectiveSubscription(broker.subscription).plan
-    const currentPlanIndex = subscriptionPlans.findIndex(p => p.name === currentPlan)
-    const targetPlanIndex = subscriptionPlans.findIndex(p => p.name === targetPlan)
+    // Plan ordering comes from the database (displayOrder), not a static catalog.
+    const plans = await prisma.brokerSubscriptionPlan.findMany({ select: { code: true, displayOrder: true } })
+    const orderOf = (code: string) => {
+      const match = plans.find((p) => p.code === code)
+      return match ? match.displayOrder : Number.MAX_SAFE_INTEGER
+    }
+    const currentOrder = orderOf(currentPlan)
+    const targetOrder = orderOf(targetPlan)
 
-    if (targetPlanIndex <= currentPlanIndex) {
+    if (targetOrder <= currentOrder) {
       return { canUpgrade: false, reason: 'Target plan is not higher than current plan' }
     }
 
@@ -359,7 +389,7 @@ export class SubscriptionService {
       throw new Error('Broker subscription not found')
     }
     if (subscription.stripeSubId && subscription.stripeSubId !== stripeSubscriptionId) {
-      const currentStripeSubscription = await stripe.subscriptions.retrieve(subscription.stripeSubId)
+      const currentStripeSubscription = await (await getStripe()).subscriptions.retrieve(subscription.stripeSubId)
       const incomingIsActive = status === 'active' || status === 'trialing'
       const currentIsTerminal = ['canceled', 'incomplete_expired'].includes(currentStripeSubscription.status)
       const currentIsActive = ['active', 'trialing', 'incomplete', 'past_due', 'unpaid', 'paused'].includes(currentStripeSubscription.status)
@@ -371,14 +401,16 @@ export class SubscriptionService {
 
     const isActive = status === 'active' || status === 'trialing'
 
-    // Get plan from Stripe metadata or price
-    const plan = getPlanForStripePrice(planId)
+    // Get plan from Stripe metadata or price. The database plan is
+    // authoritative; the legacy static resolution is a fallback.
+    const resolved = await resolvePlanForStripePrice(String(planId || ''))
 
     // Update subscription in database
     const updatedSubscription = await prisma.brokerSubscription.update({
       where: { id: subscription.id },
       data: {
-        plan,
+        plan: resolved.code,
+        planId: resolved.id,
         isActive,
         
         stripeSubId: stripeSubscriptionId,
@@ -406,7 +438,7 @@ export class SubscriptionService {
     if (!registrationSubscription) return null
 
     const isActive = status === 'active' || status === 'trialing'
-    const plan = getPlanForStripePrice(planId)
+    const plan = (await getPlanForStripePrice(planId)) as SubscriptionPlan
     const registrationStatus = isActive ? 'ONBOARDING_IN_PROGRESS' : registrationSubscription.registration.status
     const updated = await prisma.$transaction(async (tx) => {
       const result = await tx.brokerRegistrationSubscription.update({
@@ -478,7 +510,7 @@ export class SubscriptionService {
     } else {
       // Cancel in Stripe
       try {
-        await stripe.subscriptions.cancel(subscription.stripeSubId, {}, {
+        await (await getStripe()).subscriptions.cancel(subscription.stripeSubId, {}, {
           idempotencyKey: `cancel_${subscription.stripeCustomerId}_${subscription.stripeSubId}`,
         }) as any
       } catch (error) {
@@ -513,18 +545,20 @@ export class SubscriptionService {
     }
 
     try {
-      const stripeSub = await stripe.subscriptions.retrieve(subscription.stripeSubId) as any
+      const stripeSub = await (await getStripe()).subscriptions.retrieve(subscription.stripeSubId) as any
       if (stripeSub.customer !== subscription.stripeCustomerId) {
         return { success: false, message: 'Stripe customer does not match Broker subscription' }
       }
 
       const isActive = stripeSub.status === 'active' || stripeSub.status === 'trialing'
+      const resolved = await resolvePlanForStripePrice(stripeSub.items.data[0]?.price.id || '')
 
       // Update database with Stripe status
       await prisma.brokerSubscription.update({
         where: { brokerId },
         data: {
-          plan: isActive ? getPlanForStripePrice(stripeSub.items.data[0]?.price.id) : 'FREE',
+          plan: isActive ? resolved.code : 'FREE',
+          planId: isActive ? resolved.id : null,
           isActive,
           endDate: isActive ? null : new Date(),
           updatedAt: new Date()

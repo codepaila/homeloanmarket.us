@@ -13,7 +13,14 @@ type CompanyDashboardData = {
   contactName: string
   contactPosition: string
   phone: string
-  subscription: { status: string; isActive: boolean; stripeCustomerId: string | null } | null
+  subscription: {
+    status: string
+    isActive: boolean
+    stripeCustomerId: string | null
+    startDate?: string | Date | null
+    endDate?: string | Date | null
+    plan?: { name: string; price?: number; currency?: string; billingInterval?: string } | null
+  } | null
 }
 
 type CompanyRequest = {
@@ -95,11 +102,30 @@ export function CompanyDashboardClient({ company, requests }: { company: Company
       <div><h1 className="text-3xl font-bold">Company Dashboard</h1><p className="mt-1 text-muted-foreground">{company.name}</p></div>
 
       <section className="rounded-xl border p-5">
-        <h2 className="font-semibold">Subscription &amp; Billing</h2>
-        <p className="mt-2 text-sm text-muted-foreground">Status: {company.subscription?.status || 'Not subscribed'}</p>
+        <h2 className="font-semibold">Company Advertising Plan</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Your advertising subscription grants access to the advertisement-request functionality.</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div className="rounded-lg bg-muted/40 p-4">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Current plan</p>
+            <p className="mt-1 text-lg font-semibold">{company.subscription?.plan?.name || 'No plan'}</p>
+            {company.subscription?.plan?.price !== undefined && company.subscription.plan.price !== null && (
+              <p className="text-sm text-muted-foreground">{company.subscription.plan.price > 0 ? `$${(company.subscription.plan.price / 100).toFixed(2)} / ${company.subscription.plan.billingInterval || 'month'}` : 'Free'}</p>
+            )}
+          </div>
+          <div className="rounded-lg bg-muted/40 p-4">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Status</p>
+            <p className="mt-1 text-lg font-semibold">{company.subscription?.isActive ? 'Active' : company.subscription?.status || 'Not subscribed'}</p>
+            {company.subscription?.endDate && (
+              <p className="text-sm text-muted-foreground">Renews / ends {new Date(company.subscription.endDate).toLocaleDateString()}</p>
+            )}
+            {company.subscription?.startDate && !company.subscription.endDate && (
+              <p className="text-sm text-muted-foreground">Active since {new Date(company.subscription.startDate).toLocaleDateString()}</p>
+            )}
+          </div>
+        </div>
         <div className="mt-4 flex flex-wrap gap-2">
           <button type="button" onClick={checkout} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white">
-            {company.subscription?.isActive ? 'Subscription active' : 'Start advertising subscription'}
+            {company.subscription?.isActive ? 'Change plan' : 'Start advertising subscription'}
           </button>
           {company.subscription?.stripeCustomerId && (
             <button type="button" onClick={portal} disabled={busy} className="rounded-lg border px-4 py-2 text-sm font-semibold disabled:opacity-50">Billing portal</button>

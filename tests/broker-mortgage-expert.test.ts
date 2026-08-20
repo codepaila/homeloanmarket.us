@@ -2,9 +2,14 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 import {
-  hasPaidEntitlement,
   isMortgageExpertBroker,
 } from '../lib/broker-policy'
+import {
+  BROKER_PLAN_FEATURES,
+  brokerSubscriptionHasFeature,
+  planHasFeature,
+  DEFAULT_BROKER_PLAN_FEATURES,
+} from '../lib/broker-plans'
 
 const read = (path: string) => fs.readFileSync(path, 'utf8')
 
@@ -23,86 +28,76 @@ const detailClient = read('components/sections/broker/BrokerDetailClient.tsx')
 const featuredApi = read('app/api/brokers/featured/route.ts')
 const adminPage = read('app/admin/brokers/[id]/page.tsx')
 const adminControl = read('app/admin/brokers/[id]/MortgageExpertControl.tsx')
+const plansLib = read('lib/broker-plans.ts')
 
-const featured = { plan: 'FEATURED' as const, isActive: true, endDate: null }
-const expiredFeatured = { plan: 'FEATURED' as const, isActive: true, endDate: new Date(Date.now() - 1000) }
-const inactiveFeatured = { plan: 'FEATURED' as const, isActive: false, endDate: null }
-const free = { plan: 'FREE' as const, isActive: true, endDate: null }
+// A FEATURED plan that grants PROFILE_BADGE (default config).
+const badgePlan = { features: [{ code: 'PROFILE_BADGE', enabled: true }] }
+const noBadgePlan = { features: [{ code: 'PROFILE_BADGE', enabled: false }] }
+
+function sub(plan: { features: { code: string; enabled: boolean }[] }, isActive = true, endDate: Date | null = null) {
+  return { plan: 'FEATURED', isActive, endDate, planRef: plan }
+}
 
 // ---------------------------------------------------------------------------
-// FEATURED automatic qualification
+// PROFILE_BADGE / feature entitlement
 // ---------------------------------------------------------------------------
 
-test('active FEATURED subscription automatically qualifies', () => {
-  assert.equal(hasPaidEntitlement(featured), true)
-  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, subscription: featured }), true)
+test('a plan that grants PROFILE_BADGE qualifies automatically', () => {
+  assert.equal(brokerSubscriptionHasFeature(sub(badgePlan), BROKER_PLAN_FEATURES.PROFILE_BADGE), true)
+  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, profileBadge: true }), true)
 })
 
-test('inactive FEATURED subscription does not qualify', () => {
-  assert.equal(hasPaidEntitlement(inactiveFeatured), false)
-  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, subscription: inactiveFeatured }), false)
+test('a plan without PROFILE_BADGE does not auto-qualify', () => {
+  assert.equal(brokerSubscriptionHasFeature(sub(noBadgePlan), BROKER_PLAN_FEATURES.PROFILE_BADGE), false)
+  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, profileBadge: false }), false)
 })
 
-test('expired FEATURED subscription does not qualify automatically', () => {
-  assert.equal(hasPaidEntitlement(expiredFeatured), false)
-  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, subscription: expiredFeatured }), false)
+test('an inactive subscription does not grant the badge feature', () => {
+  assert.equal(brokerSubscriptionHasFeature(sub(badgePlan, false), BROKER_PLAN_FEATURES.PROFILE_BADGE), false)
 })
 
-test('FREE plan does not automatically qualify', () => {
-  assert.equal(hasPaidEntitlement(free), false)
-  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, subscription: free }), false)
+test('an expired subscription does not grant the badge feature', () => {
+  assert.equal(brokerSubscriptionHasFeature(sub(badgePlan, true, new Date(Date.now() - 1000)), BROKER_PLAN_FEATURES.PROFILE_BADGE), false)
 })
 
-test('missing subscription does not automatically qualify', () => {
-  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, subscription: null }), false)
+test('SUPPORT_TICKETS entitlement works independently', () => {
+  const plan = { features: [{ code: 'SUPPORT_TICKETS', enabled: true }, { code: 'PROFILE_BADGE', enabled: false }] }
+  assert.equal(brokerSubscriptionHasFeature(sub(plan), BROKER_PLAN_FEATURES.SUPPORT_TICKETS), true)
+  assert.equal(brokerSubscriptionHasFeature(sub(plan), BROKER_PLAN_FEATURES.PROFILE_BADGE), false)
 })
 
 // ---------------------------------------------------------------------------
 // Combined edge cases
 // ---------------------------------------------------------------------------
 
-test('edge cases: FEATURED active + admin disabled => badge visible', () => {
-  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, subscription: featured }), true)
+test('edge cases: plan badge + admin disabled => badge visible', () => {
+  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, profileBadge: true }), true)
 })
 
-test('edge cases: FEATURED inactive + admin enabled => badge visible', () => {
-  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: true, subscription: free }), true)
+test('edge cases: no plan badge + admin enabled => badge visible', () => {
+  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: true, profileBadge: false }), true)
 })
 
-test('edge cases: FEATURED active + admin enabled => badge visible', () => {
-  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: true, subscription: featured }), true)
+test('edge cases: plan badge + admin enabled => badge visible', () => {
+  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: true, profileBadge: true }), true)
 })
 
-test('edge cases: FEATURED inactive + admin disabled => badge hidden', () => {
-  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, subscription: free }), false)
-})
-
-test('edge cases: expired FEATURED + admin disabled => badge hidden', () => {
-  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, subscription: expiredFeatured }), false)
-})
-
-test('edge cases: expired FEATURED + admin enabled => badge visible', () => {
-  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: true, subscription: expiredFeatured }), true)
+test('edge cases: no plan badge + admin disabled => badge hidden', () => {
+  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, profileBadge: false }), false)
 })
 
 // ---------------------------------------------------------------------------
 // Badge logic independence from ratings / reviews
 // ---------------------------------------------------------------------------
 
-test('badge qualification does not depend on rating', () => {
-  const withRating = { ...featured, avgRating: 5 }
-  const withoutRating = { ...featured, avgRating: 0 }
-  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, subscription: withRating }), isMortgageExpertBroker({ mortgageExpertEnabled: false, subscription: withoutRating }))
-})
-
-test('badge qualification does not depend on review count', () => {
-  const withReviews = { ...free, totalReviews: 100 }
-  const withoutReviews = { ...free, totalReviews: 0 }
-  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, subscription: withReviews }), isMortgageExpertBroker({ mortgageExpertEnabled: false, subscription: withoutReviews }))
+test('badge qualification does not depend on rating or reviews', () => {
+  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, profileBadge: true }), true)
+  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: true, profileBadge: false }), true)
+  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, profileBadge: false }), false)
 })
 
 // ---------------------------------------------------------------------------
-// Data model: exactly one admin badge field, two subscription plans
+// Data model: admin badge field + DB-backed plan model
 // ---------------------------------------------------------------------------
 
 test('schema adds a single admin-controlled mortgageExpertEnabled field with safe default', () => {
@@ -110,11 +105,19 @@ test('schema adds a single admin-controlled mortgageExpertEnabled field with saf
   assert.equal((schema.match(/mortgageExpertEnabled/g) || []).length, 1)
 })
 
-test('schema retains exactly the FREE/FEATURED subscription model (no PRO introduced)', () => {
+test('schema defines the DB-backed plan and feature models', () => {
+  assert.match(schema, /model BrokerSubscriptionPlan \{/)
+  assert.match(schema, /model BrokerSubscriptionPlanFeature \{/)
+  assert.match(schema, /code\s+String\s+@unique/)
+  assert.match(schema, /@@unique\(\[planId, code\]\)/)
+})
+
+test('schema retains FREE/FEATURED/PREMIUM broker plans and no PRO', () => {
   const planEnum = schema.match(/enum SubscriptionPlan \{[\s\S]*?\}/)?.[0] || ''
   assert.doesNotMatch(planEnum, /PRO/)
   assert.match(planEnum, /FREE/)
   assert.match(planEnum, /FEATURED/)
+  assert.match(planEnum, /PREMIUM/)
 })
 
 // ---------------------------------------------------------------------------
@@ -156,20 +159,20 @@ test('admin control renders Enable and Disable with a Saving state', () => {
 test('admin control renders status and qualification source', () => {
   assert.match(adminControl, /Status:/)
   assert.match(adminControl, /Qualification source:/)
-  assert.match(adminControl, /FEATURED \+ Admin enabled/)
+  assert.match(adminControl, /PROFILE_BADGE/)
   assert.match(adminControl, /Not qualified/)
 })
 
-test('admin control distinguishes subscription qualification from admin badge', () => {
+test('admin control distinguishes plan qualification from admin badge', () => {
   assert.match(adminControl, /Subscription qualification/)
   assert.match(adminControl, /Automatically qualified/)
   assert.match(adminControl, /Admin badge/)
 })
 
-test('admin page passes the badge flag and subscription to the control', () => {
+test('admin page passes the badge flag and plan feature to the control', () => {
   assert.match(adminPage, /mortgageExpertEnabled: true/)
   assert.match(adminPage, /<MortgageExpertControl/)
-  assert.match(adminPage, /subscription=\{broker\.subscription\}/)
+  assert.match(adminPage, /profileBadge=\{brokerDto\.profileBadge\}/)
 })
 
 // ---------------------------------------------------------------------------
@@ -217,30 +220,27 @@ test('badge stars are decorative and the label provides the accessible text', ()
 
 test('badge qualification is independent of profile image for every combination', () => {
   const matrix = [
-    // FEATURED | admin | expected
-    { subscription: featured, enabled: false, expected: true },
-    { subscription: featured, enabled: true, expected: true },
-    { subscription: free, enabled: true, expected: true },
-    { subscription: free, enabled: false, expected: false },
-    { subscription: expiredFeatured, enabled: false, expected: false },
-    { subscription: expiredFeatured, enabled: true, expected: true },
-    { subscription: null, enabled: false, expected: false },
+    // profileBadge | admin | expected
+    { profileBadge: true, enabled: false, expected: true },
+    { profileBadge: true, enabled: true, expected: true },
+    { profileBadge: false, enabled: true, expected: true },
+    { profileBadge: false, enabled: false, expected: false },
   ]
-  for (const { subscription, enabled, expected } of matrix) {
+  for (const { profileBadge, enabled, expected } of matrix) {
     assert.equal(
-      isMortgageExpertBroker({ mortgageExpertEnabled: enabled, subscription }),
+      isMortgageExpertBroker({ mortgageExpertEnabled: enabled, profileBadge }),
       expected,
-      `subscription=${subscription?.plan ?? 'none'} enabled=${enabled} => ${expected}`,
+      `profileBadge=${profileBadge} enabled=${enabled} => ${expected}`,
     )
   }
 })
 
 test('FREE + admin enabled + no profile image still qualifies', () => {
-  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: true, subscription: free }), true)
+  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: true, profileBadge: false }), true)
 })
 
 test('FREE + admin disabled + no profile image does not qualify', () => {
-  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, subscription: free }), false)
+  assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, profileBadge: false }), false)
 })
 
 // ---------------------------------------------------------------------------

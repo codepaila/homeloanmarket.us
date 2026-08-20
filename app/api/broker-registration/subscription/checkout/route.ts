@@ -5,8 +5,13 @@ import { isSameOriginRequest } from '@/lib/origin'
 import { validatePlanPrice } from '@/lib/stripe'
 import { CheckoutConflictError, SubscriptionService } from '@/lib/subscription'
 import prisma from '@/lib/prisma'
+import { getStripeSecretKey } from '@/lib/stripe-config'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+async function getStripe(): Promise<Stripe> {
+  const key = await getStripeSecretKey()
+  if (!key) throw new Error('STRIPE_SECRET_KEY is not configured')
+  return new Stripe(key)
+}
 
 export async function POST(request: NextRequest) {
   if (!isSameOriginRequest(request)) {
@@ -26,6 +31,7 @@ export async function POST(request: NextRequest) {
 
     const registrationId = user.brokerRegistration.id
     const checkoutSession = await SubscriptionService.withBillingLock(`broker-registration:${registrationId}`, async () => {
+      const stripe = await getStripe()
       const current = await prisma.brokerRegistrationSubscription.findUnique({ where: { registrationId } })
       if (current?.status === 'ACTIVE' && current.isActive && current.stripeSubId) {
         throw new CheckoutConflictError('An existing subscription must be managed before another checkout.')

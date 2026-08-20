@@ -29,9 +29,9 @@ export function AuthFormWrapper({
 }: AuthFormWrapperProps) {
   const reduceMotion = useReducedMotion()
 
-  const entrance = reduceMotion
-    ? { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.3 } }
-    : { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.45, ease: 'easeOut' as const } }
+  // const entrance = reduceMotion
+  //   ? { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.3 } }
+  //   : { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.45, ease: 'easeOut' as const } }
 
   const fade = reduceMotion
     ? { initial: { opacity: 0 }, animate: { opacity: 1 }, transition: { duration: 0.25 } }
@@ -40,7 +40,7 @@ export function AuthFormWrapper({
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8">
       <div className={cn('w-full', size === 'lg' ? 'max-w-2xl' : 'max-w-md')}>
-        <motion.div {...entrance} className="mb-8 flex justify-center">
+        {/* <motion.div {...entrance} className="mb-8 flex justify-center">
           <Link
             href="/"
             aria-label="HomeLoanMarket home"
@@ -55,7 +55,7 @@ export function AuthFormWrapper({
               priority
             />
           </Link>
-        </motion.div>
+        </motion.div> */}
 
         {showBackLink && (
           <motion.div

@@ -106,7 +106,17 @@ export const appSidebarData = (user: SidebarUserInput): SidebarData => {
       { title: "Media Library", url: "/admin/media" },
       { title: "Folders", url: "/admin/folders" },
     ] },
-    { title: "Company Ad Plans", url: "/admin/company-advertising-plans", icon: Tag },
+    { title: "Companies", url: "/admin/company-ad-requests", icon: Building2, items: [
+      { title: "Advertisement Requests", url: "/admin/company-ad-requests" },
+      { title: "Advertising Plans", url: "/admin/billing/company-advertising-plans" },
+      { title: "Company Subscriptions", url: "/admin/billing/company-subscriptions" },
+    ] },
+    { title: "Billing", url: "/admin/billing/broker-plans", icon: CreditCard, items: [
+      { title: "Broker Plans", url: "/admin/billing/broker-plans" },
+      { title: "Broker Subscriptions", url: "/admin/billing/broker-subscriptions" },
+      { title: "Company Advertising Plans", url: "/admin/billing/company-advertising-plans" },
+      { title: "Company Subscriptions", url: "/admin/billing/company-subscriptions" },
+    ] },
     { title: "Content", url: "/admin/content", icon: FileSpreadsheet },
     { title: "FAQs", url: "/admin/faqs", icon: HelpCircle },
     { title: "Settings", url: "/admin/settings", icon: Settings },

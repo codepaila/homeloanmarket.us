@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/currentUser'
 import prisma from '@/lib/prisma'
 import { hasPaidEntitlement, isBrokerOwner, isMortgageExpertBroker, isPublicBroker, pickBrokerEditableFields } from '@/lib/broker-policy'
+import { BROKER_PLAN_FEATURES, brokerSubscriptionHasFeature } from '@/lib/broker-plans'
 import { toPublicBrokerRecord } from '@/lib/public-broker'
 
 export async function GET(
@@ -35,9 +36,11 @@ export async function GET(
         subscription: {
           select: {
             plan: true,
+            planId: true,
             isActive: true,
             startDate: true,
-            endDate: true
+            endDate: true,
+            planRef: { include: { features: true } },
           }
         },
         reviews: {
@@ -132,7 +135,10 @@ export async function GET(
       averageResponseTime,
       canShowContact: canShowContactFlag,
       isFeatured,
-      isMortgageExpert: isMortgageExpertBroker(broker),
+      isMortgageExpert: isMortgageExpertBroker({
+        mortgageExpertEnabled: broker.mortgageExpertEnabled,
+        profileBadge: brokerSubscriptionHasFeature(broker.subscription, BROKER_PLAN_FEATURES.PROFILE_BADGE),
+      }),
       stats: {
         totalReviews: broker._count.reviews,
         totalLeads: broker.totalLeads,

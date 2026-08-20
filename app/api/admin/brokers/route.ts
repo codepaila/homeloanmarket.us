@@ -9,6 +9,7 @@ import {
   validateAdminBrokerInput,
 } from '@/lib/admin-broker'
 import { resolveBrokerLocation } from '@/lib/location/broker-location'
+import { ensureAdminCreatedBrokerFreeSubscription } from '@/lib/broker-plans'
 
 async function requireAdmin() {
   const user = await getCurrentUser()
@@ -114,7 +115,7 @@ export async function POST(request: Request) {
         suffix += 1
       }
 
-      return tx.broker.create({
+      const created = await tx.broker.create({
         data: {
           userId: adminCreatedBrokerDefaults.userId,
           creationSource: adminCreatedBrokerDefaults.creationSource,
@@ -145,19 +146,16 @@ export async function POST(request: Request) {
             locationCountryCode: locationPatch.locationCountryCode,
             location: locationPatch.location,
           } : {}),
-          subscription: {
-            create: {
-              plan: adminCreatedBrokerDefaults.subscriptionPlan,
-              isActive: adminCreatedBrokerDefaults.subscriptionActive,
-              startDate: new Date(),
-              endDate: null,
-              stripeCustomerId: null,
-              stripeSubId: null,
-            },
-          },
         },
-        include: { subscription: true },
       })
+
+      // Admin-created brokers automatically receive the active dynamic FREE
+      // plan (linked via planId). No Stripe objects are created.
+      await ensureAdminCreatedBrokerFreeSubscription(tx as never, created.id)
+
+      const withSubscription = await tx.broker.findUnique({ where: { id: created.id }, include: { subscription: true } })
+      if (!withSubscription) throw new Error('Broker creation failed')
+      return withSubscription
     })
 
     console.info('Admin broker profile created', { adminId: admin.id, brokerId: broker.id })

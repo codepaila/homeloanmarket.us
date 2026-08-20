@@ -1,4 +1,4 @@
-import type { BrokerCreationSource, BrokerStatus, VerificationStatus, SubscriptionPlan, Prisma } from '@prisma/client'
+import type { BrokerCreationSource, BrokerStatus, VerificationStatus, Prisma } from '@prisma/client'
 
 export type BrokerPublicState = {
   isVisible: boolean
@@ -10,14 +10,18 @@ export type BrokerPublicState = {
 }
 
 export type BrokerEntitlement = {
-  plan: SubscriptionPlan
+  // Stable plan code (FREE/FEATURED/PREMIUM or admin-created). The enum is no
+  // longer the source of truth; the DB plan config is.
+  plan: string
   isActive: boolean
   endDate?: Date | null
 }
 
 export type BrokerMortgageExpertState = {
   mortgageExpertEnabled?: boolean | null
-  subscription?: BrokerEntitlement | null
+  // PROFILE_BADGE entitlement resolved from the active subscription's plan.
+  // Computed server-side via the plan feature system; never inferred in React.
+  profileBadge?: boolean | null
 }
 
 export type BrokerContactIdentity = {
@@ -70,13 +74,14 @@ export function hasPaidEntitlement(subscription?: BrokerEntitlement | null) {
 }
 
 // Canonical Mortgage Expert rule, shared by the public listing, broker detail
-// pages, and the admin UI. A broker is a Mortgage Expert when they hold an
-// active FEATURED subscription (server-side entitlement, never client input)
-// OR an admin has explicitly enabled the badge. The two paths are independent:
-// disabling the admin badge does not revoke FEATURED auto-qualification, and
-// an enabled badge survives a FEATURED expiry.
+// pages, and the admin UI. A broker is a Mortgage Expert when their active
+// subscription's plan grants the PROFILE_BADGE feature (resolved server-side
+// from the admin-managed BrokerSubscriptionPlan configuration) OR an admin has
+// explicitly enabled the badge. The two paths are independent: disabling the
+// admin badge does not revoke plan-driven qualification, and an enabled badge
+// survives a plan change.
 export function isMortgageExpertBroker(state: BrokerMortgageExpertState) {
-  return hasPaidEntitlement(state.subscription) || state.mortgageExpertEnabled === true
+  return state.profileBadge === true || state.mortgageExpertEnabled === true
 }
 
 // Canonical server-side allowlist of Broker fields an owning broker may edit

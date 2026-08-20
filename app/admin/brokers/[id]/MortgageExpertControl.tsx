@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 import { Loader2, BadgeCheck, ShieldCheck } from 'lucide-react'
-import { hasPaidEntitlement, isMortgageExpertBroker } from '@/lib/broker-policy'
+import { isMortgageExpertBroker } from '@/lib/broker-policy'
 
 type SubscriptionState = {
   plan: string
@@ -16,21 +16,15 @@ type SubscriptionState = {
 type MortgageExpertControlProps = {
   brokerId: string
   mortgageExpertEnabled: boolean
+  // PROFILE_BADGE entitlement resolved server-side from the broker's active
+  // plan feature configuration.
+  profileBadge: boolean
   subscription: SubscriptionState | null
 }
 
-function effectiveSubscription(subscription: SubscriptionState | null) {
-  if (!subscription) return null
-  return {
-    plan: subscription.plan as 'FREE' | 'FEATURED',
-    isActive: subscription.isActive,
-    endDate: subscription.endDate ? new Date(subscription.endDate) : null,
-  }
-}
-
-function qualificationSource(activeFeatured: boolean, adminEnabled: boolean) {
-  if (activeFeatured && adminEnabled) return 'FEATURED + Admin enabled'
-  if (activeFeatured) return 'FEATURED subscription'
+function qualificationSource(profileBadge: boolean, adminEnabled: boolean) {
+  if (profileBadge && adminEnabled) return 'Plan feature + Admin enabled'
+  if (profileBadge) return 'Plan PROFILE_BADGE feature'
   if (adminEnabled) return 'Admin enabled'
   return 'Not qualified'
 }
@@ -38,16 +32,15 @@ function qualificationSource(activeFeatured: boolean, adminEnabled: boolean) {
 export default function MortgageExpertControl({
   brokerId,
   mortgageExpertEnabled,
-  subscription,
+  profileBadge,
 }: MortgageExpertControlProps) {
   const router = useRouter()
   const [enabled, setEnabled] = useState(mortgageExpertEnabled)
   const [saving, setSaving] = useState(false)
 
-  const activeFeatured = hasPaidEntitlement(effectiveSubscription(subscription))
   const effective = isMortgageExpertBroker({
     mortgageExpertEnabled: enabled,
-    subscription: effectiveSubscription(subscription),
+    profileBadge,
   })
 
   async function toggleBadge(next: boolean) {
@@ -90,7 +83,7 @@ export default function MortgageExpertControl({
             )}
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Qualification source: <span className="font-medium">{qualificationSource(activeFeatured, enabled)}</span>
+            Qualification source: <span className="font-medium">{qualificationSource(profileBadge, enabled)}</span>
           </p>
         </div>
         {effective && (
@@ -101,17 +94,17 @@ export default function MortgageExpertControl({
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
         <div className="rounded-lg border p-4">
           <h3 className="text-sm font-semibold">Subscription qualification</h3>
-          <p className="mt-1 text-sm text-muted-foreground">FEATURED subscription</p>
-          {activeFeatured ? (
+          <p className="mt-1 text-sm text-muted-foreground">PROFILE_BADGE plan feature</p>
+          {profileBadge ? (
             <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600">
               <ShieldCheck className="h-4 w-4" aria-hidden="true" />
               Automatically qualified
             </p>
           ) : (
-            <p className="mt-2 text-sm text-muted-foreground">Not active</p>
+            <p className="mt-2 text-sm text-muted-foreground">Not granted by current plan</p>
           )}
           <p className="mt-2 text-xs text-muted-foreground">
-            Active FEATURED subscriptions qualify automatically. This cannot be changed from the badge controls.
+            Plan feature grants are managed from the broker plan configuration. This cannot be changed from the badge controls.
           </p>
         </div>
 

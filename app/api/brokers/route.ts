@@ -6,6 +6,7 @@ import prisma from '@/lib/prisma'
 import { TABLE_ROW_PAGE } from '@/utils'
 import { VerificationStatus, BrokerStatus } from '@prisma/client'
 import { hasPaidEntitlement, isMortgageExpertBroker, publicBrokerWhere } from '@/lib/broker-policy'
+import { BROKER_PLAN_FEATURES, brokerSubscriptionHasFeature } from '@/lib/broker-plans'
 import { toPublicBrokerRecord } from '@/lib/public-broker'
 import { createBrokerForExistingUser } from '@/lib/broker-registration'
 import { findBrokerIdsWithinRadius } from '@/lib/location/broker-geo'
@@ -174,8 +175,10 @@ export async function GET(request: Request) {
           subscription: {
             select: {
               plan: true,
+              planId: true,
               isActive: true,
-              endDate: true
+              endDate: true,
+              planRef: { include: { features: true } },
             }
           }
         },
@@ -197,7 +200,10 @@ export async function GET(request: Request) {
       return {
         ...toPublicBrokerRecord(broker, { includeContact: canShowContact }),
         isFeatured: canShowContact && broker.subscription?.plan === 'FEATURED',
-        isMortgageExpert: isMortgageExpertBroker(broker),
+        isMortgageExpert: isMortgageExpertBroker({
+          mortgageExpertEnabled: broker.mortgageExpertEnabled,
+          profileBadge: brokerSubscriptionHasFeature(broker.subscription, BROKER_PLAN_FEATURES.PROFILE_BADGE),
+        }),
         canShowContact,
       }
     })

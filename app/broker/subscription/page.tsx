@@ -7,38 +7,25 @@ import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { 
   CreditCard, 
   BarChart3, 
-  Users, 
-  Building, 
-  FileText, 
-  Star,
   CheckCircle,
   Clock,
   AlertCircle,
   Download,
   TrendingUp,
   Zap,
-  Award,
-  Globe,
   MessageSquare,
   Settings,
   RefreshCw,
   ArrowRight,
-  Banknote,
-  Phone,
-  Mail,
-  Eye,
-  FileCheck,
-  Headphones,
-  LineChart
+  Eye
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
-import { subscriptionPlans } from '@/lib/stripe'
+import { useSubscriptionPlans } from '@/hooks/useClient'
 import  SubscriptionPlans  from '@/components/sections/subscriptions/SubscriptionPlan'
 import  UsageStats  from '@/components/sections/subscriptions/Usagestats'
 import  BillingHistory  from '@/components/sections/subscriptions/BillingHistory'
@@ -49,13 +36,14 @@ import  BillingHistory  from '@/components/sections/subscriptions/BillingHistory
 // import BillingHistory from '@/components/subscription/BillingHistory'
 
 export default function SubscriptionPage() {
-  const { data: session, status: sessionStatus } = useSession()
+  const { status: sessionStatus } = useSession()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState('overview')
   const [loading, setLoading] = useState(true)
   const [usageData, setUsageData] = useState<any>(null)
   const [subscriptionData, setSubscriptionData] = useState<any>(null)
   const [portalLoading, setPortalLoading] = useState(false)
+  const { plans: availablePlans } = useSubscriptionPlans()
 
   async function fetchSubscriptionData() {
     try {
@@ -138,7 +126,20 @@ export default function SubscriptionPage() {
   }
 
   const currentPlan = subscriptionData?.plan || 'FREE'
-  const planConfig = subscriptionPlans.find(p => p.name === currentPlan) || subscriptionPlans[0]
+  // The current plan's display info is derived from the database-backed plan
+  // set (loaded via /api/subscription/plans), never from a static catalog.
+  const currentPlanInfo = Array.isArray(availablePlans)
+    ? availablePlans.find((p: any) => p.code === currentPlan)
+    : undefined
+  const planConfig = currentPlanInfo
+    ? {
+        name: currentPlanInfo.name,
+        price: (currentPlanInfo.price ?? 0) / 100,
+        billingInterval: currentPlanInfo.billingInterval || 'month',
+        description: currentPlanInfo.description,
+        features: currentPlanInfo.features || [],
+      }
+    : { name: currentPlan, price: 0, billingInterval: 'month', description: null, features: [] as string[] }
   const subscriptionStatus = (subscriptionData?.status || 'INACTIVE') as keyof typeof statusConfig
 
   const statusConfig = {
@@ -246,55 +247,25 @@ export default function SubscriptionPage() {
 
               {/* Plan Features */}
               <div>
-                <h4 className="font-medium mb-4">Plan Features</h4>
+                <h4 className="font-medium mb-4">Included Features</h4>
                 <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                  {/* <div className="flex items-center gap-2 p-3 border rounded-lg">
-                    <Banknote className="h-5 w-5 text-blue-500" />
-                    <div>
-                      <div className="font-medium">{planConfig.limits.maxBankPartners} Bank Partners</div>
-                      <div className="text-sm text-muted-foreground">Maximum bank partnerships</div>
-                    </div>
-                  </div> */}
-                  
-                  <div className="flex items-center gap-2 p-3 border rounded-lg">
-                    <Phone className="h-5 w-5 text-green-500" />
-                    <div>
-                      <div className="font-medium">
-                        {planConfig.limits.canShowContact ? 'Direct Contact' : 'Platform Contact'}
+                  {planConfig.features.length > 0 ? planConfig.features.map((feature: string, idx: number) => (
+                    <div key={idx} className="flex items-center gap-2 p-3 border rounded-lg">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <div>
+                        <div className="font-medium">{feature}</div>
+                        <div className="text-sm text-muted-foreground">Included in your plan</div>
                       </div>
-                      <div className="text-sm text-muted-foreground">Contact information</div>
                     </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 p-3 border rounded-lg">
-                    <Star className="h-5 w-5 text-yellow-500" />
-                    <div>
-                      <div className="font-medium">
-                        {planConfig.limits.isFeatured ? 'Featured Placement' : 'Standard Placement'}
+                  )) : (
+                    <div className="flex items-center gap-2 p-3 border rounded-lg">
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <div>
+                        <div className="font-medium">Standard listing</div>
+                        <div className="text-sm text-muted-foreground">Included in all plans</div>
                       </div>
-                      <div className="text-sm text-muted-foreground">Profile visibility</div>
                     </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 p-3 border rounded-lg">
-                    <Headphones className="h-5 w-5 text-orange-500" />
-                    <div>
-                      <div className="font-medium">
-                        {planConfig.limits.prioritySupport ? 'Priority Support' : 'Email Support'}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Customer support</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 p-3 border rounded-lg">
-                    <LineChart className="h-5 w-5 text-red-500" />
-                    <div>
-                      <div className="font-medium">
-                        {planConfig.limits.advancedAnalytics ? 'Advanced Analytics' : 'Basic Analytics'}
-                      </div>
-                      <div className="text-sm text-muted-foreground">Analytics dashboard</div>
-                    </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
@@ -337,27 +308,6 @@ export default function SubscriptionPage() {
           {/* Quick Stats */}
           {usageData && (
             <div className="grid gap-6 md:grid-cols-3">
-              {/* <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Bank Partners</p>
-                      <p className="text-2xl font-bold mt-1">
-                        {usageData.usage?.bankPartners || 0}/{planConfig.limits.maxBankPartners}
-                      </p>
-                    </div>
-                    <Banknote className="h-10 w-10 text-blue-100 bg-blue-500/20 p-2 rounded-lg" />
-                  </div>
-                  <Progress 
-                    value={Math.min(
-                      ((usageData.usage?.bankPartners || 0) / planConfig.limits.maxBankPartners) * 100,
-                      100
-                    )} 
-                    className="mt-4"
-                  />
-                </CardContent>
-              </Card> */}
-
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -408,92 +358,31 @@ export default function SubscriptionPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-3">
-                  {planConfig.limits.isFeatured && (
-                    <div className="p-4 border rounded-lg">
+                  {planConfig.features.map((feature: string, idx: number) => (
+                    <div key={idx} className="p-4 border rounded-lg">
                       <div className="flex items-center gap-3 mb-3">
-                        <Star className="h-8 w-8 text-yellow-500" />
+                        <Zap className="h-8 w-8 text-yellow-500" />
                         <div>
-                          <h4 className="font-semibold">Featured Placement</h4>
-                          <p className="text-sm text-muted-foreground">Top placement in search</p>
+                          <h4 className="font-semibold">{feature}</h4>
+                          <p className="text-sm text-muted-foreground">Included with your plan</p>
                         </div>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        Get 3x more visibility and appear at the top of broker listings
+                        This feature is available with your current {currentPlan} plan.
                       </p>
                     </div>
-                  )}
-
-                  {planConfig.limits.canShowContact && (
+                  ))}
+                  {planConfig.features.length === 0 && (
                     <div className="p-4 border rounded-lg">
                       <div className="flex items-center gap-3 mb-3">
-                        <Phone className="h-8 w-8 text-green-500" />
+                        <CheckCircle className="h-8 w-8 text-green-500" />
                         <div>
-                          <h4 className="font-semibold">Direct Contact</h4>
-                          <p className="text-sm text-muted-foreground">Show phone & WhatsApp</p>
+                          <h4 className="font-semibold">Standard Listing</h4>
+                          <p className="text-sm text-muted-foreground">Included in all plans</p>
                         </div>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        Clients can contact you directly without going through the platform
-                      </p>
-                    </div>
-                  )}
-
-                  {planConfig.limits.prioritySupport && (
-                    <div className="p-4 border rounded-lg">
-                      <div className="flex items-center gap-3 mb-3">
-                        <Headphones className="h-8 w-8 text-blue-500" />
-                        <div>
-                          <h4 className="font-semibold">Priority Support</h4>
-                          <p className="text-sm text-muted-foreground">24/7 dedicated support</p>
-                        </div>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Get faster response times and dedicated support for critical issues
-                      </p>
-                    </div>
-                  )}
-
-                  {planConfig.limits.advancedAnalytics && (
-                    <div className="p-4 border rounded-lg">
-                      <div className="flex items-center gap-3 mb-3">
-                        <LineChart className="h-8 w-8 text-purple-500" />
-                        <div>
-                          <h4 className="font-semibold">Advanced Analytics</h4>
-                          <p className="text-sm text-muted-foreground">Detailed insights</p>
-                        </div>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Access detailed analytics and performance reports for your business
-                      </p>
-                    </div>
-                  )}
-
-                  {planConfig.limits.customProfile && (
-                    <div className="p-4 border rounded-lg">
-                      <div className="flex items-center gap-3 mb-3">
-                        <FileCheck className="h-8 w-8 text-red-500" />
-                        <div>
-                          <h4 className="font-semibold">Custom Profile</h4>
-                          <p className="text-sm text-muted-foreground">Enhanced profile page</p>
-                        </div>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Customize your broker profile with additional sections and branding
-                      </p>
-                    </div>
-                  )}
-
-                  {planConfig.limits.phoneSupport && (
-                    <div className="p-4 border rounded-lg">
-                      <div className="flex items-center gap-3 mb-3">
-                        <Phone className="h-8 w-8 text-orange-500" />
-                        <div>
-                          <h4 className="font-semibold">Phone Support</h4>
-                          <p className="text-sm text-muted-foreground">Direct phone assistance</p>
-                        </div>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        Get access to phone support for immediate assistance
+                        Your broker profile is listed on the platform.
                       </p>
                     </div>
                   )}
@@ -509,12 +398,13 @@ export default function SubscriptionPage() {
             currentPlan={currentPlan}
             onSelectPlan={handleCheckout}
             subscriptionStatus={subscriptionStatus}
+            plans={Array.isArray(availablePlans) ? availablePlans : []}
           />
         </TabsContent>
 
         {/* Usage Tab */}
         <TabsContent value="usage">
-          <UsageStats usageData={usageData} planConfig={planConfig} />
+          <UsageStats usageData={usageData} plan={planConfig} />
         </TabsContent>
 
         {/* Billing Tab */}

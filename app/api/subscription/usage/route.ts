@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/currentUser'
-import { subscriptionPlans } from '@/lib/stripe'
 import prisma from '@/lib/prisma'
 import { SubscriptionService } from '@/lib/subscription'
+import { listBrokerPlansPublic } from '@/lib/broker-plans'
 
 export async function GET() {
   try {
     const user = await getCurrentUser()
-    
+
     if (!user) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
@@ -19,17 +19,12 @@ export async function GET() {
     const broker = await prisma.broker.findUnique({
       where: { id: user.brokerProfile.id },
       include: {
-        subscription: true,
+        subscription: { include: { planRef: true } },
         bankPartners: true,
-       
         contactMessages: {
-          where: {
-            createdAt: {
-              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-            }
-          }
+          where: { createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } }
         },
-        reviews: true
+        reviews: true,
       }
     })
 
@@ -39,19 +34,21 @@ export async function GET() {
 
     const subscription = SubscriptionService.effectiveSubscription(broker.subscription)
     const plan = subscription.plan
-    const planConfig = subscriptionPlans.find(p => p.name === plan) || subscriptionPlans[0]
 
-    // Calculate usage stats
+    // Resolve the current plan's display info from the database (single source
+    // of truth). The static catalog is not consulted.
+    const publicPlans = await listBrokerPlansPublic()
+    const currentPlanInfo = publicPlans.find((p) => p.code === plan) || null
+
     const usage = {
-   
-      teamMembers: 1, // Base count, can be expanded
-      branches: 1, // Base count, can be expanded
+      teamMembers: 1,
+      branches: 1,
       loanProducts: broker.bankPartners.length,
       contactMessages: broker.contactMessages.length,
       profileViews: broker.profileViews,
       totalLeads: broker.totalLeads,
       bankPartners: broker.bankPartners.length,
-      reviews: broker.totalReviews
+      reviews: broker.totalReviews,
     }
 
     return NextResponse.json({
@@ -59,13 +56,12 @@ export async function GET() {
       data: {
         usage,
         subscription: {
-          plan: plan,
+          plan,
           isActive: subscription.isActive,
           startDate: subscription.startDate,
           endDate: subscription.endDate,
         },
-        limits: planConfig.limits,
-        planConfig
+        planInfo: currentPlanInfo,
       }
     })
 

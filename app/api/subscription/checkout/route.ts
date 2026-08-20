@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/currentUser'
 import prisma from '@/lib/prisma'
 import Stripe from 'stripe'
-import { validatePlanPrice } from '@/lib/stripe'
 import { getCorrelationId } from '@/lib/correlation'
 import { BillingUnavailableError, CheckoutConflictError, SubscriptionService } from '@/lib/subscription'
+import { validateBrokerPlanForCheckout } from '@/lib/broker-plans'
+import { getStripeSecretKey } from '@/lib/stripe-config'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+async function getStripe(): Promise<Stripe> {
+  const key = await getStripeSecretKey()
+  if (!key) throw new Error('STRIPE_SECRET_KEY is not configured')
+  return new Stripe(key)
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,8 +33,9 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    if (!validatePlanPrice(plan, priceId)) {
-      return NextResponse.json({ success: false, error: 'Invalid subscription plan or price' }, { status: 400 })
+    const checkoutPlan = await validateBrokerPlanForCheckout(String(plan), String(priceId))
+    if (!checkoutPlan.ok) {
+      return NextResponse.json({ success: false, error: checkoutPlan.reason }, { status: 400 })
     }
 
     if (!user.brokerProfile) {
@@ -40,6 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     const checkoutSession = await SubscriptionService.withCheckoutLock(user.brokerProfile.id, async () => {
+      const stripe = await getStripe()
       let customerId = user.stripeCustomerId
       if (!customerId) {
         const customer = await stripe.customers.create({
@@ -90,13 +97,13 @@ export async function POST(request: NextRequest) {
         metadata: {
           userId: user.id,
           brokerId: user.brokerProfile!.id,
-          plan: plan
+          plan: checkoutPlan.plan.code
         },
         subscription_data: {
           metadata: {
             userId: user.id,
             brokerId: user.brokerProfile!.id,
-            plan: plan,
+            plan: checkoutPlan.plan.code,
           },
         },
         billing_address_collection: 'required',
@@ -105,7 +112,7 @@ export async function POST(request: NextRequest) {
       })
     })
 
-    console.info('Subscription checkout created', { correlationId, brokerId: user.brokerProfile.id, plan })
+    console.info('Subscription checkout created', { correlationId, brokerId: user.brokerProfile.id, plan: checkoutPlan.plan.code })
 
     return NextResponse.json({
       success: true,

@@ -3,8 +3,13 @@ import { getCurrentUser } from '@/lib/currentUser'
 import prisma from '@/lib/prisma'
 import Stripe from 'stripe'
 import type { SubscriptionWithPeriod } from '@/types/stripe'
+import { getStripeSecretKey } from '@/lib/stripe-config'
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
+async function getStripe(): Promise<Stripe> {
+  const key = await getStripeSecretKey()
+  if (!key) throw new Error('STRIPE_SECRET_KEY is not configured')
+  return new Stripe(key)
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -33,7 +38,7 @@ export async function GET(request: NextRequest) {
     // If user has Stripe subscription, fetch additional details
     if (user.subscriptionId) {
       try {
-        const stripeSubscription = await stripe.subscriptions.retrieve(user.subscriptionId) as unknown as SubscriptionWithPeriod
+        const stripeSubscription = await (await getStripe()).subscriptions.retrieve(user.subscriptionId) as unknown as SubscriptionWithPeriod
         
         subscriptionData = {
           ...subscriptionData,

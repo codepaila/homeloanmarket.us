@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { subscriptionPlans } from '@/lib/stripe'
+import { NextResponse } from 'next/server'
+import { listBrokerPlansPublic } from '@/lib/broker-plans'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    return NextResponse.json({
-      success: true,
-      plans: subscriptionPlans
-    })
+    // Public plans: active only, DB-backed, display-safe shape. Never trusts
+    // client price/Stripe values.
+    const plans = await listBrokerPlansPublic()
+    return NextResponse.json({ success: true, plans })
   } catch (error) {
     console.error('Error fetching subscription plans:', error)
     return NextResponse.json(

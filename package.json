@@ -16,6 +16,7 @@
     "db:backfill-broker-locations": "npx tsx scripts/backfill-broker-locations.ts",
     "db:reconcile-subscription-plans": "npx tsx scripts/reconcile-subscription-plans.ts",
     "db:ensure-company-advertising-plan": "npx tsx scripts/ensure-company-advertising-plan.ts",
+    "db:reconcile-broker-plans": "npx tsx scripts/reconcile-broker-plans.ts",
     "db:backfill-admin-broker-visibility": "npx tsx scripts/backfill-admin-created-broker-visibility.ts",
     "db:remove-obsolete-broker-fields": "npx tsx scripts/remove-obsolete-broker-fields.ts",
     "db:diagnose-admin-broker-visibility": "npx tsx scripts/diagnose-admin-created-broker-visibility.ts",
