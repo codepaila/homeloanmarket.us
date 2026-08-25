@@ -156,7 +156,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
   const stats = [
     {
       title: "Total Messages",
-      value: currentBroker?.totalLeads || 0,
+      value: contactStats?.total || 0,
       change: null,
       icon: MessageSquare,
       color: "blue"

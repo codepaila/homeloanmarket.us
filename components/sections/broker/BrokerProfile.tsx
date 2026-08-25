@@ -361,14 +361,6 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
                       <span className="font-medium">{broker?.profileViews || 0}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Total Leads</span>
-                      <span className="font-medium">{broker?.totalLeads || 0}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Monthly Leads</span>
-                      <span className="font-medium">{broker?.monthlyLeads || 0}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Total Reviews</span>
                       <span className="font-medium">{broker?.totalReviews || 0}</span>
                     </div>
@@ -498,14 +490,6 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
                     <div className="flex justify-between items-center p-3 border rounded-lg">
                       <span className="text-muted-foreground">Total Profile Views</span>
                       <span className="font-bold text-lg">{broker?.profileViews || 0}</span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 border rounded-lg">
-                      <span className="text-muted-foreground">Total Leads Received</span>
-                      <span className="font-bold text-lg">{broker?.totalLeads || 0}</span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 border rounded-lg">
-                      <span className="text-muted-foreground">Monthly Leads</span>
-                      <span className="font-bold text-lg">{broker?.monthlyLeads || 0}</span>
                     </div>
                     <div className="flex justify-between items-center p-3 border rounded-lg">
                       <span className="text-muted-foreground">Total Reviews</span>

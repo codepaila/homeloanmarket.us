@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/currentUser'
 import { sendEmailChangeVerificationEmail } from '@/actions/email.action'
-import bcrypt from 'bcryptjs'
+import { hashPassword, comparePassword } from '@/lib/aes'
 
 export async function GET() {
   try {
@@ -156,7 +156,7 @@ export async function PATCH(request: NextRequest) {
         )
       }
 
-      const isValidPassword = await bcrypt.compare(
+      const isValidPassword = await comparePassword(
         body.currentPassword,
         user.password
       )
@@ -169,7 +169,7 @@ export async function PATCH(request: NextRequest) {
       }
 
       // Hash new password
-      const hashedPassword = await bcrypt.hash(body.newPassword, 12)
+      const hashedPassword = await hashPassword(body.newPassword)
       updateData.password = hashedPassword
     }
 

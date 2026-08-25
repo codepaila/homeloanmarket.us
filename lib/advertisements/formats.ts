@@ -1,4 +1,4 @@
-export const ADVERTISEMENT_FORMATS = ['HORIZONTAL', 'VERTICAL', 'SQUARE', 'RECTANGLE', 'MOBILE'] as const
+export const ADVERTISEMENT_FORMATS = ['HORIZONTAL', 'VERTICAL', 'SQUARE', 'RECTANGLE', 'MOBILE', 'BANNER'] as const
 
 export type AdvertisementFormat = typeof ADVERTISEMENT_FORMATS[number]
 
@@ -11,6 +11,7 @@ export const ADVERTISEMENT_FORMAT_INFO: Record<AdvertisementFormat, {
   SQUARE: { label: 'Square', description: 'Balanced creative for cards, grids, and compact placements.' },
   RECTANGLE: { label: 'Rectangle', description: 'Standard promotional creative for content and sidebar placements.' },
   MOBILE: { label: 'Mobile', description: 'Mobile-specific banner or portrait creative.' },
+  BANNER: { label: 'Rectangle Display Banner', description: 'Wide 2:1 display banner for local broker-listing placements.' },
 }
 
 export const PLACEMENT_FORMATS: Record<string, AdvertisementFormat[]> = {
@@ -21,7 +22,7 @@ export const PLACEMENT_FORMATS: Record<string, AdvertisementFormat[]> = {
   HOMEPAGE_BANKS: ['SQUARE', 'HORIZONTAL', 'RECTANGLE'],
   HOMEPAGE_CTA: ['HORIZONTAL', 'RECTANGLE', 'MOBILE'],
   BROKER_LISTING: ['HORIZONTAL', 'RECTANGLE', 'MOBILE'],
-  BROKER_LISTING_LOCAL: ['SQUARE'],
+  BROKER_LISTING_LOCAL: ['SQUARE', 'BANNER'],
   BROKER_PROFILE_HEADER: ['HORIZONTAL', 'RECTANGLE', 'MOBILE'],
   BROKER_LISTING_SIDEBAR: ['VERTICAL', 'RECTANGLE', 'SQUARE', 'MOBILE'],
   LOAN_CALCULATOR: ['RECTANGLE', 'HORIZONTAL', 'SQUARE', 'MOBILE'],

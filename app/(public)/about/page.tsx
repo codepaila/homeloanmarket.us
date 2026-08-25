@@ -5,8 +5,9 @@ import { StatCard } from '@/components/design/StatCard'
 import { Award, Home, TrendingUp, Shield, Users, MapPin, Phone, Mail } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'About Us - HomeLoanMarket',
-  description: 'America\'s leading mortgage marketplace connecting borrowers with verified experts.',
+  title: 'About Us',
+  description: 'HomeLoanMarket is a mortgage marketplace connecting home buyers with verified mortgage brokers across the United States.',
+  alternates: { canonical: '/about' },
 }
 
 const stats = [

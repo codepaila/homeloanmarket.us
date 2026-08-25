@@ -5,7 +5,8 @@ import prisma from '@/lib/prisma'
 import BrokerDetailClient from '@/components/sections/broker/BrokerDetailClient'
 import { isPublicBroker, isMortgageExpertBroker } from '@/lib/broker-policy'
 import { BROKER_PLAN_FEATURES, brokerSubscriptionHasFeature } from '@/lib/broker-plans'
-import { canonicalUrl, safeJsonLd } from '@/lib/seo'
+import { canonicalUrl, safeJsonLd, brokerLocalBusinessJsonLd, breadcrumbJsonLd } from '@/lib/seo'
+import { locationHasValidCoordinates } from '@/lib/location/broker-location'
 import { toPublicBrokerRecord } from '@/lib/public-broker'
 
 interface PageProps {
@@ -120,33 +121,45 @@ export default async function PublicBrokerPage({ params }: PageProps) {
     }),
   }
 
+  const brokerName = broker.companyName || broker.displayName
+  const locationValue = broker.location as { type?: string; coordinates?: unknown } | null | undefined
+  const hasCoords = locationValue ? locationHasValidCoordinates(locationValue) : false
+  const coords = (Array.isArray(locationValue?.coordinates) && locationValue.coordinates.length === 2)
+    ? { longitude: Number(locationValue.coordinates[0]), latitude: Number(locationValue.coordinates[1]) }
+    : null
+
+  const brokerLd = brokerLocalBusinessJsonLd({
+    name: brokerName,
+    description: broker.description,
+    url: canonicalUrl(`/brokers/${broker.profileSlug}`),
+    image: broker.profileImage || broker.logo,
+    city: broker.city,
+    state: broker.state,
+    postalCode: broker.pinCode,
+    countryCode: 'US',
+    ...(hasCoords && coords ? { latitude: coords.latitude, longitude: coords.longitude } : {}),
+    telephone: broker.phone,
+    email: broker.email,
+    nmls: broker.nmls,
+    totalReviews: broker.totalReviews,
+    avgRating: broker.avgRating,
+  })
+
+  const breadcrumbLd = breadcrumbJsonLd([
+    { name: 'Home', path: '/' },
+    { name: 'Find Brokers', path: '/brokers' },
+    { name: brokerName, path: `/brokers/${broker.profileSlug}` },
+  ])
+
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: safeJsonLd({
-            '@context': 'https://schema.org',
-            '@type': 'LocalBusiness',
-            name: broker.companyName || broker.displayName,
-            description: broker.description,
-            url: canonicalUrl(`/brokers/${broker.profileSlug}`),
-            address: {
-              '@type': 'PostalAddress',
-              addressLocality: broker.city,
-              addressRegion: broker.state,
-              postalCode: broker.pinCode,
-              addressCountry: 'US',
-            },
-            ...(broker.totalReviews > 0 && broker.avgRating > 0 ? {
-              aggregateRating: {
-                '@type': 'AggregateRating',
-                ratingValue: broker.avgRating,
-                reviewCount: broker.totalReviews,
-              },
-            } : {}),
-          }),
-        }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(brokerLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbLd) }}
       />
       <BrokerDetailClient brokerSlug={brokerSlug} initialBroker={publicBroker} />
     </>

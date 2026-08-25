@@ -10,7 +10,7 @@ test('creative slots are derived from the placement specification', () => {
 
   const local = getAdvertisementRequirements('BROKER_LISTING_LOCAL')
   assert.equal(local.supportsLocation, true, 'local broker listing supports location targeting')
-  assert.equal(local.supportsMobile, false, 'local listing requires a single square creative (no separate mobile slot)')
+  assert.equal(local.supportsMobile, true, 'local listing renders on mobile via the responsive 3 → 2 → 1 column grid (no MOBILE creative required)')
   assert.ok(local.creativeSlots.some((s) => s.format === 'SQUARE'), 'local listing derives a SQUARE creative slot')
   assert.equal(local.creativeSlots.length, 1, 'local listing needs exactly one creative slot')
 

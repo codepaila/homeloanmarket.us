@@ -89,6 +89,8 @@ export function toPublicBrokerRecord(value: unknown, options?: PublicBrokerOptio
   return {
     ...publicBroker,
     ...contact,
+    nmls: publicBroker.nmls ?? null,
+    licenseStates: publicBroker.licenseStates ?? [],
     user: publicUser
       ? { name: publicUser.name, image: publicUser.image }
       : null,

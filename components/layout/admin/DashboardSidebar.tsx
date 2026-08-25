@@ -20,6 +20,7 @@ import { signOut } from 'next-auth/react'
 import { NavItem } from './NavItem'
 import { SubscriptionBadge } from './SubscriptionBadge'
 import type { SidebarData, SidebarItem, UserPermissions } from '@/types/nav'
+import Image from 'next/image'
 
 interface DashboardSidebarProps {
   data: SidebarData
@@ -46,10 +47,16 @@ export function DashboardSidebar({ data, permissions, className }: DashboardSide
       {/* Logo & Platform Name */}
       <div className="flex h-16 items-center border-b px-6">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+        <Image
+        src={"/assets/logo.png"}
+        width={180}
+        height={50}
+        alt="Home Loan Market Logo"
+        />
+          {/* <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
             <Home className="h-5 w-5 text-white" />
           </div>
-          <span className="text-xl font-bold text-foreground">HomeLoanMarket</span>
+          <span className="text-xl font-bold text-foreground">Home Loan Market</span> */}
         </Link>
       </div>
 
@@ -86,22 +93,25 @@ export function DashboardSidebar({ data, permissions, className }: DashboardSide
             </div>
           </div>
         </div>
-
-        {/* Subscription Status */}
+{/*
         <div className="mt-3">
           <SubscriptionBadge user={data.user} />
-        </div>
+        </div> */}
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4">
         <div className="px-3 space-y-1">
           {data.navMain.map((item: SidebarItem) => {
-            const isActive = Boolean(pathname === item.url ||
+            // A nested route (e.g. /broker/support/tickets/123) highlights its
+            // parent group and child item, not just the exact URL.
+            const isPathActive = (url?: string) =>
+              Boolean(url && (pathname === url || pathname.startsWith(`${url}/`)))
+            const isActive = Boolean(isPathActive(item.url) ||
               (item.items && item.items.some((subItem: SidebarItem) =>
-                subItem.url === pathname ||
+                isPathActive(subItem.url) ||
                 (subItem.items && subItem.items.some((nested: SidebarItem) =>
-                  nested.url === pathname
+                  isPathActive(nested.url)
                 ))
               )))
 
@@ -126,7 +136,7 @@ export function DashboardSidebar({ data, permissions, className }: DashboardSide
                       <NavItem
                         key={child.title}
                         item={child}
-                        isActive={pathname === child.url}
+                        isActive={isPathActive(child.url)}
                         isExpanded={expandedItems.has(child.title)}
                         hasChildren={Boolean(child.items && child.items.length > 0)}
                         onToggle={() => child.items && toggleItem(child.title)}

@@ -68,32 +68,38 @@ export async function createCheckoutSession(
     if (conflict) throw new CheckoutConflictError(conflict.reason || 'Checkout is unavailable')
 
     await SubscriptionService.assertStripeCustomerOwnership(user.id, user.brokerProfile!.id, customerId)
-    return stripe.checkout.sessions.create({
-    customer: customerId,
-    line_items: [
-      {
-        price: priceId,
-        quantity: 1,
+    // Managed Payments is enabled by default on this account and rejects an
+    // explicit `payment_method_types`; disable it for this session only.
+    const sessionParams = {
+      customer: customerId,
+      line_items: [
+        {
+          price: priceId,
+          quantity: 1,
+        },
+      ],
+      mode: 'subscription' as const,
+      success_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/broker/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/broker/subscription`,
+      subscription_data: {
+        metadata: {
+          userId,
+          plan
+        }
       },
-    ],
-    mode: 'subscription',
-    success_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/broker/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/broker/subscription`,
-    subscription_data: {
       metadata: {
         userId,
         plan
-      }
-    },
-    metadata: {
-      userId,
-      plan
-    },
-    payment_method_types: ['card'],
-    billing_address_collection: 'required',
-    }, {
-      idempotencyKey: `checkout_${user.id}_${customerId}_${plan}_${priceId}`,
-    })
+      },
+      billing_address_collection: 'required' as const,
+      managed_payments: { enabled: false },
+    }
+    return stripe.checkout.sessions.create(
+      sessionParams as Stripe.Checkout.SessionCreateParams,
+      {
+        idempotencyKey: `checkout_${user.id}_${customerId}_${plan}_${priceId}`,
+      },
+    )
   })
 
   return session

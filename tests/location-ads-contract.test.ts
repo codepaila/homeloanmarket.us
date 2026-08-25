@@ -48,7 +48,7 @@ test('local advertisements require listing placement and validated target data',
   assert.match(publicRoute, /BROKER_LISTING_LOCAL/)
   assert.match(publicRoute, /verifySearchLocationToken/)
   assert.match(repository, /distanceMiles/)
-  assert.match(formats, /BROKER_LISTING_LOCAL: \['SQUARE'\]/)
+  assert.match(formats, /BROKER_LISTING_LOCAL: \['SQUARE', 'BANNER'\]/)
   assert.match(publicComponent, /grid-cols-1.*sm:grid-cols-2.*lg:grid-cols-3/)
 })
 

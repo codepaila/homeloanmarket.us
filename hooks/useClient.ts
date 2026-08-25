@@ -210,7 +210,7 @@ export const useMySubscription = () => {
 
 export const useSubscriptionPlans = () => {
   const { data, error, mutate, isLoading } = useSWR(
-    `${baseUrl}/api/subscriptions/plans`,
+    `${baseUrl}/api/subscription/plans`,
     fetcher
   )
   return { plans: data?.plans, error, mutate, isLoading }

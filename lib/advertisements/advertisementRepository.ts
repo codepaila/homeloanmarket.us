@@ -4,6 +4,7 @@ import type { AdvertisementFormat } from './formats'
 import { Prisma, AdvertisementPlacement, AdType, AdvertisementAction, ButtonVariant, EventType, AdvertisementFormat as PrismaAdvertisementFormat } from '@prisma/client'
 import { resolveAdvertisementCreative } from './creativeResolver'
 import { normalizeAdvertisementTitle } from './utils'
+import { buildCopyTitle, stripCopySuffix } from './duplicateTitle'
 
 export class AdvertisementRepository {
   static async findMany(params: {
@@ -291,6 +292,15 @@ export class AdvertisementRepository {
     })
   }
 
+  /** True when a non-deleted advertisement already uses this exact title. */
+  private static async copyTitleExists(title: string): Promise<boolean> {
+    const existing = await prisma.advertisement.findFirst({
+      where: { title, isDeleted: false },
+      select: { id: true },
+    })
+    return existing !== null
+  }
+
   static async duplicate(
     id: string,
     data: {
@@ -314,11 +324,27 @@ export class AdvertisementRepository {
     const copyButtonSettings = data.copyButtonSettings !== false
     const copyStatus = data.copyStatus === true
 
-    // Explicit new title wins. An omitted title falls back to "original (Copy)"
-    // for titled ads and stays null for untitled ads.
-    const copyTitle = data.title !== undefined
-      ? normalizeAdvertisementTitle(data.title)
-      : normalizeAdvertisementTitle(original.title ? `${original.title} (Copy)` : null)
+    // Explicit new title wins verbatim. An omitted title generates the
+    // canonical "(Copy)" title for titled ads and stays null for untitled
+    // ads. Generated titles are uniquified against existing non-deleted ads
+    // ("X (Copy)", "X (Copy 2)", …) so repeated duplicates never collide.
+    let copyTitle: string | null
+    if (data.title !== undefined) {
+      copyTitle = normalizeAdvertisementTitle(data.title) ?? null
+      if (copyTitle !== null && await this.copyTitleExists(copyTitle)) {
+        const stem = stripCopySuffix(copyTitle)
+        let n = 1
+        while (await this.copyTitleExists(buildCopyTitle(stem, n))) n += 1
+        copyTitle = buildCopyTitle(stem, n)
+      }
+    } else if (!original.title) {
+      copyTitle = null
+    } else {
+      const stem = stripCopySuffix(original.title)
+      let n = 1
+      while (await this.copyTitleExists(buildCopyTitle(stem, n))) n += 1
+      copyTitle = buildCopyTitle(stem, n)
+    }
 
     // Always a fresh, unique slug. Derived from the copy title by default, or
     // from the original slug when generateNewSlug is disabled.
@@ -448,7 +474,7 @@ export class AdvertisementRepository {
         if (ad.endDate && ad.endDate < now) return false
         if (placement === 'BROKER_LISTING_LOCAL') {
           if (!location || !ad.locationTarget || ad.locationTarget.countryCode !== 'US') return false
-          if (!ad.creatives.some((creative) => creative.format === 'SQUARE')) return false
+          if (!ad.creatives.some((creative) => creative.format === 'SQUARE' || creative.format === 'BANNER')) return false
           return distanceMiles(location.latitude, location.longitude, ad.locationTarget.latitude, ad.locationTarget.longitude) <= ad.locationTarget.radiusMiles
         }
         return true

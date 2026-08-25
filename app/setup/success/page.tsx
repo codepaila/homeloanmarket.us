@@ -11,7 +11,6 @@ import {
   Mail, 
   Clock, 
   Shield, 
-  Users,
   ArrowRight
 } from 'lucide-react'
 
@@ -84,18 +83,6 @@ export default function SetupSuccessPage() {
                     <h3 className="font-medium text-foreground mb-1">Verification Status</h3>
                     <p className="text-muted-foreground text-sm">
                       You&apos;ll be notified via email once your profile is verified
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4 p-4 border rounded-lg">
-                  <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                    <Users className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-foreground mb-1">Start Receiving Leads</h3>
-                    <p className="text-muted-foreground text-sm">
-                      Once verified, you&apos;ll start receiving loan applications and leads
                     </p>
                   </div>
                 </div>

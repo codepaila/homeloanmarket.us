@@ -58,14 +58,17 @@ test('verification routes broker registrations to plan without a client delay', 
 
 test('setup requires active pre-profile subscription and saves durable draft progress', () => {
   const setup = read('app/setup/page.tsx')
+  const state = read('lib/broker-onboarding-state.ts')
   const status = read('app/api/broker-registration/status/route.ts')
   const draft = read('app/api/broker-registration/onboarding/route.ts')
   const brokerRoute = read('app/api/brokers/route.ts')
 
-  assert.match(setup, /\/api\/broker-registration\/status/)
-  assert.match(setup, /\/broker\/subscription\/select/)
-  assert.match(status, /subscription/) 
-  assert.match(draft, /DRAFT_FIELDS/) 
-  assert.match(draft, /brokerOnboardingDraft\.upsert/) 
+  // Subscription gating lives in the single authoritative state machine and
+  // is enforced server-side by the /setup page.
+  assert.match(setup, /resolveBrokerOnboardingDestination\(user, '\/setup'\)/)
+  assert.match(state, /'\/broker\/subscription\/select'/)
+  assert.match(status, /subscription/)
+  assert.match(draft, /DRAFT_FIELDS/)
+  assert.match(draft, /brokerOnboardingDraft\.upsert/)
   assert.match(brokerRoute, /BrokerSubscriptionRequiredError|active broker subscription is required/i)
 })

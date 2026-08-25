@@ -85,15 +85,12 @@ export function useImpressionTracker(adId: string, enabled: boolean = true) {
   return { trackImpression }
 }
 
-export function useClickTracker(adId: string, url: string | null | undefined, openInNewTab: boolean = true) {
+export function useClickTracker(adId: string) {
   const trackClick = useCallback(async () => {
-    if (!adId || !url) return
+    if (!adId) return
 
     const tracked = getStoredIds(TRACKED_CLICKS_KEY)
-    if (tracked.has(adId)) {
-      if (url) window.open(url, openInNewTab ? '_blank' : '_self', 'noopener,noreferrer')
-      return
-    }
+    if (tracked.has(adId)) return
 
     try {
       await fetch(`${baseUrl}/api/ads/click`, {
@@ -104,11 +101,9 @@ export function useClickTracker(adId: string, url: string | null | undefined, op
       })
       storeId(TRACKED_CLICKS_KEY, adId)
     } catch {
-      // silently fail
-    } finally {
-      if (url) window.open(url, openInNewTab ? '_blank' : '_self', 'noopener,noreferrer')
+      // silently fail — tracking must never break navigation
     }
-  }, [adId, url, openInNewTab])
+  }, [adId])
 
   return { trackClick }
 }

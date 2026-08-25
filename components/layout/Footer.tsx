@@ -1,5 +1,4 @@
 'use client'
-/* eslint-disable @next/next/no-img-element */
 
 import { useState } from 'react'
 import Link from 'next/link'
@@ -22,16 +21,16 @@ import type { SiteSettings } from '@/lib/site/settings'
 import Image from 'next/image'
 
 const footerColumns = [
-  // {
-  //   title: 'Resources',
-  //   links: [
-  //     { name: 'Mortgage Broker Directory', href: '/brokers' },
-  //     { name: 'Mortgage Guides', href: '/guides' },
-  //     { name: 'Articles', href: '/blog' },
-  //     { name: 'Mortgage Calculator', href: '/calculator' },
-  //     { name: 'FAQ', href: '/faq' },
-  //   ],
-  // },
+  {
+    title: 'Resources',
+    links: [
+      { name: 'Mortgage Broker Directory', href: '/brokers' },
+      { name: 'Mortgage Guides', href: '/guides' },
+      { name: 'Articles', href: '/blog' },
+      { name: 'Mortgage Calculator', href: '/calculator' },
+      { name: 'FAQ', href: '/faq' },
+    ],
+  },
   {
     title: 'Company',
     links: [
@@ -57,6 +56,11 @@ const SOCIAL_ICONS = {
   instagram: Instagram,
   youtube: Youtube,
 } as const
+
+// Small filled square used as an editorial marker before column headings.
+function SquareMarker({ className = '' }: { className?: string }) {
+  return <span aria-hidden="true" className={`inline-block h-2 w-2 shrink-0 bg-primary ${className}`} />
+}
 
 export default function Footer({ settings }: { settings?: SiteSettings }) {
   const [email, setEmail] = useState('')
@@ -107,49 +111,55 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
   return (
     <footer className="border-t border-border bg-bg-deep">
       <div className="container-custom">
-        {/* Newsletter strip */}
-        <div className="flex flex-col items-center justify-between gap-6 border-b border-border py-10 lg:flex-row">
-          <div>
-            <h3 className="text-xl font-bold text-text-main">
-              Get mortgage insights in your inbox
-            </h3>
-            <p className="mt-1 text-sm text-text-muted">
-              Market updates, eligibility tips, and mortgage advice. No
-              unwanted emails, unsubscribe anytime.
-            </p>
+        {/* Newsletter — compact horizontal CTA */}
+        <div className="flex flex-col gap-6 py-10 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
+          <div className="flex items-start gap-4">
+            <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+              <Mail className="h-5 w-5" />
+            </span>
+            <div>
+              <h3 className="text-lg font-bold text-text-main sm:text-xl">
+                Get mortgage insights in your inbox
+              </h3>
+              <p className="mt-1 max-w-md text-sm leading-relaxed text-text-muted">
+                Market updates, eligibility tips, and mortgage advice. No
+                unwanted emails, unsubscribe anytime.
+              </p>
+            </div>
           </div>
-          <form
-            onSubmit={handleSubscribe}
-            className="flex w-full max-w-md items-center gap-2 rounded-2xl border border-border bg-background p-1.5 shadow-soft"
-          >
-            <Mail className="ml-3 h-4 w-4 flex-shrink-0 text-text-muted" />
-            <input
-              type="email"
-              name="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              aria-label="Email for newsletter"
-              className="w-full bg-transparent py-2 text-sm text-text-main outline-none placeholder:text-text-muted/60"
-            />
-            <button
-              type="submit"
-              disabled={newsletterLoading}
-              className="flex h-10 flex-shrink-0 items-center gap-1.5 rounded-xl bg-primary px-4 text-sm font-semibold text-white transition-all hover:bg-primary/90"
+          <div className="w-full lg:max-w-md">
+            <form
+              onSubmit={handleSubscribe}
+              className="flex w-full items-center gap-2 rounded-lg border border-border bg-background p-1.5 shadow-soft"
             >
-              {subscribed ? (
-                <>
-                  <CheckCircle2 className="h-4 w-4" /> Subscribed
-                </>
-              ) : (
-                <>
-                  {newsletterLoading ? 'Submitting…' : 'Subscribe'}
-                  {!newsletterLoading && <ArrowRight className="h-3.5 w-3.5" />}
-                </>
-              )}
-            </button>
-          </form>
-          {newsletterError && <p className="mt-2 text-sm text-destructive" role="alert">{newsletterError}</p>}
+              <input
+                type="email"
+                name="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email"
+                aria-label="Email for newsletter"
+                className="w-full bg-transparent px-3 py-2 text-sm text-text-main outline-none placeholder:text-text-muted/60"
+              />
+              <button
+                type="submit"
+                disabled={newsletterLoading}
+                className="flex h-10 flex-shrink-0 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-semibold text-white transition-all hover:bg-primary/90"
+              >
+                {subscribed ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4" /> Subscribed
+                  </>
+                ) : (
+                  <>
+                    {newsletterLoading ? 'Submitting…' : 'Subscribe'}
+                    {!newsletterLoading && <ArrowRight className="h-3.5 w-3.5" />}
+                  </>
+                )}
+              </button>
+            </form>
+            {newsletterError && <p className="mt-2 text-sm text-destructive" role="alert">{newsletterError}</p>}
+          </div>
         </div>
 
         {/* Main footer grid */}
@@ -195,7 +205,8 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
           {/* Link columns */}
           {footerColumns.map((column) => (
             <div key={column.title} className="space-y-3.5">
-              <h3 className="text-sm font-bold uppercase tracking-wide text-text-main">
+              <h3 className="flex items-center gap-2.5 text-sm font-bold uppercase tracking-wide text-text-main">
+                <SquareMarker />
                 {column.title}
               </h3>
               <ul className="space-y-2.5">
@@ -214,29 +225,31 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
             </div>
           ))}
 
-          {/* Contact */}
-          <div className="space-y-3.5 lg:col-span-1">
-            <h3 className="text-sm font-bold uppercase tracking-wide text-text-main">
-              Contact
-            </h3>
-            <ul className="space-y-3">
-              {contactInfo.map((item) => (
-                <li key={item.label} className="flex items-start gap-2.5">
-                  <span className="mt-0.5 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                    <item.icon className="h-3.5 w-3.5 text-primary" />
+        </div>
+
+        {/* Contact — horizontal block separated by whitespace */}
+        <div className="pb-12">
+          <h3 className="flex items-center gap-2.5 text-sm font-bold uppercase tracking-wide text-text-main">
+            <SquareMarker />
+            Contact
+          </h3>
+          <ul className="mt-5 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:gap-x-10">
+            {contactInfo.map((item) => (
+              <li key={item.label} className="flex items-center gap-2.5">
+                <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <item.icon className="h-3.5 w-3.5 text-primary" />
+                </span>
+                <span>
+                  <span className="block text-xs text-text-muted">
+                    {item.label}
                   </span>
-                  <span>
-                    <span className="block text-xs text-text-muted">
-                      {item.label}
-                    </span>
-                    <span className="text-sm font-medium text-text-main">
-                      {item.value}
-                    </span>
+                  <span className="text-sm font-medium text-text-main">
+                    {item.value}
                   </span>
-                </li>
-              ))}
-            </ul>
-          </div>
+                </span>
+              </li>
+            ))}
+          </ul>
         </div>
 
         {/* Bottom bar */}

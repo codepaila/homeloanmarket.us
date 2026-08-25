@@ -443,6 +443,11 @@ export default function BrokersPage() {
             <p className="mx-auto mt-3 max-w-2xl text-base text-text-muted md:text-lg">
               Search by broker, company, ZIP code, address or location, then compare verified mortgage professionals.
             </p>
+            {/* <p className="mx-auto mt-3 max-w-3xl text-sm text-text-muted">
+              HomeLoanMarket helps you find and compare verified mortgage brokers across the United States.
+              Search by city, state, or ZIP code to discover local mortgage professionals, compare their
+              experience and ratings, and connect with the right home-loan expert for your situation.
+            </p> */}
             {/* {!isLoading && (
               <p className="mt-4 text-sm font-medium text-primary">
                 {total || 0} verified broker{total === 1 ? '' : 's'} currently listed
@@ -454,8 +459,8 @@ export default function BrokersPage() {
 
       {/* Sticky search + toolbar */}
       <section className="sticky top-16 z-30 border-b border-border bg-card/80 backdrop-blur-lg md:top-[72px]">
-        <div className="container-custom py-4 md:py-5">
-          <div ref={searchRef} className="relative mx-auto max-w-4xl">
+        <div className="container-custom py-4 md:py-5 grid grid-cols-5 gap-3 md:gap-5 items-center">
+          <div ref={searchRef} className="relative  col-span-4 sm:col-span-3">
             <Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-text-muted" />
             <input
               type="search"
@@ -495,7 +500,7 @@ export default function BrokersPage() {
                   setActiveSuggestionIndex(-1)
                 }
               }}
-              className="h-12 w-full rounded-xl border border-border bg-background pl-11 pr-10 text-sm text-text-main shadow-soft placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="h-10 w-full rounded-xl border border-border bg-background pl-11 pr-2 text-sm text-text-main shadow-soft placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
             {locationSuggestions.length > 0 && (
               <div id="broker-location-suggestions" className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-border bg-card shadow-large" role="listbox" aria-label="Location suggestions">
@@ -517,7 +522,7 @@ export default function BrokersPage() {
               </div>
             )}
             {locationError && <p role="status" className="absolute inset-x-0 top-full z-50 mt-2 rounded-xl border border-destructive/30 bg-card p-3 text-sm text-destructive">{locationError}</p>}
-            <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
+            {/* <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
               {searchInput && (
                 <button type="button"
                  onClick={() => { setSearchInput(''); setSearch(''); setCommittedSearch(''); setSelectedLocation(null); setRadius(25); setLocationSuggestions([]); setLocationError(''); setActiveSuggestionIndex(-1) }}
@@ -527,9 +532,48 @@ export default function BrokersPage() {
                   <X className="h-4 w-4" />
                 </button>
               )}
+            </div> */}
+          </div>
+          <div className="col-span-1 sm:block hidden">
+              <div className="text-sm text-text-muted">
+              {isLoading ? (
+                <span className="inline-block h-4 w-16 animate-pulse rounded bg-muted" />
+              ) : (
+                <span>
+                  <span className="font-semibold text-text-main">{total || 0}</span>{' '}
+                  <span className="hidden sm:inline">mortgage broker{total === 1 ? '' : 's'} found</span>
+                  <span className="sm:hidden">broker{total === 1 ? '' : 's'}</span>
+                </span>
+              )}
             </div>
           </div>
+          <div className="col-span-1 flex justify-end">
 
+              <button
+                ref={filtersButtonRef}
+                type="button"
+                onClick={openFilters}
+                className={cn(
+                  ' inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm font-medium text-text-main transition-colors hover:bg-muted',
+                  filtersOpen && 'bg-muted',
+                )}
+                aria-expanded={filtersOpen}
+                aria-controls="broker-filter-sheet"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                <span className="hidden sm:block">
+
+                Filters
+                </span>
+                {hasActiveFilters && (
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-white">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+              </div>
+             
+{/* 
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-2.5">
               <button
@@ -552,7 +596,7 @@ export default function BrokersPage() {
                 )}
               </button>
 
-              {/* <div className="hidden items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm text-text-muted sm:inline-flex">
+              <div className="hidden items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm text-text-muted sm:inline-flex">
                 <span>Sort:</span>
                 <Select
                   value={sortBy}
@@ -560,7 +604,7 @@ export default function BrokersPage() {
                   options={sortOptions}
                   triggerClassName="border-0 shadow-none bg-transparent text-text-main font-medium"
                 />
-              </div> */}
+              </div>
 
               <div className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm">
                 <span className="hidden text-text-muted sm:inline">View:</span>
@@ -598,7 +642,7 @@ export default function BrokersPage() {
                 </span>
               )}
             </div>
-          </div>
+          </div> */}
         </div>
       </section>
 
@@ -803,78 +847,78 @@ function FilterChip({
   )
 }
 
-function FilterSelect({
-  label,
-  value,
-  onChange,
-  options,
-  loading,
-  disabled,
-}: {
-  label: string
-  value: string
-  onChange: (val: string) => void
-  options: { value: string; label: string }[]
-  loading?: boolean
-  disabled?: boolean
-}) {
-  return (
-    <div className="space-y-1.5">
-      <label className="text-xs font-medium uppercase tracking-wide text-text-muted">
-        {label}
-      </label>
-      <div className="relative">
-        <select
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          disabled={disabled || loading}
-          className={cn(
-            'w-full appearance-none rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-text-main',
-            'transition-all focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15',
-            (loading || disabled) && 'opacity-60',
-          )}
-        >
-          {options.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-        <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-      </div>
-      {loading && <p className="text-xs text-text-muted">Loading mortgage brokers...</p>}
-    </div>
-  )
-}
+// function FilterSelect({
+//   label,
+//   value,
+//   onChange,
+//   options,
+//   loading,
+//   disabled,
+// }: {
+//   label: string
+//   value: string
+//   onChange: (val: string) => void
+//   options: { value: string; label: string }[]
+//   loading?: boolean
+//   disabled?: boolean
+// }) {
+//   return (
+//     <div className="space-y-1.5">
+//       <label className="text-xs font-medium uppercase tracking-wide text-text-muted">
+//         {label}
+//       </label>
+//       <div className="relative">
+//         <select
+//           value={value}
+//           onChange={(e) => onChange(e.target.value)}
+//           disabled={disabled || loading}
+//           className={cn(
+//             'w-full appearance-none rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-text-main',
+//             'transition-all focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15',
+//             (loading || disabled) && 'opacity-60',
+//           )}
+//         >
+//           {options.map((opt) => (
+//             <option key={opt.value} value={opt.value}>
+//               {opt.label}
+//             </option>
+//           ))}
+//         </select>
+//         <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+//       </div>
+//       {loading && <p className="text-xs text-text-muted">Loading mortgage brokers...</p>}
+//     </div>
+//   )
+// }
 
-function Select({
-  value,
-  onValueChange,
-  options,
-  triggerClassName,
-}: {
-  value: string
-  onValueChange: (val: string) => void
-  options: { value: string; label: string }[]
-  triggerClassName?: string
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onValueChange(e.target.value)}
-      className={cn(
-        'w-full appearance-none border-0 bg-transparent text-sm font-medium outline-none',
-        triggerClassName,
-      )}
-    >
-      {options.map((opt) => (
-        <option key={opt.value} value={opt.value}>
-          {opt.label}
-        </option>
-      ))}
-    </select>
-  )
-}
+// function Select({
+//   value,
+//   onValueChange,
+//   options,
+//   triggerClassName,
+// }: {
+//   value: string
+//   onValueChange: (val: string) => void
+//   options: { value: string; label: string }[]
+//   triggerClassName?: string
+// }) {
+//   return (
+//     <select
+//       value={value}
+//       onChange={(e) => onValueChange(e.target.value)}
+//       className={cn(
+//         'w-full appearance-none border-0 bg-transparent text-sm font-medium outline-none',
+//         triggerClassName,
+//       )}
+//     >
+//       {options.map((opt) => (
+//         <option key={opt.value} value={opt.value}>
+//           {opt.label}
+//         </option>
+//       ))}
+//     </select>
+//   )
+// }
 
 function Pagination({
   page,

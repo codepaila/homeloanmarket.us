@@ -1,6 +1,7 @@
 'use client'
 
 import { memo } from 'react'
+import { cn } from '@/lib/utils'
 import { useClickTracker, useImpressionTracker } from '@/lib/advertisements/tracker'
 
 interface AdvertisementWrapperProps {
@@ -8,7 +9,6 @@ interface AdvertisementWrapperProps {
     id: string
     title: string | null
     action: string
-    buttonLabel?: string | null
     buttonUrl?: string | null
     bannerUrl?: string | null
     openInNewTab?: boolean
@@ -19,44 +19,49 @@ interface AdvertisementWrapperProps {
 
 export const AdvertisementWrapper = memo(function AdvertisementWrapper({ ad, children, className }: AdvertisementWrapperProps) {
   const isValid = Boolean(ad && typeof ad.id === 'string' && ad.id.length > 0)
-  const adId = ad?.id && typeof ad.id === 'string' ? ad.id : ''
+  const adId = ad && typeof ad.id === 'string' ? ad.id : ''
+  const action = ad?.action || 'DISPLAY_ONLY'
+  const buttonUrl = ad?.buttonUrl || null
+  const bannerUrl = ad?.bannerUrl || null
+  const openInNewTab = ad?.openInNewTab ?? true
+
+  // DISPLAY_ONLY is not clickable. Every other action navigates natively to the
+  // configured destination: BUTTON_ONLY / BANNER_AND_BUTTON prefer the button
+  // URL (falling back to the banner URL), BANNER_CLICK uses the banner URL.
+  const isClickable = action !== 'DISPLAY_ONLY'
+  const href = isClickable
+    ? (action === 'BANNER_CLICK' ? bannerUrl : buttonUrl || bannerUrl)
+    : null
 
   // Hooks are always called (React Rules of Hooks) and no-op safely when the
   // ad is missing; the render below still returns null for invalid ads.
   useImpressionTracker(adId, isValid)
-  const { trackClick: trackButtonClick } = useClickTracker(adId, ad?.buttonUrl, ad?.openInNewTab)
-  const { trackClick: trackBannerClick } = useClickTracker(adId, ad?.bannerUrl, ad?.openInNewTab)
+  const { trackClick } = useClickTracker(adId)
 
   if (!isValid || !ad) return null
 
-  const handleClick = (event: { preventDefault(): void; stopPropagation(): void; target: EventTarget | null }) => {
-    const clickedLink = event.target instanceof HTMLAnchorElement
-    if (ad.action === 'BUTTON_ONLY' && !clickedLink) return
-    if (ad.action === 'DISPLAY_ONLY') return
-
-    const track = clickedLink || ad.action === 'BUTTON_ONLY' ? trackButtonClick : trackBannerClick
-    if ((clickedLink || ad.action === 'BUTTON_ONLY') && !ad.buttonUrl) return
-    if (!clickedLink && ad.action !== 'BUTTON_ONLY' && !ad.bannerUrl) return
-
-    event.preventDefault()
-    event.stopPropagation()
-    void track()
+  if (isClickable && href) {
+    return (
+      <a
+        data-ad-id={ad.id}
+        href={href}
+        target={openInNewTab ? '_blank' : undefined}
+        rel={openInNewTab ? 'noopener noreferrer' : undefined}
+        aria-label={ad.title || 'Advertisement'}
+        onClick={() => { void trackClick() }}
+        className={cn('block', className)}
+      >
+        {children}
+      </a>
+    )
   }
 
   return (
     <div
       data-ad-id={ad.id}
       className={className}
-      onClick={ad.action !== 'DISPLAY_ONLY' ? handleClick : undefined}
-      role={ad.action !== 'DISPLAY_ONLY' ? 'button' : 'region'}
+      role="region"
       aria-label={ad.title || 'Advertisement'}
-      tabIndex={ad.action !== 'DISPLAY_ONLY' ? 0 : undefined}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          handleClick(e)
-        }
-      }}
     >
       {children}
     </div>

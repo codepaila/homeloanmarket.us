@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/currentUser'
+import { brokerFeatureLabel } from '@/lib/broker-plans'
 
 export const dynamic = 'force-dynamic'
 
@@ -85,7 +86,7 @@ export default async function AdminBrokerPlansPage() {
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {featureCodes.length > 0 ? featureCodes.map((code) => (
-                        <span key={code} className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{code}</span>
+                        <span key={code} className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{brokerFeatureLabel(code)}</span>
                       )) : <span className="text-xs text-muted-foreground">—</span>}
                     </div>
                   </td>

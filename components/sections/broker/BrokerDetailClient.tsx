@@ -135,6 +135,21 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
 
   return (
     <div ref={targetRef} className="min-h-screen bg-background">
+      <nav aria-label="Breadcrumb" className="mx-auto max-w-7xl px-4 pt-4">
+        <ol className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
+          <li>
+            <Link href="/" className="hover:text-primary">Home</Link>
+          </li>
+          <li aria-hidden="true" className="text-muted-foreground/60">/</li>
+          <li>
+            <Link href="/brokers" className="hover:text-primary">Find Brokers</Link>
+          </li>
+          <li aria-hidden="true" className="text-muted-foreground/60">/</li>
+          <li className="truncate font-medium text-foreground" aria-current="page">
+            {displayName || companyName || 'Broker'}
+          </li>
+        </ol>
+      </nav>
       {/* Hero Banner */}
       <section className="relative">
         <div className="relative h-48 w-full md:h-72 lg:h-80 overflow-hidden rounded-b-3xl">
@@ -154,13 +169,14 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
 
         {/* Profile overlap */}
         <div className="absolute left-1/2 -bottom-16 -translate-x-1/2 md:left-8 md:translate-x-0">
-          <div className="relative flex h-32 w-32 items-center justify-center rounded-2xl border-4 border-background bg-card shadow-large overflow-hidden">
+          <div className="relative flex h-32 w-32 items-center justify-center rounded border-2 border-background bg-card shadow-large overflow-hidden">
             <BrokerAvatar src={profileImage || logo} alt={displayName || companyName} name={displayName || companyName} className="h-full w-full" />
           </div>
 
           {isFeaturedBroker && (
+            // <BrokerSubscriptionBadge className="h-20 w-30  absolute -top-10 right-1 z-10" />
             <div className="absolute -top-2 -right-2 z-10">
-              <Badge className="flex items-center gap-1 rounded-full bg-amber-500 px-2.5 py-1 text-xs font-semibold text-white shadow-md">
+              <Badge className="flex items-center gap-1 rounded bg-primary px-2.5 py-1 text-xs font-semibold text-white shadow-md">
                 <Star className="h-3 w-3 fill-white" />
                 Featured
               </Badge>
@@ -179,7 +195,6 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
                   <h1 className="text-3xl font-bold text-text-main md:text-4xl">
                     {displayName}
                   </h1>
-                  {isFeaturedBroker && <BrokerSubscriptionBadge className="h-7 w-7" />}
                   {isMortgageExpert && <MortgageExpertBadge />}
                 </div>
               )}
@@ -196,12 +211,14 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
             </div>
 
             <div className="flex items-center gap-2 flex-wrap justify-center">
-              {isVerifiedBadge(currentBroker.verificationStatus) && (
+                  {isFeaturedBroker && <BrokerSubscriptionBadge className="h-20 w-30" />}
+
+              {/* {isVerifiedBadge(currentBroker.verificationStatus) && (
                 <Badge className="bg-emerald-500/10 text-emerald-700 ring-1 ring-emerald-600/20">
                   <Shield className="h-3 w-3 mr-1" />
                   Verified Mortgage Broker
                 </Badge>
-              )}
+              )} */}
               {isPremium && (
                 <Badge className="bg-purple-500/15 text-purple-700 ring-1 ring-purple-600/25">
                   <Award className="h-3 w-3 mr-1" />
@@ -424,14 +441,12 @@ function AboutSection({
   description,
   experienceYears,
   profileViews,
-  totalLeads,
   showDescription = true,
 }: {
   displayName?: string
   description?: string
   experienceYears?: number
   profileViews?: number
-  totalLeads?: number
   showDescription?: boolean
 }) {
   return (
@@ -451,7 +466,6 @@ function AboutSection({
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <StatBox label="Years Experience" value={`${experienceYears || 0}+`} />
         <StatBox label="Profile Views" value={profileViews || 0} />
-        <StatBox label="Leads Assisted" value={`${totalLeads || 0}+`} />
       </div>
     </div>
   )

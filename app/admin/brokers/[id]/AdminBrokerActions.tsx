@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast'
 import { Loader2 } from 'lucide-react'
 import { ProfileImageUpload } from '@/components/brokers/ProfileImageUpload'
 import { CoverImageUpload } from '@/components/brokers/CoverImageUpload'
+import { US_STATES } from '@/lib/us-states'
 
 type AdminInvitation = {
   id: string
@@ -28,6 +29,8 @@ type AdminBroker = {
   city: string | null
   state: string | null
   pinCode: string | null
+  nmls: string | null
+  licenseStates: string[]
   isVisible: boolean
   verificationStatus: string
   logo?: string | null
@@ -42,14 +45,15 @@ export default function AdminBrokerActions({ broker }: { broker: AdminBroker }) 
   const [claimLink, setClaimLink] = useState('')
   const [saving, setSaving] = useState(false)
   const [isSending, setIsSending] = useState(false)
-  const [form, setForm] = useState({ displayName: broker.displayName, companyName: broker.companyName || '', description: broker.description, phone: broker.phone, email: broker.email || '', officeAddress: broker.officeAddress, city: broker.city || '', state: broker.state || '', pinCode: broker.pinCode, isVisible: broker.isVisible, verificationStatus: broker.verificationStatus })
+  const [form, setForm] = useState({ displayName: broker.displayName, companyName: broker.companyName || '', description: broker.description, phone: broker.phone, email: broker.email || '', officeAddress: broker.officeAddress, city: broker.city || '', state: broker.state || '', pinCode: broker.pinCode, nmls: broker.nmls || '', isVisible: broker.isVisible, verificationStatus: broker.verificationStatus })
+  const [licenseStates, setLicenseStates] = useState<string[]>(broker.licenseStates || [])
 
   async function updateProfile(event: React.FormEvent) {
     event.preventDefault()
     if (saving) return
     setSaving(true)
     try {
-      const response = await fetch(`/api/admin/brokers/${broker.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+      const response = await fetch(`/api/admin/brokers/${broker.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, licenseStates }) })
       const data = await response.json()
       if (!response.ok) throw new Error(data.message || 'Unable to update broker profile. Please try again.')
       toast.success('Broker profile updated successfully.')
@@ -147,6 +151,29 @@ export default function AdminBrokerActions({ broker }: { broker: AdminBroker }) 
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           {(['displayName', 'companyName', 'phone', 'email', 'officeAddress', 'city', 'state', 'pinCode'] as const).map((field) => <label key={field} className="space-y-1"><span className="text-sm font-medium">{field}</span><input value={form[field] || ''} onChange={(event) => setForm({ ...form, [field]: event.target.value })} className="w-full rounded-lg border bg-background px-3 py-2" /></label>)}
+          <label className="space-y-1"><span className="text-sm font-medium">NMLS ID</span><input value={form.nmls || ''} onChange={(event) => setForm({ ...form, nmls: event.target.value })} className="w-full rounded-lg border bg-background px-3 py-2" placeholder="12345678" /></label>
+        </div>
+        <div className="space-y-3 rounded-lg border bg-muted/20 p-4">
+          <div>
+            <p className="text-sm font-medium">License States</p>
+            <p className="text-sm text-muted-foreground">US states where this broker is licensed to originate mortgages.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {US_STATES.map((state) => {
+              const selected = licenseStates.includes(state.code)
+              return (
+                <button
+                  key={state.code}
+                  type="button"
+                  onClick={() => setLicenseStates((current) => selected ? current.filter((c) => c !== state.code) : [...current, state.code])}
+                  aria-pressed={selected}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${selected ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background text-muted-foreground hover:border-primary/40'}`}
+                >
+                  {state.code}
+                </button>
+              )
+            })}
+          </div>
         </div>
         <label className="block space-y-1"><span className="text-sm font-medium">Description</span><textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className="min-h-28 w-full rounded-lg border bg-background px-3 py-2" /></label>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.verificationStatus === 'VERIFIED'} onChange={(event) => setForm({ ...form, verificationStatus: event.target.checked ? 'VERIFIED' : 'UNVERIFIED' })} /> Mark profile verified after review</label>

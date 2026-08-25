@@ -10,7 +10,9 @@ import type { MediaAsset, AdvertisementOwner, AdvertisementRequestContext } from
 import type { AdvertisementFormat } from '@/lib/advertisements/formats'
 import { getAdvertisementRequirements, getCreativeRequirementForFormat, getValidTypesForPlacement, getPlacementMeta, AD_TYPE_LABELS, ACTION_META } from '@/lib/advertisements/requirements'
 import { PLACEMENT_SIZE_SPECS } from '@/lib/advertisements/placementSpecs'
+import { AD_RADIUS_DEFAULT } from '@/lib/advertisements/radius'
 import { AdvertisementCreativeUpload } from '@/components/admin/ads/AdvertisementCreativeUpload'
+import { TargetRadiusControl } from '@/components/admin/ads/TargetRadiusControl'
 import { OwnerSelector } from '@/components/admin/ads/OwnerSelector'
 import { USLocationPicker } from '@/components/location/USLocationPicker'
 
@@ -48,7 +50,7 @@ const INITIAL_STATE: WizardState = {
   creativeFormat: null,
   creatives: {},
   location: null,
-  radiusMiles: 25,
+  radiusMiles: AD_RADIUS_DEFAULT,
   startDate: '',
   endDate: '',
   isEnabled: false,
@@ -81,7 +83,7 @@ export function AdvertisementWizard({
                 longitude: initialLocationTarget.longitude,
               }
             : null,
-          radiusMiles: initialLocationTarget.radiusMiles || 25,
+          radiusMiles: initialLocationTarget.radiusMiles || AD_RADIUS_DEFAULT,
         }
       : {}),
   }))
@@ -373,13 +375,13 @@ export function AdvertisementWizard({
       {current.key === 'targeting' && requirements?.supportsLocation && (
         <section className="space-y-4 rounded-xl border bg-card p-5">
           <h2 className="text-lg font-semibold">Location Targeting</h2>
-          <p className="text-sm text-muted-foreground">This advertisement can appear to users searching within this location.</p>
+          <p className="text-sm text-muted-foreground">Where should this advertisement appear?</p>
           <USLocationPicker value={state.location || undefined} onChange={(location) => set('location', location || null)} />
-          <label className="block space-y-1"><span className="text-sm font-medium">Radius (miles)</span>
-            <select value={state.radiusMiles} onChange={(e) => set('radiusMiles', Number(e.target.value))} className="w-full rounded-lg border bg-background px-3 py-2 text-sm">
-              {[10, 25, 50, 100].map((r) => <option key={r} value={r}>{r} miles</option>)}
-            </select>
-          </label>
+          <TargetRadiusControl
+            value={state.radiusMiles}
+            onChange={(radiusMiles) => set('radiusMiles', radiusMiles)}
+            locationLabel={state.location ? (state.location.normalizedAddress || `${state.location.city}, ${state.location.state}`) : undefined}
+          />
         </section>
       )}
 

@@ -71,8 +71,26 @@ export function useCurrentUser() {
   }
 }
 
-export function useUserPermissions(): UserPermissions {
-  const user = useCurrentUser()
+// Minimal shape required to derive permissions. Both the JWT session user
+// (from useCurrentUser) and the database-backed user (from getCurrentUser)
+// satisfy this, so the broker layout can pass either source.
+type PermissionUserInput = {
+  isAdmin?: boolean
+  isBroker?: boolean
+  isUser?: boolean
+  hasActiveSubscription?: boolean
+  isFeaturedBroker?: boolean
+  isVerifiedBroker?: boolean
+  isPremiumBroker?: boolean
+  subscription?: { plan?: string } | null
+  brokerProfile?: unknown
+}
+
+export function useUserPermissions(
+  overrideUser?: PermissionUserInput | null,
+): UserPermissions {
+  const sessionUser = useCurrentUser()
+  const user = overrideUser ?? sessionUser
 
   if (!user) {
     return {
@@ -121,10 +139,11 @@ export function useUserPermissions(): UserPermissions {
     }
   }
 
-  const isAdmin = user.isAdmin
-  const isBroker = user.isBroker
-  const hasActiveSubscription = user.hasActiveSubscription
-  const isFeatured = user.isFeaturedBroker
+  const isAdmin = user.isAdmin ?? false
+  const isBroker = user.isBroker ?? false
+  const hasActiveSubscription = user.hasActiveSubscription ?? false
+  const isFeatured = user.isFeaturedBroker ?? false
+  const isVerifiedBroker = user.isVerifiedBroker ?? false
   const subscriptionPlan = user.subscription?.plan || "FREE"
 
   return {
@@ -154,7 +173,7 @@ export function useUserPermissions(): UserPermissions {
       canGetVerifiedBadge: false,
       canCreateFeaturedListing: isBroker && subscriptionPlan === "FEATURED",
       canAccessPremiumSupport: false,
-    canViewAllLeads: isBroker && user.isVerifiedBroker,
+    canViewAllLeads: isBroker && isVerifiedBroker,
 
     // Feature flags
     canUseAdvancedFeatures: false,
@@ -164,9 +183,9 @@ export function useUserPermissions(): UserPermissions {
     // Role checks
     isAdmin,
     isBroker,
-    isUser: user.isUser,
+    isUser: user.isUser ?? false,
     hasActiveSubscription,
-    isVerifiedBroker: user.isVerifiedBroker,
-    isFeaturedBroker: user.isFeaturedBroker,
+    isVerifiedBroker: isVerifiedBroker,
+    isFeaturedBroker: isFeatured,
   }
 }

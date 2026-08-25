@@ -9,15 +9,16 @@ import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/currentUser"
 import { uploadImage, ImageUploadError } from "@/lib/image-upload"
 
-type UploadType = "logo" | "cover" | "avatar"
+type UploadType = "logo" | "cover" | "avatar" | "profile"
 
 const TYPE_CONFIG: Record<UploadType, { category: string; cloudinaryFolder: string }> = {
   logo: { category: "brokers/logo", cloudinaryFolder: "homeloanmarket/brokers/logo" },
   cover: { category: "brokers/cover", cloudinaryFolder: "homeloanmarket/brokers/cover" },
   avatar: { category: "users/avatar", cloudinaryFolder: "homeloanmarket/users/avatar" },
+  profile: { category: "brokers/profile", cloudinaryFolder: "homeloanmarket/brokers/profile" },
 }
 
-const BROKER_ONLY_TYPES: UploadType[] = ["logo", "cover"]
+const BROKER_ONLY_TYPES: UploadType[] = ["logo", "cover", "profile"]
 
 function isUploadType(value: unknown): value is UploadType {
   return typeof value === "string" && value in TYPE_CONFIG

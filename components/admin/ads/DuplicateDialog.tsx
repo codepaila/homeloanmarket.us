@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -18,6 +19,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { useAdvertisement, useDuplicateAdvertisement, useToast } from '@/hooks/useAdminAds'
+import { buildCopyTitle, stripCopySuffix } from '@/lib/advertisements/duplicateTitle'
 
 const DuplicateSchema = z.object({
   title: z.string().max(200).optional(),
@@ -31,11 +33,17 @@ const DuplicateSchema = z.object({
 
 type DuplicateFormData = z.infer<typeof DuplicateSchema>
 
+export interface DuplicateCreatedAd {
+  id: string
+  title: string | null
+}
+
 interface DuplicateDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   adId: string | null
-  onSuccess?: () => void
+  /** Receives the newly created duplicate (with its generated title). */
+  onSuccess?: (ad: DuplicateCreatedAd) => void
 }
 
 export function DuplicateDialog({ open, onOpenChange, adId, onSuccess }: DuplicateDialogProps) {
@@ -56,11 +64,21 @@ export function DuplicateDialog({ open, onOpenChange, adId, onSuccess }: Duplica
     },
   })
 
+  // The generated duplicate title must be VISIBLE as the input's actual
+  // value (not a placeholder hint) the moment the source advertisement is
+  // loaded. Admins can still edit it before submitting.
+  const generatedTitle = ad?.title ? buildCopyTitle(stripCopySuffix(ad.title), 1) : ''
+  useEffect(() => {
+    if (!open || !ad) return
+    form.setValue('title', generatedTitle.slice(0, 200), { shouldDirty: false })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, ad?.id, generatedTitle])
+
   const onSubmit = async (data: DuplicateFormData) => {
     if (!adId) return
 
     try {
-      await duplicate.mutateAsync({
+      const created = await duplicate.mutateAsync({
         id: adId,
         title: data.title?.trim() ? data.title.trim() : undefined,
         copyImages: data.copyImages,
@@ -73,12 +91,12 @@ export function DuplicateDialog({ open, onOpenChange, adId, onSuccess }: Duplica
 
       toast({
         title: 'Advertisement duplicated successfully',
-        description: data.title?.trim() ? `"${data.title.trim()}" has been created.` : 'The duplicate advertisement has been created.',
+        description: created?.title ? `"${created.title}" has been created.` : 'The duplicate advertisement has been created.',
       })
 
       onOpenChange(false)
-      form.reset()
-      onSuccess?.()
+      form.reset({ ...form.formState.defaultValues, title: '' })
+      if (created) onSuccess?.(created)
     } catch {
       toast({
         title: 'Failed to duplicate advertisement',
@@ -88,7 +106,7 @@ export function DuplicateDialog({ open, onOpenChange, adId, onSuccess }: Duplica
     }
   }
 
-  const defaultTitle = ad?.title ? `${ad.title} (Copy)` : ''
+  const defaultTitle = generatedTitle
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

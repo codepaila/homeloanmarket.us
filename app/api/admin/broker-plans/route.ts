@@ -12,13 +12,13 @@ import {
   type BrokerPlanFeatureInput,
 } from '@/lib/broker-plans'
 
-async function isAdmin() {
+async function getAdminUser() {
   const user = await getCurrentUser()
-  return user?.role === 'ADMIN'
+  return user?.role === 'ADMIN' ? user : null
 }
 
 export async function GET() {
-  if (!(await isAdmin())) return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
+  if (!(await getAdminUser())) return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
   const plans = await prisma.brokerSubscriptionPlan.findMany({
     include: {
       features: true,
@@ -30,7 +30,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  if (!(await isAdmin())) return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
+  const admin = await getAdminUser()
+  if (!admin) return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
 
   let body: Record<string, unknown>
   try {
@@ -41,13 +42,18 @@ export async function POST(request: Request) {
 
   const code = normalizePlanCode(body.code)
   if (!code) return NextResponse.json({ message: 'A stable plan code is required' }, { status: 422 })
+  if (code.length > 50) return NextResponse.json({ message: 'Plan code must be 50 characters or fewer' }, { status: 422 })
   const name = typeof body.name === 'string' && body.name.trim() ? body.name.trim() : code
+  if (name.length > 100) return NextResponse.json({ message: 'Plan name must be 100 characters or fewer' }, { status: 422 })
   const description = typeof body.description === 'string' ? body.description : ''
   const price = Number.isFinite(Number(body.price)) ? Math.max(0, Math.round(Number(body.price))) : 0
-  const billingInterval = typeof body.billingInterval === 'string' ? body.billingInterval : 'month'
-  const currency = typeof body.currency === 'string' ? body.currency : 'usd'
+  const ALLOWED_BILLING_INTERVALS = ['day', 'week', 'month', 'year']
+  const billingInterval = typeof body.billingInterval === 'string' && ALLOWED_BILLING_INTERVALS.includes(body.billingInterval)
+    ? body.billingInterval
+    : 'month'
+  const currency = typeof body.currency === 'string' && body.currency.trim() ? body.currency.trim().toLowerCase() : 'usd'
   const displayOrder = Number.isFinite(Number(body.displayOrder)) ? Math.round(Number(body.displayOrder)) : 0
-  const isActive = body.isActive !== false
+  const isActive = body.isActive === undefined ? true : body.isActive === true
 
   let stripeProductId: string | null = null
   let stripePriceId: string | null = null
@@ -61,6 +67,16 @@ export async function POST(request: Request) {
     const price = await validateStripePriceId(body.stripePriceId.trim(), stripeProductId || undefined)
     if (!price.ok) return NextResponse.json({ message: price.error }, { status: 422 })
     stripePriceId = price.id
+  }
+
+  // Paid plans must reference a valid Stripe Product and Price so checkout can
+  // resolve them. This matches the company advertising plan contract and the
+  // create form's own guidance.
+  if (price > 0 && (!stripeProductId || !stripePriceId)) {
+    return NextResponse.json(
+      { message: 'Paid plans require a Stripe Product ID and a Stripe Price ID.' },
+      { status: 422 },
+    )
   }
 
   const exists = await prisma.brokerSubscriptionPlan.findUnique({ where: { code } })
@@ -92,6 +108,7 @@ export async function POST(request: Request) {
       await upsertPlanFeatures(tx as never, created.id, features)
       return created
     })
+    console.info('Admin created broker plan', { adminId: admin.id, planId: plan.id })
     return NextResponse.json({ plan }, { status: 201 })
   } catch (error) {
     console.error('Admin broker plan create failed', error)

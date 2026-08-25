@@ -99,7 +99,11 @@ export function getAdvertisementRequirements(placement: string): AdvertisementRe
     allowedFormats,
     creativeSlots,
     supportsDesktop: desktopFormats.length > 0,
-    supportsMobile: hasMobileFormat,
+    // "Supports mobile" means the placement RENDERS on mobile devices — never
+    // whether a MOBILE creative slot exists. The broker-listing local placement
+    // is rendered responsively (3 → 2 → 1 columns) from a single SQUARE/BANNER
+    // creative, so it supports mobile even though it has no MOBILE format.
+    supportsMobile: hasMobileFormat || placement === 'BROKER_LISTING_LOCAL',
     supportsLocation: placement === 'BROKER_LISTING_LOCAL',
     supportsCta: !['ANNOUNCEMENT_TOP', 'ANNOUNCEMENT_BOTTOM', 'POPUP_OVERLAY'].includes(placement),
   }
@@ -112,6 +116,7 @@ function formatLabel(format: AdvertisementFormat): string {
     SQUARE: 'Square',
     VERTICAL: 'Vertical',
     MOBILE: 'Mobile Banner',
+    BANNER: 'Rectangle Display Banner',
   }
   return labels[format]
 }
@@ -185,4 +190,5 @@ const FORMAT_LABELS: Record<AdvertisementFormat, string> = {
   SQUARE: 'Square',
   VERTICAL: 'Vertical',
   MOBILE: 'Mobile Banner',
+  BANNER: 'Rectangle Display Banner',
 }

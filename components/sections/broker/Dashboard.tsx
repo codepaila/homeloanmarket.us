@@ -11,8 +11,7 @@ import {
   TrendingUp, 
   DollarSign,
   CheckCircle,
-  Clock,
-  AlertCircle
+  Clock
 } from 'lucide-react'
 import { useSidebarData } from '@/hooks/useSidebarData'
 
@@ -187,18 +186,6 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               {/* Pending applications list */}
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-orange-600" />
-                Recent Leads
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {/* Recent leads list */}
             </CardContent>
           </Card>
         </div>

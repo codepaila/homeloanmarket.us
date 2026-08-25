@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
     if (!allowed) {
       return NextResponse.json(
-        { success: false, error: 'Too many requests. Please try again later.' },
+        { success: false, error: 'Please wait before requesting another verification email.', errorCode: 'RATE_LIMITED' },
         { status: 429 }
       )
     }
@@ -58,12 +58,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // A newly registered broker has a User + BrokerRegistration but no Broker
+    // profile until subscription and onboarding. Resend still works without a
+    // profile; we never create a fake Broker just to send the verification email.
     if (!user.brokerProfile[0]) {
       const result = await sendUserVerificationEmail(user.id)
-      return NextResponse.json({
-        success: result.success,
-        message: result.success ? 'Verification email sent successfully' : 'Unable to send verification email',
-      }, { status: result.success ? 200 : 500 })
+      if (!result.success) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Unable to send verification email',
+            errorCode: 'EMAIL_SEND_FAILED',
+          },
+          { status: 500 }
+        )
+      }
+      return NextResponse.json({ success: true, message: 'Verification email sent successfully' })
     }
 
     // Resend verification email
@@ -71,9 +81,10 @@ export async function POST(request: NextRequest) {
 
     if (!result.success) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: result.error || 'Failed to resend verification email' 
+        {
+          success: false,
+          error: 'Unable to send verification email',
+          errorCode: 'EMAIL_SEND_FAILED',
         },
         { status: 500 }
       )

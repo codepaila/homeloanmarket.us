@@ -34,7 +34,7 @@ export function AdvertisementCreativeUpload({
         </div>
         {value ? (
           <div className="flex items-center gap-2 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
-            {value.fileName}
+            {value.originalName || value.fileName || value.id}
             <button type="button" onClick={() => { onChange(null); toast.success('Creative removed.') }} className="inline-flex text-destructive">
               <X className="h-3.5 w-3.5" />
             </button>

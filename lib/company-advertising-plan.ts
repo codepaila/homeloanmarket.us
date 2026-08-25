@@ -79,14 +79,16 @@ export type CompanyPlanInput = {
   displayOrder?: number
 }
 
-const ALLOWED_BILLING_INTERVALS = ['day', 'week', 'month', 'year']
+export const ALLOWED_BILLING_INTERVALS = ['day', 'week', 'month', 'year'] as const
+
+export type CompanyBillingInterval = (typeof ALLOWED_BILLING_INTERVALS)[number]
 
 export function normalizeCompanyPlanInput(body: Record<string, unknown>): CompanyPlanInput | null {
   const name = typeof body.name === 'string' ? body.name.trim() : ''
   if (!name) return null
 
   const price = Number.isFinite(Number(body.price)) ? Math.max(0, Math.round(Number(body.price))) : 0
-  const billingInterval = typeof body.billingInterval === 'string' && ALLOWED_BILLING_INTERVALS.includes(body.billingInterval)
+  const billingInterval = typeof body.billingInterval === 'string' && ALLOWED_BILLING_INTERVALS.includes(body.billingInterval as CompanyBillingInterval)
     ? body.billingInterval
     : 'month'
   const currency = typeof body.currency === 'string' && body.currency.trim() ? body.currency.trim().toLowerCase() : 'usd'
@@ -100,7 +102,7 @@ export function normalizeCompanyPlanInput(body: Record<string, unknown>): Compan
     stripeProductId: body.stripeProductId === undefined ? undefined : (typeof body.stripeProductId === 'string' ? body.stripeProductId.trim() || null : null),
     stripePriceId: body.stripePriceId === undefined ? undefined : (typeof body.stripePriceId === 'string' ? body.stripePriceId.trim() || null : null),
     features: Array.isArray(body.features) ? body.features.filter((feature): feature is string => typeof feature === 'string') : undefined,
-    isActive: body.isActive === undefined ? undefined : Boolean(body.isActive),
+    isActive: body.isActive === undefined ? undefined : body.isActive === true,
     displayOrder: Number.isFinite(Number(body.displayOrder)) ? Math.round(Number(body.displayOrder)) : undefined,
   }
 }

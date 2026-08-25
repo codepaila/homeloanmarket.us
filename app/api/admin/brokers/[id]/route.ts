@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/currentUser'
 import prisma from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { resolveBrokerLocation } from '@/lib/location/broker-location'
+import { validateLicenseStates } from '@/lib/broker-licensing'
 
 async function isAdmin() {
   const user = await getCurrentUser()
@@ -59,7 +60,7 @@ export async function PATCH(
   const allowedFields = [
     'displayName', 'companyName', 'nmls', 'description', 'phone', 'email', 'website',
     'officeAddress', 'city', 'state', 'pinCode', 'experienceYears',
-    'registrationNumber', 'panNumber', 'logo', 'coverImage', 'profileImage', 'isVisible', 'verificationStatus',
+    'registrationNumber', 'panNumber', 'licenseStates', 'logo', 'coverImage', 'profileImage', 'isVisible', 'verificationStatus',
   ] as const
   const data: Record<string, unknown> = {}
 
@@ -71,6 +72,20 @@ export async function PATCH(
   if (data.website !== undefined && data.website !== null) data.website = String(data.website).trim()
   if (data.verificationStatus !== undefined && !['UNVERIFIED', 'VERIFIED'].includes(String(data.verificationStatus))) {
     return NextResponse.json({ message: 'Invalid verification status' }, { status: 422 })
+  }
+  if (data.nmls !== undefined && data.nmls !== null) {
+    const nmls = String(data.nmls).trim()
+    if (!/^\d{4,10}$/.test(nmls)) {
+      return NextResponse.json({ message: 'NMLS ID must be 4–10 digits' }, { status: 422 })
+    }
+    data.nmls = nmls
+  }
+  if (data.licenseStates !== undefined) {
+    const statesResult = validateLicenseStates(data.licenseStates)
+    if (!statesResult.ok) {
+      return NextResponse.json({ message: statesResult.error }, { status: 422 })
+    }
+    data.licenseStates = statesResult.states
   }
 
   const addressFields = ['officeAddress', 'city', 'state', 'pinCode'] as const

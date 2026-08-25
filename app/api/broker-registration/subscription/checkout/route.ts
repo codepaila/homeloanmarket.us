@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getCurrentUser } from '@/lib/currentUser'
 import { isSameOriginRequest } from '@/lib/origin'
-import { validatePlanPrice } from '@/lib/stripe'
+import { validateBrokerPlanForCheckout } from '@/lib/broker-plans'
 import { CheckoutConflictError, SubscriptionService } from '@/lib/subscription'
 import prisma from '@/lib/prisma'
 import { getStripeSecretKey } from '@/lib/stripe-config'
@@ -25,8 +25,15 @@ export async function POST(request: NextRequest) {
     if (!user.brokerRegistration) return NextResponse.json({ error: 'Broker registration not found' }, { status: 404 })
 
     const { priceId, plan } = await request.json()
-    if (plan !== 'FEATURED' || !validatePlanPrice(plan, priceId)) {
+    if (plan !== 'FEATURED' || typeof priceId !== 'string' || !priceId) {
       return NextResponse.json({ error: 'Invalid subscription plan or price' }, { status: 400 })
+    }
+
+    // The Stripe price is authoritative from the database plan (BrokerSubscriptionPlan),
+    // never from a hardcoded value or a client-supplied amount.
+    const checkoutPlan = await validateBrokerPlanForCheckout(String(plan), priceId)
+    if (!checkoutPlan.ok) {
+      return NextResponse.json({ error: checkoutPlan.reason }, { status: 400 })
     }
 
     const registrationId = user.brokerRegistration.id
@@ -61,17 +68,25 @@ export async function POST(request: NextRequest) {
       const openSession = openSessions.data.find((session) => session.mode === 'subscription' && session.metadata?.brokerRegistrationId === registrationId)
       if (openSession?.url) return { url: openSession.url }
 
-      return stripe.checkout.sessions.create({
+      // Managed Payments is enabled by default on this account and rejects an
+      // explicit `payment_method_types`. Disable it for this session only (the
+      // account's products are not yet Managed-Payments eligible) — never
+      // globally. The price comes from the database plan.
+      const sessionParams = {
         customer: customerId,
-        payment_method_types: ['card'],
-        line_items: [{ price: priceId, quantity: 1 }],
-        mode: 'subscription',
+        line_items: [{ price: checkoutPlan.plan.stripePriceId!, quantity: 1 }],
+        mode: 'subscription' as const,
         success_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/broker-registration/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/broker/subscription/select`,
         metadata: { userId: user.id, brokerRegistrationId: registrationId, plan: 'FEATURED' },
         subscription_data: { metadata: { userId: user.id, brokerRegistrationId: registrationId, plan: 'FEATURED' } },
-        billing_address_collection: 'required',
-      }, { idempotencyKey: `registration_checkout_${registrationId}_${customerId}_FEATURED_${priceId}` })
+        billing_address_collection: 'required' as const,
+        managed_payments: { enabled: false },
+      }
+      return stripe.checkout.sessions.create(
+        sessionParams as Stripe.Checkout.SessionCreateParams,
+        { idempotencyKey: `registration_checkout_${registrationId}_${customerId}_FEATURED_${priceId}` },
+      )
     })
 
     return NextResponse.json({ success: true, url: checkoutSession.url })

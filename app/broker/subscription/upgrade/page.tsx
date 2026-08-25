@@ -232,10 +232,6 @@ export default function UpgradePlanPage() {
                 <ul className="space-y-2 text-sm">
                   <li className="flex items-center gap-2">
                     <Check className="h-4 w-4 text-green-500" />
-                    3x more lead visibility
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-green-500" />
                     Higher client conversion
                   </li>
                   <li className="flex items-center gap-2">

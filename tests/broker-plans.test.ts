@@ -19,6 +19,8 @@ const plansApi = read('app/api/subscription/plans/route.ts')
 const checkoutRoute = read('app/api/subscription/checkout/route.ts')
 const reconcile = read('scripts/reconcile-broker-plans.ts')
 const plansLib = read('lib/broker-plans.ts')
+const brokerPage = read('app/broker/subscription/page.tsx')
+const clientHook = read('hooks/useClient.ts')
 
 // ---------------------------------------------------------------------------
 // Initial plans exist
@@ -120,6 +122,42 @@ test('checkout resolves the plan from the database by code + price', () => {
 test('public plans API reads from the database', () => {
   assert.match(plansApi, /listBrokerPlans/)
   assert.doesNotMatch(plansApi, /subscriptionPlans from '@\/lib\/stripe'/)
+})
+
+test('broker subscription page uses the canonical singular plans endpoint (no 404 plural route)', () => {
+  assert.match(brokerPage, /\/api\/subscription\/plans/)
+  assert.doesNotMatch(brokerPage, /\/api\/subscriptions\/plans/)
+})
+
+test('client subscription-plans hook uses the canonical singular plans endpoint', () => {
+  assert.match(clientHook, /\/api\/subscription\/plans/)
+  assert.doesNotMatch(clientHook, /\/api\/subscriptions\/plans/)
+})
+
+test('public plans API returns only broker plans and never CompanyAdvertisingPlan', () => {
+  assert.match(plansApi, /listBrokerPlansPublic/)
+  assert.doesNotMatch(plansApi, /CompanyAdvertisingPlan/)
+  assert.doesNotMatch(plansApi, /STRIPE_SECRET_KEY/)
+})
+
+test('public plans API excludes inactive plans via the active-only query', () => {
+  assert.match(plansLib, /isActive: true/)
+})
+
+test('admin plan update blocks changing Stripe mapping while active subscriptions exist', () => {
+  assert.match(detailRoute, /Changing its Stripe price\/product would break active billing/)
+  assert.match(detailRoute, /status: 409/)
+})
+
+test('admin plan update blocks deactivation while active subscriptions exist', () => {
+  assert.match(detailRoute, /Deactivate those subscriptions before deactivating the plan/)
+  assert.match(detailRoute, /status: 409/)
+})
+
+test('checkout never consults CompanyAdvertisingPlan', () => {
+  assert.match(checkoutRoute, /validateBrokerPlanForCheckout/)
+  assert.doesNotMatch(checkoutRoute, /CompanyAdvertisingPlan/)
+  assert.match(checkoutRoute, /ownerType: 'BROKER'/)
 })
 
 // ---------------------------------------------------------------------------

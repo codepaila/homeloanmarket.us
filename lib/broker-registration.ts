@@ -217,12 +217,19 @@ export type ExistingUserBrokerInput = {
   profileSlug?: string
   phone: string
   email?: string | null
-  officeAddress: string
-  city: string
-  state: string
-  pinCode: string
+  // When a `location` is supplied the structured office fields are derived
+  // from it server-side, so these are optional fallbacks.
+  officeAddress?: string
+  city?: string
+  state?: string
+  pinCode?: string
   experienceYears?: number
   bankPartnerships?: string[]
+  nmls?: string
+  licenseStates?: string[]
+  logo?: string
+  profileImage?: string
+  coverImage?: string
   location?: {
     placeId?: string
     normalizedAddress: string
@@ -279,6 +286,14 @@ export async function createBrokerForExistingUser(userId: string, data: Existing
       suffix += 1
     }
 
+    // The Google-resolved location is the authoritative source for the office
+    // address. When present, the structured fields are derived from it so the
+    // stored city/state/ZIP/coordinates always describe the same place.
+    const officeAddress = data.location?.normalizedAddress || data.officeAddress || ''
+    const city = data.location?.city || data.city || ''
+    const state = data.location?.state || data.state || ''
+    const pinCode = data.location?.zip || data.pinCode || ''
+
     const broker = await tx.broker.create({
       data: {
         userId,
@@ -289,10 +304,13 @@ export async function createBrokerForExistingUser(userId: string, data: Existing
         profileSlug,
         phone: data.phone,
         email: data.email || null,
-        officeAddress: data.officeAddress,
-        city: data.city,
-        state: data.state,
-        pinCode: data.pinCode,
+        logo: data.logo || null,
+        profileImage: data.profileImage || null,
+        coverImage: data.coverImage || null,
+        officeAddress,
+        city,
+        state,
+        pinCode,
         normalizedAddress: data.location?.normalizedAddress || data.officeAddress,
         googlePlaceId: data.location?.placeId,
         locationCountryCode: data.location?.countryCode || 'US',
@@ -300,6 +318,8 @@ export async function createBrokerForExistingUser(userId: string, data: Existing
           ? JSON.parse(JSON.stringify({ type: 'Point', coordinates: [data.location.longitude, data.location.latitude] }))
           : undefined,
         experienceYears: data.experienceYears || 0,
+        nmls: data.nmls || null,
+        licenseStates: Array.isArray(data.licenseStates) ? data.licenseStates : [],
         verificationStatus: 'UNVERIFIED',
         brokerStatus: 'FREE',
         isVisible: true,

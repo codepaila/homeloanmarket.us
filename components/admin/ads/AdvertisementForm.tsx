@@ -72,6 +72,7 @@ import { OwnerSelector } from '@/components/admin/ads/OwnerSelector'
 import type { AdvertisementOwner, AdvertisementRequestContext } from '@/lib/advertisements/types'
 import { getAdvertisementLayout } from '@/components/advertisements/ad-layout'
 import { USLocationPicker } from '@/components/location/USLocationPicker'
+import { TargetRadiusControl } from '@/components/admin/ads/TargetRadiusControl'
 import type { AdType } from '@prisma/client'
 
 type FormMode = 'create' | 'edit'
@@ -527,12 +528,10 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                         <FormItem>
                           <FormLabel>Target radius (miles)</FormLabel>
                           <FormControl>
-                            <Input
-                              type="number"
-                              min="1"
-                              max="100"
-                              value={field.value?.radiusMiles || ''}
-                              onChange={(event) => field.onChange(field.value ? { ...field.value, radiusMiles: Number(event.target.value) } : field.value)}
+                            <TargetRadiusControl
+                              value={field.value?.radiusMiles || 25}
+                              onChange={(radiusMiles) => field.onChange(field.value ? { ...field.value, radiusMiles } : { locationLabel: '', countryCode: 'US', latitude: 0, longitude: 0, radiusMiles })}
+                              locationLabel={field.value?.locationLabel}
                             />
                           </FormControl>
                           <FormMessage />
@@ -1067,7 +1066,7 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
           open={showDuplicateDialog}
           onOpenChange={setShowDuplicateDialog}
           adId={ad.id}
-          onSuccess={() => router.push('/admin/ads/list')}
+          onSuccess={(dup) => router.push(`/admin/ads/${dup.id}/edit`)}
         />
       )}
 
@@ -1137,6 +1136,40 @@ function PlacementPreview({
   const imageUrl = asset?.thumbnailUrl || asset?.fileUrl || bannerUrl
   const layout = getAdvertisementLayout(placement)
   const hasText = Boolean(title || description || (buttonLabel && (action === 'BUTTON_ONLY' || action === 'BANNER_AND_BUTTON')))
+
+  if (placement === 'BROKER_LISTING_LOCAL') {
+    // The real public broker-listing placement is a compact responsive square
+    // card grid (3 → 2 → 1 columns), NOT a horizontal strip. Preview it that way.
+    return (
+      <div className="space-y-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2].map((index) => (
+            <div key={index} className="relative aspect-square overflow-hidden rounded-md bg-muted">
+              {imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={imageUrl} alt={title || 'Preview'} className="absolute inset-0 h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-center">
+                  <ImageIcon className="h-6 w-6 text-text-muted mx-auto" />
+                  <p className="px-2 text-[10px] text-text-muted">No media selected</p>
+                </div>
+              )}
+              {hasText ? (
+                <div className="absolute inset-x-0 bottom-0 bg-black/60 p-2 text-white">
+                  {title ? <p className="line-clamp-1 text-xs font-semibold sm:text-sm">{title}</p> : null}
+                  {description ? <p className="mt-0.5 line-clamp-1 text-[11px] text-white/90 sm:text-xs">{description}</p> : null}
+                  {buttonLabel && (action === 'BUTTON_ONLY' || action === 'BANNER_AND_BUTTON') ? (
+                    <span className="mt-1 inline-flex rounded-md bg-primary px-2.5 py-1 text-[11px] font-semibold text-white sm:text-xs">{buttonLabel}</span>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ))}
+        </div>
+        <p className="text-[11px] text-text-muted">Renders responsively as compact square cards: 3 columns (desktop) · 2 (tablet) · 1 (mobile).</p>
+      </div>
+    )
+  }
 
   if (!imageUrl && !title) {
     return (

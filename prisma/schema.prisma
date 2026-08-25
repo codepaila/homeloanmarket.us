@@ -145,6 +145,9 @@ enum BankType {
   PUBLIC
   PRIVATE
   COOPERATIVE
+  // Legacy India-era classification (Non-Banking Financial Company). Retained
+  // for backward compatibility only; the US product never assigns this value
+  // (active broker/company bank rows use PUBLIC/PRIVATE).
   NBFC
   FOREIGN
 }
@@ -206,6 +209,7 @@ enum AdvertisementFormat {
   SQUARE
   RECTANGLE
   MOBILE
+  BANNER
 }
 
 // User model for authentication
@@ -284,6 +288,10 @@ model Broker {
   registrationNumber String?
   nmls              String?
   panNumber          String?
+  // US states in which the broker holds a mortgage license. Independent of the
+  // broker's profile/location `state` field. Uses stable two-letter US state
+  // codes (e.g. "CA", "TX").
+  licenseStates     String[] @default([])
   creationSource     BrokerCreationSource?
   verificationStatus VerificationStatus    @default(UNVERIFIED)
   verifiedAt         DateTime?
@@ -1089,6 +1097,9 @@ model Property {
   description  String?
   propertyType String // apartment, house, villa, commercial, land
   price        Float
+  // Legacy Nepal-era default. The Property model is not used by the active US
+  // mortgage product (no Prisma queries reference it); the currency default is
+  // retained for backward compatibility and is intentionally not "USD".
   currency     String   @default("NPR")
   area         Float? // sq ft or sq m
   bedrooms     Int?

@@ -10,7 +10,9 @@ import { usePopupSession } from '@/lib/advertisements/tracker'
 import { Button } from '@/components/ui/button'
 import { AdvertisementCarousel } from './AdvertisementCarousel'
 import { AdvertisementCard } from './AdvertisementCard'
+import { DisplayBannerCard } from './DisplayBannerCard'
 import { getAdvertisementLayout } from './ad-layout'
+import { formatAspectClass } from '@/lib/advertisements/formatAspect'
 
 function AdvertisementPopup({ ads, layout }: { ads: PublicAdResponse[]; layout: ReturnType<typeof getAdvertisementLayout> }) {
   const { shouldShow, markShown } = usePopupSession()
@@ -56,14 +58,27 @@ export function PublicAdvertisement({ placement, className, location }: { placem
   if (layout.popup) return <AdvertisementPopup ads={validAds} layout={layout} />
 
   if (placement === 'BROKER_LISTING_LOCAL') {
+    // The broker-listing local placement renders EVERY matching advertisement
+    // as a compact responsive card grid: 3 columns desktop, 2 tablet, 1 mobile.
+    // Each card's aspect ratio is derived from its resolved creative format —
+    // SQUARE creatives render 1:1, BANNER creatives render 2:1. Creatives are
+    // never forced into a square slot nor expanded into a full-width "giant"
+    // banner.
     return (
       <section className={cn('w-full py-2 sm:py-3', className)} aria-label="related local resources">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {validAds.map((ad) => (
-            <div key={ad.id} className="aspect-square min-w-0 overflow-hidden rounded-lg bg-card">
-              <AdvertisementCard ad={ad} />
-            </div>
-          ))}
+          {validAds.map((ad) => {
+            const isBanner = ad.creativeFormat === 'BANNER'
+            return isBanner ? (
+              <div key={ad.id} className="min-w-0 overflow-hidden rounded-lg bg-card">
+                <DisplayBannerCard ad={ad} />
+              </div>
+            ) : (
+              <div key={ad.id} className={cn('min-w-0 overflow-hidden rounded-lg bg-card', formatAspectClass(ad.creativeFormat))}>
+                <AdvertisementCard ad={ad} objectFit="cover" />
+              </div>
+            )
+          })}
         </div>
       </section>
     )

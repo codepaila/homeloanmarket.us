@@ -81,8 +81,12 @@ function VerifyEmailContent() {
       const data = await response.json()
 
       if (data.success) {
-        toast.success('Verification email sent!')
+        toast.success('Verification email sent. Please check your inbox and spam folder.')
         setCountdown(60)
+      } else if (response.status === 429 || data.errorCode === 'RATE_LIMITED') {
+        toast.error('Please wait before requesting another verification email.')
+      } else if (data.errorCode === 'EMAIL_SEND_FAILED') {
+        toast.error("We couldn't send the verification email right now. Please try again later.")
       } else {
         toast.error(data.error || 'Failed to resend verification email')
       }

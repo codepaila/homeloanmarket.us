@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils'
 interface ImageUploadProps {
   onChange: (value: string) => void
   value?: string
-  type?: 'logo' | 'cover' | 'avatar'
+  type?: 'logo' | 'cover' | 'avatar' | 'profile'
   className?: string
   aspectRatio?: 'square' | 'video' | 'cover'
 }
@@ -57,6 +57,7 @@ const ImageUpload = ({ onChange, value, type = 'logo', className = '', aspectRat
       case 'logo': return 'w-24 h-24'
       case 'cover': return 'w-full h-48'
       case 'avatar': return 'w-32 h-32'
+      case 'profile': return 'w-24 h-24'
       default: return 'w-24 h-24'
     }
   }
@@ -66,6 +67,7 @@ const ImageUpload = ({ onChange, value, type = 'logo', className = '', aspectRat
       case 'logo': return 'Logo'
       case 'cover': return 'Cover'
       case 'avatar': return 'Avatar'
+      case 'profile': return 'Profile image'
       default: return 'Image'
     }
   }

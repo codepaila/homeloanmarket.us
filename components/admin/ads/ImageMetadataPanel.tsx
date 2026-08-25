@@ -16,6 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { MediaAsset } from '@/lib/advertisements/types'
+import { resolveAssetFormat } from '@/lib/advertisements/assetFormat'
 
 interface ImageMetadataPanelProps {
   asset: MediaAsset | null | undefined
@@ -36,6 +37,8 @@ export function ImageMetadataPanel({ asset, className }: ImageMetadataPanelProps
   const sizeKB = asset.fileSize ? (asset.fileSize / 1024).toFixed(1) : null
   const sizeMB = sizeKB ? (parseFloat(sizeKB) / 1024).toFixed(2) : null
   const displaySize = sizeMB && parseFloat(sizeMB) >= 1 ? `${sizeMB} MB` : sizeKB ? `${sizeKB} KB` : null
+  // Canonical format resolution — never crashes when fileName is missing.
+  const resolvedFormat = resolveAssetFormat(asset)
 
   return (
     <Card className={cn('border-border bg-card', className)}>
@@ -49,7 +52,7 @@ export function ImageMetadataPanel({ asset, className }: ImageMetadataPanelProps
           <MetadataItem icon={Ruler} label="Dimensions" value={asset.width && asset.height ? `${asset.width} × ${asset.height}` : 'Unknown'} mono />
           <MetadataItem icon={Crop} label="Aspect Ratio" value={asset.width && asset.height ? `${(asset.width / asset.height).toFixed(2)}:1` : 'Unknown'} />
           <MetadataItem icon={HardDrive} label="File Size" value={displaySize || 'Unknown'} />
-          <MetadataItem icon={FileType2} label="Format" value={asset.mimeType || asset.fileName.split('.').pop()?.toUpperCase() || 'Unknown'} />
+          <MetadataItem icon={FileType2} label="Format" value={asset.mimeType || (resolvedFormat.format ? resolvedFormat.format.toUpperCase() : null) || 'Unknown'} />
           <MetadataItem icon={Folder} label="Folder ID" value={asset.folderId || 'Root'} mono />
           <MetadataItem icon={User} label="Uploader ID" value={asset.uploaderId} mono />
           <MetadataItem icon={Calendar} label="Upload Date" value={asset.createdAt ? formatDate(asset.createdAt) : 'Unknown'} />

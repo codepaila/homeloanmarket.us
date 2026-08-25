@@ -46,7 +46,7 @@ export default function DashboardLayout({
         <main className="flex-1 pb-8">
           <div className="px-4 sm:px-6 lg:px-8 py-8">
             {/* Breadcrumbs */}
-            <Breadcrumbs />
+            {/* <Breadcrumbs /> */}
             
             {/* Page Content */}
             <div className="mt-6">

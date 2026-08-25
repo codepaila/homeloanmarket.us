@@ -4,8 +4,9 @@ import { Section } from '@/components/design/Section'
 import { FileText, Scale, Gavel } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Terms of Service - HomeLoanMarket',
+  title: 'Terms of Service',
   description: 'Read the terms and conditions governing the use of HomeLoanMarket.com.',
+  alternates: { canonical: '/terms-of-service' },
 }
 
 const termsSections = [

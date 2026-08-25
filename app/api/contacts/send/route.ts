@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { sendEmail } from '@/lib/email'
-import { emailTemplates } from '@/lib/email-templates'
+import { emailTemplates, htmlToText } from '@/lib/email-templates'
 import { isPublicBroker } from '@/lib/broker-policy'
 import { contactBrokerRateLimit } from '@/lib/rateLimit'
 import { getClientIP } from '@/lib/advertisements/utils'
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
           to: brokerNotificationEmail,
           subject: brokerTemplate.subject,
           html: brokerTemplate.html,
-          text: brokerTemplate.html.replace(/<[^>]*>/g, ''),
+          text: htmlToText(brokerTemplate.html),
         })
       } catch (emailError) {
         console.error('Failed to send broker notification email:', emailError)
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
           to: email,
           subject: customerTemplate.subject,
           html: customerTemplate.html,
-          text: customerTemplate.html.replace(/<[^>]*>/g, ''),
+          text: htmlToText(customerTemplate.html),
         })
       } catch (emailError) {
         console.error('Failed to send customer confirmation email:', emailError)

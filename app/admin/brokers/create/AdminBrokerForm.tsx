@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
+import { US_STATES } from '@/lib/us-states'
 
 const fields = [
   ['displayName', 'Display name', true],
   ['companyName', 'Company name', false],
-  ['nmls', 'NMLS', false],
+  ['nmls', 'NMLS ID', false],
   ['description', 'Description', true],
   ['phone', 'Phone', true],
   ['email', 'Profile email', false],
@@ -18,17 +19,22 @@ const fields = [
   ['pinCode', 'Postal code', true],
   ['experienceYears', 'Experience years', false],
   ['registrationNumber', 'Registration number', false],
-  ['panNumber', 'PAN / tax number', false],
+  ['panNumber', 'Tax ID / EIN', false],
 ] as const
 
 export default function AdminBrokerForm() {
   const router = useRouter()
   const [form, setForm] = useState<Record<string, string>>({ languages: 'English' })
+  const [licenseStates, setLicenseStates] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   function update(name: string, value: string) {
     setForm((current) => ({ ...current, [name]: value }))
+  }
+
+  function toggleState(code: string) {
+    setLicenseStates((current) => current.includes(code) ? current.filter((c) => c !== code) : [...current, code])
   }
 
   async function submit(event: React.FormEvent) {
@@ -42,6 +48,7 @@ export default function AdminBrokerForm() {
         body: JSON.stringify({
           ...form,
           experienceYears: Number(form.experienceYears || 0),
+          licenseStates,
         }),
       })
       const data = await response.json()
@@ -81,6 +88,28 @@ export default function AdminBrokerForm() {
               )}
             </label>
           ))}
+        </div>
+        <div className="space-y-3 rounded-lg border bg-muted/20 p-4">
+          <div>
+            <p className="text-sm font-medium">License States</p>
+            <p className="text-sm text-muted-foreground">US states where this broker is licensed to originate mortgages. At least one is required.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {US_STATES.map((state) => {
+              const selected = licenseStates.includes(state.code)
+              return (
+                <button
+                  key={state.code}
+                  type="button"
+                  onClick={() => toggleState(state.code)}
+                  aria-pressed={selected}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${selected ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-background text-muted-foreground hover:border-primary/40'}`}
+                >
+                  {state.code}
+                </button>
+              )
+            })}
+          </div>
         </div>
         {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
         <div className="flex justify-end gap-3">

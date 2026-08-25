@@ -1,4 +1,5 @@
 import { geocodeUSAddress, type ResolvedUSLocation } from './google-place'
+import { isUsStateCode } from '@/lib/us-states'
 
 export type BrokerAddressFields = {
   officeAddress: string
@@ -61,4 +62,46 @@ export function locationHasValidCoordinates(location: unknown) {
   if (!Array.isArray(value.coordinates) || value.coordinates.length !== 2) return false
   const [longitude, latitude] = value.coordinates
   return isValidCoordinatePair(latitude, longitude)
+}
+
+// Strict GeoJSON point check: `type` must be "Point" and coordinates must be a
+// [longitude, latitude] pair within valid ranges. The broker's stored location
+// is always a GeoJSON Point; a malformed shape must never be persisted.
+export function isValidGeoJsonPoint(location: unknown): boolean {
+  if (!location || typeof location !== 'object') return false
+  const value = location as { type?: unknown; coordinates?: unknown }
+  if (value.type !== 'Point') return false
+  return locationHasValidCoordinates(value)
+}
+
+// US ZIP codes are 5 digits, optionally with a 4-digit +4 extension
+// (e.g. "78701" or "78701-1234").
+const US_ZIP_PATTERN = /^\d{5}(-\d{4})?$/
+
+export function isValidUsZip(value: unknown): value is string {
+  return typeof value === 'string' && US_ZIP_PATTERN.test(value.trim())
+}
+
+export class InvalidUSLocationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'InvalidUSLocationError'
+  }
+}
+
+// Authoritative server-side validation of a Google-resolved US location before
+// it is persisted as the broker office. Throws a specific, user-safe message
+// for each failure so the client never persists an arbitrary location.
+export function requireValidResolvedUSLocation(resolved: Pick<ResolvedUSLocation, 'countryCode' | 'city' | 'state' | 'zip' | 'latitude' | 'longitude'>): void {
+  if (resolved.countryCode !== 'US') throw new InvalidUSLocationError('Only US office locations are supported')
+  if (!resolved.city) throw new InvalidUSLocationError('A US city could not be determined for the selected location')
+  if (!resolved.state || !isUsStateCode(resolved.state)) {
+    throw new InvalidUSLocationError('A valid US state could not be determined for the selected location')
+  }
+  if (!isValidUsZip(resolved.zip)) {
+    throw new InvalidUSLocationError('A valid US ZIP code could not be determined for the selected location')
+  }
+  if (!isValidCoordinatePair(resolved.latitude, resolved.longitude)) {
+    throw new InvalidUSLocationError('The selected location has invalid coordinates')
+  }
 }

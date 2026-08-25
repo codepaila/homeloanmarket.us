@@ -9,11 +9,13 @@ export function AdvertisementImage({
   className,
   loading = 'lazy',
   fetchPriority,
+  objectFit = 'contain',
 }: {
   ad: PublicAdResponse | null | undefined
   className?: string
   loading?: 'lazy' | 'eager'
   fetchPriority?: 'high' | 'low' | 'auto'
+  objectFit?: 'contain' | 'cover'
 }) {
   const [failedSource, setFailedSource] = useState<string | null>(null)
   if (!isValidPublicAd(ad)) return null
@@ -30,7 +32,7 @@ export function AdvertisementImage({
       <img
         src={sourceUrl}
         alt={fallback?.altText || ad.altText || ad.title || 'Advertisement'}
-        className={`block max-w-full object-contain ${className || ''}`}
+        className={`block max-w-full ${objectFit === 'cover' ? 'object-cover' : 'object-contain'} ${className || ''}`}
         loading={loading}
         fetchPriority={fetchPriority}
         onError={() => setFailedSource(sourceUrl)}

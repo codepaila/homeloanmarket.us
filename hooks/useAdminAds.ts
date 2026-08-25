@@ -354,7 +354,7 @@ export function useDuplicateAdvertisement() {
   const [isPending, setIsPending] = useState(false)
   const { mutate } = useSWRConfig()
 
-  const duplicate = async (params: { id: string; title?: string; copyImages?: boolean; copySchedule?: boolean; copyPriority?: boolean; copyStatus?: boolean; copyButtonSettings?: boolean; generateNewSlug?: boolean }) => {
+  const duplicate = async (params: { id: string; title?: string; copyImages?: boolean; copySchedule?: boolean; copyPriority?: boolean; copyStatus?: boolean; copyButtonSettings?: boolean; generateNewSlug?: boolean }): Promise<{ id: string; title: string | null } | null> => {
     const { id, ...data } = params
     setIsPending(true)
     try {
@@ -367,7 +367,8 @@ export function useDuplicateAdvertisement() {
       if (!res.ok) throw new Error(result.error || 'Failed to duplicate advertisement')
       mutate(`${baseUrl}/api/admin/ads`)
       mutate(`${baseUrl}/api/admin/ads/stats`)
-      return result.ad
+      // The created record carries the server-generated duplicate title.
+      return (result.ad ?? null) as { id: string; title: string | null } | null
     } finally {
       setIsPending(false)
     }

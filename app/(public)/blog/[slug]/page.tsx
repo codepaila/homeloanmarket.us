@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import prisma from '@/lib/prisma'
-import { canonicalUrl, safeJsonLd } from '@/lib/seo'
+import { canonicalUrl, safeJsonLd, organizationId, breadcrumbJsonLd } from '@/lib/seo'
 
 interface BlogSlugPageProps {
   params: Promise<{ slug: string }>
@@ -52,14 +52,22 @@ export default async function BlogSlugPage({ params }: BlogSlugPageProps) {
     headline: post.title,
     description: post.seoDescription || post.excerpt,
     ...(post.coverImage ? { image: post.coverImage } : {}),
-    author: { '@type': 'Organization', name: post.author },
+    author: { '@type': 'Person', name: post.author },
+    publisher: { '@id': organizationId() },
     datePublished: post.publishedAt?.toISOString(),
     mainEntityOfPage: canonicalUrl(`/blog/${post.slug}`),
   })
 
+  const breadcrumbLd = safeJsonLd(breadcrumbJsonLd([
+    { name: 'Home', path: '/' },
+    { name: 'Articles', path: '/blog' },
+    { name: post.title, path: `/blog/${post.slug}` },
+  ]))
+
   return (
     <article className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbLd }} />
       <p className="text-xs font-semibold uppercase tracking-wide text-primary">{post.category}</p>
       <h1 className="mt-2 text-3xl font-bold tracking-tight">{post.title}</h1>
       <p className="mt-3 text-sm text-muted-foreground">

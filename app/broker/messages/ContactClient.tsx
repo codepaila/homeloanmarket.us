@@ -96,7 +96,7 @@ const user = useCurrentUser();
       case 'contacted':
         return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Contacted</Badge>
       case 'hot':
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Hot Lead</Badge>
+        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Hot</Badge>
       case 'converted':
         return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Converted</Badge>
       case 'lost':
@@ -135,8 +135,8 @@ const user = useCurrentUser();
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Leads & Contacts</h1>
-            <p className="text-muted-foreground">Manage your leads and client communications</p>
+            <h1 className="text-3xl font-bold text-foreground">Contacts</h1>
+            <p className="text-muted-foreground">Manage your client communications</p>
           </div>
           <div className="flex gap-3">
             <Button variant="outline" onClick={handleExport}>
@@ -155,7 +155,7 @@ const user = useCurrentUser();
           <Card>
             <CardContent className="p-4">
               <div className="text-2xl font-bold">{counts.total}</div>
-              <div className="text-sm text-muted-foreground">Total Leads</div>
+              <div className="text-sm text-muted-foreground">Total Contacts</div>
             </CardContent>
           </Card>
           <Card>
@@ -185,7 +185,7 @@ const user = useCurrentUser();
               <div className="flex items-center">
                 <Badge className="bg-red-100 text-red-700 mr-2">{counts.hot}</Badge>
                 <div>
-                  <div className="font-bold">Hot Leads</div>
+                  <div className="font-bold">Hot</div>
                   <div className="text-xs text-muted-foreground">High priority</div>
                 </div>
               </div>
@@ -222,7 +222,7 @@ const user = useCurrentUser();
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Contact List</CardTitle>
-              <CardDescription>Manage and communicate with your leads</CardDescription>
+              <CardDescription>Manage and communicate with your contacts</CardDescription>
             </div>
             <div className="flex items-center gap-3">
               {/* Bulk Actions */}
@@ -233,7 +233,7 @@ const user = useCurrentUser();
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="mark_contacted">Mark as Contacted</SelectItem>
-                    <SelectItem value="mark_hot">Mark as Hot Lead</SelectItem>
+                    <SelectItem value="mark_hot">Mark as Hot</SelectItem>
                     <SelectItem value="delete">Delete Selected</SelectItem>
                   </SelectContent>
                 </Select>
@@ -260,7 +260,7 @@ const user = useCurrentUser();
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="new">New</SelectItem>
                   <SelectItem value="contacted">Contacted</SelectItem>
-                  <SelectItem value="hot">Hot Lead</SelectItem>
+                  <SelectItem value="hot">Hot</SelectItem>
                   <SelectItem value="converted">Converted</SelectItem>
                   <SelectItem value="lost">Lost</SelectItem>
                 </SelectContent>
@@ -288,7 +288,7 @@ const user = useCurrentUser();
               <TabsTrigger value="all">All Contacts ({counts.total})</TabsTrigger>
               <TabsTrigger value="new">New ({counts.new})</TabsTrigger>
               <TabsTrigger value="contacted">Contacted ({counts.contacted})</TabsTrigger>
-              <TabsTrigger value="hot">Hot Leads ({counts.hot})</TabsTrigger>
+              <TabsTrigger value="hot">Hot ({counts.hot})</TabsTrigger>
               <TabsTrigger value="converted">Converted ({counts.converted})</TabsTrigger>
             </TabsList>
 
@@ -433,9 +433,9 @@ const user = useCurrentUser();
               {contacts.length === 0 && (
                 <div className="text-center py-12">
                   <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                   <h3 className="text-lg font-medium text-foreground mb-2">No leads yet</h3>
+                   <h3 className="text-lg font-medium text-foreground mb-2">No contacts yet</h3>
                   <p className="text-muted-foreground mb-4">
-                    Your leads and contacts will appear here once they submit contact forms.
+                    Your contacts will appear here once they submit contact forms.
                   </p>
                   <Button>
                     <UserPlus className="h-4 w-4 mr-2" />
@@ -507,7 +507,7 @@ const user = useCurrentUser();
               </div>
               <div>
                 <h3 className="font-medium">Schedule Follow-up</h3>
-                <p className="text-sm text-muted-foreground">Schedule calls for selected leads</p>
+                <p className="text-sm text-muted-foreground">Schedule calls for selected contacts</p>
               </div>
             </div>
             <Button variant="outline" disabled={selectedContacts.length === 0} className="w-full">
@@ -524,11 +524,11 @@ const user = useCurrentUser();
               </div>
               <div>
                 <h3 className="font-medium">Mark as Hot</h3>
-                <p className="text-sm text-muted-foreground">Flag important leads for priority</p>
+                <p className="text-sm text-muted-foreground">Flag important contacts for priority</p>
               </div>
             </div>
-            <Button variant="outline" disabled={selectedContacts.length === 0} className="w-full">
-              Mark as Hot Leads
+              <Button variant="outline" disabled={selectedContacts.length === 0} className="w-full">
+              Mark as Hot
             </Button>
           </CardContent>
         </Card>

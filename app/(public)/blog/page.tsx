@@ -1,10 +1,23 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import prisma from '@/lib/prisma'
+import { canonicalUrl } from '@/lib/seo'
 
 export const metadata: Metadata = {
-  title: 'Articles',
-  description: 'Practical articles about mortgages, home buying, and refinancing.',
+  title: 'Mortgage Articles & Guides',
+  description: 'Practical articles and guides about mortgages, home buying, refinancing, credit, and finding the right mortgage broker.',
+  alternates: { canonical: canonicalUrl('/blog') },
+  openGraph: {
+    type: 'website',
+    title: 'Mortgage Articles & Guides',
+    description: 'Practical articles and guides about mortgages, home buying, refinancing, credit, and finding the right mortgage broker.',
+    url: canonicalUrl('/blog'),
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Mortgage Articles & Guides',
+    description: 'Practical articles and guides about mortgages, home buying, refinancing, credit, and finding the right mortgage broker.',
+  },
 }
 
 export default async function BlogPage() {

@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
-
-const FEATURE_CODES = ['PROFILE_BADGE', 'SUPPORT_TICKETS'] as const
+import { Switch } from '@/components/ui/switch'
+import { BROKER_FEATURE_DEFS } from '@/lib/broker-plan-features'
 
 type Plan = {
   id: string
@@ -26,23 +26,30 @@ type Plan = {
 
 export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
-  const [id, setId] = useState<string | null>(null)
   const [plan, setPlan] = useState<Plan | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     let cancelled = false
     void params.then(({ id: planId }) => {
-      setId(planId)
-      void fetch(`/api/admin/broker-plans/${planId}`).then((response) => response.json()).then((data) => {
-        if (!cancelled && data.plan) setPlan(data.plan)
+      void fetch(`/api/admin/broker-plans/${planId}`).then(async (response) => {
+        const data = await response.json()
+        if (cancelled) return
+        if (!response.ok || !data.plan) {
+          setLoadError(data.message || 'Unable to load plan')
+          return
+        }
+        // Price is stored in cents by the API; the UI edits it in USD so it
+        // matches the create form and the price an admin actually sees.
+        setPlan({ ...data.plan, price: data.plan.price / 100 })
+      }).catch(() => {
+        if (!cancelled) setLoadError('Unable to load plan')
       })
     })
     return () => { cancelled = true }
   }, [params])
-
-  void id
 
   const setField = (key: keyof Plan, value: string | boolean | number) => {
     if (!plan) return
@@ -60,7 +67,7 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
           name: plan.name,
           code: plan.code,
           description: plan.description || '',
-          price: plan.price,
+          price: Math.round(plan.price * 100),
           billingInterval: plan.billingInterval,
           currency: plan.currency,
           displayOrder: plan.displayOrder,
@@ -92,6 +99,10 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
     })
     await save()
   }
+
+  const isFeatureEnabled = useCallback((code: string) => {
+    return plan?.features?.some((feature) => feature.code === code && feature.enabled) ?? false
+  }, [plan])
 
   async function deactivate() {
     if (saving || !plan) return
@@ -132,6 +143,30 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
     }
   }
 
+  if (loadError) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Billing</p>
+            <h1 className="text-3xl font-semibold tracking-tight">Broker Plan</h1>
+          </div>
+          <Link href="/admin/billing/broker-plans" className="rounded-lg border px-3 py-2 text-sm font-medium">Back</Link>
+        </div>
+        <div className="rounded-xl border bg-card p-6">
+          <p className="text-sm text-destructive">{loadError}</p>
+          <button
+            type="button"
+            onClick={() => { setLoadError(null); setPlan(null); window.location.reload() }}
+            className="mt-4 rounded-lg border px-3 py-2 text-sm font-semibold"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   if (!plan) {
     return <div className="p-6 text-sm text-muted-foreground">Loading plan…</div>
   }
@@ -152,12 +187,12 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
       <section className="space-y-4 rounded-xl border bg-card p-6">
         <h2 className="text-lg font-semibold">Plan information</h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block space-y-1"><span className="text-sm font-medium">Name</span><input value={plan.name} onChange={(e) => setField('name', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2" /></label>
-          <label className="block space-y-1"><span className="text-sm font-medium">Code</span><input value={plan.code} onChange={(e) => setField('code', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2" /></label>
+          <label className="block space-y-1"><span className="text-sm font-medium">Name</span><input maxLength={100} value={plan.name} onChange={(e) => setField('name', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2" /></label>
+          <label className="block space-y-1"><span className="text-sm font-medium">Code</span><input maxLength={50} value={plan.code} onChange={(e) => setField('code', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2" /></label>
           <label className="block space-y-1 sm:col-span-2"><span className="text-sm font-medium">Description</span><textarea value={plan.description || ''} onChange={(e) => setField('description', e.target.value)} className="min-h-16 w-full rounded-lg border bg-background px-3 py-2" /></label>
-          <label className="block space-y-1"><span className="text-sm font-medium">Price (cents)</span><input type="number" min="0" value={plan.price} onChange={(e) => setField('price', Number(e.target.value))} className="w-full rounded-lg border bg-background px-3 py-2" /></label>
-          <label className="block space-y-1"><span className="text-sm font-medium">Currency</span><input value={plan.currency} onChange={(e) => setField('currency', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2" /></label>
-          <label className="block space-y-1"><span className="text-sm font-medium">Billing interval</span><select value={plan.billingInterval} onChange={(e) => setField('billingInterval', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2"><option value="month">month</option><option value="year">year</option><option value="week">week</option></select></label>
+          <label className="block space-y-1"><span className="text-sm font-medium">Price (USD)</span><input type="number" min="0" step="0.01" value={plan.price} onChange={(e) => setField('price', Number(e.target.value))} className="w-full rounded-lg border bg-background px-3 py-2" /><span className="text-xs text-muted-foreground">Amount in US dollars. Saved as cents.</span></label>
+          <label className="block space-y-1"><span className="text-sm font-medium">Currency</span><select value={plan.currency} onChange={(e) => setField('currency', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2"><option value="usd">USD</option><option value="eur">EUR</option><option value="gbp">GBP</option></select></label>
+          <label className="block space-y-1"><span className="text-sm font-medium">Billing interval</span><select value={plan.billingInterval} onChange={(e) => setField('billingInterval', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2"><option value="month">month</option><option value="year">year</option><option value="week">week</option><option value="day">day</option></select></label>
           <label className="block space-y-1"><span className="text-sm font-medium">Display order</span><input type="number" min="0" value={plan.displayOrder} onChange={(e) => setField('displayOrder', Number(e.target.value))} className="w-full rounded-lg border bg-background px-3 py-2" /></label>
         </div>
         <div className="flex items-center gap-2">
@@ -169,19 +204,24 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
 
       <section className="space-y-3 rounded-xl border bg-card p-6">
         <h2 className="text-lg font-semibold">Features</h2>
-        {FEATURE_CODES.map((code) => (
-          <div key={code} className="flex items-center justify-between rounded-lg border px-4 py-3">
-            <span className="text-sm font-medium">{code}</span>
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => toggleFeature(code, !(plan.features?.some((feature) => feature.code === code && feature.enabled) ?? false))}
-              className={`rounded-full px-3 py-1 text-xs font-semibold ${plan.features?.some((feature) => feature.code === code && feature.enabled) ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'}`}
-            >
-              {plan.features?.some((feature) => feature.code === code && feature.enabled) ? 'ON' : 'OFF'}
-            </button>
-          </div>
-        ))}
+        <p className="text-xs text-muted-foreground">Each feature is an entitlement that changes what subscribers receive. Toggling a feature saves immediately.</p>
+        {BROKER_FEATURE_DEFS.map((feature) => {
+          const enabled = isFeatureEnabled(feature.code)
+          return (
+            <div key={feature.code} className="flex items-start justify-between gap-4 rounded-lg border px-4 py-3">
+              <div>
+                <span className="text-sm font-medium">{feature.label}</span>
+                <p className="mt-0.5 text-xs text-muted-foreground">{feature.description}</p>
+              </div>
+              <Switch
+                checked={enabled}
+                disabled={saving}
+                onCheckedChange={(checked) => void toggleFeature(feature.code, checked)}
+                aria-label={`${feature.label} ${enabled ? 'enabled' : 'disabled'}`}
+              />
+            </div>
+          )
+        })}
       </section>
 
       <section className="space-y-4 rounded-xl border bg-card p-6">

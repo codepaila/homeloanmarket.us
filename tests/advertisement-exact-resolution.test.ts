@@ -51,9 +51,10 @@ test('failure result reports the exact required and uploaded resolution', () => 
   }
 })
 
-test('BROKER_LISTING_LOCAL allows only SQUARE creative', () => {
-  assert.deepEqual(getPlacementFormats('BROKER_LISTING_LOCAL'), ['SQUARE'])
+test('BROKER_LISTING_LOCAL allows SQUARE and BANNER creative', () => {
+  assert.deepEqual(getPlacementFormats('BROKER_LISTING_LOCAL'), ['SQUARE', 'BANNER'])
   assert.equal(isFormatCompatible('BROKER_LISTING_LOCAL', 'SQUARE'), true)
+  assert.equal(isFormatCompatible('BROKER_LISTING_LOCAL', 'BANNER'), true)
   assert.equal(isFormatCompatible('BROKER_LISTING_LOCAL', 'RECTANGLE'), false)
   assert.equal(isFormatCompatible('BROKER_LISTING_LOCAL', 'HORIZONTAL'), false)
 })
@@ -61,4 +62,12 @@ test('BROKER_LISTING_LOCAL allows only SQUARE creative', () => {
 test('BROKER_LISTING_LOCAL SQUARE requirement resolves to the canonical square spec', () => {
   assert.equal(validateCreativeDimensions('BROKER_LISTING_LOCAL', 'SQUARE', 800, 800).ok, true)
   assert.equal(validateCreativeDimensions('BROKER_LISTING_LOCAL', 'SQUARE', 600, 600).ok, false)
+})
+
+test('BROKER_LISTING_LOCAL BANNER requirement resolves to the canonical 1600x800 2:1 spec', () => {
+  assert.equal(validateCreativeDimensions('BROKER_LISTING_LOCAL', 'BANNER', 1600, 800).ok, true)
+  assert.equal(validateCreativeDimensions('BROKER_LISTING_LOCAL', 'BANNER', 1200, 800).ok, false)
+  assert.equal(validateCreativeDimensions('BROKER_LISTING_LOCAL', 'BANNER', 1600, 1200).ok, false)
+  const result = validateCreativeDimensions('BROKER_LISTING_LOCAL', 'BANNER', 1600, 800)
+  assert.equal(result.ok, true)
 })

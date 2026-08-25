@@ -26,6 +26,7 @@ type Plan = {
 export default function CompanyAdvertisingPlanDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
   const [plan, setPlan] = useState<Plan | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [featuresText, setFeaturesText] = useState('')
@@ -33,11 +34,19 @@ export default function CompanyAdvertisingPlanDetailPage({ params }: { params: P
   useEffect(() => {
     let cancelled = false
     void params.then(({ id }) => {
-      void fetch(`/api/admin/company-advertising-plans/${id}`).then((response) => response.json()).then((data) => {
-        if (!cancelled && data.plan) {
-          setPlan(data.plan)
-          setFeaturesText((data.plan.features || []).join('\n'))
+      void fetch(`/api/admin/company-advertising-plans/${id}`).then(async (response) => {
+        const data = await response.json()
+        if (cancelled) return
+        if (!response.ok || !data.plan) {
+          setLoadError(data.error || 'Unable to load plan')
+          return
         }
+        // Price is stored in cents by the API; the UI edits it in USD so it
+        // matches the create form and the price an admin actually sees.
+        setPlan({ ...data.plan, price: data.plan.price / 100 })
+        setFeaturesText((data.plan.features || []).join('\n'))
+      }).catch(() => {
+        if (!cancelled) setLoadError('Unable to load plan')
       })
     })
     return () => { cancelled = true }
@@ -58,7 +67,7 @@ export default function CompanyAdvertisingPlanDetailPage({ params }: { params: P
         body: JSON.stringify({
           name: plan.name,
           description: plan.description || '',
-          price: plan.price,
+          price: Math.round(plan.price * 100),
           currency: plan.currency,
           billingInterval: plan.billingInterval,
           displayOrder: plan.displayOrder,
@@ -118,6 +127,30 @@ export default function CompanyAdvertisingPlanDetailPage({ params }: { params: P
     }
   }
 
+  if (loadError) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Billing</p>
+            <h1 className="text-3xl font-semibold tracking-tight">Company Advertising Plan</h1>
+          </div>
+          <Link href="/admin/billing/company-advertising-plans" className="rounded-lg border px-3 py-2 text-sm font-medium">Back</Link>
+        </div>
+        <div className="rounded-xl border bg-card p-6">
+          <p className="text-sm text-destructive">{loadError}</p>
+          <button
+            type="button"
+            onClick={() => { setLoadError(null); setPlan(null); window.location.reload() }}
+            className="mt-4 rounded-lg border px-3 py-2 text-sm font-semibold"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   if (!plan) return <div className="p-6 text-sm text-muted-foreground">Loading plan…</div>
 
   const subscriptionCount = plan.historicalSubscriptions ?? 0
@@ -144,8 +177,8 @@ export default function CompanyAdvertisingPlanDetailPage({ params }: { params: P
         <h2 className="text-lg font-semibold">Plan information</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block space-y-1"><span className="text-sm font-medium">Name</span><input value={plan.name} onChange={(e) => setField('name', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2" /></label>
-          <label className="block space-y-1"><span className="text-sm font-medium">Price (cents)</span><input type="number" min="0" value={plan.price} onChange={(e) => setField('price', Number(e.target.value))} className="w-full rounded-lg border bg-background px-3 py-2" /></label>
-          <label className="block space-y-1"><span className="text-sm font-medium">Currency</span><input value={plan.currency} onChange={(e) => setField('currency', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2" /></label>
+          <label className="block space-y-1"><span className="text-sm font-medium">Price (USD)</span><input type="number" min="0" step="0.01" value={plan.price} onChange={(e) => setField('price', Number(e.target.value))} className="w-full rounded-lg border bg-background px-3 py-2" /><span className="text-xs text-muted-foreground">Amount in US dollars. Saved as cents.</span></label>
+          <label className="block space-y-1"><span className="text-sm font-medium">Currency</span><select value={plan.currency} onChange={(e) => setField('currency', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2"><option value="usd">USD</option><option value="eur">EUR</option><option value="gbp">GBP</option></select></label>
           <label className="block space-y-1"><span className="text-sm font-medium">Billing interval</span><select value={plan.billingInterval} onChange={(e) => setField('billingInterval', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2"><option value="month">month</option><option value="year">year</option><option value="week">week</option><option value="day">day</option></select></label>
           <label className="block space-y-1"><span className="text-sm font-medium">Display order</span><input type="number" min="0" value={plan.displayOrder} onChange={(e) => setField('displayOrder', Number(e.target.value))} className="w-full rounded-lg border bg-background px-3 py-2" /></label>
           <label className="block space-y-1"><span className="text-sm font-medium">Description</span><textarea value={plan.description || ''} onChange={(e) => setField('description', e.target.value)} className="min-h-16 w-full rounded-lg border bg-background px-3 py-2" /></label>

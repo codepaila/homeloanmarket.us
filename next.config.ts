@@ -18,7 +18,12 @@ const nextConfig: NextConfig = {
   },
 
   compiler: {
-    removeConsole: process.env.NODE_ENV === "production",
+    // Keep console.error / console.warn in production so server-side provider
+    // errors (e.g. Stripe checkout failures) remain visible in logs for
+    // diagnostics, while stripping verbose log/info/debug output.
+    removeConsole: process.env.NODE_ENV === "production"
+      ? { exclude: ["error", "warn"] }
+      : false,
   },
 
   productionBrowserSourceMaps: false, // no source maps in production

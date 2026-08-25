@@ -73,3 +73,43 @@ test('wizard normalizes empty title to undefined (null on create)', () => {
 test('edit form does not restore the old title when cleared', () => {
   assert.match(editForm, /value=\{field\.value \?\? ''\}/)
 })
+
+// ---- Duplicate title behavior contract ----
+
+const adminDto = read('lib/admin/advertisement-dto.ts')
+const adsListPage = read('app/admin/ads/list/page.tsx')
+
+test('duplicate dialog prefills the generated title as an actual input value, not a placeholder hint', () => {
+  assert.match(duplicateDialog, /form\.setValue\('title', generatedTitle/)
+  assert.match(duplicateDialog, /buildCopyTitle\(stripCopySuffix\(ad\.title\), 1\)/)
+  // The placeholder may still exist for guidance, but the value must be set.
+  assert.match(duplicateDialog, /placeholder=\{defaultTitle\}/)
+})
+
+test('duplicate success toast reports the server-generated duplicate title', () => {
+  assert.match(duplicateDialog, /created\?\.title \? `"\$\{created\.title\}" has been created\.` : /)
+})
+
+test('after duplicating, the user lands in the duplicate edit form with the new title', () => {
+  assert.match(editForm, /onSuccess=\{\(dup\) => router\.push\(`\/admin\/ads\/\$\{dup\.id\}\/edit`\)\}/)
+})
+
+test('repository generates collision-safe copy titles via the shared convention', () => {
+  assert.match(repository, /import \{ buildCopyTitle, stripCopySuffix \} from '\.\/duplicateTitle'/)
+  assert.match(repository, /private static async copyTitleExists/)
+  assert.match(repository, /while \(await this\.copyTitleExists\(buildCopyTitle\(stem, n\)\)\) n \+= 1/)
+})
+
+test('ads list page delegates duplicate titling to the server convention', () => {
+  assert.doesNotMatch(adsListPage, /title: `\$\{ad\.title\} \(Copy\)`/)
+  assert.match(adsListPage, /action: 'duplicate'/)
+})
+
+test('admin ad DTO carries the canonical filename/format fields for the validation panel', () => {
+  assert.match(adminDto, /fileName: string/)
+  assert.match(adminDto, /mimeType: string/)
+  assert.match(adminDto, /extension: string/)
+  assert.match(adminDto, /fileName: asset\.fileName/)
+  assert.match(adminDto, /mimeType: asset\.mimeType/)
+  assert.match(adminDto, /extension: asset\.extension/)
+})

@@ -43,18 +43,26 @@ export default function BrokerCard({
     >
       <span className="  absolute right-4 top-[50%] -translate-x-1/2 -translate-y-1/2 transition-all group-hover:text-primary group-hover:right-3 "><ChevronRight  size={20} /></span>
       <div className="flex items-start gap-4">
+        <div className="relative">
+
         <BrokerAvatar
           src={profileImage || logo}
           alt={company || name || 'Mortgage Broker'}
           name={name || company}
           className="h-24 w-24"
-        />
+          />
+                
+          </div>
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex min-w-0 items-center gap-1.5">
             <h3 className="truncate text-base md:text-lg font-bold text-text-main transition-colors group-hover:text-primary">
               {name}
             </h3>
-            {isPremium && <BrokerSubscriptionBadge className="h-5 w-5 shrink-0" />}
+     
+               {isPremium && <div className="absolute right-2 top-2 ">
+
+              <BrokerSubscriptionBadge className=" h-8 w-20 shrink-0" />
+            </div>}
           </div>
           <p className="truncate text-sm text-text-muted">{company}</p>
           {nmls && (

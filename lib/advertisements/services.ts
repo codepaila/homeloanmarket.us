@@ -147,8 +147,8 @@ export class AdvertisementService {
   }
 
   private static async validateCreativeAssignments(placement: string, assignments: { mediaAssetId: string; format: AdvertisementFormat }[]) {
-    if (placement === 'BROKER_LISTING_LOCAL' && !assignments.some((assignment) => assignment.format === 'SQUARE')) {
-      throw new Error('BROKER_LISTING_LOCAL advertisements require a SQUARE creative')
+    if (placement === 'BROKER_LISTING_LOCAL' && !assignments.some((assignment) => assignment.format === 'SQUARE' || assignment.format === 'BANNER')) {
+      throw new Error('BROKER_LISTING_LOCAL advertisements require a SQUARE or BANNER creative')
     }
     for (const assignment of assignments) {
       if (!isFormatCompatible(placement, assignment.format)) throw new Error(`${assignment.format} creative is not compatible with ${placement}`)

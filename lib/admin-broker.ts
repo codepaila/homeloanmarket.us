@@ -1,3 +1,5 @@
+import { normalizeLicenseStates, validateLicenseStates } from '@/lib/broker-licensing'
+
 export type AdminBrokerInput = {
   displayName: string
   companyName?: string
@@ -13,6 +15,7 @@ export type AdminBrokerInput = {
   experienceYears?: number | string
   registrationNumber?: string
   panNumber?: string
+  licenseStates?: string[]
   logo?: string
   coverImage?: string
   profileImage?: string
@@ -34,6 +37,7 @@ export function normalizeAdminBrokerInput(input: AdminBrokerInput) {
     experienceYears: Number(input.experienceYears || 0),
     registrationNumber: input.registrationNumber?.trim() || null,
     panNumber: input.panNumber?.trim() || null,
+    licenseStates: normalizeLicenseStates(input.licenseStates),
     logo: input.logo?.trim() || null,
     coverImage: input.coverImage?.trim() || null,
     profileImage: input.profileImage?.trim() || null,
@@ -58,6 +62,13 @@ export function validateAdminBrokerInput(input: ReturnType<typeof normalizeAdmin
   if (!input.pinCode) errors.push('Postal code is required')
   if (!Number.isInteger(input.experienceYears) || input.experienceYears < 0 || input.experienceYears > 100) {
     errors.push('Experience years must be a whole number between 0 and 100')
+  }
+  if (input.nmls && !/^\d{4,10}$/.test(input.nmls)) {
+    errors.push('NMLS ID must be 4–10 digits')
+  }
+  if (input.licenseStates.length > 0) {
+    const states = validateLicenseStates(input.licenseStates)
+    if (!states.ok) errors.push(states.error)
   }
 
   return errors

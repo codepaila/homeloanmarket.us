@@ -21,7 +21,7 @@ export default async function BrokerProfileEditPage() {
   })
 
   if (!brokerProfile) {
-    redirect('/broker/setup')
+    redirect('/setup')
   }
 
   const brokerDto = {
@@ -40,6 +40,10 @@ export default async function BrokerProfileEditPage() {
     city: brokerProfile.city,
     state: brokerProfile.state,
     pinCode: brokerProfile.pinCode,
+    googlePlaceId: brokerProfile.googlePlaceId,
+    normalizedAddress: brokerProfile.normalizedAddress,
+    locationCountryCode: brokerProfile.locationCountryCode,
+    location: brokerProfile.location,
     experienceYears: brokerProfile.experienceYears,
     registrationNumber: brokerProfile.registrationNumber,
     panNumber: brokerProfile.panNumber,

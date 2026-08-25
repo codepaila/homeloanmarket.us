@@ -4,10 +4,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator'
 import {
   Banknote, 
-  MessageSquare, 
   Eye, 
   Star, 
-  TrendingUp, 
   FileText,
   BarChart3,
   Target,
@@ -39,7 +37,6 @@ export default function UsageStats({ usageData, plan }: UsageStatsProps) {
   }
 
   const { usage, subscription } = usageData
-  const monthlyLeads = usage?.monthlyLeads ?? 0
   const planFeatures = plan?.features || []
 
   const usageItems = [
@@ -49,13 +46,6 @@ export default function UsageStats({ usageData, plan }: UsageStatsProps) {
       icon: Banknote,
       color: 'blue',
       description: 'Number of bank partnerships'
-    },
-    {
-      label: 'Monthly Leads',
-      current: usage?.monthlyLeads || 0,
-      icon: MessageSquare,
-      color: 'green',
-      description: 'Leads received this month'
     },
     {
       label: 'Profile Views',
@@ -77,13 +67,6 @@ export default function UsageStats({ usageData, plan }: UsageStatsProps) {
       icon: Star,
       color: 'yellow',
       description: 'Total customer reviews'
-    },
-    {
-      label: 'Total Leads',
-      current: usage?.totalLeads || 0,
-      icon: TrendingUp,
-      color: 'red',
-      description: 'All-time leads received'
     }
   ]
 
@@ -102,25 +85,6 @@ export default function UsageStats({ usageData, plan }: UsageStatsProps) {
               </div>
               <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
                 <Banknote className="h-6 w-6 text-info" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Monthly Leads</p>
-                <p className="text-2xl font-bold mt-1">
-                  {usage?.monthlyLeads || 0}
-                </p>
-                <div className="mt-3 text-sm text-muted-foreground">
-                  +{Math.round((usage?.monthlyLeads || 0) / 30)} per day
-                </div>
-              </div>
-              <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
-                <MessageSquare className="h-6 w-6 text-success" />
               </div>
             </div>
           </CardContent>
@@ -257,17 +221,6 @@ export default function UsageStats({ usageData, plan }: UsageStatsProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="p-4 bg-green-50 rounded-lg">
-              <h4 className="font-medium text-green-900 mb-2">Lead Generation</h4>
-              <p className="text-sm text-green-700">
-                You received {monthlyLeads} leads this month.
-                {monthlyLeads > 10
-                  ? ' Great job! Keep up the good work.'
-                  : ' Consider optimizing your profile and services to attract more clients.'
-                }
-              </p>
-            </div>
-
             <div className="p-4 bg-purple-50 rounded-lg">
               <h4 className="font-medium text-purple-900 mb-2">Profile Visibility</h4>
               <p className="text-sm text-purple-700">

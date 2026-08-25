@@ -5,6 +5,7 @@ import { isSameOriginRequest } from '@/lib/origin'
 import { SubscriptionService } from '@/lib/subscription'
 import { resolveCompanyPlanForCheckout, COMPANY_PLAN_DEFAULT_NAME } from '@/lib/company-plan'
 import { validateCompanyCoupon } from '@/lib/company-coupon'
+import { buildCompanyCheckoutIdempotencyKey } from '@/lib/company-checkout'
 import prisma from '@/lib/prisma'
 import { getStripeSecretKey } from '@/lib/stripe-config'
 
@@ -87,19 +88,66 @@ export async function POST(request: NextRequest) {
       // The server fully controls the discount: the validated coupon is applied
       // directly. Promotion codes entered at the Stripe checkout UI are disabled
       // so the client cannot inject an arbitrary discount.
-      const session = await stripe.checkout.sessions.create({
+      //
+      // Managed Payments is enabled by default on this account and rejects an
+      // explicit `payment_method_types` parameter. The account's products are
+      // not yet Managed-Payments eligible (Stripe rejects them even with an
+      // eligible tax code), so Managed Payments is disabled FOR THIS SESSION
+      // only — Stripe's recommended escape hatch — and never globally. The
+      // account's default payment methods (card) are used automatically.
+      // Stripe supports `managed_payments[enabled]` on session creation but the
+      // installed SDK type lags the API, so the params object is cast.
+      const sessionParams = {
         customer: customerId,
-        payment_method_types: ['card'],
         line_items: [{ price: priceId!, quantity: 1 }],
-        mode: 'subscription',
+        mode: 'subscription' as const,
         allow_promotion_codes: false,
+        managed_payments: { enabled: false },
         ...(coupon && coupon.valid ? { discounts: [{ coupon: coupon.id }] } : {}),
         success_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/company/dashboard?subscription=success`,
         cancel_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/company/dashboard`,
         metadata: { userId: current.user.id, companyId: current.company.id, plan: plan.name, ownerType: 'COMPANY', planId: plan.id },
         subscription_data: { metadata: { userId: current.user.id, companyId: current.company.id, plan: plan.name, ownerType: 'COMPANY', planId: plan.id } },
-        billing_address_collection: 'required',
-      }, { idempotencyKey: `company_checkout_${current.company.id}_${customerId}_${priceId}` })
+        billing_address_collection: 'required' as const,
+      }
+
+      // Duplicate prevention + retry safety:
+      //  - Reuse an in-progress (open) Checkout Session for this company+plan
+      //    so concurrent/duplicate submissions never create a second session.
+      //  - The idempotency key is content-fingerprinted over every material
+      //    checkout parameter, so a changed configuration (e.g. Managed
+      //    Payments handling), a different coupon, or a different plan rotates
+      //    the key and Stripe never rejects it as an incompatible retry.
+      //  - A prior canceled/expired session id rotates the key once more so a
+      //    retry after cancellation creates a fresh Checkout Session.
+      const priorSessions = await stripe.checkout.sessions.list({ customer: customerId, limit: 100 })
+      const priorCheckout = priorSessions.data.find(
+        (session) =>
+          session.mode === 'subscription' &&
+          session.metadata?.companyId === current.company.id &&
+          session.metadata?.planId === plan.id,
+      )
+      if (priorCheckout?.status === 'open' && priorCheckout.url) {
+        return { url: priorCheckout.url, free: false }
+      }
+
+      const idempotencyKey = buildCompanyCheckoutIdempotencyKey({
+        companyId: current.company.id,
+        customerId,
+        priceId: priceId!,
+        planId: plan.id,
+        planName: plan.name,
+        mode: 'subscription',
+        allowPromotionCodes: false,
+        managedPaymentsEnabled: false,
+        couponId: coupon && coupon.valid ? coupon.id : null,
+        billingAddressCollection: 'required',
+        priorSessionId: priorCheckout ? priorCheckout.id : null,
+      })
+      const session = await stripe.checkout.sessions.create(
+        sessionParams as Stripe.Checkout.SessionCreateParams,
+        { idempotencyKey },
+      )
       return { url: session.url, free: false }
     }).then((result) => {
       if (result.free) {
@@ -109,6 +157,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: true, url: result.url, planId: plan.id, planName: plan.name || COMPANY_PLAN_DEFAULT_NAME })
     })
   } catch (error) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : 'Unable to start company checkout' }, { status: 500 })
+    // Preserve the real provider error in server logs (never secrets), but
+    // return a safe, user-friendly message to the browser.
+    console.error('Company advertising checkout failed', {
+      companyId: current.company.id,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    })
+    return NextResponse.json(
+      { error: "We couldn't start checkout right now. Please try again." },
+      { status: 500 },
+    )
   }
 }

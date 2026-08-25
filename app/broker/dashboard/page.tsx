@@ -7,7 +7,7 @@ import { BrokerDashboard } from '@/components/sections/broker/BrokerDashboard'
 import { hasPaidEntitlement } from '@/lib/broker-policy'
 import { roleHome } from '@/lib/auth-redirect'
 import { toBrokerOwnerDto } from '@/lib/broker-owner-dto'
-import { isBrokerSetupComplete } from '@/lib/broker-onboarding-state'
+import { isBrokerSetupComplete, resolveBrokerOnboardingDestination } from '@/lib/broker-onboarding-state'
 
 export default async function BrokerPage() {
   const user = await getCurrentUser()
@@ -20,13 +20,13 @@ export default async function BrokerPage() {
     redirect(roleHome(user.role))
   }
 
-  // Check if user has broker profile
+  // Single authoritative onboarding gate: this page renders only when the
+  // broker onboarding state machine says the dashboard is the correct page.
+  // Incomplete / draft / subscription-pending / not-started brokers are
+  // redirected exactly once to the canonical destination.
   if (!isBrokerSetupComplete(user)) {
-    const registrationSubscription = user.brokerRegistration?.subscription
-    if (user.brokerRegistration && (!registrationSubscription?.isActive || registrationSubscription.status !== 'ACTIVE')) {
-      redirect('/broker/subscription/select')
-    }
-    redirect('/setup')
+    const destination = resolveBrokerOnboardingDestination(user, '/broker/dashboard')
+    redirect(destination ?? '/setup')
   }
 
   // Fetch contact messages for initial render

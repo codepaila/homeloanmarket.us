@@ -352,6 +352,7 @@ async function seedAdvertisements(adminId: string, assets: Record<string, { id: 
     [AdvertisementFormat.VERTICAL]: DEMO_IMAGES.advertisements.sidebar,
     [AdvertisementFormat.SQUARE]: DEMO_IMAGES.advertisements.square,
     [AdvertisementFormat.MOBILE]: DEMO_IMAGES.advertisements.mobile,
+    [AdvertisementFormat.BANNER]: DEMO_IMAGES.advertisements.hero,
   }
   for (const [placement, config] of Object.entries(placementConfigs)) {
     const formatPool = creativePoolByFormat[config.format]

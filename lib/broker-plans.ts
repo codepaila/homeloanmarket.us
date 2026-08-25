@@ -2,6 +2,7 @@ import prisma from '@/lib/prisma'
 import Stripe from 'stripe'
 import type { BrokerSubscriptionPlan, BrokerSubscriptionPlanFeature } from '@prisma/client'
 import { getStripeSecretKey } from '@/lib/stripe-config'
+import { BROKER_FEATURE_DEFS_BY_CODE } from '@/lib/broker-plan-features'
 
 // Feature codes supported by the platform. Keep this list explicit — new
 // features are added here and then surfaced through the admin plan editor.
@@ -119,13 +120,9 @@ export async function getActiveSubscriberCount(planId: string) {
 // Human-readable feature labels for the enabled plan features shown to
 // customers. This is the ONLY presentation mapping for plan features; it maps
 // a feature code to a friendly label and is never used for entitlement checks.
-const BROKER_FEATURE_LABELS: Record<string, string> = {
-  PROFILE_BADGE: 'Profile Badge',
-  SUPPORT_TICKETS: 'Priority Support Tickets',
-}
-
 export function brokerFeatureLabel(code: string) {
-  return BROKER_FEATURE_LABELS[code] || code.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase())
+  return BROKER_FEATURE_DEFS_BY_CODE.get(code)?.label
+    || code.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase())
 }
 
 export type BrokerPlanPublic = {

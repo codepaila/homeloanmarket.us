@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { MapPin } from 'lucide-react'
+import { MapPin, X } from 'lucide-react'
 
 export type SelectedUSLocation = {
   placeId?: string
@@ -11,6 +11,19 @@ export type SelectedUSLocation = {
   zip: string
   latitude: number
   longitude: number
+}
+
+type ResolvedResponse = {
+  location?: SelectedUSLocation & { token?: string }
+}
+
+// Strip the server-issued search token (used only by the radius search flow)
+// before the location is stored in the onboarding draft or the form state. The
+// persisted object must contain only the structured US address fields.
+function sanitize(location: SelectedUSLocation & { token?: string }): SelectedUSLocation {
+  const rest: SelectedUSLocation & { token?: string } = { ...location }
+  delete rest.token
+  return rest
 }
 
 export function USLocationPicker({ value, onChange }: { value?: SelectedUSLocation; onChange: (location?: SelectedUSLocation) => void }) {
@@ -41,25 +54,36 @@ export function USLocationPicker({ value, onChange }: { value?: SelectedUSLocati
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ placeId: place.placeId }),
       })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Unable to resolve location')
-      setInput(data.location.normalizedAddress || place.label)
+      const data = await response.json() as ResolvedResponse
+      if (!response.ok) throw new Error(data.location ? undefined : (data as { error?: string }).error || 'Unable to resolve location')
+      const resolved = sanitize(data.location as SelectedUSLocation & { token?: string })
+      setInput(resolved.normalizedAddress || place.label)
       setSuggestions([])
-      onChange(data.location)
+      onChange(resolved)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to resolve location')
     }
   }
 
+  function clear() {
+    setInput('')
+    setSuggestions([])
+    setError('')
+    onChange(undefined)
+  }
+
   return (
     <div className="relative space-y-2">
-      <label className="text-sm font-medium">Validated US location *</label>
+      <label className="text-sm font-medium">Office Location *</label>
+      <p className="text-xs text-muted-foreground">
+        Search for your business or office address and select the exact match from the suggestions.
+      </p>
       <div className="relative">
         <MapPin className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
         <input
           value={input}
           onChange={(event) => { setInput(event.target.value); setSuggestions([]); onChange(undefined) }}
-          placeholder="Search your office location"
+          placeholder="Search your business or office address"
           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pl-9 text-sm"
           autoComplete="off"
         />
@@ -73,9 +97,23 @@ export function USLocationPicker({ value, onChange }: { value?: SelectedUSLocati
           ))}
         </div>
       )}
-      {value && <p className="text-xs text-success">{value.city}, {value.state} {value.zip}</p>}
+      {value ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-success/40 bg-success/5 px-3 py-2">
+          <p className="text-xs text-success">{value.normalizedAddress} · {value.city}, {value.state} {value.zip}</p>
+          <button
+            type="button"
+            onClick={clear}
+            className="inline-flex items-center gap-1 text-xs font-medium text-destructive hover:underline"
+            aria-label="Clear selected office location"
+          >
+            <X className="h-3 w-3" />
+            Clear location
+          </button>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">Select a Google-resolved US place to save canonical coordinates.</p>
+      )}
       {error && <p className="text-xs text-destructive">{error}</p>}
-      {!value && <p className="text-xs text-muted-foreground">Select a Google-resolved US place to save canonical coordinates.</p>}
     </div>
   )
 }

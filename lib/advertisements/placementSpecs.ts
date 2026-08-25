@@ -27,6 +27,7 @@ export const FORMAT_REQUIREMENTS: Record<AdvertisementFormat, FormatRequirement>
   SQUARE: { format: 'SQUARE', width: 800, height: 800, aspectRatio: '1:1', mobile: { width: 600, height: 600, aspectRatio: '1:1' } },
   VERTICAL: { format: 'VERTICAL', width: 800, height: 1200, aspectRatio: '2:3', mobile: { width: 600, height: 900, aspectRatio: '2:3' } },
   MOBILE: { format: 'MOBILE', width: 750, height: 320, aspectRatio: '75:32', mobile: { width: 750, height: 320, aspectRatio: '75:32' } },
+  BANNER: { format: 'BANNER', width: 1600, height: 800, aspectRatio: '2:1', mobile: { width: 800, height: 400, aspectRatio: '2:1' } },
 }
 
 export const PLACEMENT_SIZE_SPECS: Record<string, PlacementSpec> = {

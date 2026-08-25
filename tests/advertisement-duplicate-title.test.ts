@@ -262,7 +262,7 @@ test('duplicate BROKER_LISTING_LOCAL: SQUARE + radius behavior preserved (Dallas
   }
 })
 
-test('duplicate BROKER_LISTING_LOCAL without SQUARE creative is rejected', async () => {
+test('duplicate BROKER_LISTING_LOCAL without SQUARE/BANNER creative is rejected', async () => {
   const tag = suffix()
   let userId: string | undefined, mediaId: string | undefined, adId: string | undefined
   try {
@@ -277,12 +277,208 @@ test('duplicate BROKER_LISTING_LOCAL without SQUARE creative is rejected', async
 
     await assert.rejects(
       () => AdvertisementService.duplicate(legacy.id, { title: 'Copy', createdById: user.id }),
-      /require a SQUARE creative/,
-      'duplicating a local ad without a SQUARE creative must be rejected',
+      /require a SQUARE or BANNER creative/,
+      'duplicating a local ad without a SQUARE/BANNER creative must be rejected',
     )
   } finally {
     if (adId) await prisma.advertisement.deleteMany({ where: { id: adId } })
     if (mediaId) await prisma.mediaAsset.deleteMany({ where: { id: mediaId } })
+    if (userId) await prisma.user.deleteMany({ where: { id: userId } })
+  }
+})
+
+test('duplicate without explicit title generates a distinct "(Copy)" title that persists', async () => {
+  const tag = suffix()
+  let userId: string | undefined, mediaId: string | undefined, adId: string | undefined, dupId: string | undefined
+  try {
+    const user = await makeUser('gen' + tag)
+    userId = user.id
+    const media = await makeSquareMedia(user.id, tag)
+    mediaId = media.id
+    const ad = await AdvertisementService.create({
+      title: 'Silent Reuse Probe',
+      placement: 'BROKER_LISTING_LOCAL',
+      type: 'SPONSORED_BANNER',
+      action: 'DISPLAY_ONLY',
+      isEnabled: true,
+      createdById: user.id,
+      creativeAssignments: [{ mediaAssetId: media.id, format: 'SQUARE' }],
+      locationTarget: { locationLabel: 'Dallas, TX', countryCode: 'US', city: 'Dallas', state: 'TX', latitude: 32.7767, longitude: -96.797, radiusMiles: 25 },
+    })
+    adId = ad.id
+
+    // No title passed at all (the DuplicateDialog omits it when cleared).
+    const dup = await AdvertisementService.duplicate(ad.id, { createdById: user.id })
+    dupId = dup.id
+
+    assert.notEqual(dup.id, ad.id)
+    assert.equal(dup.title, 'Silent Reuse Probe (Copy)', 'duplicate must NOT silently reuse the original title')
+    assert.equal((await prisma.advertisement.findUnique({ where: { id: ad.id } }))?.title, 'Silent Reuse Probe')
+    // Title survives a reload (edit form fetch).
+    const reloaded = await AdvertisementService.getById(dup.id)
+    assert.equal(reloaded?.title, 'Silent Reuse Probe (Copy)')
+    assert.equal((await prisma.advertisement.findUnique({ where: { id: dup.id } }))?.title, 'Silent Reuse Probe (Copy)')
+  } finally {
+    if (dupId) await prisma.advertisement.deleteMany({ where: { id: dupId } })
+    if (adId) await prisma.advertisement.deleteMany({ where: { id: adId } })
+    if (mediaId) await prisma.mediaAsset.deleteMany({ where: { id: mediaId } })
+    if (userId) await prisma.user.deleteMany({ where: { id: userId } })
+  }
+})
+
+test('repeated duplicates produce unique readable titles ((Copy), (Copy 2), …)', async () => {
+  const tag = suffix()
+  let userId: string | undefined, mediaId: string | undefined, adId: string | undefined, dupAId: string | undefined, dupBId: string | undefined
+  try {
+    const user = await makeUser('rep' + tag)
+    userId = user.id
+    const media = await makeSquareMedia(user.id, tag)
+    mediaId = media.id
+    const ad = await AdvertisementService.create({
+      title: 'Repeatable Campaign',
+      placement: 'BROKER_LISTING_LOCAL',
+      type: 'SPONSORED_BANNER',
+      action: 'DISPLAY_ONLY',
+      isEnabled: true,
+      createdById: user.id,
+      creativeAssignments: [{ mediaAssetId: media.id, format: 'SQUARE' }],
+      locationTarget: { locationLabel: 'Dallas, TX', countryCode: 'US', city: 'Dallas', state: 'TX', latitude: 32.7767, longitude: -96.797, radiusMiles: 25 },
+    })
+    adId = ad.id
+
+    const dupA = await AdvertisementService.duplicate(ad.id, { createdById: user.id })
+    dupAId = dupA.id
+    assert.equal(dupA.title, 'Repeatable Campaign (Copy)')
+
+    // The second duplicate would collide with the first — must be uniquified.
+    const dupB = await AdvertisementService.duplicate(ad.id, { createdById: user.id })
+    dupBId = dupB.id
+    assert.equal(dupB.title, 'Repeatable Campaign (Copy 2)')
+    assert.notEqual(dupB.title, dupA.title)
+  } finally {
+    if (dupBId) await prisma.advertisement.deleteMany({ where: { id: dupBId } })
+    if (dupAId) await prisma.advertisement.deleteMany({ where: { id: dupAId } })
+    if (adId) await prisma.advertisement.deleteMany({ where: { id: adId } })
+    if (mediaId) await prisma.mediaAsset.deleteMany({ where: { id: mediaId } })
+    if (userId) await prisma.user.deleteMany({ where: { id: userId } })
+  }
+})
+
+test('duplicating an advertisement already titled "(Copy)" yields a sensible unique title', async () => {
+  const tag = suffix()
+  let userId: string | undefined, mediaId: string | undefined, adId: string | undefined, dupId: string | undefined
+  try {
+    const user = await makeUser('copySfx' + tag)
+    userId = user.id
+    const media = await makeSquareMedia(user.id, tag)
+    mediaId = media.id
+    const ad = await AdvertisementService.create({
+      title: 'Nested (Copy)',
+      placement: 'BROKER_LISTING_LOCAL',
+      type: 'SPONSORED_BANNER',
+      action: 'DISPLAY_ONLY',
+      isEnabled: true,
+      createdById: user.id,
+      creativeAssignments: [{ mediaAssetId: media.id, format: 'SQUARE' }],
+      locationTarget: { locationLabel: 'Dallas, TX', countryCode: 'US', city: 'Dallas', state: 'TX', latitude: 32.7767, longitude: -96.797, radiusMiles: 25 },
+    })
+    adId = ad.id
+
+    const dup = await AdvertisementService.duplicate(ad.id, { createdById: user.id })
+    dupId = dup.id
+    // "Nested (Copy)" is taken by the source itself → next readable variant.
+    assert.equal(dup.title, 'Nested (Copy 2)')
+    assert.ok(!/\(Copy\).*\(Copy\)/.test(dup.title ?? ''), 'must not stack suffixes like "(Copy) (Copy)"')
+  } finally {
+    if (dupId) await prisma.advertisement.deleteMany({ where: { id: dupId } })
+    if (adId) await prisma.advertisement.deleteMany({ where: { id: adId } })
+    if (mediaId) await prisma.mediaAsset.deleteMany({ where: { id: mediaId } })
+    if (userId) await prisma.user.deleteMany({ where: { id: userId } })
+  }
+})
+
+test('explicit colliding title falls back to a unique readable variant', async () => {
+  const tag = suffix()
+  let userId: string | undefined, mediaId: string | undefined, adId: string | undefined, otherId: string | undefined, dupId: string | undefined
+  try {
+    const user = await makeUser('coll' + tag)
+    userId = user.id
+    const media = await makeSquareMedia(user.id, tag)
+    mediaId = media.id
+    const ad = await AdvertisementService.create({
+      title: 'Collision Source',
+      placement: 'BROKER_LISTING_LOCAL',
+      type: 'SPONSORED_BANNER',
+      action: 'DISPLAY_ONLY',
+      isEnabled: true,
+      createdById: user.id,
+      creativeAssignments: [{ mediaAssetId: media.id, format: 'SQUARE' }],
+      locationTarget: { locationLabel: 'Dallas, TX', countryCode: 'US', city: 'Dallas', state: 'TX', latitude: 32.7767, longitude: -96.797, radiusMiles: 25 },
+    })
+    adId = ad.id
+    const other = await AdvertisementService.create({
+      title: 'Already Taken (Copy)',
+      placement: 'BROKER_LISTING_LOCAL',
+      type: 'SPONSORED_BANNER',
+      action: 'DISPLAY_ONLY',
+      isEnabled: true,
+      createdById: user.id,
+      creativeAssignments: [{ mediaAssetId: media.id, format: 'SQUARE' }],
+      locationTarget: { locationLabel: 'Dallas, TX', countryCode: 'US', city: 'Dallas', state: 'TX', latitude: 32.7767, longitude: -96.797, radiusMiles: 25 },
+    })
+    otherId = other.id
+
+    const dup = await AdvertisementService.duplicate(ad.id, { title: 'Already Taken (Copy)', createdById: user.id })
+    dupId = dup.id
+    assert.equal(dup.title, 'Already Taken (Copy 2)')
+  } finally {
+    if (dupId) await prisma.advertisement.deleteMany({ where: { id: dupId } })
+    if (otherId) await prisma.advertisement.deleteMany({ where: { id: otherId } })
+    if (adId) await prisma.advertisement.deleteMany({ where: { id: adId } })
+    if (mediaId) await prisma.mediaAsset.deleteMany({ where: { id: mediaId } })
+    if (userId) await prisma.user.deleteMany({ where: { id: userId } })
+  }
+})
+
+test('editing the duplicate never mutates the original (and vice versa)', async () => {
+  const tag = suffix()
+  let userId: string | undefined, mediaId: string | undefined, adId: string | undefined, dupId: string | undefined
+  try {
+    const user = await makeUser('iso' + tag)
+    userId = user.id
+    const media = await makeSquareMedia(user.id, tag)
+    mediaId = media.id
+    const ad = await AdvertisementService.create({
+      title: 'Isolation Original',
+      placement: 'BROKER_LISTING_LOCAL',
+      type: 'SPONSORED_BANNER',
+      action: 'DISPLAY_ONLY',
+      isEnabled: true,
+      createdById: user.id,
+      creativeAssignments: [{ mediaAssetId: media.id, format: 'SQUARE' }],
+      locationTarget: { locationLabel: 'Dallas, TX', countryCode: 'US', city: 'Dallas', state: 'TX', latitude: 32.7767, longitude: -96.797, radiusMiles: 25 },
+    })
+    adId = ad.id
+    const dup = await AdvertisementService.duplicate(ad.id, { createdById: user.id })
+    dupId = dup.id
+
+    // Rename + swap the creative asset on the DUPLICATE only.
+    const otherMedia = await makeSquareMedia(user.id, tag + '-b')
+    await AdvertisementService.update(dup.id, { title: 'Isolation Renamed', creativeAssignments: [{ mediaAssetId: otherMedia.id, format: 'SQUARE' }] })
+
+    const dupAfter = await prisma.advertisement.findUnique({ where: { id: dup.id }, include: { creatives: true } })
+    const originalAfter = await prisma.advertisement.findUnique({ where: { id: ad.id }, include: { creatives: true } })
+    assert.equal(dupAfter?.title, 'Isolation Renamed')
+    assert.equal(originalAfter?.title, 'Isolation Original', 'original title must stay untouched')
+    assert.equal(originalAfter?.creatives?.some((c) => c.mediaAssetId === media.id), true, 'original keeps its own creative')
+
+    // Editing the original must not leak into the duplicate either.
+    await AdvertisementService.update(ad.id, { title: 'Original Renamed' })
+    assert.equal((await prisma.advertisement.findUnique({ where: { id: dup.id } }))?.title, 'Isolation Renamed')
+  } finally {
+    if (dupId) await prisma.advertisement.deleteMany({ where: { id: dupId } })
+    if (adId) await prisma.advertisement.deleteMany({ where: { id: adId } })
+    await prisma.mediaAsset.deleteMany({ where: { uploaderId: userId ?? '' } })
     if (userId) await prisma.user.deleteMany({ where: { id: userId } })
   }
 })

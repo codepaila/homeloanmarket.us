@@ -21,6 +21,7 @@ import {
   AvatarImage,
 } from '@/components/ui/avatar'
 import { QuickActionButton } from './QuickActionButton'
+import { SubscriptionBadge } from './SubscriptionBadge'
 
 interface DashboardHeaderProps {
   onMenuClick: () => void
@@ -38,7 +39,7 @@ export function DashboardHeader({ onMenuClick, quickActions, user }: DashboardHe
   const unreadCount = user?.unreadNotifications || 0
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-40 flex justify-between h-16 items-center gap-4 border-b bg-background px-4 sm:px-6 lg:px-8">
       {/* Mobile Menu Button */}
       <Button
         variant="ghost"
@@ -48,9 +49,8 @@ export function DashboardHeader({ onMenuClick, quickActions, user }: DashboardHe
       >
         <Menu className="h-5 w-5" />
       </Button>
-
       {/* Search Bar */}
-      <div className="flex-1">
+      {/* <div className="flex-1">
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -59,17 +59,20 @@ export function DashboardHeader({ onMenuClick, quickActions, user }: DashboardHe
             className="pl-10 pr-4 w-full"
           />
         </div>
-      </div>
+      </div> */}
 
       {/* Quick Actions */}
+      <div className="hidden md:block"/>
+
       {/* <div className="hidden md:flex items-center gap-2">
         {quickActions.map((action, index) => (
           <QuickActionButton key={index} action={action} />
         ))}
       </div> */}
 
+      <SubscriptionBadge user={user} />
       {/* Notifications */}
-      <DropdownMenu>
+      {/* <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-5 w-5" />
@@ -87,16 +90,14 @@ export function DashboardHeader({ onMenuClick, quickActions, user }: DashboardHe
           <DropdownMenuLabel>Notifications</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <div className="max-h-96 overflow-auto">
-            {/* Notifications list would go here */}
             <div className="p-4 text-center text-sm text-muted-foreground">
               No new notifications
             </div>
           </div>
         </DropdownMenuContent>
-      </DropdownMenu>
+      </DropdownMenu> */}
 
-      {/* User Menu */}
-      <DropdownMenu>
+      {/* <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="flex items-center gap-2">
             <Avatar className="h-8 w-8">
@@ -160,7 +161,7 @@ export function DashboardHeader({ onMenuClick, quickActions, user }: DashboardHe
             Sign Out
           </DropdownMenuItem>
         </DropdownMenuContent>
-      </DropdownMenu>
+      </DropdownMenu> */}
     </header>
   )
 }

@@ -4,8 +4,9 @@ import { Section } from '@/components/design/Section'
 import { Shield, Database, Lock, Globe, UserCheck } from 'lucide-react'
 
 export const metadata: Metadata = {
-  title: 'Privacy Policy - HomeLoanMarket',
+  title: 'Privacy Policy',
   description: 'Learn how HomeLoanMarket collects, uses, and protects your personal information.',
+  alternates: { canonical: '/privacy-policy' },
 }
 
 const sections = [

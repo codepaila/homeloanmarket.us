@@ -4,6 +4,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { SubscriptionService } from '@/lib/subscription'
 import { getCurrentUser } from '@/lib/currentUser'
+import { validateLicenseStates, normalizeNmls, nmlsValidationError } from '@/lib/broker-licensing'
+import { resolveUSPlace } from '@/lib/location/google-place'
+import { requireValidResolvedUSLocation } from '@/lib/location/broker-location'
+import { isSameOriginRequest } from '@/lib/origin'
+import { Prisma } from '@prisma/client'
 
 export async function GET() {
   try {
@@ -84,6 +89,10 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   try {
+    if (!isSameOriginRequest(request)) {
+      return NextResponse.json({ message: 'Invalid request origin' }, { status: 403 })
+    }
+
     const currentUser = await getCurrentUser()
 
     if (!currentUser) {
@@ -149,14 +158,76 @@ export async function PATCH(request: Request) {
     if (body.email !== undefined) updateData.email = body.email
     if (body.website !== undefined) updateData.website = body.website
     
-    // Address
-    if (body.officeAddress !== undefined) updateData.officeAddress = body.officeAddress
-    if (body.city !== undefined) updateData.city = body.city
-    if (body.state !== undefined) updateData.state = body.state
+    // Office location. The Google place selection is authoritative: when the
+    // broker provides a place ID (from the location picker) the server
+    // re-resolves the place and derives the canonical structured fields, so
+    // the stored address always matches the stored coordinates. If the broker
+    // edits the address text without a new place selection, the previously
+    // resolved place/coordinates are cleared to avoid a mismatched combo.
+    const locationInput = body.location && typeof body.location === 'object'
+      ? (body.location as Record<string, unknown>)
+      : null
+    const placeId = typeof locationInput?.placeId === 'string'
+      ? (locationInput.placeId as string).trim()
+      : typeof body.placeId === 'string' ? (body.placeId as string).trim() : ''
+
+    if (placeId) {
+      try {
+        const resolved = await resolveUSPlace(placeId)
+        requireValidResolvedUSLocation(resolved)
+        updateData.officeAddress = resolved.normalizedAddress
+        updateData.city = resolved.city
+        updateData.state = resolved.state
+        updateData.pinCode = resolved.zip
+        updateData.normalizedAddress = resolved.normalizedAddress
+        updateData.googlePlaceId = resolved.placeId
+        updateData.locationCountryCode = 'US'
+        updateData.location = JSON.parse(JSON.stringify({
+          type: 'Point',
+          coordinates: [resolved.longitude, resolved.latitude],
+        }))
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Office location could not be validated'
+        return NextResponse.json({ message }, { status: 400 })
+      }
+    } else {
+      const addressChanged = ['officeAddress', 'city', 'state', 'pinCode', 'zipCode'].some(
+        (field) => body[field] !== undefined
+      )
+      if (addressChanged) {
+        updateData.googlePlaceId = null
+        updateData.normalizedAddress = null
+        updateData.location = Prisma.DbNull
+        updateData.locationCountryCode = null
+      }
+    }
+
+    // The canonical schema field is `pinCode`; legacy clients send `zipCode`.
     if (body.pinCode !== undefined) updateData.pinCode = body.pinCode
+    else if (body.zipCode !== undefined) updateData.pinCode = body.zipCode
     
     // Professional info
     if (body.experienceYears !== undefined) updateData.experienceYears = body.experienceYears
+
+    // US licensing
+    if (body.nmls !== undefined) {
+      const nmls = normalizeNmls(body.nmls)
+      const nmlsError = nmlsValidationError(nmls)
+      if (nmlsError) {
+        return NextResponse.json(
+          { message: nmlsError },
+          { status: 422 },
+        )
+      }
+      updateData.nmls = nmls
+    }
+    if (body.licenseStates !== undefined) {
+      const statesResult = validateLicenseStates(body.licenseStates)
+      if (!statesResult.ok) {
+        return NextResponse.json({ message: statesResult.error }, { status: 422 })
+      }
+      updateData.licenseStates = statesResult.states
+    }
 
     // Additional info
     if (body.registrationNumber !== undefined) updateData.registrationNumber = body.registrationNumber

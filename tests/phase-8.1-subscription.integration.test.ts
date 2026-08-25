@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test, { after, before } from 'node:test'
 import { PrismaClient, StripeWebhookEventStatus } from '@prisma/client'
-import { stripePriceIds, validatePlanPrice } from '../lib/stripe'
+import { validatePlanPrice } from '../lib/stripe'
 import { SubscriptionService } from '../lib/subscription'
 import { validateBrokerPlanForCheckout } from '../lib/broker-plans'
 
@@ -18,11 +18,14 @@ after(async () => {
   await prisma.$disconnect()
 })
 
-test('registration plan/price validation maps valid pairs and rejects tampering', () => {
-  assert.equal(validatePlanPrice('FEATURED', stripePriceIds.FEATURED)?.name, 'FEATURED')
-  assert.equal(validatePlanPrice('FEATURED', 'price_tampered'), null)
-  assert.equal(validatePlanPrice('FREE', ''), null)
-  assert.equal(validatePlanPrice('UNKNOWN', 'price_tampered'), null)
+test('registration plan/price validation maps valid pairs and rejects tampering', async () => {
+  const featured = await prisma.brokerSubscriptionPlan.findFirst({ where: { code: 'FEATURED' }, select: { stripePriceId: true } })
+  if (featured?.stripePriceId) {
+    assert.equal((await validatePlanPrice('FEATURED', featured.stripePriceId))?.name, 'FEATURED')
+  }
+  assert.equal(await validatePlanPrice('FEATURED', 'price_tampered'), null)
+  assert.equal(await validatePlanPrice('FREE', ''), null)
+  assert.equal(await validatePlanPrice('UNKNOWN', 'price_tampered'), null)
 })
 
 test('dynamic plan checkout validation resolves active plans by code and price', async () => {

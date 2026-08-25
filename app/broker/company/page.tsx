@@ -13,7 +13,7 @@ export default async function BrokerProfilePage() {
   }
 
   if (!user.brokerProfile) {
-    redirect('/broker/setup')
+    redirect('/setup')
   }
 
   // Fetch complete broker data with relations
@@ -53,7 +53,7 @@ export default async function BrokerProfilePage() {
   })
 
   if (!broker) {
-    redirect('/broker/setup')
+    redirect('/setup')
   }
 
   // Calculate statistics
@@ -82,7 +82,6 @@ export default async function BrokerProfilePage() {
       bankPartnerships: broker.bankPartners.map(bp => bp.bankName),
       registrationNumber: broker.registrationNumber,
       panNumber: broker.panNumber,
-      gstNumber: '', // Add if needed
       certifications: [], // Add if needed
       awards: [], // Add if needed
       successRate: 0, // Calculate based on converted leads

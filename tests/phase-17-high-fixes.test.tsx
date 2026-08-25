@@ -197,6 +197,6 @@ test('H3: reset-password endpoint validates a hashed token, expiry, and bcrypt',
   assert.ok(source.includes('resetPasswordTokenExpiry'), 'expiry must be enforced')
   assert.ok(source.includes('Invalid or expired reset token'), 'invalid token must be rejected')
   assert.ok(source.includes('Reset token has expired'), 'expired token must be rejected')
-  assert.ok(source.includes('bcrypt.hash(password, 12)'), 'password hashing must remain intact')
+  assert.ok(source.includes('hashPassword(password)'), 'password hashing must remain intact (canonical helper)')
   assert.ok(source.includes('resetPasswordToken: null'), 'token must be consumed after use')
 })

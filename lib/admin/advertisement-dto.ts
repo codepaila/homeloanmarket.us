@@ -6,7 +6,10 @@ export type AdminMediaAssetDto = {
   fileUrl: string
   thumbnailUrl: string | null
   altText: string | null
+  fileName: string
   originalName: string
+  mimeType: string
+  extension: string
   fileSize: number
   width: number | null
   height: number | null
@@ -85,7 +88,10 @@ function serializeMedia(asset: MediaAsset | null | undefined): AdminMediaAssetDt
     fileUrl: asset.fileUrl,
     thumbnailUrl: asset.thumbnailUrl,
     altText: asset.altText,
+    fileName: asset.fileName,
     originalName: asset.originalName,
+    mimeType: asset.mimeType,
+    extension: asset.extension,
     fileSize: asset.fileSize,
     width: asset.width,
     height: asset.height,

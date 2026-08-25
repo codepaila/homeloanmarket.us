@@ -68,8 +68,15 @@ export async function sendBrokerRegistrationEmails(userId: string) {
             })
         }
 
+        // Propagate the actual provider result. The broker verification email
+        // is the critical delivery; an admin notification must not turn the
+        // result into a false success when the broker email was rejected.
         return {
-            success: true,
+            success: brokerEmailResult.success,
+            ...(brokerEmailResult.success ? {} : {
+                error: 'Failed to send verification email',
+                details: brokerEmailResult.error,
+            }),
             brokerEmail: brokerEmailResult,
             adminEmail: adminEmailResult
         }
@@ -289,10 +296,17 @@ export async function sendBrokerVerificationEmail(brokerId: string) {
             })
             : null
 
+        const emailFailed = Boolean(emailResult && !emailResult.success)
+        const emailError = emailResult && !emailResult.success ? emailResult.error : undefined
+
         return {
-            success: true,
+            success: !emailFailed,
             email: emailResult,
-            skipped: !recipient
+            skipped: !recipient,
+            ...(emailError ? {
+                error: 'Failed to send verification email',
+                details: emailError,
+            } : {}),
         }
     } catch (error) {
         console.error('Error sending broker verification email:', error)
@@ -359,6 +373,17 @@ export async function resendBrokerVerificationEmail(brokerId: string) {
             idempotencyKey
         })
 
+        // Propagate the actual provider result so the API can distinguish a
+        // delivered/accepted message from a rejected send.
+        if (!emailResult.success) {
+            return {
+                success: false,
+                error: emailResult.error || 'Failed to resend verification email',
+                details: emailResult.error,
+                email: emailResult,
+            }
+        }
+
         return {
             success: true,
             email: emailResult
@@ -382,7 +407,8 @@ export async function sendSubscriptionEmail(brokerId: string, subscriptionId: st
                 }
             }),
             prisma.brokerSubscription.findUnique({
-                where: { id: subscriptionId }
+                where: { id: subscriptionId },
+                include: { planRef: true }
             })
         ])
 
@@ -392,7 +418,7 @@ export async function sendSubscriptionEmail(brokerId: string, subscriptionId: st
 
         const idempotencyKey = `subscription_${broker.id}_${subscription.id}_${Date.now()}`
 
-        const subscriptionTemplate = emailTemplates.subscriptionPurchased(broker, subscription)
+        const subscriptionTemplate = emailTemplates.subscriptionPurchased(broker, subscription, subscription.planRef)
 
         const recipient = getBrokerContactEmail(broker, true)
         const emailResult = recipient

@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
     Website: broker.website || '',
     'Experience years': broker.experienceYears,
     'Registration number': broker.registrationNumber || '',
-    'PAN / tax number': broker.panNumber || '',
+    'Tax ID / EIN': broker.panNumber || '',
     'Verification status': broker.verificationStatus,
     'Broker status': broker.brokerStatus,
     'Is visible': broker.isVisible,

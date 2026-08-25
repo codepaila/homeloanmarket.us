@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Resend } from 'resend';
+import { htmlToText } from './email-templates';
 
 // Initialize Resend with your API key
 const resend = new Resend(process.env.RESEND_API_KEY);
@@ -35,6 +36,17 @@ export async function sendEmail({
   idempotencyKey?: string;
 }) {
   try {
+    // Fail clearly when the email service is not configured instead of
+    // silently producing a malformed `from` (e.g. "Name <undefined>").
+    if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) {
+      console.error('❌ Email configuration missing: RESEND_API_KEY / EMAIL_FROM')
+      return {
+        success: false,
+        error: 'Email service is not configured',
+        errorCode: 'EMAIL_NOT_CONFIGURED',
+      };
+    }
+
     // Prevent duplicate sends using idempotency key
     if (idempotencyKey) {
       const now = Date.now();
@@ -73,7 +85,7 @@ export async function sendEmail({
       // reply_to: process.env.ADMIN_EMAIL || process.env.EMAIL_FROM,
       subject,
       html,
-      text: text || html.replace(/<[^>]*>/g, ''),
+      text: text || htmlToText(html),
       headers: {
         'X-Priority': '1',
         'X-MSMail-Priority': 'High',
@@ -166,4 +178,4 @@ export function cleanEmailList(emails: string | string[]): string[] {
     .map(email => email.trim().toLowerCase())
     .filter(email => isValidEmail(email));
 }
-export { emailTemplates } from './email-templates';
+export { emailTemplates, htmlToText } from './email-templates';

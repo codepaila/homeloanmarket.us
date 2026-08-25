@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// components/broker/BrokerSetupWizard.tsx
+// components/sections/broker/BrokerSetupWizard.tsx
 'use client'
 
 import { useState } from 'react'
@@ -8,7 +8,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -23,30 +22,28 @@ import {
 } from '@/components/ui/form'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import { Separator } from '@/components/ui/separator'
 import {
   Building,
   Phone,
   Mail,
-  MapPin,
   Globe,
   Briefcase,
-  Banknote,
   X,
-  Plus,
   ArrowRight,
   ArrowLeft,
   CheckCircle,
   Shield,
-  FileText,
-  Upload,
   Check,
-  AlertCircle
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
+import { US_STATES } from '@/lib/us-states'
 import ImageUpload from '@/components/ImageUpload'
 import { USLocationPicker, type SelectedUSLocation } from '@/components/location/USLocationPicker'
+import type { LucideIcon } from 'lucide-react'
+
+type StepDef = { id: number; title: string; icon: LucideIcon }
 
 // Step 1 Schema - Basic Information
 const basicInfoSchema = z.object({
@@ -54,6 +51,8 @@ const basicInfoSchema = z.object({
   companyName: z.string().optional(),
   description: z.string().min(20, 'Description must be at least 20 characters'),
   logo: z.string().optional(),
+  profileImage: z.string().optional(),
+  coverImage: z.string().optional(),
   profileSlug: z.string().min(2, 'Profile slug must be at least 2 characters'),
 })
 
@@ -66,36 +65,45 @@ const contactInfoSchema = z.object({
   officeAddress: z.string().min(10, 'Address must be at least 10 characters'),
   city: z.string().min(2, 'City must be at least 2 characters'),
   state: z.string().min(2, 'State must be at least 2 characters'),
-  zipCode: z.string().length(5, 'ZIP Code must be 5 digits'),
+  pinCode: z.string().length(5, 'ZIP Code must be 5 digits'),
+  // The office location must be a Google-resolved US place selected from the
+  // autocomplete suggestions. A manually typed address without a place
+  // selection is rejected so the stored coordinates always match the address.
   location: z.object({
-    placeId: z.string().optional(),
+    placeId: z.string(),
     normalizedAddress: z.string(),
     city: z.string(),
     state: z.string(),
     zip: z.string(),
     latitude: z.number(),
     longitude: z.number(),
-  }).optional(),
+  }).refine(
+    (value) => Boolean(value.placeId),
+    'Select a validated US office location from the suggestions',
+  ),
 })
 
 // Step 3 Schema - Professional Details
 const professionalSchema = z.object({
   experienceYears: z.coerce.number().min(0, 'Experience cannot be negative').max(50, 'Maximum 50 years'),
-  bankPartnerships: z.array(z.string()),
+  // NMLS ID is required to complete US broker onboarding (presence + format).
+  nmls: z.string().trim().regex(/^\d{4,10}$/, 'NMLS ID must be 4–10 digits'),
+  // At least one licensed US state is required.
+  licenseStates: z.array(z.string()).min(1, 'Select at least one licensed state'),
 })
 
 // Step 4 Schema - Registration Details
 const registrationSchema = z.object({
   registrationNumber: z.string().optional(),
-  // registrationNumber: z.string().min(5, 'Registration number is required'),
-  panNumber: z.string().length(10, 'Tax ID must be 10 characters').optional().or(z.literal('')),
-  gstNumber: z.string().length(15, 'Tax ID must be 15 characters').optional().or(z.literal('')),
+  // US tax identifier (EIN / individual tax ID). The underlying field name
+  // stays `panNumber` for backward compatibility; it is displayed as a US tax
+  // identifier and never reinterpreted as an India PAN.
+  panNumber: z.string().max(20, 'Tax ID / EIN must be 20 characters or fewer').optional().or(z.literal('')),
 })
 
 // Step 5 Schema - Verification Documents
 const documentsSchema = z.object({
   panCard: z.string().optional().or(z.literal('')),
-  aadhaarCard: z.string().optional().or(z.literal('')),
   addressProof: z.string().optional().or(z.literal('')),
 })
 
@@ -105,14 +113,20 @@ type FormData = z.infer<typeof basicInfoSchema> &
   z.infer<typeof registrationSchema> &
   z.infer<typeof documentsSchema>
 
-const steps = [
-  { id: 1, title: 'Basic Info', icon: Building },
+const steps: StepDef[] = [
+  { id: 1, title: 'Profile', icon: Building },
   { id: 2, title: 'Contact', icon: Phone },
-  { id: 3, title: 'Professional', icon: Briefcase },
-  // { id: 4, title: 'Registration', icon: Shield },
-  // { id: 5, title: 'Documents', icon: FileText },
+  { id: 3, title: 'Licensing', icon: Shield },
   { id: 4, title: 'Review', icon: CheckCircle },
 ]
+
+// Step-level heading + description shown under the progress bar.
+const STEP_META: Record<number, { title: string; description: string }> = {
+  1: { title: 'Basic Information', description: 'Tell buyers who you are and set up your public profile.' },
+  2: { title: 'Contact & Office Location', description: 'Add your contact details and validated US office location.' },
+  3: { title: 'Licensing', description: 'Add your NMLS ID and the states where you hold a mortgage license.' },
+  4: { title: 'Review & Submit', description: 'Confirm everything is correct, then complete your setup.' },
+}
 
 interface BrokerSetupWizardProps {
   user: any
@@ -120,40 +134,63 @@ interface BrokerSetupWizardProps {
   initialStep?: number
 }
 
-export function BrokerSetupWizard({ user, initialData = {}, initialStep = 1 }: BrokerSetupWizardProps) {
+// Older onboarding drafts persisted the postal code as `zipCode`. The canonical
+// schema field is `pinCode`; map legacy drafts so a resumed wizard restores the
+// ZIP correctly and the current step always sees canonical field names.
+function restoreInitialData(initialData: Partial<FormData>): Partial<FormData> {
+  const restored: Record<string, unknown> = { ...initialData }
+  if ('zipCode' in restored && !('pinCode' in restored)) {
+    restored.pinCode = restored.zipCode
+    delete restored.zipCode
+  }
+  return restored as Partial<FormData>
+}
+
+// Compact horizontal stepper: completed = check, active = icon, upcoming = number.
+// Labels hide below `md`; the "Step X of Y" text always communicates position.
+function Stepper({ steps, currentStep }: { steps: StepDef[]; currentStep: number }) {
+  return (
+    <ol className="flex min-w-0 items-center gap-1.5" aria-label="Onboarding progress">
+      {steps.map((step, index) => {
+        const isActive = step.id === currentStep
+        const isCompleted = step.id < currentStep
+        const Icon = step.icon
+        return (
+          <li key={step.id} className="flex min-w-0 items-center gap-1.5">
+            <span
+              aria-current={isActive ? 'step' : undefined}
+              className={`
+                flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs
+                ${isCompleted ? 'border-success/60 bg-success/10 text-success' :
+                  isActive ? 'border-primary bg-primary text-primary-foreground' :
+                  'border-border bg-background text-muted-foreground'}
+              `}
+            >
+              {isCompleted ? <Check className="h-3.5 w-3.5" aria-hidden="true" /> : isActive ? <Icon className="h-3.5 w-3.5" aria-hidden="true" /> : <span>{step.id}</span>}
+            </span>
+            <span
+              className={`hidden truncate text-xs font-medium md:block ${
+                isActive ? 'text-foreground' : isCompleted ? 'text-muted-foreground' : 'text-muted-foreground/70'
+              }`}
+            >
+              {step.title}
+            </span>
+            {index < steps.length - 1 && <span className="mx-1 h-px w-4 bg-border sm:w-6" aria-hidden="true" />}
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
+export function BrokerSetupWizard({ initialData = {}, initialStep = 1 }: BrokerSetupWizardProps) {
   const router = useRouter()
   const { update: refreshSession } = useSession()
   const [currentStep, setCurrentStep] = useState(initialStep)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [uploadedDocs, setUploadedDocs] = useState<Record<string, { name: string; url: string }>>({})
-  const [newBank, setNewBank] = useState('')
-
-  // Common US cities for selection
-  const usCities = [
-    'New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix',
-    'Philadelphia', 'San Antonio', 'San Diego', 'Dallas', 'San Jose',
-    'Austin', 'Jacksonville', 'Fort Worth', 'Columbus', 'Charlotte',
-    'Indianapolis', 'San Francisco', 'Seattle', 'Denver', 'Washington DC'
-  ]
-
-  // Bank options
-  const bankOptions = [
-    'Chase Bank',
-    'Bank of America',
-    'Wells Fargo',
-    'Citibank',
-    'U.S. Bank',
-    'PNC Bank',
-    'TD Bank',
-    'Capital One',
-    'Discover Bank',
-    'Rocket Mortgage',
-    'Fifth Third Bank',
-    'KeyBank',
-    'Regions Bank',
-    'BBVA USA',
-    'Santander Bank'
-  ]
+  // Verification document uploads are not part of the current flow; the field
+  // is retained so the completion payload shape stays stable.
+  const uploadedDocs: Record<string, { name: string; url: string }> = {}
 
   const form = useForm<FormData>({
     resolver: zodResolver(
@@ -168,6 +205,8 @@ export function BrokerSetupWizard({ user, initialData = {}, initialStep = 1 }: B
       companyName: '',
       description: '',
       logo: '',
+      profileImage: '',
+      coverImage: '',
       profileSlug: '',
       phone: '',
       whatsapp: '',
@@ -176,42 +215,20 @@ export function BrokerSetupWizard({ user, initialData = {}, initialStep = 1 }: B
       officeAddress: '',
       city: '',
       state: '',
-       zipCode: '',
-       location: undefined,
-       experienceYears: 0,
-       bankPartnerships: [],
+      pinCode: '',
+      location: undefined,
+      experienceYears: 0,
+      nmls: '',
+      licenseStates: [],
       registrationNumber: '',
       panNumber: '',
-      gstNumber: '',
       panCard: '',
-      aadhaarCard: '',
       addressProof: '',
-      ...initialData,
+      ...restoreInitialData(initialData),
     }
   })
 
   const progress = (currentStep / steps.length) * 100
-
-  // Handle adding items to array fields
-  const handleAddItem = (field: 'bankPartnerships', value: string) => {
-    const current = form.getValues(field) as string[]
-    const trimmedValue = value.trim()
-
-    if (!trimmedValue) return
-
-    if (!current.includes(trimmedValue)) {
-      form.setValue(field, [...current, trimmedValue])
-    }
-
-    // Clear input
-    if (field === 'bankPartnerships') setNewBank('')
-  }
-
-  // Handle removing items from array fields
-  const handleRemoveItem = (field: 'bankPartnerships', value: string) => {
-    const current = form.getValues(field) as string[]
-    form.setValue(field, current.filter(item => item !== value))
-  }
 
   const handleNext = async () => {
     let isValid = true
@@ -222,23 +239,11 @@ export function BrokerSetupWizard({ user, initialData = {}, initialStep = 1 }: B
         isValid = await form.trigger(['displayName', 'description', 'profileSlug'])
         break
       case 2:
-        isValid = await form.trigger(['phone', 'officeAddress', 'city', 'state', 'zipCode'])
+        isValid = await form.trigger(['phone', 'officeAddress', 'city', 'state', 'pinCode', 'location'])
         break
       case 3:
-        isValid = await form.trigger(['experienceYears'])
+        isValid = await form.trigger(['experienceYears', 'nmls', 'licenseStates'])
         break
-      // case 4:
-      //   isValid = await form.trigger(['registrationNumber'])
-      //   break
-      // case 5:
-      //   const uploadedCount = Object.keys(uploadedDocs).length
-      //   if (uploadedCount < 2) {
-      //     toast.error('Please upload at least 2 documents for verification')
-      //     isValid = false
-      //   } else {
-      //     isValid = true
-      //   }
-        // break
     }
 
     if (isValid && currentStep < steps.length) {
@@ -263,32 +268,6 @@ export function BrokerSetupWizard({ user, initialData = {}, initialStep = 1 }: B
     }
   }
 
-  // const handleUploadDocument = async (field: string, file: File) => {
-  //   try {
-  //     const mockUrl = URL.createObjectURL(file)
-      
-  //     setUploadedDocs(prev => ({
-  //       ...prev,
-  //       [field]: {
-  //         name: file.name,
-  //         url: mockUrl
-  //       }
-  //     }))
-
-  //     form.setValue(field as any, mockUrl)
-  //     toast.success(`${field.replace(/([A-Z])/g, ' $1')} uploaded successfully`)
-  //   } catch (error) {
-  //     toast.error('Failed to upload document')
-  //   }
-  // }
-
-  // const handleRemoveDocument = (field: string) => {
-  //   const newDocs = { ...uploadedDocs }
-  //   delete newDocs[field]
-  //   setUploadedDocs(newDocs)
-  //   form.setValue(field as any, '')
-  // }
-
   const onSubmit = async () => {
     try {
       setIsSubmitting(true)
@@ -306,13 +285,15 @@ export function BrokerSetupWizard({ user, initialData = {}, initialStep = 1 }: B
         officeAddress: data.officeAddress,
         city: data.city,
         state: data.state,
-        zipCode: data.zipCode,
+        pinCode: data.pinCode,
         location: data.location,
         experienceYears: data.experienceYears,
-        bankPartnerships: data.bankPartnerships,
+        nmls: data.nmls,
+        licenseStates: data.licenseStates,
         registrationNumber: data.registrationNumber,
         panNumber: data.panNumber,
-        gstNumber: data.gstNumber,
+        profileImage: data.profileImage,
+        coverImage: data.coverImage,
         documents: uploadedDocs
       }
 
@@ -350,117 +331,42 @@ export function BrokerSetupWizard({ user, initialData = {}, initialStep = 1 }: B
       case 2:
         return <Step2ContactInfo form={form} />
       case 3:
-        return (
-          <Step3ProfessionalInfo 
-            form={form}
-            bankOptions={bankOptions}
-            indianCities={usCities}
-            newBank={newBank}
-            setNewBank={setNewBank}
-            handleAddItem={handleAddItem}
-            handleRemoveItem={handleRemoveItem}
-          />
-        )
-      // case 4:
-      //   return <Step4RegistrationInfo form={form} />
-      // case 5:
-      //   return (
-      //     <Step5Documents 
-      //       form={form}
-      //       uploadedDocs={uploadedDocs}
-      //       onUpload={handleUploadDocument}
-      //       onRemove={handleRemoveDocument}
-      //     />
-      //   )
+        return <Step3ProfessionalInfo form={form} />
       case 4:
-        return <Step6Review form={form} uploadedDocs={uploadedDocs} />
+        return <Step6Review form={form} onEditStep={(step: number) => setCurrentStep(step)} />
       default:
         return null
     }
   }
 
+  const meta = STEP_META[currentStep] ?? STEP_META[1]
+
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
-      {/* Progress Bar */}
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Become a Verified Mortgage Broker</h1>
-            <p className="text-muted-foreground mt-2">
-              Complete your profile to start receiving loan applications and leads
-            </p>
-          </div>
-          <div className="text-right">
-            <div className="text-sm text-muted-foreground mb-1">Step {currentStep} of {steps.length}</div>
-            <div className="text-lg font-bold text-primary">
-              {Math.round(progress)}% Complete
-            </div>
-          </div>
+    <div className="w-full">
+      {/* Progress region */}
+      <div className="mb-5 space-y-3">
+        <div className="flex items-center justify-between gap-4">
+          <Stepper steps={steps} currentStep={currentStep} />
+          <span className="shrink-0 text-sm font-medium text-muted-foreground">
+            Step {currentStep} of {steps.length}
+          </span>
         </div>
-        <Progress value={progress} className="h-2" />
-        
-        {/* Step Indicators */}
-        <div className="flex justify-between mt-4">
-          {steps.map((step) => {
-            const Icon = step.icon
-            const isActive = step.id === currentStep
-            const isCompleted = step.id < currentStep
-            
-            return (
-              <div key={step.id} className="flex flex-col items-center">
-                <div className={`
-                  h-10 w-10 rounded-full flex items-center justify-center mb-2
-                  ${isCompleted ? 'bg-success/15 text-success border-2 border-success/50' : 
-                    isActive ? 'bg-primary text-white border-2 border-primary' : 
-                    'bg-muted text-muted-foreground border-2 border-border'}
-                `}>
-                  {isCompleted ? (
-                    <Check className="h-5 w-5" />
-                  ) : (
-                    <Icon className="h-5 w-5" />
-                  )}
-                </div>
-                <span className={`
-                  text-sm font-medium
-                  ${isActive ? 'text-primary' : 
-                    isCompleted ? 'text-success' : 
-                    'text-muted-foreground'}
-                `}>
-                  {step.title}
-                </span>
-              </div>
-            )
-          })}
+        <Progress value={progress} className="h-1.5" aria-label={`${Math.round(progress)} percent complete`} />
+        <div>
+          <h2 className="text-xl font-semibold text-foreground">{meta.title}</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">{meta.description}</p>
         </div>
       </div>
 
-      {/* Form Content */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            {(() => {
-              const Icon = steps[currentStep - 1]?.icon || Building
-              return <Icon className="h-6 w-6" />
-            })()}
-            {steps[currentStep - 1]?.title}
-          </CardTitle>
-          <CardDescription>
-            {currentStep === 1 && 'Tell us about your company'}
-            {currentStep === 2 && 'Add your contact information'}
-            {currentStep === 3 && 'Share your professional expertise'}
-            {/* {currentStep === 4 && 'Add registration details'} */}
-            {/* {currentStep === 5 && 'Upload verification documents'} */}
-          {currentStep === 4 && 'Review and submit your application'}
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent className="overflow-visible">
+      {/* Form card */}
+      <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
+        <div className="p-5 sm:p-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {renderStep()}
 
               {/* Navigation Buttons */}
-              <div className="flex justify-between pt-6 border-t">
+              <div className="flex flex-col-reverse gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
                 <Button
                   type="button"
                   variant="outline"
@@ -495,7 +401,7 @@ export function BrokerSetupWizard({ user, initialData = {}, initialStep = 1 }: B
                     ) : (
                       <>
                         <CheckCircle className="h-4 w-4" />
-                        Create Profile
+                        Complete Setup
                       </>
                     )}
                   </Button>
@@ -503,38 +409,8 @@ export function BrokerSetupWizard({ user, initialData = {}, initialStep = 1 }: B
               </div>
             </form>
           </Form>
-        </CardContent>
-      </Card>
-
-      {/* Side Info Card */}
-      <Card className="mt-6">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-3">
-            <Shield className="h-6 w-6 text-primary mt-1" />
-            <div>
-              <h3 className="font-medium text-foreground mb-2">Why Get Verified?</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                  <span>Get featured in broker directory</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                  <span>Receive verified leads from borrowers</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                  <span>Build trust with verification badge</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
-                  <span>Access premium features and analytics</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }
@@ -544,38 +420,8 @@ function Step1BasicInfo({ form }: any) {
   return (
     <div className="space-y-6">
       <div className="space-y-4">
-        <h3 className="text-lg font-medium">Company Information</h3>
-        
-        {/* Logo Upload */}
-        <div className="space-y-4">
-          <FormLabel>Company Logo</FormLabel>
-          <FormField
-            control={form.control}
-            name="logo"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                    <ImageUpload
-                      value={field.value}
-                      onChange={field.onChange}
-                      type="logo"
-                    />
-                    <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground">
-                        Upload your logo (Recommended: 400×400px, PNG or JPG)
-                      </p>
-                    </div>
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* Basic Info Fields */}
-        <div className="grid gap-4 md:grid-cols-2">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Company profile</h3>
+        <div className="grid gap-4 sm:grid-cols-2">
           <FormField
             control={form.control}
             name="displayName"
@@ -613,7 +459,7 @@ function Step1BasicInfo({ form }: any) {
               <FormLabel>Profile URL Slug *</FormLabel>
               <FormControl>
                 <div className="flex items-center">
-                  <span className="text-muted-foreground mr-2 whitespace-nowrap">homeloanmarket.com/</span>
+                  <span className="mr-2 whitespace-nowrap text-sm text-muted-foreground">homeloanmarket.com/</span>
                   <Input
                     placeholder="your-profile-name"
                     {...field}
@@ -659,6 +505,87 @@ function Step1BasicInfo({ form }: any) {
           )}
         />
       </div>
+
+      <Separator />
+
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Profile media</h3>
+          <span className="text-xs text-muted-foreground">Optional</span>
+        </div>
+
+        <div className="grid gap-5 sm:grid-cols-2">
+          {/* Logo Upload */}
+          <FormField
+            control={form.control}
+            name="logo"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Company Logo</FormLabel>
+                <FormControl>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <ImageUpload value={field.value} onChange={field.onChange} type="logo" />
+                    {field.value && (
+                      <Button type="button" variant="outline" size="sm" onClick={() => field.onChange('')}>
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Profile Photo Upload */}
+          <FormField
+            control={form.control}
+            name="profileImage"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Profile Photo</FormLabel>
+                <FormControl>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <ImageUpload value={field.value} onChange={field.onChange} type="profile" />
+                    {field.value && (
+                      <Button type="button" variant="outline" size="sm" onClick={() => field.onChange('')}>
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          {/* Cover Photo Upload */}
+          <FormField
+            control={form.control}
+            name="coverImage"
+            render={({ field }) => (
+              <FormItem className="sm:col-span-2">
+                <FormLabel>Cover Photo</FormLabel>
+                <FormControl>
+                  <div className="space-y-2">
+                    <ImageUpload value={field.value} onChange={field.onChange} type="cover" aspectRatio="cover" />
+                    {field.value && (
+                      <Button type="button" variant="outline" size="sm" onClick={() => field.onChange('')}>
+                        Remove Cover
+                      </Button>
+                    )}
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          Upload from your device only — PNG, JPG, or WEBP up to 5MB. Recommended: logo and profile 400×400px, cover 1600×500px.
+        </p>
+      </div>
     </div>
   )
 }
@@ -667,9 +594,9 @@ function Step1BasicInfo({ form }: any) {
 function Step2ContactInfo({ form }: any) {
   return (
     <div className="space-y-6">
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Contact Information</h3>
-
+      {/* Office Location — the picker owns its label + confirmed-value panel */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Office location</h3>
         <FormField
           control={form.control}
           name="location"
@@ -684,7 +611,15 @@ function Step2ContactInfo({ form }: any) {
                       form.setValue('officeAddress', location.normalizedAddress)
                       form.setValue('city', location.city)
                       form.setValue('state', location.state)
-                      form.setValue('zipCode', location.zip)
+                      form.setValue('pinCode', location.zip)
+                    } else {
+                      // Clearing the selected place clears the derived address
+                      // fields so a mismatched combination is never persisted.
+                      form.setValue('officeAddress', '')
+                      form.setValue('city', '')
+                      form.setValue('state', '')
+                      form.setValue('pinCode', '')
+                      form.setValue('location', undefined)
                     }
                   }}
                 />
@@ -693,8 +628,14 @@ function Step2ContactInfo({ form }: any) {
             </FormItem>
           )}
         />
-        
-        <div className="grid gap-4 md:grid-cols-2">
+      </div>
+
+      <Separator />
+
+      <div className="space-y-4">
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Contact details</h3>
+
+        <div className="grid gap-4 sm:grid-cols-2">
           <FormField
             control={form.control}
             name="phone"
@@ -703,12 +644,8 @@ function Step2ContactInfo({ form }: any) {
                 <FormLabel>Phone Number *</FormLabel>
                 <FormControl>
                   <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="+1 (555) 123-4560"
-                      className="pl-10"
-                      {...field}
-                    />
+                    <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input placeholder="+1 (555) 123-4560" className="pl-9" {...field} />
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -731,7 +668,7 @@ function Step2ContactInfo({ form }: any) {
           />
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2">
           <FormField
             control={form.control}
             name="email"
@@ -740,13 +677,8 @@ function Step2ContactInfo({ form }: any) {
                 <FormLabel>Business Email</FormLabel>
                 <FormControl>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      type="email"
-                      placeholder="contact@company.com"
-                      className="pl-10"
-                      {...field}
-                    />
+                    <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input type="email" placeholder="contact@company.com" className="pl-9" {...field} />
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -762,78 +694,9 @@ function Step2ContactInfo({ form }: any) {
                 <FormLabel>Website</FormLabel>
                 <FormControl>
                   <div className="relative">
-                    <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="https://example.com"
-                      className="pl-10"
-                      {...field}
-                    />
+                    <Globe className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input placeholder="https://example.com" className="pl-9" {...field} />
                   </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="officeAddress"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Office Address *</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Enter complete office address"
-                    className="pl-10"
-                    {...field}
-                  />
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <FormField
-            control={form.control}
-            name="city"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>City *</FormLabel>
-                <FormControl>
-                  <Input placeholder="City" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="state"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>State *</FormLabel>
-                <FormControl>
-                  <Input placeholder="State" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="zipCode"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>ZIP Code *</FormLabel>
-                <FormControl>
-                   <Input placeholder="12345" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -845,39 +708,23 @@ function Step2ContactInfo({ form }: any) {
   )
 }
 
-// Step 3: Professional Information
-function Step3ProfessionalInfo({ 
-  form, 
-  bankOptions, 
-  indianCities,
-  newBank,
-  setNewBank,
-  handleAddItem,
-  handleRemoveItem 
-}: any) {
+// Step 3: Licensing & Experience
+function Step3ProfessionalInfo({ form }: any) {
   return (
-    <div className="space-y-8">
-      {/* Experience */}
+    <div className="space-y-6">
       <div className="space-y-4">
-        <h3 className="text-lg font-medium">Professional Experience</h3>
-        
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Experience</h3>
         <FormField
           control={form.control}
           name="experienceYears"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="max-w-xs">
               <FormLabel>Years of Experience *</FormLabel>
               <FormControl>
-                <div className="relative max-w-xs">
-                  <Input
-                    type="number"
-                    min="0"
-                    max="50"
-                    {...field}
-                    className="pl-12"
-                  />
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    <Briefcase className="h-5 w-5" />
+                <div className="relative">
+                  <Input type="number" min="0" max="50" className="pl-9" {...field} />
+                  <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                    <Briefcase className="h-4 w-4" />
                   </div>
                 </div>
               </FormControl>
@@ -889,125 +736,21 @@ function Step3ProfessionalInfo({
 
       <Separator />
 
-      {/* Bank Partnerships */}
-
-      <Separator />
-
-      {/* Bank Partnerships */}
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h4 className="font-medium">Bank Partnerships</h4>
-            <p className="text-sm text-muted-foreground">Banks you have tie-ups with (optional)</p>
-          </div>
-          <span className="text-sm text-muted-foreground">
-            {form.watch('bankPartnerships')?.length || 0} selected
-          </span>
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Select onValueChange={(value) => handleAddItem('bankPartnerships', value)}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Add bank partnership" />
-              </SelectTrigger>
-              <SelectContent>
-                 {bankOptions.map((bank: string) => (
-                  <SelectItem key={bank} value={bank}>{bank}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Other bank"
-                value={newBank}
-                onChange={(e) => setNewBank(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    handleAddItem('bankPartnerships', newBank)
-                  }
-                }}
-                className="min-w-0"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => handleAddItem('bankPartnerships', newBank)}
-                disabled={!newBank.trim()}
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2 min-h-[40px]">
-            {form.watch('bankPartnerships')?.map((bank: string) => (
-              <Badge key={bank} variant="outline" className="gap-1 py-1.5 px-3">
-                <Banknote className="h-3 w-3" />
-                {bank}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveItem('bankPartnerships', bank)}
-                  className="hover:text-destructive"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </Badge>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Step 4: Registration Information
-function Step4RegistrationInfo({ form }: any) {
-  return (
-    <div className="space-y-6">
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Registration Details</h3>
-        <p className="text-muted-foreground">
-          Provide your registration details for verification
-        </p>
-        
-        <FormField
-          control={form.control}
-          name="registrationNumber"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Registration Number *</FormLabel>
-              <FormControl>
-                 <Input placeholder="State registration or EIN" {...field} />
-              </FormControl>
-              <FormDescription>
-                Your business registration number for verification
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Licensing</h3>
 
         <div className="grid gap-4 md:grid-cols-2">
           <FormField
             control={form.control}
-            name="panNumber"
+            name="nmls"
             render={({ field }) => (
               <FormItem>
-                 <FormLabel>Tax ID Number</FormLabel>
-                 <FormControl>
-                   <Input
-                     placeholder="XX-XXXXXXX"
-                     {...field}
-                    onChange={(e) => {
-                      const value = e.target.value.toUpperCase()
-                      field.onChange(value)
-                    }}
-                  />
+                <FormLabel>NMLS ID *</FormLabel>
+                <FormControl>
+                  <Input placeholder="12345678" inputMode="numeric" {...field} />
                 </FormControl>
                 <FormDescription>
-                  10-character Permanent Account Number
+                  Your National Multistate Licensing System identifier (4–10 digits).
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -1016,163 +759,61 @@ function Step4RegistrationInfo({ form }: any) {
 
           <FormField
             control={form.control}
-            name="gstNumber"
+            name="licenseStates"
             render={({ field }) => (
               <FormItem>
-                 <FormLabel>Tax ID / EIN</FormLabel>
-                 <FormControl>
-                   <Input placeholder="12-3456789" {...field} />
-                 </FormControl>
-                 <FormDescription>
-                   9-digit Employer Identification Number
-                 </FormDescription>
+                <FormLabel>License States *</FormLabel>
+                <FormControl>
+                  <div className="space-y-2">
+                    <Select
+                      onValueChange={(value) => {
+                        const current = field.value || []
+                        if (!current.includes(value)) field.onChange([...current, value])
+                      }}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Add a licensed state" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {US_STATES.filter((state) => !(field.value || []).includes(state.code)).map((state) => (
+                          <SelectItem key={state.code} value={state.code}>{state.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <div className="flex flex-wrap gap-1.5">
+                      {(field.value || []).map((code: string) => (
+                        <Badge key={code} variant="outline" className="gap-1 py-1 px-2.5">
+                          {US_STATES.find((state) => state.code === code)?.name || code}
+                          <button
+                            type="button"
+                            aria-label={`Remove ${code}`}
+                            onClick={() => field.onChange((field.value || []).filter((c: string) => c !== code))}
+                            className="hover:text-destructive"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
-      </div>
-    </div>
-  )
-}
 
-// Step 5: Verification Documents
-function Step5Documents({ form, uploadedDocs, onUpload, onRemove }: any) {
-  const documents = [
-    {
-      id: 'panCard',
-      label: 'Tax ID Document',
-      description: 'Upload clear image of your tax ID document',
-      required: true
-    },
-    {
-      id: 'aadhaarCard',
-      label: 'Government ID',
-      description: 'Upload front and back of government-issued photo ID',
-      required: true
-    },
-    {
-      id: 'addressProof',
-      label: 'Address Proof',
-      description: 'Utility bill or bank statement',
-      required: true
-    }
-  ]
-
-  const handleFileChange = (field: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      onUpload(field, file)
-    }
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="space-y-4">
-        <h3 className="text-lg font-medium">Verification Documents</h3>
-        <p className="text-muted-foreground">
-          Upload required documents for verification. All documents are securely stored and only used for verification purposes.
+        <p className="text-xs text-muted-foreground">
+          License States are the states where you report being licensed. NMLS format validation does not perform
+          external NMLS verification.
         </p>
       </div>
-
-      <div className="space-y-4">
-        {documents.map((doc) => {
-          const isUploaded = uploadedDocs[doc.id]
-          
-          return (
-            <div key={doc.id} className="border rounded-lg p-4">
-              <div className="flex items-start justify-between mb-2">
-                <div>
-                  <h4 className="font-medium flex items-center gap-2">
-                    {doc.label}
-                    {doc.required && <span className="text-xs text-destructive">*Required</span>}
-                  </h4>
-                  <p className="text-sm text-muted-foreground">{doc.description}</p>
-                </div>
-                
-                {isUploaded ? (
-                  <Badge variant="outline" className="gap-1 bg-green-50 text-green-700 border-green-200">
-                    <CheckCircle className="h-3 w-3" />
-                    Uploaded
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="text-muted-foreground">
-                    Pending
-                  </Badge>
-                )}
-              </div>
-              
-              {isUploaded ? (
-                <div className="mt-3 p-3 bg-green-50 rounded border border-green-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-success" />
-                      <span className="font-medium text-success">{isUploaded.name}</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => window.open(isUploaded.url, '_blank')}
-                      >
-                        View
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onRemove(doc.id)}
-                        className="text-destructive hover:text-destructive hover:border-destructive/40"
-                      >
-                        Remove
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="mt-3">
-                  <label htmlFor={`upload-${doc.id}`}>
-                    <div className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-foreground/25 transition-colors">
-                      <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">Click to upload or drag and drop</p>
-                      <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG up to 5MB</p>
-                    </div>
-                    <input
-                      id={`upload-${doc.id}`}
-                      type="file"
-                      accept=".pdf,.jpg,.jpeg,.png"
-                      onChange={(e) => handleFileChange(doc.id, e)}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
-
-      <div className="bg-info/10 border border-info/25 rounded-lg p-4">
-        <div className="flex items-start gap-3">
-          <Shield className="h-5 w-5 text-info mt-0.5" />
-          <div>
-            <h4 className="font-medium text-info mb-1">Document Security</h4>
-            <ul className="text-sm text-info space-y-1">
-              <li>• All documents are encrypted and securely stored</li>
-              <li>• Documents are only used for verification purposes</li>
-              <li>• We never share your documents with third parties</li>
-              <li>• Verification typically takes 2-3 business days</li>
-            </ul>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
 
-// Step 6: Review
-function Step6Review({ form, uploadedDocs }: any) {
+// Step 4: Review
+function Step6Review({ form, onEditStep }: any) {
   const formValues = form.getValues()
 
   const formatValue = (value: any) => {
@@ -1184,112 +825,96 @@ function Step6Review({ form, uploadedDocs }: any) {
 
   const sections = [
     {
-      title: 'Basic Information',
+      title: 'Profile',
       icon: Building,
+      step: 1,
       fields: [
         { label: 'Display Name', value: formValues.displayName },
         { label: 'Company Name', value: formValues.companyName || 'Not provided' },
-        { label: 'Description', value: formValues.description },
         { label: 'Profile URL', value: `homeloanmarket.com/${formValues.profileSlug}` },
+        { label: 'About', value: formValues.description },
       ]
     },
     {
-      title: 'Contact Details',
+      title: 'Contact & Office',
       icon: Phone,
+      step: 2,
       fields: [
-        { label: 'Phone Number', value: formValues.phone },
-        { label: 'WhatsApp Number', value: formValues.whatsapp || 'Not provided' },
+        { label: 'Phone', value: formValues.phone },
+        { label: 'WhatsApp', value: formValues.whatsapp || 'Not provided' },
         { label: 'Business Email', value: formValues.email || 'Not provided' },
         { label: 'Website', value: formValues.website || 'Not provided' },
         { label: 'Office Address', value: formValues.officeAddress },
-        { label: 'City', value: formValues.city },
-        { label: 'State', value: formValues.state },
-        { label: 'ZIP Code', value: formValues.zipCode },
+        { label: 'City / State / ZIP', value: [formValues.city, formValues.state, formValues.pinCode].filter(Boolean).join(', ') },
       ]
     },
     {
-      title: 'Professional Information',
-      icon: Briefcase,
+      title: 'Licensing',
+      icon: Shield,
+      step: 3,
       fields: [
         { label: 'Years of Experience', value: `${formValues.experienceYears} years` },
-        { label: 'Bank Partnerships', value: formatValue(formValues.bankPartnerships) },
+        { label: 'NMLS ID', value: formValues.nmls || 'Not provided' },
+        { label: 'License States', value: formatValue(formValues.licenseStates) },
       ]
     },
-    // {
-    //   title: 'Registration Details',
-    //   icon: Shield,
-    //   fields: [
-    //     { label: 'Registration Number', value: formValues.registrationNumber },
-    //     { label: 'Tax ID / EIN', value: formValues.gstNumber || 'Not provided' },
-    //   ]
-    // },
-    // {
-    //   title: 'Documents Uploaded',
-    //   icon: FileText,
-    //   fields: Object.keys(uploadedDocs).map(key => ({
-    //     label: key.replace(/([A-Z])/g, ' $1').trim(),
-    //     value: uploadedDocs[key].name
-    //   }))
-    // }
+    {
+      title: 'Profile Media',
+      icon: Briefcase,
+      step: 1,
+      fields: [
+        { label: 'Profile Photo', value: formValues.profileImage ? 'Uploaded' : 'Not provided' },
+        { label: 'Cover Photo', value: formValues.coverImage ? 'Uploaded' : 'Not provided' },
+        { label: 'Company Logo', value: formValues.logo ? 'Uploaded' : 'Not provided' },
+      ]
+    },
   ]
 
   return (
-    <div className="space-y-8">
-      <div className="text-center">
-        <div className="h-16 w-16 rounded-full bg-success/15 flex items-center justify-center mx-auto mb-4">
-          <CheckCircle className="h-8 w-8 text-success" />
-        </div>
-        <h3 className="text-2xl font-bold text-foreground mb-2">Review Your Application</h3>
-        <p className="text-muted-foreground max-w-2xl mx-auto">
-          Please review all information before submitting. You can go back to any step to make changes.
-        </p>
+    <div className="space-y-5">
+      <div className="flex items-center gap-2">
+        <CheckCircle className="h-5 w-5 text-success" aria-hidden="true" />
+        <h3 className="text-lg font-semibold text-foreground">Review your information</h3>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-3">
         {sections.map((section, index) => (
-          <div key={index} className="border rounded-lg overflow-hidden">
-            <div className="bg-muted px-6 py-4 border-b">
-              <div className="flex items-center gap-3">
-                <section.icon className="h-5 w-5 text-muted-foreground" />
-                <h4 className="font-medium text-foreground">{section.title}</h4>
+          <div key={index} className="overflow-hidden rounded-lg border">
+            <div className="flex items-center justify-between border-b bg-muted/50 px-4 py-2.5">
+              <div className="flex items-center gap-2">
+                <section.icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                <h4 className="text-sm font-medium text-foreground">{section.title}</h4>
               </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onEditStep(section.step)}
+              >
+                Edit
+              </Button>
             </div>
-            <div className="p-6">
-              <div className="grid gap-4 md:grid-cols-2">
-                {section.fields.map((field, idx) => (
-                  <div key={idx}>
-                    <div className="text-sm text-muted-foreground mb-1">{field.label}</div>
-                    <div className="font-medium text-foreground">{formatValue(field.value)}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <dl className="grid gap-x-6 gap-y-2.5 px-4 py-3 sm:grid-cols-2">
+              {section.fields.map((field, idx) => (
+                <div key={idx} className="min-w-0">
+                  <dt className="text-xs text-muted-foreground">{field.label}</dt>
+                  <dd className="truncate text-sm font-medium text-foreground">{formatValue(field.value)}</dd>
+                </div>
+              ))}
+            </dl>
           </div>
         ))}
       </div>
 
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-        <div className="flex items-start gap-3">
-          <Shield className="h-6 w-6 text-warning mt-0.5 flex-shrink-0" />
-          <div>
-            <h4 className="font-medium text-yellow-900 mb-2">Important Information</h4>
-            <ul className="space-y-2 text-sm text-yellow-800">
-              <li className="flex items-start gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-yellow-600 mt-1.5 flex-shrink-0" />
-                <span>Your application will be reviewed within 2-3 business days</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-yellow-600 mt-1.5 flex-shrink-0" />
-                <span>You will receive email updates about your verification status</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-yellow-600 mt-1.5 flex-shrink-0" />
-                <span>Once verified, your profile will be visible in the broker directory</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <div className="h-1.5 w-1.5 rounded-full bg-yellow-600 mt-1.5 flex-shrink-0" />
-                <span>You can update your profile information anytime after verification</span>
-              </li>
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/40">
+        <div className="flex items-start gap-2.5">
+          <Shield className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" aria-hidden="true" />
+          <div className="space-y-1 text-sm text-amber-800 dark:text-amber-200">
+            <p className="font-medium">After you submit</p>
+            <ul className="space-y-1">
+              <li>Your application will be reviewed within 2–3 business days.</li>
+              <li>You will receive email updates about your verification status.</li>
+              <li>You can update your profile information anytime after verification.</li>
             </ul>
           </div>
         </div>

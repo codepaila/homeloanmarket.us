@@ -45,6 +45,9 @@ import { Switch } from '@/components/ui/switch'
 import { useUserPermissions } from '@/hooks/useCurrentUser'
 import ImageUpload from '@/components/ImageUpload'
 import { ProfileImageUpload } from '@/components/brokers/ProfileImageUpload'
+import { CoverImageUpload } from '@/components/brokers/CoverImageUpload'
+import { USLocationPicker, type SelectedUSLocation } from '@/components/location/USLocationPicker'
+import { US_STATES } from '@/lib/us-states'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 // Form Schema based on Prisma schema
@@ -55,7 +58,6 @@ const profileSchema = z.object({
   description: z.string().min(20, 'Description must be at least 20 characters'),
   profileSlug: z.string().min(2, 'Profile slug must be at least 2 characters'),
   logo: z.string().optional(),
-  coverImage: z.string().optional(),
 
   // Contact Information
   phone: z.string().min(10, 'Phone number must be at least 10 digits'),
@@ -67,14 +69,27 @@ const profileSchema = z.object({
   officeAddress: z.string().min(10, 'Address must be at least 10 characters'),
   city: z.string().min(2, 'City must be at least 2 characters'),
   state: z.string().min(2, 'State must be at least 2 characters'),
-  zipCode: z.string().length(5, 'ZIP Code must be 5 digits'),
+  pinCode: z.string().length(5, 'ZIP Code must be 5 digits'),
+  location: z.object({
+    placeId: z.string(),
+    normalizedAddress: z.string(),
+    city: z.string(),
+    state: z.string(),
+    zip: z.string(),
+    latitude: z.number(),
+    longitude: z.number(),
+  }).optional(),
 
   // Professional Details
   experienceYears: z.coerce.number().min(0, 'Experience cannot be negative').max(50, 'Maximum 50 years'),
 
+  // US Licensing
+  nmls: z.string().trim().regex(/^\d{4,10}$/, 'NMLS ID must be 4–10 digits'),
+  licenseStates: z.array(z.string()).min(1, 'Select at least one licensed state'),
+
   // Additional Info
   registrationNumber: z.string().optional(),
-  panNumber: z.string().length(10, 'Tax ID must be 10 characters').optional().or(z.literal('')),
+  panNumber: z.string().max(20, 'Tax ID / EIN must be 20 characters or fewer').optional().or(z.literal('')),
 
   // Social Links
   facebook: z.string().url().optional().or(z.literal('')),
@@ -90,6 +105,27 @@ type ProfileFormData = z.infer<typeof profileSchema>
 
 interface EditBrokerProfileProps {
   broker: any
+}
+
+// Build the location-picker shape from a saved Broker record so the selected
+// Google place (and its coordinates) is restored when editing the profile.
+function locationFromBroker(broker: any) {
+  if (!broker?.googlePlaceId) return undefined
+  const geo = broker.location && typeof broker.location === 'object'
+    ? broker.location as { coordinates?: unknown }
+    : null
+  const coordinates = Array.isArray(geo?.coordinates) && geo.coordinates.length === 2
+    ? (geo.coordinates as [number, number])
+    : null
+  return {
+    placeId: broker.googlePlaceId,
+    normalizedAddress: broker.normalizedAddress || broker.officeAddress || '',
+    city: broker.city || '',
+    state: broker.state || '',
+    zip: broker.pinCode || '',
+    latitude: coordinates ? coordinates[1] : 0,
+    longitude: coordinates ? coordinates[0] : 0,
+  }
 }
 
 export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
@@ -109,7 +145,6 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
       description: broker?.description || '',
       profileSlug: broker?.profileSlug || '',
       logo: broker?.logo || '',
-      coverImage: broker?.coverImage || '',
 
       phone: broker?.phone || '',
       whatsapp: broker?.whatsapp || '',
@@ -119,9 +154,12 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
       officeAddress: broker?.officeAddress || '',
       city: broker?.city || '',
       state: broker?.state || '',
-      zipCode: broker?.zipCode || '',
+      pinCode: broker?.pinCode || '',
+      location: locationFromBroker(broker),
 
       experienceYears: broker?.experienceYears || 0,
+      nmls: broker?.nmls || '',
+      licenseStates: Array.isArray(broker?.licenseStates) ? broker.licenseStates : [],
 
       registrationNumber: broker?.registrationNumber || '',
       panNumber: broker?.panNumber || '',
@@ -147,7 +185,6 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
         tabData.description = formData.description
         tabData.profileSlug = formData.profileSlug
         tabData.logo = formData.logo
-        tabData.coverImage = formData.coverImage
         break
       case 'contact':
         tabData.phone = formData.phone
@@ -157,10 +194,13 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
         tabData.officeAddress = formData.officeAddress
         tabData.city = formData.city
         tabData.state = formData.state
-        tabData.zipCode = formData.zipCode
+        tabData.pinCode = formData.pinCode
+        tabData.location = formData.location
         break
       case 'professional':
         tabData.experienceYears = formData.experienceYears
+        tabData.nmls = formData.nmls
+        tabData.licenseStates = formData.licenseStates
         break
       case 'additional':
         tabData.registrationNumber = formData.registrationNumber
@@ -311,6 +351,20 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
                   </div>
 
                   <div className="space-y-4">
+                    <FormLabel>Cover Photo</FormLabel>
+                    <CoverImageUpload
+                      value={broker?.coverImage}
+                      uploadUrl="/api/brokers/me/cover-image"
+                      removeUrl="/api/brokers/me/cover-image"
+                      onUploaded={() => router.refresh()}
+                      label="Cover photo"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Upload from your device only — the admin Media Library is never used for broker profile photos.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
                     <FormLabel>Company Logo</FormLabel>
                     <FormField
                       control={form.control}
@@ -411,29 +465,6 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
                       </FormItem>
                     )}
                   />
-                  <div className="space-y-4">
-                    <FormLabel>Cover Image</FormLabel>
-                    <FormField
-                      control={form.control}
-                      name="coverImage"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormControl>
-                            <ImageUpload
-                              value={field.value}
-                              onChange={field.onChange}
-                              type="cover"
-                              aspectRatio="cover"
-                            />
-                          </FormControl>
-                          <FormDescription className="text-xs">
-                            Recommended: 1920×640px. This appears at the top of your profile
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
                   <FormField
                     control={form.control}
                     name="description"
@@ -575,6 +606,34 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
 
                   <FormField
                     control={form.control}
+                    name="location"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <USLocationPicker
+                            value={field.value as SelectedUSLocation | undefined}
+                            onChange={(location) => {
+                              field.onChange(location)
+                              if (location) {
+                                form.setValue('officeAddress', location.normalizedAddress)
+                                form.setValue('city', location.city)
+                                form.setValue('state', location.state)
+                                form.setValue('pinCode', location.zip)
+                              }
+                            }}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* The address fields below are auto-filled from the selected
+                      Google place. Manually editing any of them clears the place
+                      selection so the stored coordinates can never mismatch the
+                      address text — the broker must re-select a place. */}
+                  <FormField
+                    control={form.control}
                     name="officeAddress"
                     render={({ field }) => (
                       <FormItem>
@@ -586,6 +645,10 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
                               placeholder="Enter complete office address"
                               className="pl-10"
                               {...field}
+                              onChange={(event) => {
+                                field.onChange(event)
+                                form.setValue('location', undefined)
+                              }}
                             />
                           </div>
                         </FormControl>
@@ -602,7 +665,14 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
                         <FormItem>
                           <FormLabel>City *</FormLabel>
                           <FormControl>
-                            <Input placeholder="City" {...field} />
+                            <Input
+                              placeholder="City"
+                              {...field}
+                              onChange={(event) => {
+                                field.onChange(event)
+                                form.setValue('location', undefined)
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -616,7 +686,14 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
                         <FormItem>
                           <FormLabel>State *</FormLabel>
                           <FormControl>
-                            <Input placeholder="State" {...field} />
+                            <Input
+                              placeholder="State"
+                              {...field}
+                              onChange={(event) => {
+                                field.onChange(event)
+                                form.setValue('location', undefined)
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -625,12 +702,20 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
 
                     <FormField
                       control={form.control}
-                      name="zipCode"
+                      name="pinCode"
                       render={({ field }) => (
                         <FormItem>
                            <FormLabel>ZIP Code *</FormLabel>
                           <FormControl>
-                             <Input placeholder="12345" {...field} />
+                             <Input
+                               placeholder="12345"
+                               inputMode="numeric"
+                               {...field}
+                               onChange={(event) => {
+                                 field.onChange(event)
+                                 form.setValue('location', undefined)
+                               }}
+                             />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -694,6 +779,76 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
                             </div>
                           </div>
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* US Licensing */}
+                  <Separator />
+                  <FormField
+                    control={form.control}
+                    name="nmls"
+                    render={({ field }) => (
+                      <FormItem className="max-w-xs">
+                        <FormLabel>NMLS ID *</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="12345678"
+                            inputMode="numeric"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Your National Multistate Licensing System identifier (4–10 digits).
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="licenseStates"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>License States *</FormLabel>
+                        <FormControl>
+                          <div className="space-y-3">
+                            <Select
+                              onValueChange={(value) => {
+                                const current = field.value || []
+                                if (!current.includes(value)) field.onChange([...current, value])
+                              }}
+                            >
+                              <SelectTrigger className="w-full sm:max-w-xs">
+                                <SelectValue placeholder="Add a licensed state" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {US_STATES.filter((state) => !(field.value || []).includes(state.code)).map((state) => (
+                                  <SelectItem key={state.code} value={state.code}>{state.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <div className="flex flex-wrap gap-2 min-h-[40px]">
+                              {(field.value || []).map((code: string) => (
+                                <Badge key={code} variant="outline" className="gap-1 py-1.5 px-3">
+                                  {US_STATES.find((state) => state.code === code)?.name || code}
+                                  <button
+                                    type="button"
+                                    aria-label={`Remove ${code}`}
+                                    onClick={() => field.onChange((field.value || []).filter((c: string) => c !== code))}
+                                    className="hover:text-destructive"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          Select every US state where you are licensed to originate mortgages. At least one is required.
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -769,7 +924,7 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
                             />
                           </FormControl>
                           <FormDescription>
-                            10-character Permanent Account Number
+                            Your business tax identifier (EIN or individual tax ID)
                           </FormDescription>
                           <FormMessage />
                         </FormItem>

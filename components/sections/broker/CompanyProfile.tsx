@@ -47,6 +47,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { US_STATES } from '@/lib/us-states'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import Link from 'next/link'
@@ -72,10 +73,14 @@ const companyProfileSchema = z.object({
   
   // Professional Details
   experienceYears: z.coerce.number().min(0, 'Experience cannot be negative').max(50, 'Maximum 50 years'),
-  
+
+  // US Licensing
+  nmls: z.string().trim().regex(/^\d{4,10}$/, 'NMLS ID must be 4–10 digits'),
+  licenseStates: z.array(z.string()).min(1, 'Select at least one licensed state'),
+
   // Additional Info
   registrationNumber: z.string().optional(),
-  panNumber: z.string().length(10, 'Tax ID must be 10 characters').optional().or(z.literal('')),
+  panNumber: z.string().max(20, 'Tax ID / EIN must be 20 characters or fewer').optional().or(z.literal('')),
   
   // Profile settings
   isVisible: z.boolean().default(true),
@@ -145,6 +150,8 @@ export function CompanyProfile({ user, broker }: CompanyProfileProps) {
       zipCode: broker?.zipCode || '',
       
       experienceYears: broker?.experienceYears || 0,
+      nmls: broker?.nmls || '',
+      licenseStates: Array.isArray(broker?.licenseStates) ? broker.licenseStates : [],
       
       registrationNumber: broker?.registrationNumber || '',
       panNumber: broker?.panNumber || '',
@@ -476,6 +483,73 @@ export function CompanyProfile({ user, broker }: CompanyProfileProps) {
                     </FormControl>
                     <FormDescription>
                       This appears on your public profile
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="nmls"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>NMLS ID *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="12345678" inputMode="numeric" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Your National Multistate Licensing System identifier (4–10 digits).
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="licenseStates"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>License States *</FormLabel>
+                    <FormControl>
+                      <div className="space-y-3">
+                        <Select
+                          onValueChange={(value) => {
+                            const current = field.value || []
+                            if (!current.includes(value)) field.onChange([...current, value])
+                          }}
+                        >
+                          <SelectTrigger className="w-full sm:max-w-xs">
+                            <SelectValue placeholder="Add a licensed state" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {US_STATES.filter((state) => !(field.value || []).includes(state.code)).map((state) => (
+                              <SelectItem key={state.code} value={state.code}>{state.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <div className="flex flex-wrap gap-2 min-h-[40px]">
+                          {(field.value || []).map((code: string) => (
+                            <Badge key={code} variant="outline" className="gap-1 py-1.5 px-3">
+                              {US_STATES.find((state) => state.code === code)?.name || code}
+                              <button
+                                type="button"
+                                aria-label={`Remove ${code}`}
+                                onClick={() => field.onChange((field.value || []).filter((c: string) => c !== code))}
+                                className="hover:text-destructive"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </FormControl>
+                    <FormDescription>
+                      Select every US state where you are licensed to originate mortgages. At least one is required.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

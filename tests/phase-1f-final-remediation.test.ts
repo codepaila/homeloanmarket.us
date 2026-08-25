@@ -17,7 +17,7 @@ test('Phase 1F C3: company edit passes an explicit broker DTO without subscripti
 
 test('Phase 1F checkout: Stripe idempotency is server-derived and request remains validated', () => {
   const source = read('app/api/subscription/checkout/route.ts')
-  assert.ok(source.includes('validatePlanPrice(plan, priceId)'))
+  assert.ok(source.includes('validateBrokerPlanForCheckout'))
   assert.ok(source.includes('const idempotencyKey = `checkout_${user.id}_${customerId}_${plan}_${priceId}`'))
   assert.ok(source.includes('idempotencyKey,'))
   assert.ok(source.includes('getCurrentUser()'))

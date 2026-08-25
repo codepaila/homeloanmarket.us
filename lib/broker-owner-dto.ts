@@ -39,6 +39,8 @@ type BrokerOwnerSource = {
   experienceYears: number
   registrationNumber: string | null
   panNumber: string | null
+  nmls: string | null
+  licenseStates: string[]
   verificationStatus: string
   verifiedAt: Date | null
   brokerStatus: string
@@ -76,6 +78,8 @@ export function toBrokerOwnerDto(
     experienceYears: broker.experienceYears,
     registrationNumber: broker.registrationNumber,
     panNumber: broker.panNumber,
+    nmls: broker.nmls,
+    licenseStates: broker.licenseStates || [],
     verificationStatus: broker.verificationStatus,
     verifiedAt: broker.verifiedAt,
     brokerStatus: broker.brokerStatus,

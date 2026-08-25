@@ -43,7 +43,8 @@ export default function SubscriptionPage() {
   const [usageData, setUsageData] = useState<any>(null)
   const [subscriptionData, setSubscriptionData] = useState<any>(null)
   const [portalLoading, setPortalLoading] = useState(false)
-  const { plans: availablePlans } = useSubscriptionPlans()
+  const { plans: availablePlans, error: plansError, isLoading: plansLoading, mutate: refetchPlans } =
+    useSubscriptionPlans()
 
   async function fetchSubscriptionData() {
     try {
@@ -116,7 +117,7 @@ export default function SubscriptionPage() {
 
   if (loading || sessionStatus === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex items-center justify-center py-24">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Loading subscription information...</p>
@@ -155,7 +156,7 @@ export default function SubscriptionPage() {
   const status = statusConfig[subscriptionStatus] || statusConfig.INACTIVE
 
   return (
-    <div className="max-w-7xl mx-auto py-8 px-4">
+    <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-2">Subscription Management</h1>
@@ -307,24 +308,7 @@ export default function SubscriptionPage() {
 
           {/* Quick Stats */}
           {usageData && (
-            <div className="grid gap-6 md:grid-cols-3">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Monthly Leads</p>
-                      <p className="text-2xl font-bold mt-1">
-                        {usageData.usage?.monthlyLeads || 0}
-                      </p>
-                    </div>
-                    <MessageSquare className="h-10 w-10 text-green-100 bg-green-500/20 p-2 rounded-lg" />
-                  </div>
-                  <div className="mt-4 text-sm text-muted-foreground">
-                    Total leads: {usageData.usage?.totalLeads || 0}
-                  </div>
-                </CardContent>
-              </Card>
-
+            <div className="grid gap-6 md:grid-cols-2">
               <Card>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -399,6 +383,9 @@ export default function SubscriptionPage() {
             onSelectPlan={handleCheckout}
             subscriptionStatus={subscriptionStatus}
             plans={Array.isArray(availablePlans) ? availablePlans : []}
+            isLoading={plansLoading}
+            error={plansError}
+            onRetry={() => refetchPlans()}
           />
         </TabsContent>
 

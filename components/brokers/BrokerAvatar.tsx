@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { Building2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { BrokerSubscriptionBadge } from './BrokerSubscriptionBadge'
 
 export function BrokerAvatar({
   src,
@@ -50,6 +51,8 @@ export function BrokerAvatar({
           {initials ? <span className="text-base font-semibold">{initials}</span> : <Building2 className="h-6 w-6 text-muted-foreground" />}
         </div>
       )}
+   
     </div>
+
   )
 }

@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
         displayOrder: input.displayOrder ?? 0,
       },
     })
+    console.info('Admin created company advertising plan', { adminId: user.id, planId: plan.id })
     return NextResponse.json({ success: true, plan }, { status: 201 })
   } catch (error) {
     console.error('Admin company advertising plan create failed', error)

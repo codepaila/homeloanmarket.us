@@ -9,9 +9,12 @@ import { hasPaidEntitlement, isMortgageExpertBroker, publicBrokerWhere } from '@
 import { BROKER_PLAN_FEATURES, brokerSubscriptionHasFeature } from '@/lib/broker-plans'
 import { toPublicBrokerRecord } from '@/lib/public-broker'
 import { createBrokerForExistingUser } from '@/lib/broker-registration'
+import { validateLicenseStates, normalizeNmls, nmlsValidationError } from '@/lib/broker-licensing'
 import { findBrokerIdsWithinRadius } from '@/lib/location/broker-geo'
 import { resolveUSPlace } from '@/lib/location/google-place'
+import { requireValidResolvedUSLocation } from '@/lib/location/broker-location'
 import { verifySearchLocationToken } from '@/lib/location/search-token'
+import { isSameOriginRequest } from '@/lib/origin'
 
 export async function GET(request: Request) {
   try {
@@ -247,6 +250,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    if (!isSameOriginRequest(request)) {
+      return NextResponse.json({ message: 'Invalid request origin' }, { status: 403 })
+    }
+
     const currentUser = await getCurrentUser()
 
     if (!currentUser) {
@@ -286,37 +293,48 @@ export async function POST(request: Request) {
 
     const body = await request.json()
 
+    // The office location is authoritative: the server re-resolves the Google
+    // place ID selected on the client and derives the canonical structured
+    // fields (officeAddress, city, state, pinCode, coordinates, place ID)
+    // from the verified result. Arbitrary client-supplied address text is
+    // never trusted, so a mismatched combination cannot be persisted.
+    const placeId = body.location && typeof body.location === 'object' && typeof (body.location as { placeId?: unknown }).placeId === 'string'
+      ? (body.location as { placeId: string }).placeId.trim()
+      : ''
+    if (!placeId) {
+      return NextResponse.json({ message: 'A validated US office location is required' }, { status: 400 })
+    }
     let resolvedLocation
-    if (currentUser.brokerRegistration) {
-      const placeId = body.location && typeof body.location.placeId === 'string' ? body.location.placeId : ''
-      if (!placeId) {
-        return NextResponse.json({ message: 'A validated US office location is required' }, { status: 400 })
-      }
-      try {
-        resolvedLocation = await resolveUSPlace(placeId)
-      } catch (error) {
-        return NextResponse.json({ message: error instanceof Error ? error.message : 'Office location could not be validated' }, { status: 400 })
-      }
+    try {
+      resolvedLocation = await resolveUSPlace(placeId)
+      requireValidResolvedUSLocation(resolvedLocation)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Office location could not be validated'
+      return NextResponse.json({ message }, { status: 400 })
     }
 
-    // The onboarding wizard submits the postal code as `zipCode`; the canonical
-    // schema field is `pinCode`. Accept either input and map to `pinCode`.
-    const pinCode = typeof body.pinCode === 'string' && body.pinCode.trim()
-      ? body.pinCode.trim()
-      : typeof body.zipCode === 'string' ? body.zipCode.trim() : ''
-
-    // Validate required fields based on your schema
+    // Validate required broker profile fields.
     const requiredFields: Array<keyof typeof body & string> = [
       'displayName',
       'phone',
-      'officeAddress',
-      'city',
-      'state',
-      'description'
+      'description',
     ]
 
     const missingFields = requiredFields.filter(field => !body[field])
-    if (!pinCode) missingFields.push('pinCode' as never)
+
+    // NMLS + licensed states are required to complete US broker onboarding.
+    const nmls = normalizeNmls(body.nmls)
+    const nmlsError = nmlsValidationError(nmls)
+    if (nmlsError) {
+      return NextResponse.json(
+        { message: nmlsError },
+        { status: 422 },
+      )
+    }
+    const licenseStatesResult = validateLicenseStates(body.licenseStates)
+    if (!licenseStatesResult.ok) {
+      return NextResponse.json({ message: licenseStatesResult.error }, { status: 422 })
+    }
 
     if (missingFields.length > 0) {
       return NextResponse.json(
@@ -332,12 +350,13 @@ export async function POST(request: Request) {
       profileSlug: body.profileSlug,
       phone: body.phone,
       email: body.email || null,
-      officeAddress: body.officeAddress,
-      city: body.city,
-      state: body.state,
-      pinCode,
+      logo: typeof body.logo === 'string' ? body.logo : '',
+      profileImage: typeof body.profileImage === 'string' ? body.profileImage : '',
+      coverImage: typeof body.coverImage === 'string' ? body.coverImage : '',
       experienceYears: Number(body.experienceYears) || 0,
       bankPartnerships: Array.isArray(body.bankPartnerships) ? body.bankPartnerships : [],
+      nmls,
+      licenseStates: licenseStatesResult.states,
       location: resolvedLocation,
     })
 

@@ -41,6 +41,7 @@ import type { MediaAsset } from '@/lib/advertisements/types'
 import type { AdvertisementFormat } from '@/lib/advertisements/formats'
 import { ADVERTISEMENT_FORMAT_INFO, getPlacementFormats } from '@/lib/advertisements/formats'
 import { getAdvertisementLayout } from '@/components/advertisements/ad-layout'
+import { formatAspectClass, formatAspectRatio } from '@/lib/advertisements/formatAspect'
 
 interface PreviewAdPageProps {
   params: Promise<{ id: string }>
@@ -225,7 +226,8 @@ export default function PreviewAdPage({ params }: PreviewAdPageProps) {
                           title={ad.title}
                           buttonLabel={ad.buttonLabel}
                           action={ad.action}
-                        />
+                         format={activePreviewFormat}
+/>
                       </div>
                     </div>
                   </div>
@@ -248,7 +250,8 @@ export default function PreviewAdPage({ params }: PreviewAdPageProps) {
                           title={ad.title}
                           buttonLabel={ad.buttonLabel}
                           action={ad.action}
-                        />
+                         format={activePreviewFormat}
+/>
                       </div>
                     </div>
                   </div>
@@ -271,7 +274,8 @@ export default function PreviewAdPage({ params }: PreviewAdPageProps) {
                           title={ad.title}
                           buttonLabel={ad.buttonLabel}
                           action={ad.action}
-                        />
+                         format={activePreviewFormat}
+/>
                       </div>
                     </div>
                   </div>
@@ -406,6 +410,7 @@ function PlacementPreviewRenderer({
   title,
   buttonLabel,
   action,
+  format,
 }: {
   placement: string
   media: MediaAsset | undefined
@@ -413,6 +418,7 @@ function PlacementPreviewRenderer({
   title: string
   buttonLabel: string | null | undefined
   action: string
+  format?: AdvertisementFormat | null
 }) {
   if (!placement) {
     return (
@@ -427,6 +433,44 @@ function PlacementPreviewRenderer({
 
   const imageUrl = media?.fileUrl || bannerUrl || undefined
   const layout = getAdvertisementLayout(placement)
+  const hasText = Boolean(title || (buttonLabel && (action === 'BUTTON_ONLY' || action === 'BANNER_AND_BUTTON')))
+
+  if (placement === 'BROKER_LISTING_LOCAL') {
+    // The real public broker-listing placement is a compact responsive card
+    // grid (3 → 2 → 1 columns). Each card's aspect ratio derives from its
+    // creative format (SQUARE 1:1, BANNER 2:1), never a forced square.
+    const aspectClass = formatAspectClass(format)
+    const formatLabel = format ? ADVERTISEMENT_FORMAT_INFO[format].label : ''
+    return (
+      <div className="space-y-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {[0, 1, 2].map((index) => (
+            <div key={index} className={cn('relative overflow-hidden rounded-md bg-muted', aspectClass)}>
+              {imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={imageUrl} alt={title || 'Preview'} className="absolute inset-0 h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-center">
+                  <ImageIcon className="h-6 w-6 text-text-muted mx-auto" />
+                  <p className="px-2 text-[10px] text-text-muted">No media selected</p>
+                </div>
+              )}
+              {hasText ? (
+                <div className="absolute inset-x-0 bottom-0 bg-black/60 p-2 pt-6 text-white">
+                  <p className="line-clamp-1 text-xs font-semibold">{title || 'Advertisement preview'}</p>
+                  {buttonLabel && (action === 'BUTTON_ONLY' || action === 'BANNER_AND_BUTTON') ? <span className="mt-1 inline-flex rounded bg-primary px-2 py-1 text-xs">{buttonLabel}</span> : null}
+                </div>
+              ) : null}
+            </div>
+          ))}
+        </div>
+        <p className="text-[11px] text-text-muted">
+          Renders responsively as compact cards: 3 columns (desktop) · 2 (tablet) · 1 (mobile).
+          {format ? ` Selected format ${formatLabel} — ${formatAspectRatio(format)}.` : ''}
+        </p>
+      </div>
+    )
+  }
 
   if (!imageUrl && !title) {
     return (

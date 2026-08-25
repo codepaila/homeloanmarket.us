@@ -119,6 +119,7 @@ export const appSidebarData = (user: SidebarUserInput): SidebarData => {
     ] },
     { title: "Content", url: "/admin/content", icon: FileSpreadsheet },
     { title: "FAQs", url: "/admin/faqs", icon: HelpCircle },
+    { title: "Support Tickets", url: "/admin/support/tickets", icon: HelpCircle },
     { title: "Settings", url: "/admin/settings", icon: Settings },
   ] : []
 
@@ -191,29 +192,29 @@ export const appSidebarData = (user: SidebarUserInput): SidebarData => {
     //     { title: "Performance Report", url: "/broker/analytics/report" },
     //   ]
     // },
-    {
-      title: "Messages",
-      url: "/broker/messages",
-      icon: MessageCircle,
-      badge: user.unreadContacts, // Unread messages count
-      // items: [
-      //   { title: "All Conversations", url: "/broker/messages" },
-      //   { title: "Unread Messages", url: "/broker/messages?filter=unread" },
-      //   { title: "Important", url: "/broker/messages?filter=important" },
-      // ]
-    },
+    // {
+    //   title: "Messages",
+    //   url: "/broker/messages",
+    //   icon: MessageCircle,
+    //   badge: user.unreadContacts, // Unread messages count
+    //   // items: [
+    //   //   { title: "All Conversations", url: "/broker/messages" },
+    //   //   { title: "Unread Messages", url: "/broker/messages?filter=unread" },
+    //   //   { title: "Important", url: "/broker/messages?filter=important" },
+    //   // ]
+    // },
     {
       title: "Support Tickets",
-      url: "/broker/support",
+      url: "/broker/support/tickets",
       icon: HelpCircle,
-      items: [
-        { title: "My Tickets", url: "/broker/support/tickets" },
-        { title: "Create Ticket", url: "/broker/support/create" },
-        { title: "FAQ", url: "/broker/support/faq" },
-        { title: "Priority Support", url: "/broker/support/priority", 
-          enabled: isPremiumBroker 
-        },
-      ]
+      // items: [
+      //   { title: "My Tickets", url: "/broker/support/tickets" },
+      //   // { title: "Create Ticket", url: "/broker/support/create" },
+      //   // { title: "FAQ", url: "/broker/support/faq" },
+      //   // { title: "Priority Support", url: "/broker/support/priority",
+      //   //   enabled: isPremiumBroker
+      //   // },
+      // ]
     },
   ] : []
 
@@ -306,40 +307,40 @@ export const appSidebarData = (user: SidebarUserInput): SidebarData => {
 
   // ==================== COMMON NAVIGATION ====================
   const commonNavItems: SidebarItem[] = [
-    {
-      title: "Notifications",
-      url: "/notifications",
-      icon: Bell,
-      badge: user?.unreadNotifications || 0,
-      items: [
-        { title: "All Notifications", url: "/notifications" },
-        { title: "Unread", url: "/notifications?filter=unread" },
-        { title: "Settings", url: "/notifications/settings" },
-      ]
-    },
-    {
-      title: "Settings",
-      url: "/settings",
-      icon: Settings,
-      items: [
-        { title: "Account Settings", url: "/settings/account" },
-        { title: "Profile", url: "/settings/profile" },
-        { title: "Security", url: "/settings/security" },
-        { title: "Notifications", url: "/settings/notifications" },
-        { title: "Preferences", url: "/settings/preferences" },
-      ]
-    },
-    {
-      title: "Help & Support",
-      url: "/support",
-      icon: HelpCircle,
-      items: [
-        { title: "Help Center", url: "/support/help" },
-        { title: "Contact Us", url: "/support/contact" },
-        { title: "Documentation", url: "/support/docs" },
-        { title: "Feedback", url: "/support/feedback" },
-      ]
-    },
+    // {
+    //   title: "Notifications",
+    //   url: "/notifications",
+    //   icon: Bell,
+    //   badge: user?.unreadNotifications || 0,
+    //   items: [
+    //     { title: "All Notifications", url: "/notifications" },
+    //     { title: "Unread", url: "/notifications?filter=unread" },
+    //     { title: "Settings", url: "/notifications/settings" },
+    //   ]
+    // },
+    // {
+    //   title: "Settings",
+    //   url: "/settings",
+    //   icon: Settings,
+    //   items: [
+    //     { title: "Account Settings", url: "/settings/account" },
+    //     { title: "Profile", url: "/settings/profile" },
+    //     { title: "Security", url: "/settings/security" },
+    //     { title: "Notifications", url: "/settings/notifications" },
+    //     { title: "Preferences", url: "/settings/preferences" },
+    //   ]
+    // },
+    // {
+    //   title: "Help & Support",
+    //   url: "/support",
+    //   icon: HelpCircle,
+    //   items: [
+    //     { title: "Help Center", url: "/support/help" },
+    //     { title: "Contact Us", url: "/support/contact" },
+    //     { title: "Documentation", url: "/support/docs" },
+    //     { title: "Feedback", url: "/support/feedback" },
+    //   ]
+    // },
   ]
 
   // ==================== COMBINE ALL NAVIGATION ====================
@@ -439,13 +440,6 @@ function getQuickActions(user: SidebarUserInput, options: {
         url: `/brokers/${user?.brokerProfile?.profileSlug || 'preview'}`,
         icon: UserIcon,
         color: "primary"
-      },
-      {
-        title: "New Leads",
-        url: "/broker/leads?status=NEW",
-        icon: MessageSquare,
-        color: "success",
-        badge: user?.brokerProfile?.totalLeads || 0
       },
       {
         title: "Upgrade Plan",

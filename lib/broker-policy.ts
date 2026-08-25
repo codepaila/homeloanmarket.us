@@ -103,6 +103,8 @@ export const BROKER_EDITABLE_FIELDS = [
   'experienceYears',
   'registrationNumber',
   'panNumber',
+  'nmls',
+  'licenseStates',
   'logo',
   'coverImage',
   'profileImage',

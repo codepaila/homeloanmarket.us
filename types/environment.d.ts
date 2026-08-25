@@ -3,7 +3,7 @@ namespace NodeJS {
   interface ProcessEnv {
     // Authentication (Auth.js) — AUTH_SECRET is the single authoritative secret.
     AUTH_SECRET: string;          // Sole secret for signing/decoding JWTs across Auth.js, proxy.ts, and claim-context.ts
-    AUTH_URL: string;             // Canonical base URL for authentication redirects (https://homeloanmarket.net)
+    AUTH_URL: string;             // Canonical base URL for authentication redirects (https://homeloanmarket.com)
     AUTH_GOOGLE_CLIENT_ID?: string; // Google OAuth Client ID
     AUTH_GOOGLE_CLIENT_SECRET?: string; // Google OAuth Client Secret
 
@@ -15,8 +15,8 @@ namespace NodeJS {
 
     // Public URLs
     NEXT_PUBLIC_API: string;      // Public API URL (optional, if used)
-    NEXT_PUBLIC_URL: string;      // Public app URL (https://homeloanmarket.net)
-    NEXT_PUBLIC_APP_URL: string;      // Public app URL (https://homeloanmarket.net)
+    NEXT_PUBLIC_URL: string;      // Public app URL (https://homeloanmarket.com)
+    NEXT_PUBLIC_APP_URL: string;      // Public app URL (https://homeloanmarket.com)
 
     UPSTASH_REDIS_REST_TOKEN: string;
 

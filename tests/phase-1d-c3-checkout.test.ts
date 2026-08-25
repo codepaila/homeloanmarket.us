@@ -2,7 +2,8 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
-import { stripePriceIds, validatePlanPrice } from '../lib/stripe'
+import { validatePlanPrice } from '../lib/stripe'
+import prisma from '@/lib/prisma'
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..')
 const read = (relative: string): string => fs.readFileSync(path.join(ROOT, relative), 'utf8')
@@ -33,14 +34,21 @@ test('Phase 1D checkout: public pricing UI sends the selected plan with its pric
   assert.ok(source.includes("fetch('/api/subscription/checkout'"))
 })
 
-test('Phase 1D checkout: server plan-price mapping remains authoritative', () => {
+test('Phase 1D checkout: server plan-price mapping remains authoritative', async () => {
   const source = read('app/api/subscription/checkout/route.ts')
   assert.ok(source.includes('const { priceId, plan } = await request.json()'))
   // Checkout validates the plan against the DB-backed dynamic plan system.
   assert.ok(source.includes('validateBrokerPlanForCheckout'))
-  assert.equal(validatePlanPrice('FEATURED', 'tampered-price'), null)
-  assert.equal(validatePlanPrice('FEATURED', stripePriceIds.FEATURED)?.name, 'FEATURED')
-  assert.equal(validatePlanPrice('FREE', ''), null)
+  // The registration validator resolves the FEATURED price from the database.
+  const featured = await prisma.brokerSubscriptionPlan.findFirst({ where: { code: 'FEATURED' }, select: { stripePriceId: true } })
+  if (featured?.stripePriceId) {
+    assert.equal((await validatePlanPrice('FEATURED', featured.stripePriceId))?.name, 'FEATURED')
+  } else {
+    // No DB plan / env price configured: the validator fails closed.
+    assert.equal(await validatePlanPrice('FEATURED', 'anything'), null)
+  }
+  assert.equal(await validatePlanPrice('FEATURED', 'tampered-price'), null)
+  assert.equal(await validatePlanPrice('FREE', ''), null)
 })
 
 test('Phase 1D checkout: API returns the URL shape consumed by the pricing UI', () => {

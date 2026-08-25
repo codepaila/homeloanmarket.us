@@ -82,34 +82,39 @@ export async function POST(request: NextRequest) {
       if (conflict) throw new CheckoutConflictError(conflict.reason || 'Checkout is unavailable')
 
       const idempotencyKey = `checkout_${user.id}_${customerId}_${plan}_${priceId}`
-      return stripe.checkout.sessions.create({
+      // Managed Payments is enabled by default on this account and rejects an
+      // explicit `payment_method_types`. Disable it for this session only (the
+      // account's products are not yet Managed-Payments eligible) — never
+      // globally. The price comes from the database plan.
+      const sessionParams = {
         customer: customerId,
-        payment_method_types: ['card'],
-        line_items: [
-          {
-            price: priceId,
-            quantity: 1
-          }
-        ],
-        mode: 'subscription',
+        line_items: [{ price: checkoutPlan.plan.stripePriceId!, quantity: 1 }],
+        mode: 'subscription' as const,
         success_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/broker/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/broker/subscription`,
         metadata: {
           userId: user.id,
           brokerId: user.brokerProfile!.id,
+          ownerType: 'BROKER',
           plan: checkoutPlan.plan.code
         },
         subscription_data: {
           metadata: {
             userId: user.id,
             brokerId: user.brokerProfile!.id,
+            ownerType: 'BROKER',
             plan: checkoutPlan.plan.code,
           },
         },
-        billing_address_collection: 'required',
-      }, {
-        idempotencyKey,
-      })
+        billing_address_collection: 'required' as const,
+        managed_payments: { enabled: false },
+      }
+      return stripe.checkout.sessions.create(
+        sessionParams as Stripe.Checkout.SessionCreateParams,
+        {
+          idempotencyKey,
+        },
+      )
     })
 
     console.info('Subscription checkout created', { correlationId, brokerId: user.brokerProfile.id, plan: checkoutPlan.plan.code })

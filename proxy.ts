@@ -86,6 +86,9 @@ export default async function proxy(request: NextRequest) {
       path.startsWith('/api/location') ||
       path.startsWith('/api/contacts/send') ||
       path.startsWith('/api/ads') ||
+      // Stripe webhook delivery is unauthenticated by design; the webhook route
+      // verifies the Stripe signature itself (the signature IS the auth).
+      path.startsWith('/api/stripe/webhook') ||
       path.startsWith('/about') ||
     path.startsWith('/contact') ||
     path.startsWith('/faq') ||

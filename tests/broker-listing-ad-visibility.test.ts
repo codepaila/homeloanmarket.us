@@ -12,6 +12,9 @@ async function makeUser(suffix: string) {
 async function makeSquareMedia(userId: string, suffix: string) {
   return prisma.mediaAsset.create({ data: { fileName: 'sq-' + suffix + '.webp', originalName: 'square.webp', fileUrl: '/uploads/sq-' + suffix + '.webp', mimeType: 'image/webp', extension: 'webp', fileSize: 100, width: 800, height: 800, uploaderId: userId, isDeleted: false } })
 }
+async function makeBannerMedia(userId: string, suffix: string) {
+  return prisma.mediaAsset.create({ data: { fileName: 'bn-' + suffix + '.webp', originalName: 'banner.webp', fileUrl: '/uploads/bn-' + suffix + '.webp', mimeType: 'image/webp', extension: 'webp', fileSize: 100, width: 1600, height: 800, uploaderId: userId, isDeleted: false } })
+}
 
 test('created BROKER_LISTING_LOCAL ad (no company) renders inside radius and is hidden outside', async () => {
   const suffix = Date.now() + '-' + Math.floor(Math.random() * 1e6)
@@ -64,7 +67,7 @@ test('created BROKER_LISTING_LOCAL ad (no company) renders inside radius and is 
   }
 })
 
-test('BROKER_LISTING_LOCAL requires a SQUARE creative at creation time', async () => {
+test('BROKER_LISTING_LOCAL requires a SQUARE or BANNER creative at creation time', async () => {
   const suffix = Date.now() + '-' + Math.floor(Math.random() * 1e6)
   let userId: string | undefined
   try {
@@ -72,7 +75,7 @@ test('BROKER_LISTING_LOCAL requires a SQUARE creative at creation time', async (
     userId = user.id
     await assert.rejects(
       () => AdvertisementService.create({
-        title: 'No Square ' + suffix,
+        title: 'No Creative ' + suffix,
         placement: 'BROKER_LISTING_LOCAL',
         type: 'SPONSORED_BANNER',
         action: 'DISPLAY_ONLY',
@@ -81,8 +84,8 @@ test('BROKER_LISTING_LOCAL requires a SQUARE creative at creation time', async (
         creativeAssignments: [],
         locationTarget: { locationLabel: 'Dallas, TX', countryCode: 'US', city: 'Dallas', state: 'TX', latitude: 32.7767, longitude: -96.797, radiusMiles: 25 },
       }),
-      /require a SQUARE creative/,
-      'BROKER_LISTING_LOCAL must reject an ad without a SQUARE creative',
+      /require a SQUARE or BANNER creative/,
+      'BROKER_LISTING_LOCAL must reject an ad without a SQUARE or BANNER creative',
     )
   } finally {
     if (userId) await prisma.user.deleteMany({ where: { id: userId } })
@@ -124,6 +127,89 @@ test('advertisement title is optional end-to-end', async () => {
     assert.ok(dallas.some((a) => a.id === ad.id), 'untitled ad must still render')
   } finally {
     if (adId) await prisma.advertisement.deleteMany({ where: { id: adId } })
+    if (mediaId) await prisma.mediaAsset.deleteMany({ where: { id: mediaId } })
+    if (userId) await prisma.user.deleteMany({ where: { id: userId } })
+  }
+})
+
+test('created BROKER_LISTING_LOCAL BANNER ad renders inside radius and is hidden outside', async () => {
+  const suffix = Date.now() + '-' + Math.floor(Math.random() * 1e6)
+  let userId: string | undefined, mediaId: string | undefined, adId: string | undefined
+  try {
+    const user = await makeUser(suffix)
+    userId = user.id
+    const media = await makeBannerMedia(user.id, suffix)
+    mediaId = media.id
+
+    const ad = await AdvertisementService.create({
+      title: 'Audit Dallas Banner ' + suffix,
+      placement: 'BROKER_LISTING_LOCAL',
+      type: 'SPONSORED_BANNER',
+      action: 'BANNER_AND_BUTTON',
+      isEnabled: true,
+      showDesktop: true,
+      showTablet: true,
+      showMobile: true,
+      priority: 10,
+      displayOrder: 0,
+      createdById: user.id,
+      creativeAssignments: [{ mediaAssetId: media.id, format: 'BANNER' }],
+      locationTarget: { locationLabel: 'Dallas, TX', countryCode: 'US', city: 'Dallas', state: 'TX', latitude: 32.7767, longitude: -96.797, radiusMiles: 25 },
+    })
+    adId = ad.id
+
+    const dallas = await AdvertisementService.findActiveAds('BROKER_LISTING_LOCAL', 'desktop', 10, new Date(), { latitude: 32.7767, longitude: -96.797 })
+    assert.ok(dallas.some((a) => a.id === ad.id), 'BANNER local ad must render for in-radius Dallas')
+    assert.equal(dallas.find((a) => a.id === ad.id)?.creativeFormat, 'BANNER', 'creative format must be reported as BANNER')
+
+    const houston = await AdvertisementService.findActiveAds('BROKER_LISTING_LOCAL', 'desktop', 10, new Date(), { latitude: 29.7604, longitude: -95.3698 })
+    assert.equal(houston.some((a) => a.id === ad.id), false, 'BANNER ad must be hidden for out-of-radius Houston')
+
+    // Plano is ~20 miles from Dallas, so it is inside a 25-mile radius.
+    const plano = await AdvertisementService.findActiveAds('BROKER_LISTING_LOCAL', 'desktop', 10, new Date(), { latitude: 33.0198, longitude: -96.6989 })
+    assert.ok(plano.some((a) => a.id === ad.id), 'BANNER ad must render for nearby in-radius Plano')
+
+    // No location → local banner ads must not become global.
+    const noLocation = await AdvertisementService.findActiveAds('BROKER_LISTING_LOCAL', 'desktop', 10, new Date())
+    assert.equal(noLocation.some((a) => a.id === ad.id), false, 'local BANNER ad must not render without a search location')
+
+    // Disabled / expired / archived must hide it.
+    await prisma.advertisement.update({ where: { id: ad.id }, data: { isEnabled: false } })
+    assert.equal((await AdvertisementService.findActiveAds('BROKER_LISTING_LOCAL', 'desktop', 10, new Date(), { latitude: 32.7767, longitude: -96.797 })).some((a) => a.id === ad.id), false, 'disabled BANNER ad hidden')
+    await prisma.advertisement.update({ where: { id: ad.id }, data: { isEnabled: true, endDate: new Date(Date.now() - 1000) } })
+    assert.equal((await AdvertisementService.findActiveAds('BROKER_LISTING_LOCAL', 'desktop', 10, new Date(), { latitude: 32.7767, longitude: -96.797 })).some((a) => a.id === ad.id), false, 'expired BANNER ad hidden')
+    await prisma.advertisement.update({ where: { id: ad.id }, data: { endDate: null, isArchived: true } })
+    assert.equal((await AdvertisementService.findActiveAds('BROKER_LISTING_LOCAL', 'desktop', 10, new Date(), { latitude: 32.7767, longitude: -96.797 })).some((a) => a.id === ad.id), false, 'archived BANNER ad hidden')
+  } finally {
+    if (adId) await prisma.advertisement.deleteMany({ where: { id: adId } })
+    if (mediaId) await prisma.mediaAsset.deleteMany({ where: { id: mediaId } })
+    if (userId) await prisma.user.deleteMany({ where: { id: userId } })
+  }
+})
+
+test('BROKER_LISTING_LOCAL rejects an incompatible RECTANGLE creative', async () => {
+  const suffix = Date.now() + '-' + Math.floor(Math.random() * 1e6)
+  let userId: string | undefined, mediaId: string | undefined
+  try {
+    const user = await makeUser(suffix)
+    userId = user.id
+    const media = await makeSquareMedia(user.id, suffix)
+    mediaId = media.id
+    await assert.rejects(
+      () => AdvertisementService.create({
+        title: 'Wrong Creative ' + suffix,
+        placement: 'BROKER_LISTING_LOCAL',
+        type: 'SPONSORED_BANNER',
+        action: 'DISPLAY_ONLY',
+        isEnabled: true,
+        createdById: user.id,
+        creativeAssignments: [{ mediaAssetId: media.id, format: 'RECTANGLE' }],
+        locationTarget: { locationLabel: 'Dallas, TX', countryCode: 'US', city: 'Dallas', state: 'TX', latitude: 32.7767, longitude: -96.797, radiusMiles: 25 },
+      }),
+      /require a SQUARE or BANNER creative/,
+      'BROKER_LISTING_LOCAL must reject a RECTANGLE creative',
+    )
+  } finally {
     if (mediaId) await prisma.mediaAsset.deleteMany({ where: { id: mediaId } })
     if (userId) await prisma.user.deleteMany({ where: { id: userId } })
   }

@@ -71,7 +71,9 @@ export function MobileSidebar({ isOpen, onClose, data, permissions }: MobileSide
         <nav className="flex-1 overflow-y-auto py-4">
           <div className="px-3 space-y-1">
             {data.navMain.map((item: SidebarItem) => {
-              const isActive = pathname === item.url
+              const isPathActive = (url?: string) =>
+                Boolean(url && (pathname === url || pathname.startsWith(`${url}/`)))
+              const isActive = isPathActive(item.url)
               const isExpanded = expandedItems.has(item.title)
               const hasChildren = Boolean(item.items && item.items.length > 0)
 
@@ -93,7 +95,7 @@ export function MobileSidebar({ isOpen, onClose, data, permissions }: MobileSide
                         <NavItem
                           key={child.title}
                           item={child}
-                          isActive={pathname === child.url}
+                          isActive={isPathActive(child.url)}
                           isExpanded={expandedItems.has(child.title)}
                           hasChildren={Boolean(child.items && child.items.length > 0)}
                           onToggle={() => child.items && toggleItem(child.title)}

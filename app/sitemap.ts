@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next'
 import prisma from '@/lib/prisma'
 import { canonicalUrl, isIndexablePublicBroker } from '@/lib/seo'
 
-const staticPublicPaths = ['/', '/brokers', '/about', '/contact', '/faq', '/guides', '/blog', '/calculator', '/privacy', '/terms']
+const staticPublicPaths = ['/', '/brokers', '/about', '/contact', '/faq', '/guides', '/blog', '/calculator', '/privacy-policy', '/terms-of-service']
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [brokers, posts] = await Promise.all([

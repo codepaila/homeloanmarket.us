@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
-
-const FEATURE_CODES = ['PROFILE_BADGE', 'SUPPORT_TICKETS'] as const
+import { Switch } from '@/components/ui/switch'
+import { BROKER_FEATURE_DEFS } from '@/lib/broker-plan-features'
 
 export default function NewBrokerPlanPage() {
   const router = useRouter()
@@ -38,7 +38,7 @@ export default function NewBrokerPlanPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
-          price: Number(form.price) * 100,
+          price: Math.round(Number(form.price) * 100),
           displayOrder: Number(form.displayOrder),
           feature_PROFILE_BADGE: features.PROFILE_BADGE,
           feature_SUPPORT_TICKETS: features.SUPPORT_TICKETS,
@@ -72,26 +72,36 @@ export default function NewBrokerPlanPage() {
         <section className="space-y-4">
           <h2 className="text-lg font-semibold">Plan information</h2>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Name" value={form.name} onChange={(v) => set('name', v)} placeholder="Featured" />
-            <Field label="Code" value={form.code} onChange={(v) => set('code', v)} placeholder="FEATURED" hint="Stable uppercase code used by business logic." />
+            <Field label="Name" value={form.name} onChange={(v) => set('name', v)} placeholder="Featured" maxLength={100} />
+            <Field label="Code" value={form.code} onChange={(v) => set('code', v)} placeholder="FEATURED" hint="Stable uppercase code used by business logic." maxLength={50} />
           </div>
           <label className="block space-y-1"><span className="text-sm font-medium">Description</span><textarea value={form.description} onChange={(e) => set('description', e.target.value)} className="min-h-20 w-full rounded-lg border bg-background px-3 py-2" /></label>
-          <div className="grid gap-4 sm:grid-cols-4">
-            <Field label="Price (USD)" value={form.price} onChange={(v) => set('price', v)} type="number" min="0" />
-            <label className="block space-y-1"><span className="text-sm font-medium">Billing interval</span><select value={form.billingInterval} onChange={(e) => set('billingInterval', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2"><option value="month">month</option><option value="year">year</option><option value="week">week</option></select></label>
-            <label className="block space-y-1"><span className="text-sm font-medium">Currency</span><select value={form.currency} onChange={(e) => set('currency', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2"><option value="usd">USD</option><option value="eur">EUR</option><option value="gbp">GBP</option></select></label>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Price (USD)" value={form.price} onChange={(v) => set('price', v)} type="number" min="0" step="0.01" hint="Amount in US dollars. Saved as cents." />
             <Field label="Display order" value={form.displayOrder} onChange={(v) => set('displayOrder', v)} type="number" min="0" />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block space-y-1"><span className="text-sm font-medium">Billing interval</span><select value={form.billingInterval} onChange={(e) => set('billingInterval', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2"><option value="month">month</option><option value="year">year</option><option value="week">week</option><option value="day">day</option></select></label>
+            <label className="block space-y-1"><span className="text-sm font-medium">Currency</span><select value={form.currency} onChange={(e) => set('currency', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2"><option value="usd">USD</option><option value="eur">EUR</option><option value="gbp">GBP</option></select></label>
           </div>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.isActive} onChange={(e) => set('isActive', e.target.checked)} /> Active</label>
         </section>
 
         <section className="space-y-3 border-t pt-4">
           <h2 className="text-lg font-semibold">Features</h2>
-          {FEATURE_CODES.map((code) => (
-            <label key={code} className="flex items-center justify-between rounded-lg border px-4 py-3">
-              <span className="text-sm font-medium">{code}</span>
-              <input type="checkbox" checked={features[code]} onChange={(e) => setFeatures((current) => ({ ...current, [code]: e.target.checked }))} />
-            </label>
+          <p className="text-xs text-muted-foreground">Each feature is an entitlement that changes what subscribers receive. Toggle a feature ON to grant it to this plan.</p>
+          {BROKER_FEATURE_DEFS.map((feature) => (
+            <div key={feature.code} className="flex items-start justify-between gap-4 rounded-lg border px-4 py-3">
+              <div>
+                <span className="text-sm font-medium">{feature.label}</span>
+                <p className="mt-0.5 text-xs text-muted-foreground">{feature.description}</p>
+              </div>
+              <Switch
+                checked={features[feature.code]}
+                onCheckedChange={(checked) => setFeatures((current) => ({ ...current, [feature.code]: checked }))}
+                aria-label={`${feature.label} ${features[feature.code] ? 'enabled' : 'disabled'}`}
+              />
+            </div>
           ))}
         </section>
 
@@ -111,11 +121,11 @@ export default function NewBrokerPlanPage() {
   )
 }
 
-function Field({ label, value, onChange, placeholder, type = 'text', min, hint }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; min?: string; hint?: string }) {
+function Field({ label, value, onChange, placeholder, type = 'text', min, step, maxLength, hint }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string; min?: string; step?: string; maxLength?: number; hint?: string }) {
   return (
     <label className="block space-y-1">
       <span className="text-sm font-medium">{label}</span>
-      <input type={type} min={min} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full rounded-lg border bg-background px-3 py-2" />
+      <input type={type} min={min} step={step} maxLength={maxLength} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full rounded-lg border bg-background px-3 py-2" />
       {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
     </label>
   )
