@@ -57,11 +57,6 @@ const SOCIAL_ICONS = {
   youtube: Youtube,
 } as const
 
-// Small filled square used as an editorial marker before column headings.
-function SquareMarker({ className = '' }: { className?: string }) {
-  return <span aria-hidden="true" className={`inline-block h-2 w-2 shrink-0 bg-primary ${className}`} />
-}
-
 export default function Footer({ settings }: { settings?: SiteSettings }) {
   const [email, setEmail] = useState('')
   const [subscribed, setSubscribed] = useState(false)
@@ -205,8 +200,7 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
           {/* Link columns */}
           {footerColumns.map((column) => (
             <div key={column.title} className="space-y-3.5">
-              <h3 className="flex items-center gap-2.5 text-sm font-bold uppercase tracking-wide text-text-main">
-                <SquareMarker />
+              <h3 className="text-sm font-bold uppercase tracking-wide text-text-main">
                 {column.title}
               </h3>
               <ul className="space-y-2.5">
@@ -229,8 +223,7 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
 
         {/* Contact — horizontal block separated by whitespace */}
         <div className="pb-12">
-          <h3 className="flex items-center gap-2.5 text-sm font-bold uppercase tracking-wide text-text-main">
-            <SquareMarker />
+          <h3 className="text-sm font-bold uppercase tracking-wide text-text-main">
             Contact
           </h3>
           <ul className="mt-5 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:gap-x-10">

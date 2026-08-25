@@ -18,7 +18,6 @@ import {
   Shield,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
 import { useBroker, useAllBrokers, useBrokerReviews } from '@/hooks/useClient'
 import Image from 'next/image'
 import { RatingStars, RatingBadge } from '@/components/design/RatingStars'
@@ -28,6 +27,7 @@ import { BrokerSubscriptionBadge } from '@/components/brokers/BrokerSubscription
 import { MortgageExpertBadge } from '@/components/brokers/MortgageExpertBadge'
 import { PremiumButton } from '@/components/design/PremiumButton'
 import { BrokerReviewDialog } from '@/components/sections/broker/BrokerReviewDialog'
+import { BrokerDetailSkeleton } from '@/components/design/BrokerDetailSkeleton'
 import { cn } from '@/lib/utils'
 
 interface BrokerDetailClientProps {
@@ -78,17 +78,7 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
   }
 
   if (isLoadingBroker) {
-    return (
-      <div className="py-12">
-        <div className="mx-auto max-w-7xl px-4">
-          <Skeleton className="h-64 w-full rounded-b-3xl mb-8" />
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-            <Skeleton className="h-[520px] w-full rounded-2xl lg:col-span-1" />
-            <Skeleton className="h-[520px] w-full rounded-2xl lg:col-span-2" />
-          </div>
-        </div>
-      </div>
-    )
+    return <BrokerDetailSkeleton />
   }
 
   if (!currentBroker) {

@@ -150,13 +150,6 @@ function HouseIllustration({ className = '' }: { className?: string }) {
   )
 }
 
-/* ---------- geometric helpers (semantic tokens only) ---------- */
-
-// Small filled square used as an editorial marker before headings.
-function SquareMarker({ className = '' }: { className?: string }) {
-  return <span aria-hidden="true" className={`inline-block h-2 w-2 shrink-0 bg-primary ${className}`} />
-}
-
 /* ---------- comparison illustration: evaluating loan options ----------
    Three mortgage-option panels share aligned metric rows so the dotted
    "comparison bridges" read like-for-like. The raised middle panel is the
@@ -366,11 +359,7 @@ export default function LocalExpertSection() {
         <div>
           <div className="grid gap-10 lg:grid-cols-5 lg:gap-12">
             <div className="lg:col-span-3">
-              <div aria-hidden="true" className="flex items-center gap-3">
-                <SquareMarker />
-                <span className="h-px w-12 bg-border" />
-              </div>
-              <h2 className="heading-1 mt-5 text-foreground">
+              <h2 className="heading-1 text-foreground">
                 Compare More.{' '}
                 <span className="text-primary">Choose Better</span>
               </h2>
@@ -437,8 +426,7 @@ export default function LocalExpertSection() {
           </div>
 
           {/* Call to action note */}
-          <p className="mt-8 flex items-center justify-center gap-3 text-base font-medium text-foreground/80">
-            <SquareMarker />
+          <p className="mt-8 flex items-center justify-center text-base font-medium text-foreground/80">
             Start by searching your city or ZIP code.
           </p>
         </div>
@@ -501,11 +489,7 @@ export default function LocalExpertSection() {
           <div className="relative overflow-hidden rounded-lg border border-border bg-card shadow-soft">
             <div className="grid gap-10 p-8 sm:p-12 lg:grid-cols-5 lg:items-center lg:gap-12 lg:p-16">
               <div className="lg:col-span-3">
-                <div aria-hidden="true" className="flex items-center gap-3">
-                  <SquareMarker />
-                  <span className="h-px w-10 bg-border" />
-                </div>
-                <h3 className="heading-3 mt-5 text-foreground">
+                <h3 className="heading-3 text-foreground">
                   Your Home. Your Loan. Your Choice.
                 </h3>
                 <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
