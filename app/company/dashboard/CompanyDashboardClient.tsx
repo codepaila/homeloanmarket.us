@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 import { RequestStatusBadge } from '@/components/admin/company/RequestStatusBadge'
 import { formatRequestTargetLocation } from '@/lib/advertisements/request-status'
+import { hasActiveCompanyAdvertisingSubscription } from '@/lib/company-ad-access'
 
 type CompanyDashboardData = {
   id: string
@@ -152,6 +153,12 @@ export function CompanyDashboardClient({ company, requests }: { company: Company
           ? 'Canceled'
           : company.subscription?.status || 'Not subscribed'
 
+  // Request Advertisement is gated by the same rule the API enforces
+  // server-side (see lib/company-ad-access.ts): only an ACTIVE advertising
+  // subscription may submit a request.
+  const canRequestAdvertisement = hasActiveCompanyAdvertisingSubscription(company.subscription)
+  const subscriptionPending = company.subscription?.status === 'CHECKOUT_PENDING'
+
   return (
     <main className="mx-auto max-w-4xl space-y-6 px-4 py-10">
       <div><h1 className="text-3xl font-bold">Company Dashboard</h1><p className="mt-1 text-muted-foreground">{company.name}</p></div>
@@ -209,35 +216,54 @@ export function CompanyDashboardClient({ company, requests }: { company: Company
 
       <section className="rounded-xl border p-5">
         <h2 className="font-semibold">Request Advertisement</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Tell us what you want to advertise and where you want it to appear. An administrator will review your request and create the advertisement.</p>
-        {submittedId ? (
-          <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm">
-            <p className="font-semibold text-emerald-800">Your advertisement request has been submitted.</p>
-            <p className="mt-1 text-emerald-700">An administrator will review your request and create the advertisement.</p>
-            <p className="mt-2 text-xs text-emerald-700">Request ID: REQUEST-{submittedId.slice(-8).toUpperCase()} · Status: Requested</p>
-          </div>
+        {!canRequestAdvertisement ? (
+          subscriptionPending ? (
+            <div role="status" aria-live="polite" className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm">
+              <p className="font-semibold text-amber-800">Subscription confirmation in progress</p>
+              <p className="mt-1 text-amber-700">Your payment is being confirmed. You can request an advertisement once your advertising subscription becomes active.</p>
+            </div>
+          ) : (
+            <div className="mt-4 rounded-lg border border-muted bg-muted/40 p-4 text-sm">
+              <p className="font-semibold">Advertising subscription required</p>
+              <p className="mt-1 text-muted-foreground">An active advertising subscription is required before you can submit an advertisement request.</p>
+              <button type="button" onClick={checkout} disabled={busy} className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                Start advertising subscription
+              </button>
+            </div>
+          )
         ) : (
-          <form onSubmit={submitRequest} className="mt-3 space-y-4">
-            <div className="space-y-1">
-              <label className="text-sm font-medium" htmlFor="ad-details">What would you like to advertise?</label>
-              <textarea id="ad-details" value={requestDetails} onChange={(e) => setRequestDetails(e.target.value)} placeholder="Describe the advertisement you would like to request" className="min-h-24 w-full rounded-lg border bg-background p-3 text-sm" required />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-1">
-                <label className="text-sm font-medium" htmlFor="ad-location">Where should your advertisement appear?</label>
-                <input id="ad-location" value={locationLabel} onChange={(e) => setLocationLabel(e.target.value)} placeholder="City or area (e.g. Dallas, TX)" className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
+          <>
+            <p className="mt-1 text-sm text-muted-foreground">Tell us what you want to advertise and where you want it to appear. An administrator will review your request and create the advertisement.</p>
+            {submittedId ? (
+              <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm">
+                <p className="font-semibold text-emerald-800">Your advertisement request has been submitted.</p>
+                <p className="mt-1 text-emerald-700">An administrator will review your request and create the advertisement.</p>
+                <p className="mt-2 text-xs text-emerald-700">Request ID: REQUEST-{submittedId.slice(-8).toUpperCase()} · Status: Requested</p>
               </div>
-              <div className="space-y-1">
-                <label className="text-sm font-medium" htmlFor="ad-radius">Radius (miles)</label>
-                <select id="ad-radius" value={radius} onChange={(e) => setRadius(Number(e.target.value))} className="w-full rounded-lg border bg-background px-3 py-2 text-sm">
-                  {[10, 25, 50, 100].map((r) => <option key={r} value={r}>{r} miles</option>)}
-                </select>
-              </div>
-            </div>
-            <button type="submit" disabled={busy} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
-              {busy ? 'Submitting…' : 'Submit Advertisement Request'}
-            </button>
-          </form>
+            ) : (
+              <form onSubmit={submitRequest} className="mt-3 space-y-4">
+                <div className="space-y-1">
+                  <label className="text-sm font-medium" htmlFor="ad-details">What would you like to advertise?</label>
+                  <textarea id="ad-details" value={requestDetails} onChange={(e) => setRequestDetails(e.target.value)} placeholder="Describe the advertisement you would like to request" className="min-h-24 w-full rounded-lg border bg-background p-3 text-sm" required />
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium" htmlFor="ad-location">Where should your advertisement appear?</label>
+                    <input id="ad-location" value={locationLabel} onChange={(e) => setLocationLabel(e.target.value)} placeholder="City or area (e.g. Dallas, TX)" className="w-full rounded-lg border bg-background px-3 py-2 text-sm" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium" htmlFor="ad-radius">Radius (miles)</label>
+                    <select id="ad-radius" value={radius} onChange={(e) => setRadius(Number(e.target.value))} className="w-full rounded-lg border bg-background px-3 py-2 text-sm">
+                      {[10, 25, 50, 100].map((r) => <option key={r} value={r}>{r} miles</option>)}
+                    </select>
+                  </div>
+                </div>
+                <button type="submit" disabled={busy} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                  {busy ? 'Submitting…' : 'Submit Advertisement Request'}
+                </button>
+              </form>
+            )}
+          </>
         )}
       </section>
 
