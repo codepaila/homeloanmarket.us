@@ -14,7 +14,7 @@ const sections = [
     title: 'Information We Collect',
     content: [
       'Personal identification information (name, email, phone number) when you register or use our services',
-      'Financial information (income details, credit history) shared with brokers through our platform',
+      'Financial information (income details, credit history) shared with mortgage originators through our platform',
       'Property information you provide for loan matching',
       'Communication data including messages exchanged through our platform',
       'Technical information (IP address, browser type, device information) automatically collected',
@@ -23,8 +23,8 @@ const sections = [
   {
     title: 'How We Use Your Information',
     content: [
-      'To match you with suitable mortgage brokers based on your requirements',
-      'To facilitate communication between you and brokers',
+      'To match you with suitable mortgage originators based on your requirements',
+      'To facilitate communication between you and mortgage originators',
       'To improve and personalize your experience on our platform',
       'To send you important updates and notifications related to your account',
       'To ensure platform security and prevent fraudulent activities',
@@ -37,14 +37,14 @@ const sections = [
       'Your data is stored on secure servers with regular security audits',
       'Access to personal information is restricted to authorized personnel only',
       'We retain your information for as long as necessary to provide our services',
-      'All brokers are required to maintain confidentiality of your personal information',
+      'All mortgage originators are required to maintain confidentiality of your personal information',
     ],
   },
   {
     title: 'Data Sharing & Disclosure',
     content: [
       'We do NOT sell, trade, or rent your personal information to third parties',
-      'Your information is shared with brokers only when you explicitly initiate contact',
+      'Your information is shared with mortgage originators only when you explicitly initiate contact',
       'We may share anonymized aggregate data for research and platform improvement',
       'We comply with all applicable data protection laws including GDPR and applicable US data protection regulations',
       'In case of legal requirements, we may disclose information as permitted by law',

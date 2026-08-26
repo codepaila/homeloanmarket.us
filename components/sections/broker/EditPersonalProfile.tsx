@@ -178,7 +178,7 @@ export default function EditPersonalProfile({user}:{user: ProfileUser}) {
                         asChild
                     >
                         <Link href="/broker/company/edit">
-                            Edit Mortgage Broker Profile
+                            Edit Mortgage Originator Profile
                         </Link>
                     </Button>
                 </div>

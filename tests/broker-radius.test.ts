@@ -43,7 +43,7 @@ test('missing geo index surfaces an actionable message instead of a generic fail
 test('broker API forwards the actionable radius message and the UI renders it', () => {
   assert.match(api, /Radius search is unavailable/)
   assert.match(listing, /const \{ brokers, total, totalPages, isLoading, error: brokerError \}/)
-  assert.match(listing, /Unable to load brokers/)
+  assert.match(listing, /Unable to load mortgage originators/)
 })
 
 test('radius parameter is synchronized to the broker query and location token', () => {

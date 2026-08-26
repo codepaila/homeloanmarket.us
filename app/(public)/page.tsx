@@ -8,20 +8,20 @@ import { canonicalUrl, safeJsonLd, organizationJsonLd, websiteJsonLd } from '@/l
 import { getSiteSettings } from '@/lib/site/settings'
 
 export const metadata: Metadata = {
-  title: 'Find a Trusted Mortgage Broker',
-  description: 'Compare verified mortgage brokers across the United States and connect with local home-loan experts. Find the right mortgage professional for your home loan.',
+  title: 'Find a Trusted Mortgage Originator',
+  description: 'Compare verified mortgage originators across the United States and connect with local home-loan experts. Find the right mortgage professional for your home loan.',
   alternates: { canonical: canonicalUrl('/') },
   openGraph: {
     type: 'website',
-    title: 'Find a Trusted Mortgage Broker',
-    description: 'Connect with verified local mortgage brokers for your next home loan.',
+    title: 'Find a Trusted Mortgage Originator',
+    description: 'Connect with verified local mortgage originators for your next home loan.',
     url: canonicalUrl('/'),
     images: [{ url: '/assets/images/cover.jpg', alt: 'HomeLoanMarket mortgage marketplace' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Find a Trusted Mortgage Broker',
-    description: 'Connect with verified local mortgage brokers for your next home loan.',
+    title: 'Find a Trusted Mortgage Originator',
+    description: 'Connect with verified local mortgage originators for your next home loan.',
   },
 }
 

@@ -12,17 +12,17 @@ import { cn } from '@/lib/utils'
 
 export const metadata: Metadata = {
   title: 'Register',
-  description: 'Create a HomeLoanMarket account as a home buyer or mortgage broker.',
+  description: 'Create a HomeLoanMarket account as a home buyer or mortgage originator.',
 }
 
 const buyerFeatures = [
-  'Find and compare trusted mortgage brokers',
+  'Find and compare trusted mortgage originators',
   'Read verified reviews and ratings',
-  'Contact brokers directly when you are ready',
+  'Contact mortgage originators directly when you are ready',
 ]
 
 const brokerFeatures = [
-  'Create and manage your professional broker profile',
+  'Create and manage your professional mortgage originator profile',
   'Receive leads from home buyers',
   'Build your reputation with reviews',
 ]
@@ -34,7 +34,7 @@ export default async function RegisterPage() {
   return (
     <AuthFormWrapper
       title="Create your account"
-      subtitle="Join HomeLoanMarket to find the right mortgage broker — or register as a broker and grow your business."
+      subtitle="Join HomeLoanMarket to find the right mortgage originator — or register as a mortgage originator and grow your business."
       size="lg"
     >
       <div className="grid gap-5 sm:grid-cols-2">
@@ -68,12 +68,12 @@ export default async function RegisterPage() {
               <Briefcase className="h-5 w-5" aria-hidden="true" />
             </div>
             <span className="inline-flex w-fit items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-              Mortgage Broker
+              Mortgage Originator
             </span>
           </div>
-          <h2 className="text-lg font-semibold text-text-main">Join as a Mortgage Broker</h2>
+          <h2 className="text-lg font-semibold text-text-main">Join as a Mortgage Originator</h2>
           <p className="mt-1 text-sm text-text-muted">
-            Create your broker profile and start receiving leads from borrowers.
+            Create your mortgage originator profile and start receiving leads from borrowers.
           </p>
           <ul className="mt-4 space-y-2">
             {brokerFeatures.map((feature) => (

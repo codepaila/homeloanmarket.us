@@ -6,12 +6,12 @@ import { Award, Home, TrendingUp, Shield, Users, MapPin, Phone, Mail } from 'luc
 
 export const metadata: Metadata = {
   title: 'About Us',
-  description: 'HomeLoanMarket is a mortgage marketplace connecting home buyers with verified mortgage brokers across the United States.',
+  description: 'HomeLoanMarket is a mortgage marketplace connecting home buyers with verified mortgage originators across the United States.',
   alternates: { canonical: '/about' },
 }
 
 const stats = [
-  { label: 'Mortgage Brokers', value: '5,000+', icon: Users, color: 'text-primary' },
+  { label: 'Mortgage Originators', value: '5,000+', icon: Users, color: 'text-primary' },
   { label: 'Loans Facilitated', value: '15,000+', icon: Home, color: 'text-primary' },
   { label: 'States Served', value: '50+', icon: MapPin, color: 'text-secondary' },
   { label: 'Customer Satisfaction', value: '4.9/5', icon: TrendingUp, color: 'text-accent' },
@@ -32,7 +32,7 @@ export default function AboutPage() {
             </h1>
               <p className="text-xl text-text-muted leading-relaxed max-2xl mx-auto">
                 HomeLoanMarket is America&apos;s premier platform that bridges the gap between mortgage borrowers
-                and verified mortgage brokers. We simplify the complex mortgage process by providing
+                and verified mortgage originators. We simplify the complex mortgage process by providing
                 transparent access to expert guidance, competitive rates, and seamless service.
             </p>
           </div>
@@ -79,8 +79,8 @@ export default function AboutPage() {
                 <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                   <Users className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold text-text-main mb-1">Verified Mortgage Brokers</h3>
-                <p className="text-sm text-text-muted">All mortgage brokers are verified and rated by clients</p>
+                <h3 className="font-semibold text-text-main mb-1">Verified Mortgage Originators</h3>
+                <p className="text-sm text-text-muted">All mortgage originators are verified and rated by clients</p>
               </div>
               <div className="card p-6 text-center">
                 <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
@@ -117,10 +117,10 @@ export default function AboutPage() {
                 <Mail className="h-4 w-4 text-primary" />
                 <span>support@homeloanmarket.com</span>
               </div>
-              <div className="flex items-center gap-2">
+              {/* <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4 text-primary" />
                 <span>1-800-466-3562</span>
-              </div>
+              </div> */}
             </div>
           </div>
         </AnimatedContainer>

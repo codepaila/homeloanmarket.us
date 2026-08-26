@@ -64,7 +64,7 @@ export function BrokerCardSkeleton({ count = 6, view = 'grid' }: { count?: numbe
   return (
     <div
       role="status"
-      aria-label="Loading mortgage brokers"
+      aria-label="Loading mortgage originators"
       aria-busy="true"
       className={cn(
         'grid gap-6',
@@ -87,7 +87,7 @@ export function BrokerCardSkeleton({ count = 6, view = 'grid' }: { count?: numbe
  */
 export function BrokerListingSkeleton({ count = 9 }: { count?: number }) {
   return (
-    <div role="status" aria-label="Loading mortgage brokers" aria-busy="true" className="min-h-screen bg-background">
+    <div role="status" aria-label="Loading mortgage originators" aria-busy="true" className="min-h-screen bg-background">
       {/* Discovery header */}
       <section aria-hidden="true" className="relative overflow-hidden border-b border-border bg-surface py-8 md:py-10">
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/5 blur-3xl" />

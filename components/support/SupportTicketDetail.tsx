@@ -107,7 +107,7 @@ export function SupportTicketDetail({
                       <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium">{message.senderName || (fromBroker ? 'You' : 'Support')}</span>
-                          <Badge variant="secondary" className="text-[10px]">{fromBroker ? 'Broker' : 'Support'}</Badge>
+                          <Badge variant="secondary" className="text-[10px]">{fromBroker ? 'Mortgage Originator' : 'Support'}</Badge>
                         </div>
                         <span className="text-xs text-muted-foreground">{formatDate(message.createdAt)}</span>
                       </div>

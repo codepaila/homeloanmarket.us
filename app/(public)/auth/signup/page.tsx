@@ -102,8 +102,8 @@ export default function BrokerSignupPage() {
 
   return (
     <AuthFormWrapper
-      title="Create your broker account"
-      subtitle="Start with your account details. You will choose a plan and complete your broker profile next."
+      title="Create your mortgage originator account"
+      subtitle="Start with your account details. You will choose a plan and complete your mortgage originator profile next."
       showBackLink={false}
       backHref="/register"
       backLabel="Back to registration"
@@ -116,7 +116,7 @@ export default function BrokerSignupPage() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-6">
-        <AuthSection title="Account details" description="These are the only profile details required to create your broker account.">
+        <AuthSection title="Account details" description="These are the only profile details required to create your mortgage originator account.">
           <FormInput
             label="Full Name"
             name="name"
@@ -206,7 +206,7 @@ export default function BrokerSignupPage() {
 
         <div className="space-y-3">
           <PremiumButton type="submit" loading={loading} loadingText="Creating Account..." disabled={loading} fullWidth leftIcon={!loading && <ArrowRight className="h-4 w-4" />}>
-            Create Broker Account
+            Create Mortgage Originator Account
           </PremiumButton>
           <p className="text-center text-xs text-text-muted">Email verification is required before continuing.</p>
         </div>

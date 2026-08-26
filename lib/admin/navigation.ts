@@ -40,6 +40,7 @@ export const adminNavigation: AdminNavGroup[] = [
   {
     label: 'Companies',
     items: [
+      { label: 'Companies', href: '/admin/companies', icon: Building2 },
       { label: 'Advertisement Requests', href: '/admin/company-ad-requests', icon: Megaphone },
       { label: 'Advertising Plans', href: '/admin/billing/company-advertising-plans', icon: FileText },
     ],

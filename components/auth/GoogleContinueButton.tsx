@@ -16,7 +16,7 @@ export function GoogleContinueButton({ callbackUrl, className, brokerIntent = fa
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
         })
-        if (!intentResponse.ok) throw new Error('Unable to start broker registration')
+        if (!intentResponse.ok) throw new Error('Unable to start mortgage originator registration')
       }
       if (companyIntent) {
         const intentResponse = await fetch('/api/auth/company-intent', {

@@ -259,14 +259,14 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
       <Card>
         <CardContent className="p-8 text-center">
           <Building className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">No Mortgage Broker Profile Found</h3>
+          <h3 className="text-lg font-semibold mb-2">No Mortgage Originator Profile Found</h3>
           <p className="text-muted-foreground mb-6">
-            You need to create a mortgage broker profile to access the dashboard
+            You need to create a mortgage originator profile to access the dashboard
           </p>
           <Button asChild>
             <Link href="/setup">
               <Plus className="mr-2 h-4 w-4" />
-              Create Mortgage Broker Profile
+              Create Mortgage Originator Profile
             </Link>
           </Button>
         </CardContent>
@@ -759,7 +759,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
                           </div>
                         </div>
                         <div className="mt-2 text-xs text-muted-foreground">
-                          Faster than 75% of brokers
+                          Faster than 75% of mortgage originators
                         </div>
                       </CardContent>
                     </Card>

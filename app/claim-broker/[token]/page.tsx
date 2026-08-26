@@ -99,7 +99,7 @@ export default function ClaimBrokerPage({ params }: { params: Promise<{ token: s
       const data = await response.json()
       if (!response.ok) { setMessage(data.message || 'Claim could not be completed'); return }
       await refreshSession()
-      toast.success('Broker profile claimed successfully.')
+      toast.success('Mortgage originator profile claimed successfully.')
       router.push(data.redirectTo || '/broker/dashboard')
     } finally {
       setAction('')
@@ -135,8 +135,8 @@ export default function ClaimBrokerPage({ params }: { params: Promise<{ token: s
       <div className="w-full max-w-xl space-y-6">
         <header className="text-center">
           <p className="text-sm font-semibold text-primary">HomeLoanMarket</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight">Claim your broker profile</h1>
-          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">You&apos;ve been invited to claim this existing broker profile. Sign in or create an account with the invited email to continue.</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight">Claim your mortgage originator profile</h1>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">You&apos;ve been invited to claim this existing mortgage originator profile. Sign in or create an account with the invited email to continue.</p>
         </header>
 
         {preview && (

@@ -91,11 +91,11 @@ export function NoSearchResults({
 }) {
   return (
     <EmptyState
-      title="No matching brokers found"
+      title="No matching mortgage originators found"
       description={
         searchTerm
-          ? `We couldn't find any brokers matching "${searchTerm}". Try adjusting your search or filters.`
-          : 'Try a different search term or view all brokers.'
+          ? `We couldn't find any mortgage originators matching "${searchTerm}". Try adjusting your search or filters.`
+          : 'Try a different search term or view all mortgage originators.'
       }
       icon={<FileQuestion className="h-8 w-8 text-text-muted" />}
       action={onClear && (

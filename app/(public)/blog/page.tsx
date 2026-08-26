@@ -5,18 +5,18 @@ import { canonicalUrl } from '@/lib/seo'
 
 export const metadata: Metadata = {
   title: 'Mortgage Articles & Guides',
-  description: 'Practical articles and guides about mortgages, home buying, refinancing, credit, and finding the right mortgage broker.',
+  description: 'Practical articles and guides about mortgages, home buying, refinancing, credit, and finding the right mortgage originator.',
   alternates: { canonical: canonicalUrl('/blog') },
   openGraph: {
     type: 'website',
     title: 'Mortgage Articles & Guides',
-    description: 'Practical articles and guides about mortgages, home buying, refinancing, credit, and finding the right mortgage broker.',
+    description: 'Practical articles and guides about mortgages, home buying, refinancing, credit, and finding the right mortgage originator.',
     url: canonicalUrl('/blog'),
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Mortgage Articles & Guides',
-    description: 'Practical articles and guides about mortgages, home buying, refinancing, credit, and finding the right mortgage broker.',
+    description: 'Practical articles and guides about mortgages, home buying, refinancing, credit, and finding the right mortgage originator.',
   },
 }
 

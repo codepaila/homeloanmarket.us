@@ -72,7 +72,7 @@ export default function SubscriptionPage() {
               Choose Your Plan
             </h1>
             <p className="text-xl text-text-muted">
-              Simple, transparent pricing designed for mortgage brokers of all sizes. Start with our free plan
+              Simple, transparent pricing designed for mortgage originators of all sizes. Start with our free plan
               or upgrade to get featured placement and advanced tools.
             </p>
           </div>
@@ -119,7 +119,7 @@ export default function SubscriptionPage() {
                 </div>
                 <h3 className="font-semibold text-text-main">Verified Listing</h3>
                 <p className="text-sm text-text-muted">
-                  All plans include basic mortgage broker listing with verification badge
+                  All plans include basic mortgage originator listing with verification badge
                 </p>
               </div>
               <div className="space-y-3">

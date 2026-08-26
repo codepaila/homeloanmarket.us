@@ -82,7 +82,7 @@ export default function CompanyOnboardingPage() {
     <main className="min-h-screen bg-background px-4 py-12">
       <div className="mx-auto max-w-xl">
         <h1 className="text-3xl font-bold text-foreground">Complete your company profile</h1>
-        <p className="mt-2 text-muted-foreground">Tell us about your company to start advertising on relevant mortgage broker listings.</p>
+        <p className="mt-2 text-muted-foreground">Tell us about your company to start advertising on relevant mortgage originator listings.</p>
 
         <div className="mt-6 flex items-center gap-2">
           {steps.map((label, index) => (

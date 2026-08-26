@@ -28,8 +28,8 @@ test('client-only public pages get server-side metadata + canonical via route la
 
 test('homepage title does not duplicate the brand (template appends it once)', () => {
   const home = read('app/(public)/page.tsx')
-  assert.match(home, /title: 'Find a Trusted Mortgage Broker'/)
-  assert.doesNotMatch(home, /title: 'Find a Trusted Mortgage Broker \| HomeLoanMarket'/)
+  assert.match(home, /title: 'Find a Trusted Mortgage Originator'/)
+  assert.doesNotMatch(home, /title: 'Find a Trusted Mortgage Originator \| HomeLoanMarket'/)
 })
 
 test('legal/about page titles omit the brand so the root template appends it once', () => {
@@ -52,7 +52,7 @@ test('blog index has a canonical and descriptive metadata', () => {
 
 test('footer Resources column restores crawlable internal links', () => {
   const footer = read('components/layout/Footer.tsx')
-  assert.match(footer, /Mortgage Broker Directory/)
+  assert.match(footer, /Mortgage Originator Directory/)
   assert.match(footer, /href: '\/brokers'/)
   assert.match(footer, /href: '\/guides'/)
   assert.match(footer, /href: '\/calculator'/)

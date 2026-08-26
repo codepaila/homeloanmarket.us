@@ -80,7 +80,7 @@ export function DashboardSidebar({ data, permissions, className }: DashboardSide
             <p className="text-sm font-medium text-foreground truncate">
               {data.user.name}
             </p>
-            <div className="flex items-center gap-2">
+            {/* <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground capitalize">
                 {data.user.role?.toLowerCase().replace('_', ' ')}
               </span>
@@ -90,7 +90,7 @@ export function DashboardSidebar({ data, permissions, className }: DashboardSide
               {data.user.isPremium && (
                 <Crown className="h-3 w-3 text-warning" />
               )}
-            </div>
+            </div> */}
           </div>
         </div>
 {/*

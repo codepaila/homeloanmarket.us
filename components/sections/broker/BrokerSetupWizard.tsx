@@ -311,7 +311,7 @@ export function BrokerSetupWizard({ initialData = {}, initialStep = 1 }: BrokerS
         throw new Error(result.message || 'Failed to create broker profile')
       }
 
-      toast.success('Mortgage broker profile created successfully!')
+      toast.success('Mortgage originator profile created successfully!')
 
       await refreshSession()
 

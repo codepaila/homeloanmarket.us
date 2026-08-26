@@ -5,6 +5,11 @@ import prisma from '@/lib/prisma'
 import { SubscriptionService } from '@/lib/subscription'
 import { getCurrentUser } from '@/lib/currentUser'
 import { validateLicenseStates, normalizeNmls, nmlsValidationError } from '@/lib/broker-licensing'
+import {
+  SOCIAL_LINK_KEYS,
+  normalizeSocialLinks,
+  hasAnySocialLink,
+} from '@/lib/broker-social-links'
 import { resolveUSPlace } from '@/lib/location/google-place'
 import { requireValidResolvedUSLocation } from '@/lib/location/broker-location'
 import { isSameOriginRequest } from '@/lib/origin'
@@ -232,7 +237,29 @@ export async function PATCH(request: Request) {
     // Additional info
     if (body.registrationNumber !== undefined) updateData.registrationNumber = body.registrationNumber
     if (body.panNumber !== undefined) updateData.panNumber = body.panNumber
-    
+
+    // Social media links. The client submits flat facebook/twitter/linkedin/
+    // instagram fields (see the Social tab of the broker company-profile edit
+    // form); they are stored as a single canonical `socialLinks` JSON object.
+    // The field is dedicated exclusively to social links, so a present social
+    // payload replaces the whole object — missing keys are treated as cleared
+    // (null). Values are validated server-side and dangerous schemes such as
+    // `javascript:` / `data:` / `vbscript:` are rejected.
+    if (SOCIAL_LINK_KEYS.some((key) => body[key] !== undefined)) {
+      const social = normalizeSocialLinks({
+        facebook: body.facebook,
+        twitter: body.twitter,
+        linkedin: body.linkedin,
+        instagram: body.instagram,
+      })
+      if (!social.ok) {
+        return NextResponse.json({ message: social.error }, { status: 422 })
+      }
+      updateData.socialLinks = hasAnySocialLink(social.value)
+        ? JSON.parse(JSON.stringify(social.value))
+        : Prisma.DbNull
+    }
+
     // Images
     if (body.logo !== undefined) updateData.logo = body.logo
     if (body.coverImage !== undefined) updateData.coverImage = body.coverImage

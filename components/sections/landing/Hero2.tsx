@@ -266,7 +266,7 @@ export default function HeroSection() {
               Find the right{' '}
               <span className="relative inline-block">
                 <span className="relative z-10 bg-gradient-to-r from-primary via-emerald-300 to-primary bg-clip-text text-transparent">
-                  mortgage broker
+                  mortgage originator
                 </span>
                 <span className="absolute -bottom-2 left-0 h-3 w-full bg-primary/20 blur-xl" aria-hidden="true" />
               </span>
@@ -304,7 +304,7 @@ export default function HeroSection() {
                   onKeyDown={handleKeyDown}
                   placeholder="Search by city or ZIP code"
                   className="flex-1 bg-transparent py-1 text-sm font-medium text-secondary placeholder:text-muted-foreground/70 focus:outline-none"
-                  aria-label="Search brokers by city or ZIP code"
+                  aria-label="Search mortgage originators by city or ZIP code"
                   aria-expanded={locationSuggestions.length > 0 || searching}
                   aria-autocomplete="list"
                   aria-controls="broker-search-suggestions"
@@ -313,9 +313,9 @@ export default function HeroSection() {
                 {(searching || locationSuggestions.length > 0) && (
                   <div id="broker-search-suggestions" className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-border bg-white shadow-xl" role="listbox" aria-label="Location suggestions">
                     {searching && locationSuggestions.length === 0 ? (
-                      <p className="px-4 py-3 text-sm text-muted-foreground">Searching brokers…</p>
+                      <p className="px-4 py-3 text-sm text-muted-foreground">Searching mortgage originators…</p>
                     ) : locationSuggestions.length === 0 ? (
-                      <p className="px-4 py-3 text-sm text-muted-foreground">No brokers found</p>
+                      <p className="px-4 py-3 text-sm text-muted-foreground">No mortgage originators found</p>
                     ) : (
                       locationSuggestions.map((suggestion, index) => (
                         <button type="button" key={suggestion.placeId} role="option" aria-selected={index === activeSuggestionIndex} onMouseDown={(event) => event.preventDefault()} onClick={() => selectLocation(suggestion)} className={`flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-secondary hover:bg-muted focus:bg-muted focus:outline-none ${index === activeSuggestionIndex ? 'bg-muted' : ''}`}>
@@ -455,7 +455,7 @@ export default function HeroSection() {
                   className="relative overflow-hidden bg-gradient-to-r from-primary to-emerald-600 px-8 shadow-xl hover:shadow-2xl"
                 >
                   <span className="relative z-10 flex items-center">
-                    Find Mortgage Brokers
+                    Find Mortgage Originators
                     <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </span>
                   <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-500 group-hover:translate-x-full" />

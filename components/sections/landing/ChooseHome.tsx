@@ -32,7 +32,7 @@ export default function ChooseHomeSection() {
 
             <Link href="/brokers">
               <PremiumButton size="md">
-                 Find a Mortgage Broker
+                 Find a Mortgage Originator
                 <ArrowRight className="ml-2 h-4 w-4" />
               </PremiumButton>
             </Link>

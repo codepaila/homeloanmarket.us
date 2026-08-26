@@ -18,7 +18,7 @@ export function ProfileImageUpload({
   removeUrl,
   onUploaded,
   label = 'Profile image',
-  helperText = 'Professional broker photo shown on public cards and profile.',
+  helperText = 'Professional mortgage originator photo shown on public cards and profile.',
 }: ProfileImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [preview, setPreview] = useState<string | null>(value || null)

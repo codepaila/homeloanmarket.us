@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast'
 import { Loader2 } from 'lucide-react'
 import { ProfileImageUpload } from '@/components/brokers/ProfileImageUpload'
 import { CoverImageUpload } from '@/components/brokers/CoverImageUpload'
+import { DeleteAccountDialog } from '@/components/account/DeleteAccountDialog'
 import { US_STATES } from '@/lib/us-states'
 
 type AdminInvitation = {
@@ -197,6 +198,24 @@ export default function AdminBrokerActions({ broker }: { broker: AdminBroker }) 
         </div>
         {claimLink && <button type="button" onClick={() => navigator.clipboard.writeText(claimLink).then(() => toast.success('Claim link copied.'))} className="rounded-lg border px-3 py-2 text-sm">Copy Claim Link</button>}
         {broker.claim?.invitations && broker.claim.invitations.length > 0 && <div className="space-y-2 border-t pt-4"><p className="text-sm font-medium">Invitation history</p>{broker.claim.invitations.map((item) => <div key={item.id} className="grid grid-cols-[1fr_auto] gap-2 text-xs text-muted-foreground"><span>{item.recipientEmail} · {item.status}</span><span>{new Date(item.createdAt).toLocaleString()}</span></div>)}</div>}
+        <div className="mt-6 border-t border-destructive/30 pt-4">
+          <p className="text-sm font-medium text-destructive">Danger zone</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Permanently deletes this broker profile, its claim history, subscription (cancelled
+            first), messages, reviews, and — when the owner has no remaining account context — the
+            associated user account.
+          </p>
+          <div className="mt-3">
+            <DeleteAccountDialog
+              triggerLabel="Delete broker"
+              title="Delete this broker?"
+              description="This permanently removes the broker profile and associated data. Any active subscription will be cancelled before deletion."
+              endpoint={`/api/admin/brokers/${broker.id}/delete`}
+              method="DELETE"
+              onSuccess={() => router.push('/admin/brokers')}
+            />
+          </div>
+        </div>
       </div>
     </div>
   )

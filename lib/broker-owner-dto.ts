@@ -1,3 +1,5 @@
+import type { Prisma } from '@prisma/client'
+
 type OwnerSubscription = {
   plan: string
   isActive: boolean
@@ -39,6 +41,7 @@ type BrokerOwnerSource = {
   experienceYears: number
   registrationNumber: string | null
   panNumber: string | null
+  socialLinks: Prisma.JsonValue | null
   nmls: string | null
   licenseStates: string[]
   verificationStatus: string
@@ -78,6 +81,7 @@ export function toBrokerOwnerDto(
     experienceYears: broker.experienceYears,
     registrationNumber: broker.registrationNumber,
     panNumber: broker.panNumber,
+    socialLinks: (broker.socialLinks ?? null) as Record<string, string | null> | null,
     nmls: broker.nmls,
     licenseStates: broker.licenseStates || [],
     verificationStatus: broker.verificationStatus,

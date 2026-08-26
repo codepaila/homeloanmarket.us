@@ -100,7 +100,7 @@ export default function FeaturedBrokerRowCard({ broker }: FeaturedBrokerRowCardP
         {/* Left: Logo */}
         <div className="flex-shrink-0">
           <div className="relative flex h-16 w-16 items-center justify-center md:h-20 md:w-20">
-            <BrokerAvatar src={logo} alt={company || name || 'Mortgage Broker'} name={company || name} className="h-full w-full" />
+            <BrokerAvatar src={logo} alt={company || name || 'Mortgage Originator'} name={company || name} className="h-full w-full" />
           </div>
         </div>
 
@@ -182,7 +182,7 @@ export default function FeaturedBrokerRowCard({ broker }: FeaturedBrokerRowCardP
           </Link>
           <Link href={`/brokers/${broker.profileSlug}#contact`}>
             <PremiumButton size="sm" fullWidth>
-              Contact Broker
+              Contact Mortgage Originator
             </PremiumButton>
           </Link>
           <button

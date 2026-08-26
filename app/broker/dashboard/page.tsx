@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/currentUser'
 import { BrokerDashboard } from '@/components/sections/broker/BrokerDashboard'
+import { DeleteAccountDialog } from '@/components/account/DeleteAccountDialog'
 import { hasPaidEntitlement } from '@/lib/broker-policy'
 import { roleHome } from '@/lib/auth-redirect'
 import { toBrokerOwnerDto } from '@/lib/broker-owner-dto'
@@ -62,7 +63,27 @@ if (!hasPaidPlan) {
     }
   }
   
-  return <BrokerDashboard initialData={initialData} />
+  return (
+    <div className="space-y-6">
+      <BrokerDashboard initialData={initialData} />
+      <section className="rounded-xl border border-destructive/40 bg-card p-6">
+        <h2 className="text-lg font-semibold">Delete mortgage originator account</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          This permanently removes your mortgage originator profile, claim history, messages, reviews, uploaded
+          media, and any active subscription (cancelled first) and logs you out.
+        </p>
+        <div className="mt-4">
+          <DeleteAccountDialog
+            triggerLabel="Delete my account"
+            title="Delete your account?"
+            description="This permanently removes your account and associated data. Any active subscription will be cancelled before deletion."
+            endpoint="/api/account/broker"
+            signOutAfterSuccess
+          />
+        </div>
+      </section>
+    </div>
+  )
 }
 
 // For subscribed users, fetch analytics
@@ -90,5 +111,25 @@ const initialData = {
   }
 }
 
-  return <BrokerDashboard initialData={initialData} />
+  return (
+    <div className="space-y-6">
+      <BrokerDashboard initialData={initialData} />
+      <section className="rounded-xl border border-destructive/40 bg-card p-6">
+        <h2 className="text-lg font-semibold">Delete mortgage originator account</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          This permanently removes your mortgage originator profile, claim history, messages, reviews, uploaded
+          media, and any active subscription (cancelled first) and logs you out.
+        </p>
+        <div className="mt-4">
+          <DeleteAccountDialog
+            triggerLabel="Delete my account"
+            title="Delete your account?"
+            description="This permanently removes your account and associated data. Any active subscription will be cancelled before deletion."
+            endpoint="/api/account/broker"
+            signOutAfterSuccess
+          />
+        </div>
+      </section>
+    </div>
+  )
 }

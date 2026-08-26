@@ -61,7 +61,7 @@ export default function NotFoundPage() {
                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-6 py-3 text-base font-medium text-text-main transition-all duration-200 hover:bg-surface"
               >
                  <Search className="h-5 w-5" />
-                 Find Mortgage Brokers
+                 Find Mortgage Originators
               </motion.button>
             </Link>
           </motion.div>

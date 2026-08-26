@@ -111,7 +111,7 @@ export default function SubscriptionPlans({
     return (
       <div className="rounded-lg border border-dashed border-border bg-muted/30 p-8 text-center">
         <p className="text-sm text-muted-foreground">
-          No broker subscription plans are currently available. Please check back later or contact
+          No mortgage originator subscription plans are currently available. Please check back later or contact
           support.
         </p>
       </div>
@@ -123,7 +123,7 @@ export default function SubscriptionPlans({
       <div className="text-center">
         <h2 className="text-2xl font-bold text-foreground">Plans &amp; Pricing</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Choose the plan that fits your mortgage brokerage needs.
+          Choose the plan that fits your mortgage originator needs.
         </p>
       </div>
 

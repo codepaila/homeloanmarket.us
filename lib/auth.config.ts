@@ -245,6 +245,12 @@ export const authOptions = {
               } : null
             };
           }
+        } else {
+          // The account no longer exists in the database (it was deleted).
+          // Clear the token so any stale session is invalidated server-side on
+          // its next use — the client-side signOut clears the cookie, this is
+          // defense-in-depth for sessions that survive on other devices.
+          return {} as any;
         }
       }
 

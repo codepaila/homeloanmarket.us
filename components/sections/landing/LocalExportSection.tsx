@@ -101,7 +101,7 @@ function DiagramConnectDirect({ className = '' }) {
    Line-art scene drawn entirely with currentColor so it inherits the
    semantic palette in light and dark themes. */
 
-function HouseIllustration({ className = '' }: { className?: string }) {
+export function HouseIllustration({ className = '' }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 320 220"
@@ -349,7 +349,7 @@ const steps = [
 export default function LocalExpertSection() {
   return (
     <section className="section-spacing bg-background">
-      <div className="container-custom space-y-20 md:space-y-24">
+      <div className="container-custom space-y-14 md:space-y-24">
 
         {/* ==========================================================
             SECTION 1 — Compare More. Choose Better.
@@ -357,15 +357,15 @@ export default function LocalExpertSection() {
             mortgage-comparison illustration; supporting statement below.
            ========================================================== */}
         <div>
-          <div className="grid gap-10 lg:grid-cols-5 lg:gap-12">
+          <div className="grid gap-5 md:gap-10 lg:grid-cols-5 lg:gap-12">
             <div className="lg:col-span-3">
-              <h2 className="heading-1 text-foreground">
+              <h2 className="heading-2 text-foreground">
                 Compare More.{' '}
                 <span className="text-primary">Choose Better</span>
               </h2>
 
               {/* Paragraph 1 */}
-              <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+              <p className="mt-2 md:mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
                 Mortgage rates, fees, and loan options can vary from one lender to another.
                 Even a small difference in your rate or closing costs can mean thousands of dollars over time.
               </p>
@@ -380,7 +380,7 @@ export default function LocalExpertSection() {
 
           {/* Supporting statement under a hairline rule */}
           {/* Paragraph 2 */}
-          <p className="mt-12 max-w-3xl border-t border-border pt-8 text-lg font-medium leading-relaxed text-foreground/90 sm:text-xl">
+          <p className="mt-2 text-center  md:mt-12 max-w-3xl mx-auto border-t border-border pt-8 md:text-2xl font-medium leading-relaxed text-foreground/90 sm:text-xl">
             Home Loan Market helps you find local mortgage professionals so you can explore your options,
             compare, and choose the loan that works best for you.
           </p>
@@ -394,7 +394,7 @@ export default function LocalExpertSection() {
         <div>
           <div className="mx-auto max-w-2xl text-center">
             <h3 className="heading-3 text-foreground">
-              More Options. A Smarter Home Loan Choice.
+              More Options. <br /> A Smarter Home Loan Choice.
             </h3>
             {/* Description */}
             <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
@@ -438,43 +438,35 @@ export default function LocalExpertSection() {
            ========================================================== */}
         <div>
           <div className="mx-auto max-w-2xl text-center">
-            <h3 className="heading-3 text-foreground">
+            <h3 className="heading-3 md:heading-2 text-foreground">
               Finding a Home Loan Expert Is Simple
             </h3>
           </div>
 
-          <ol className="relative mt-12 space-y-10 lg:grid lg:grid-cols-3 lg:gap-x-8 lg:space-y-0">
+          <ol className="relative mt-8 sm:mt-12 space-y-8 lg:grid lg:grid-cols-3 lg:gap-x-6 lg:space-y-0">
             {steps.map((step, index) => (
               <li key={step.title} className="relative">
-                {/* step header: number marker + connector to next step */}
-                <div className="flex items-center gap-4">
-                  <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-border bg-card text-lg font-bold tracking-tight text-foreground shadow-soft">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                  {/* desktop connector with direction chevron */}
-                  {index < steps.length - 1 && (
-                    <span aria-hidden="true" className="hidden flex-1 items-center lg:flex">
-                      <span className="h-px flex-1 border-t border-dashed border-border" />
-                      <span className="-ml-1 h-2.5 w-2.5 rotate-45 border-r-2 border-t-2 border-muted-foreground/60" />
-                    </span>
-                  )}
-                </div>
 
-                {/* mobile downward connector */}
-                {index < steps.length - 1 && (
-                  <span aria-hidden="true" className="flex flex-col items-center pt-4 lg:hidden">
-                    <span className="h-8 w-px border-l border-dashed border-border" />
-                    <span className="h-2.5 w-2.5 rotate-[135deg] border-r-2 border-b-2 border-muted-foreground/60" />
-                  </span>
-                )}
 
                 {/* step card */}
-                <div className="card-plain mt-5 p-6">
-                  <step.Diagram className="h-16 w-24 text-foreground/70" />
-                  <h4 className="mt-5 text-lg font-semibold text-foreground">{step.title}</h4>
-                  <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                    {step.description}
-                  </p>
+                {/* Step number inside card - positioned at top left with visual prominence */}
+                <div className="card mt-5 p-6 relative overflow-visible">
+                  {/* Step number with absolute positioning - overlapping the card */}
+                  <div className="absolute -top-7 left-1/2  -translate-x-1/2">
+                    <span className="flex h-14 w-14 items-center justify-center rounded-full border border-border bg-card text-lg font-bold tracking-tight text-foreground">
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+                  </div>
+
+                  {/* Content with top padding to accommodate the overlapping number */}
+                  <div className="">
+
+                    <step.Diagram className="h-16 w-24 text-foreground/70" />
+                    <h4 className="mt-4 text-lg font-semibold text-foreground">{step.title}</h4>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                      {step.description}
+                    </p>
+                  </div>
                 </div>
               </li>
             ))}
@@ -486,13 +478,13 @@ export default function LocalExpertSection() {
             Wide editorial banner (~60 content / ~40 illustration).
            ========================================================== */}
         <div>
-          <div className="relative overflow-hidden rounded-lg border border-border bg-card shadow-soft">
+          <div className="relative overflow-hidden rounded border border-border bg-card shadow-soft">
             <div className="grid gap-10 p-8 sm:p-12 lg:grid-cols-5 lg:items-center lg:gap-12 lg:p-16">
               <div className="lg:col-span-3">
-                <h3 className="heading-3 text-foreground">
+                <h3 className="text-lg font-medium sm:heading-3 text-foreground">
                   Your Home. Your Loan. Your Choice.
                 </h3>
-                <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+                <p className="mt-2 sm:mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
                   HomeLoanMarket gives you a simple way to discover mortgage professionals and explore your options — while you stay in control of who you contact.
                 </p>
 

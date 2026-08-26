@@ -8,30 +8,30 @@ import { Search, Users, FileText, CreditCard } from 'lucide-react'
 const steps = [
   {
     step: 1,
-    title: 'Find Mortgage Brokers',
+    title: 'Find Mortgage Originators',
     description:
-      'Enter your location and loan preferences to find verified mortgage brokers near you.',
+      'Enter your location and loan preferences to find verified mortgage originators near you.',
     icon: Search,
   },
   {
     step: 2,
     title: 'Compare & Review',
     description:
-      'Search mortgage broker profiles, compare offices, and read verified borrower reviews.',
+      'Search mortgage originator profiles, compare offices, and read verified borrower reviews.',
     icon: Users,
   },
   {
     step: 3,
     title: 'Connect Directly',
     description:
-      'Reach out to your chosen broker through the platform or directly via phone.',
+      'Reach out to your chosen mortgage originator through the platform or directly via phone.',
     icon: FileText,
   },
   {
     step: 4,
     title: 'Close Your Loan',
     description:
-      'Work with your broker to finalize your mortgage with competitive rates and terms.',
+      'Work with your mortgage originator to finalize your mortgage with competitive rates and terms.',
     icon: CreditCard,
   },
 ]
@@ -42,7 +42,7 @@ export default function ProcessSection() {
       <AnimatedContainer delay={0.1} variant="fadeUp">
         <SectionHeader
           title="How It Works"
-          subtitle="Getting connected with the right mortgage broker is simple. Follow these steps."
+          subtitle="Getting connected with the right mortgage originator is simple. Follow these steps."
           centered
         />
       </AnimatedContainer>

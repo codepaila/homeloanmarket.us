@@ -37,7 +37,7 @@ const navigation = [
     icon: Home,
   },
   {
-    name: 'Find Brokers',
+    name: 'Find Mortgage Originators',
     href: '/brokers',
     icon: Briefcase,
   },
@@ -154,7 +154,7 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
     if (!role) return 'User'
     const roleMap: Record<string, string> = {
       ADMIN: 'Administrator',
-      BROKER: 'Broker',
+      BROKER: 'Mortgage Originator',
       COMPANY: 'Company',
       USER: 'User',
     }
@@ -188,7 +188,7 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
     // Dashboard for broker
     if (user?.isBroker) {
       items.push({
-        label: 'Broker Dashboard',
+        label: 'Dashboard',
         href: '/broker/dashboard',
         icon: LayoutDashboard,
       })
@@ -260,7 +260,7 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    'relative rounded-lg px-3.5 py-2 text-sm font-medium transition-colors',
+                    'relative rounded-lg px-1.5 py-2 text-sm font-medium transition-colors',
                     isActive(item.href)
                       ? 'text-foreground'
                       : 'text-muted-foreground hover:text-foreground',
@@ -395,7 +395,7 @@ function UserDropdown({
     if (!role) return 'User'
     const roleMap: Record<string, string> = {
       ADMIN: 'Administrator',
-      BROKER: 'Broker',
+      BROKER: 'Mortgage Originator',
       COMPANY: 'Company',
       USER: 'User',
     }

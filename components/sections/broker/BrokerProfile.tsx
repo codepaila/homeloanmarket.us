@@ -95,12 +95,12 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
   const verificationStatusConfig = {
     UNVERIFIED: { label: "Unverified", color: "secondary", icon: XCircle, description: "Complete verification to get verified badge" },
     PENDING: { label: "Pending Verification", color: "warning", icon: Clock, description: "Your profile is under review" },
-    VERIFIED: { label: "Verified Mortgage Broker", color: "success", icon: CheckCircle, description: "Your profile is verified and active" },
+    VERIFIED: { label: "Verified Mortgage Originator", color: "success", icon: CheckCircle, description: "Your profile is verified and active" },
   }
 
   const brokerStatusConfig = {
     FREE: { label: "Free Plan", color: "secondary", icon: Building },
-    FEATURED: { label: "Featured Mortgage Broker", color: "primary", icon: Star },
+    FEATURED: { label: "Featured Mortgage Originator", color: "primary", icon: Star },
     SUSPENDED: { label: "Suspended", color: "destructive", icon: XCircle },
   }
 

@@ -75,7 +75,7 @@ export function BrokerReviewDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Write a Review</DialogTitle>
-          <DialogDescription>Share your experience with this mortgage broker.</DialogDescription>
+          <DialogDescription>Share your experience with this mortgage originator.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

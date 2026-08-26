@@ -37,17 +37,17 @@ export default function CallToActionSection() {
           </motion.div>
 
           <h2 className="mx-auto max-w-3xl text-balance text-3xl font-extrabold leading-tight text-white md:text-5xl">
-            Ready to find your mortgage broker?
+            Ready to find your mortgage originator?
           </h2>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-white/80">
-            Join thousands of borrowers who found the right mortgage broker and
+            Join thousands of borrowers who found the right mortgage originator and
             saved on their mortgage. It&apos;s free and takes less than a minute.
           </p>
 
           <div className="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link href="/brokers">
               <PremiumButton variant="secondary" size="lg">
-                Find Mortgage Brokers
+                Find Mortgage Originators
                 <ArrowRight className="ml-2 h-4 w-4" />
               </PremiumButton>
             </Link>
@@ -68,7 +68,7 @@ export default function CallToActionSection() {
               4.8/5 average borrower rating
             </span>
             <span className="hidden h-4 w-px bg-white/20 sm:block" />
-            <span>10,000+ verified mortgage brokers</span>
+            <span>10,000+ verified mortgage originators</span>
             <span className="hidden h-4 w-px bg-white/20 sm:block" />
             <span>$2.5B+ loans facilitated</span>
           </div>

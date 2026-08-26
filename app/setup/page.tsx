@@ -47,7 +47,7 @@ export default async function BrokerSetupPage() {
       <div className="mx-auto w-full max-w-3xl px-4">
         <div className="mb-6 text-center sm:mb-8">
           <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
-            Become a Verified Mortgage Broker
+            Become a Verified Mortgage Originator
           </h1>
           <p className="mx-auto mt-1.5 max-w-2xl text-sm text-muted-foreground sm:text-base">
             Join America&apos;s leading mortgage marketplace and connect with borrowers across the United States.

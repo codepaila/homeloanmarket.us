@@ -46,7 +46,7 @@ export default function ClaimContinuePage() {
           // Pass a data object to force a POST session update, persisting the
           // newly promoted BROKER role to the session cookie.
           await refreshSession({})
-          toast.success('Broker profile claimed successfully.')
+          toast.success('Mortgage originator profile claimed successfully.')
           router.push(result.redirectTo || '/broker/dashboard')
         }
       })
@@ -68,7 +68,7 @@ export default function ClaimContinuePage() {
       const data = await response.json()
       if (!response.ok) { setMessage(data.message || 'Unable to complete claim'); return }
       await refreshSession({})
-      toast.success('Broker profile claimed successfully.')
+      toast.success('Mortgage originator profile claimed successfully.')
       router.push(data.redirectTo || '/broker/dashboard')
     } finally {
       setLoading(false)
@@ -92,8 +92,8 @@ export default function ClaimContinuePage() {
             <div className="space-y-4 rounded-2xl border border-border bg-card p-8 text-center shadow-soft">
               <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" aria-hidden="true" />
               <div>
-                <h1 className="text-lg font-semibold">Completing your broker claim…</h1>
-                <p className="mt-2 text-sm text-muted-foreground">Please wait while we securely connect your account to your broker profile.</p>
+                <h1 className="text-lg font-semibold">Completing your mortgage originator claim…</h1>
+                <p className="mt-2 text-sm text-muted-foreground">Please wait while we securely connect your account to your mortgage originator profile.</p>
               </div>
             </div>
           )}

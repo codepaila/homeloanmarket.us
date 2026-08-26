@@ -743,7 +743,7 @@ body.dark,
     background: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    box-shadow: var(--shadow-soft);
+    /* box-shadow: var(--shadow-soft); */
     position: relative;
   }
 

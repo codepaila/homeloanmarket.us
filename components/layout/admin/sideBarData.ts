@@ -126,7 +126,7 @@ export const appSidebarData = (user: SidebarUserInput): SidebarData => {
   // ==================== BROKER NAVIGATION ====================
   const brokerNavItems: SidebarItem[] = isBroker ? [
     {
-      title: "Broker Dashboard",
+      title: "Dashboard",
       url: "/broker/dashboard",
       icon: Home,
       roles: ["BROKER"]
@@ -251,13 +251,13 @@ export const appSidebarData = (user: SidebarUserInput): SidebarData => {
       roles: ["USER"]
     },
     {
-      title: "Find Brokers",
+      title: "Find Mortgage Originators",
       url: "/brokers",
       icon: Search,
       items: [
-        { title: "Browse Brokers", url: "/brokers" },
-        { title: "Featured Brokers", url: "/brokers?featured=true" },
-        { title: "Verified Brokers", url: "/brokers?verified=true" },
+        { title: "Browse Mortgage Originators", url: "/brokers" },
+        { title: "Featured Mortgage Originators", url: "/brokers?featured=true" },
+        { title: "Verified Mortgage Originators", url: "/brokers?verified=true" },
         { title: "By City", url: "/brokers/cities" },
       ]
     },
@@ -272,7 +272,7 @@ export const appSidebarData = (user: SidebarUserInput): SidebarData => {
       ]
     },
     {
-      title: "Saved Brokers",
+      title: "Saved Mortgage Originators",
       url: "/saved",
       icon: Heart,
       badge: "12", // Saved brokers count
@@ -465,7 +465,7 @@ function getQuickActions(user: SidebarUserInput, options: {
   if (isUser) {
     actions.push(
       {
-        title: "Find Brokers",
+        title: "Find Mortgage Originators",
         url: "/brokers",
         icon: Search,
         color: "primary"

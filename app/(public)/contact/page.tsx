@@ -111,7 +111,7 @@ export default function ContactPage() {
             <div className="space-y-8">
               <h2 className="heading-3 text-text-main">Get in Touch</h2>
               <p className="text-text-muted leading-relaxed">
-                We&apos;re here to help. Whether you&apos;re looking for a mortgage broker or have questions
+                We&apos;re here to help. Whether you&apos;re looking for a mortgage originator or have questions
                 about our platform, our team is ready to assist you.
               </p>
 

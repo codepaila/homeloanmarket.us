@@ -24,7 +24,7 @@ const footerColumns = [
   {
     title: 'Resources',
     links: [
-      { name: 'Mortgage Broker Directory', href: '/brokers' },
+      { name: 'Mortgage Originator Directory', href: '/brokers' },
       { name: 'Mortgage Guides', href: '/guides' },
       { name: 'Articles', href: '/blog' },
       { name: 'Mortgage Calculator', href: '/calculator' },
@@ -37,7 +37,7 @@ const footerColumns = [
       { name: 'About Us', href: '/about' },
       { name: 'Contact', href: '/contact' },
       { name: 'Subscription Plans', href: '/subscription' },
-      { name: 'Become a Mortgage Broker', href: '/register' },
+      { name: 'Become a Mortgage Originator', href: '/register' },
     ],
   },
   {
@@ -179,7 +179,7 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
               )}
             </Link>
             <p className="max-w-xs text-sm leading-relaxed text-text-muted">
-              {settings?.footerDescription || 'HomeLoanMarket helps home buyers find and compare verified mortgage brokers across the United States.'}
+              {settings?.footerDescription || 'HomeLoanMarket helps home buyers find and compare verified mortgage originators across the United States.'}
             </p>
             <div className="flex gap-2">
               {socialLinks.map((social) => (

@@ -35,7 +35,7 @@ export default function CompanyRegisterForm() {
   }
 
   return (
-    <AuthFormWrapper showBackLink={false} title="Join as a Company" subtitle="Create your company account and get started with advertising opportunities across relevant mortgage broker listings." backHref="/register" backLabel="Back to registration" size="lg" footer={<p className="text-sm text-text-muted">Already registered? <Link href="/auth/signin" className="text-primary">Sign in</Link></p>}>
+    <AuthFormWrapper showBackLink={false} title="Join as a Company" subtitle="Create your company account and get started with advertising opportunities across relevant mortgage originator listings." backHref="/register" backLabel="Back to registration" size="lg" footer={<p className="text-sm text-text-muted">Already registered? <Link href="/auth/signin" className="text-primary">Sign in</Link></p>}>
       <form onSubmit={submit} className="space-y-4">
         <GoogleContinueButton callbackUrl="/company/register/continue" companyIntent />
         <AuthDivider label="or register with email" />

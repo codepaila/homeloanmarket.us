@@ -17,12 +17,12 @@ export default function BrokerRegistrationContinuePage() {
       try {
         const response = await fetch('/api/auth/broker-intent', { method: 'PUT' })
         const data = await response.json()
-        if (!response.ok) throw new Error(data.error || 'Unable to continue broker registration')
+        if (!response.ok) throw new Error(data.error || 'Unable to continue mortgage originator registration')
 
         await refreshSession()
         router.replace(data.redirectTo || '/broker/subscription/select')
       } catch (cause) {
-        if (active) setError(cause instanceof Error ? cause.message : 'Unable to continue broker registration')
+        if (active) setError(cause instanceof Error ? cause.message : 'Unable to continue mortgage originator registration')
       }
     }
 
@@ -45,7 +45,7 @@ export default function BrokerRegistrationContinuePage() {
         ) : (
           <>
             <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" aria-hidden="true" />
-            <p className="mt-3 text-sm text-muted-foreground">Preparing your broker registration...</p>
+            <p className="mt-3 text-sm text-muted-foreground">Preparing your mortgage originator registration...</p>
           </>
         )}
       </div>

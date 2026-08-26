@@ -113,7 +113,7 @@ export function CoverImageUpload({
     <div className="space-y-3">
       <div>
         <p className="text-sm font-medium">{label} <span className="text-muted-foreground">· Optional</span></p>
-        <p className="text-xs text-muted-foreground">Wide banner shown at the top of the public broker profile. Recommended: 1600 × 500 px (16:5).</p>
+        <p className="text-xs text-muted-foreground">Wide banner shown at the top of the public mortgage originator profile. Recommended: 1600 × 500 px (16:5).</p>
       </div>
 
       <div className="relative aspect-[16/5] w-full max-w-md overflow-hidden rounded-xl border border-border bg-muted">

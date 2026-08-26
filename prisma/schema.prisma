@@ -288,6 +288,11 @@ model Broker {
   registrationNumber String?
   nmls              String?
   panNumber          String?
+  // Broker social media profile links. Canonical JSON shape (each value is a
+  // validated HTTP(S) URL or null when unset):
+  //   { facebook?, twitter?, linkedin?, instagram? }
+  // The field is dedicated exclusively to social links and is Broker-only.
+  socialLinks Json?
   // US states in which the broker holds a mortgage license. Independent of the
   // broker's profile/location `state` field. Uses stable two-letter US state
   // codes (e.g. "CA", "TX").

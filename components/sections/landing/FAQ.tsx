@@ -14,29 +14,29 @@ import { PremiumButton } from '@/components/design/PremiumButton'
 
 const faqs = [
   {
-    question: 'How do I find a mortgage broker on HomeLoanMarket?',
+    question: 'How do I find a mortgage originator on HomeLoanMarket?',
     answer:
-       'Simply enter your city or use our search filters to browse verified mortgage brokers in your area. You can filter by specialization, rating, and more. Each broker profile includes reviews, specialties, and contact options.',
+       'Simply enter your city or use our search filters to browse verified mortgage originators in your area. You can filter by specialization, rating, and more. Each originator profile includes reviews, specialties, and contact options.',
   },
   {
-    question: 'Is it free to search for brokers?',
+    question: 'Is it free to search for mortgage originators?',
     answer:
-      'Yes. Searching, comparing, and contacting brokers is completely free for borrowers. There are no hidden fees or commissions. Some brokers may charge a consultation fee, which they will disclose upfront.',
+      'Yes. Searching, comparing, and contacting mortgage originators is completely free for borrowers. There are no hidden fees or commissions. Some originators may charge a consultation fee, which they will disclose upfront.',
   },
   {
-    question: 'Are the brokers on this platform verified?',
+    question: 'Are the mortgage originators on this platform verified?',
     answer:
-      'We verify the identity and credentials of every broker on our platform. Verified brokers display a "Verified" badge. You can also read genuine borrower reviews to make an informed decision.',
+      'We verify the identity and credentials of every mortgage originator on our platform. Verified mortgage originators display a "Verified" badge. You can also read genuine borrower reviews to make an informed decision.',
   },
   {
-    question: 'How do I contact a broker?',
+    question: 'How do I contact a mortgage originator?',
     answer:
-      'Each broker profile includes contact options such as phone, WhatsApp, email, and a contact form. For brokers on a Free Plan, you can message them through our secure platform.',
+      'Each mortgage originator profile includes contact options such as phone, WhatsApp, email, and a contact form. For originators on a Free Plan, you can message them through our secure platform.',
   },
   {
-    question: 'Can I leave a review for a broker I worked with?',
+    question: 'Can I leave a review for a mortgage originator I worked with?',
     answer:
-      'Yes. After working with a broker, you can leave a verified review on their profile. This helps other borrowers make confident choices. You will need to provide your contact details for verification.',
+      'Yes. After working with a mortgage originator, you can leave a verified review on their profile. This helps other borrowers make confident choices. You will need to provide your contact details for verification.',
   },
 ]
 
@@ -46,7 +46,7 @@ export default function FAQSection() {
       <AnimatedContainer delay={0.1} variant="fadeUp">
         <SectionHeader
           title="Frequently asked questions"
-          subtitle="Everything you need to know about finding and working with mortgage brokers."
+          subtitle="Everything you need to know about finding and working with mortgage originators."
           centered
         />
       </AnimatedContainer>

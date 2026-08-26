@@ -41,8 +41,8 @@ test('autocomplete supports keyboard navigation', () => {
 })
 
 test('autocomplete shows loading and empty states', () => {
-  assert.match(searchSection, /Searching brokers…/)
-  assert.match(searchSection, /No brokers found/)
+  assert.match(searchSection, /Searching mortgage originators…/)
+  assert.match(searchSection, /No mortgage originators found/)
 })
 
 test('autocomplete guards against stale responses with AbortController and a request id', () => {

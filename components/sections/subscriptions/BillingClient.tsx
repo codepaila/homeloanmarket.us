@@ -750,7 +750,7 @@ export default function BillingHistoryClient() {
                 <div>
                   <h4 className="font-medium mb-2">Bill From</h4>
                   <div className="text-sm">
-                    <p className="font-semibold">Mortgage Broker Platform</p>
+                    <p className="font-semibold">Mortgage Originator Platform</p>
                     <p>Powered by Stripe</p>
                   </div>
                 </div>

@@ -117,7 +117,7 @@ export default function BrokersPage() {
     undefined,
     undefined,
     selectedLocation ? { latitude: selectedLocation.latitude, longitude: selectedLocation.longitude, city: selectedLocation.city, state: selectedLocation.state, zip: selectedLocation.zip, token: selectedLocation.token } : undefined,
-     radius,
+    radius,
   )
 
   // Typing only updates local input state. The broker query, location
@@ -221,7 +221,7 @@ export default function BrokersPage() {
       selectSuggestion(index)
     } else {
       // No suggestion: never fall back to a free-text geocode/radius search.
-      setLocationError('Select a location from the suggestions to search nearby brokers.')
+      setLocationError('Select a location from the suggestions to search nearby mortgage originators.')
     }
   }
 
@@ -338,16 +338,16 @@ export default function BrokersPage() {
   const filtersPanel = (
     <div className="space-y-6">
       <div>
-          <div className="space-y-2 rounded-xl border border-border bg-background p-3">
-            <label className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              <span>Search Radius</span>
-              <span className="font-medium normal-case text-text-main">{radius} miles</span>
-            </label>
-            <div className="flex items-center justify-between text-xs text-muted-foreground"><span>0 miles</span><span>100 miles</span></div>
-            <input type="range" min="0" max="100" step="1" value={radius} onChange={(event) => setRadius(Number(event.target.value))} aria-label="Search radius in miles" className="w-full accent-primary" />
-            <p className="text-xs text-muted-foreground">Search for brokers within this radius of the selected location.</p>
-          </div>
+        <div className="space-y-2 rounded-xl border border-border bg-background p-3">
+          <label className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <span>Search Radius</span>
+            <span className="font-medium normal-case text-text-main">{radius} miles</span>
+          </label>
+          <div className="flex items-center justify-between text-xs text-muted-foreground"><span>0 miles</span><span>100 miles</span></div>
+          <input type="range" min="0" max="100" step="1" value={radius} onChange={(event) => setRadius(Number(event.target.value))} aria-label="Search radius in miles" className="w-full accent-primary" />
+          <p className="text-xs text-muted-foreground">Search for mortgage originators within this radius of the selected location.</p>
         </div>
+      </div>
 
       {/* <div>
         {sectionLabel('Experience')}
@@ -438,10 +438,10 @@ export default function BrokersPage() {
               Verified mortgage broker directory
             </div> */}
             <h1 className="heading-2 text-text-main text-balance">
-              Find the right mortgage broker
+              Find the right mortgage originator
             </h1>
             <p className="mx-auto mt-3 max-w-2xl text-base text-text-muted md:text-lg">
-              Search by broker, company, ZIP code, address or location, then compare verified mortgage professionals.
+              Search by mortgage originator, company, ZIP code, address or location, then compare verified mortgage professionals.
             </p>
             {/* <p className="mx-auto mt-3 max-w-3xl text-sm text-text-muted">
               HomeLoanMarket helps you find and compare verified mortgage brokers across the United States.
@@ -460,27 +460,27 @@ export default function BrokersPage() {
       {/* Sticky search + toolbar */}
       <section className="sticky top-16 z-30 border-b border-border bg-card/80 backdrop-blur-lg md:top-[72px]">
         <div className="container-custom py-4 md:py-5 grid grid-cols-5 gap-3 md:gap-5 items-center">
-          <div ref={searchRef} className="relative  col-span-4 sm:col-span-3">
+          <div ref={searchRef} className="relative  col-span-full sm:col-span-3">
             <Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-text-muted" />
             <input
-              type="search"
+              type="text"
               name="q"
               role="combobox"
               autoComplete="off"
               aria-autocomplete="list"
-              aria-label="Search brokers"
+              aria-label="Search mortgage originators"
               aria-expanded={locationSuggestions.length > 0}
               aria-controls="broker-location-suggestions"
               aria-activedescendant={activeSuggestionIndex >= 0 ? `broker-location-suggestion-${activeSuggestionIndex}` : undefined}
               placeholder="Search by City , ZIP code"
               value={searchInput}
-                onChange={(e) => {
-                  setSearchInput(e.target.value)
-                  setSelectedLocation(null)
-                  setRadius(25)
-                  setLocationError('')
-                  setActiveSuggestionIndex(-1)
-                }}
+              onChange={(e) => {
+                setSearchInput(e.target.value)
+                setSelectedLocation(null)
+                setRadius(25)
+                setLocationError('')
+                setActiveSuggestionIndex(-1)
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'ArrowDown' && locationSuggestions.length > 0) {
                   e.preventDefault()
@@ -500,7 +500,7 @@ export default function BrokersPage() {
                   setActiveSuggestionIndex(-1)
                 }
               }}
-              className="h-10 w-full rounded-xl border border-border bg-background pl-11 pr-2 text-sm text-text-main shadow-soft placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="h-10 w-full rounded border border-border bg-background pl-11 pr-2 text-sm text-text-main  placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
             {locationSuggestions.length > 0 && (
               <div id="broker-location-suggestions" className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-border bg-card shadow-large" role="listbox" aria-label="Location suggestions">
@@ -513,7 +513,7 @@ export default function BrokersPage() {
                     aria-selected={locationSuggestions.indexOf(suggestion) === activeSuggestionIndex}
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => selectLocation(suggestion)}
-                    className={cn('flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-text-main hover:bg-muted focus:bg-muted focus:outline-none', locationSuggestions.indexOf(suggestion) === activeSuggestionIndex && 'bg-muted')}
+                    className={cn('flex w-full items-center gap-2 px-4 py-3 text-left text-xs text-text-main hover:bg-muted focus:bg-muted focus:outline-none', locationSuggestions.indexOf(suggestion) === activeSuggestionIndex && 'bg-muted', 'border-b border-border')}
                   >
                     <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
                     {suggestion.label}
@@ -522,7 +522,7 @@ export default function BrokersPage() {
               </div>
             )}
             {locationError && <p role="status" className="absolute inset-x-0 top-full z-50 mt-2 rounded-xl border border-destructive/30 bg-card p-3 text-sm text-destructive">{locationError}</p>}
-            {/* <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
+            <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
               {searchInput && (
                 <button type="button"
                  onClick={() => { setSearchInput(''); setSearch(''); setCommittedSearch(''); setSelectedLocation(null); setRadius(25); setLocationSuggestions([]); setLocationError(''); setActiveSuggestionIndex(-1) }}
@@ -532,48 +532,52 @@ export default function BrokersPage() {
                   <X className="h-4 w-4" />
                 </button>
               )}
-            </div> */}
+            </div>
           </div>
-          <div className="col-span-1 sm:block hidden">
-              <div className="text-sm text-text-muted">
+        
+          <div className="col-span-full sm:col-span-2  flex items-center justify-between gap-4">
+
+            <div className="text-sm text-text-muted">
               {isLoading ? (
                 <span className="inline-block h-4 w-16 animate-pulse rounded bg-muted" />
               ) : (
                 <span>
+                  {/* {searchInput && <span className="inline">Showing Mortage Originators Near  &quot;{searchInput}&quot;</span> } */}
                   <span className="font-semibold text-text-main">{total || 0}</span>{' '}
-                  <span className="hidden sm:inline">mortgage broker{total === 1 ? '' : 's'} found</span>
-                  <span className="sm:hidden">broker{total === 1 ? '' : 's'}</span>
+                  <span className="inline font-medium text-sm">mortgage originator{total === 1 ? '' : 's'} found 
+                    {/* {searchInput && ` Near ${searchInput}`} */}
+
+                  </span>
+                  {/* <span className="sm:hidden">originator{total === 1 ? '' : 's'}</span> */}
                 </span>
               )}
             </div>
-          </div>
-          <div className="col-span-1 flex justify-end">
 
-              <button
-                ref={filtersButtonRef}
-                type="button"
-                onClick={openFilters}
-                className={cn(
-                  ' inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm font-medium text-text-main transition-colors hover:bg-muted',
-                  filtersOpen && 'bg-muted',
-                )}
-                aria-expanded={filtersOpen}
-                aria-controls="broker-filter-sheet"
-              >
-                <SlidersHorizontal className="h-4 w-4" />
-                <span className="hidden sm:block">
+            <button
+              ref={filtersButtonRef}
+              type="button"
+              onClick={openFilters}
+              className={cn(
+                ' inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm font-medium text-text-main transition-colors hover:bg-muted',
+                filtersOpen && 'bg-muted',
+              )}
+              aria-expanded={filtersOpen}
+              aria-controls="broker-filter-sheet"
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              {/* <span className="hidden sm:block"> */}
 
                 Filters
+              {/* </span> */}
+              {hasActiveFilters && (
+                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-white">
+                  {activeFilterCount}
                 </span>
-                {hasActiveFilters && (
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-white">
-                    {activeFilterCount}
-                  </span>
-                )}
-              </button>
-              </div>
-             
-{/* 
+              )}
+            </button>
+          </div>
+
+          {/* 
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-2.5">
               <button
@@ -678,7 +682,7 @@ export default function BrokersPage() {
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <div>
                 <h2 className="text-lg font-bold text-text-main">Filters</h2>
-                <p className="text-xs text-muted-foreground">Refine mortgage brokers</p>
+                <p className="text-xs text-muted-foreground">Refine mortgage originators</p>
               </div>
               <button type="button"
                 data-filter-close
@@ -714,7 +718,7 @@ export default function BrokersPage() {
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <div>
                 <h2 className="text-lg font-bold text-text-main">Filters</h2>
-                <p className="text-xs text-muted-foreground">Refine mortgage brokers</p>
+                <p className="text-xs text-muted-foreground">Refine mortgage originators</p>
               </div>
               <button type="button"
                 data-filter-close
@@ -740,8 +744,8 @@ export default function BrokersPage() {
             <BrokerCardSkeleton count={PAGE_SIZE} view={viewMode} />
           ) : brokerError ? (
             <EmptyState
-              title="Unable to load brokers"
-              description={brokerError instanceof Error ? brokerError.message : 'Broker search is temporarily unavailable. Please try again.'}
+              title="Unable to load mortgage originators"
+              description={brokerError instanceof Error ? brokerError.message : 'Mortgage originator search is temporarily unavailable. Please try again.'}
               action={
                 <button type="button" onClick={() => window.location.reload()} className="btn btn-primary">
                   Try Again
@@ -759,12 +763,12 @@ export default function BrokersPage() {
                 )}
                 layout
               >
-                {sortedBrokers.map((broker: any,ind:number) => (
+                {sortedBrokers.map((broker: any, ind: number) => (
                   <BrokerGridCard
-                    key={broker.id+"hlm"+ind}
+                    key={broker.id + "hlm" + ind}
                     slug={broker.profileSlug}
-                    name={broker.displayName || broker.companyName || 'Mortgage Broker'}
-                    company={broker.companyName || 'Mortgage Broker'}
+                    name={broker.displayName || broker.companyName || 'Mortgage Originator'}
+                    company={broker.companyName || 'Mortgage Originator'}
                     location={[broker.city, broker.state].filter(Boolean).join(', ') || 'United States'}
                     nmls={broker.nmls}
                     logo={broker.logo}
@@ -785,11 +789,11 @@ export default function BrokersPage() {
             </>
           ) : (
             <EmptyState
-              title="No mortgage brokers found"
+              title="No mortgage originators found"
               description={
                 hasActiveFilters
-                  ? 'Try adjusting your search filters or clearing all filters to see more mortgage brokers.'
-                  : 'No mortgage brokers are currently listed on the platform.'
+                  ? 'Try adjusting your search filters or clearing all filters to see more mortgage originators.'
+                  : 'No mortgage originators are currently listed on the platform.'
               }
               action={
                 hasActiveFilters && (

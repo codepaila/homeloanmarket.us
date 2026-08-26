@@ -19,8 +19,8 @@ const termsSections = [
     content: `You may use the Service for lawful purposes in accordance with these Terms. You are responsible for all activities that occur under your account. You agree not to: (a) use the Service for any fraudulent or unlawful purpose; (b) interfere with or disrupt the Service; (c) attempt to gain unauthorized access to any portion of the Service; (d) submit false or misleading information through the Service; (e) scrape or copy content from the Service for unauthorized purposes.`,
   },
   {
-    title: '3. Broker Matching',
-    content: `HomeLoanMarket serves as a platform to connect mortgage borrowers with mortgage brokers. We do not directly provide mortgage services, financial advice, or act as a lender. Your interactions with brokers facilitated through our platform are solely between you and the respective broker. HomeLoanMarket makes no warranties regarding the services provided by brokers.`,
+    title: '3. Mortgage Originator Matching',
+    content: `HomeLoanMarket serves as a platform to connect mortgage borrowers with mortgage originators. We do not directly provide mortgage services, financial advice, or act as a lender. Your interactions with mortgage originators facilitated through our platform are solely between you and the respective mortgage originator. HomeLoanMarket makes no warranties regarding the services provided by mortgage originators.`,
   },
   {
     title: '4. Account Registration',

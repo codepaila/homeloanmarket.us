@@ -47,7 +47,7 @@ export default function BrokerCard({
 
         <BrokerAvatar
           src={profileImage || logo}
-          alt={company || name || 'Mortgage Broker'}
+          alt={company || name || 'Mortgage Originator'}
           name={name || company}
           className="h-24 w-24"
           />

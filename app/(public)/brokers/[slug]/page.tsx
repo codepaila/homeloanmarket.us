@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     userId: broker.userId,
     userIsActive: broker.user?.isActive,
   })) {
-    return { title: 'Broker Profile Not Found', robots: { index: false, follow: false } }
+    return { title: 'Mortgage Originator Profile Not Found', robots: { index: false, follow: false } }
   }
 
   const name = broker.companyName || broker.displayName
@@ -147,7 +147,7 @@ export default async function PublicBrokerPage({ params }: PageProps) {
 
   const breadcrumbLd = breadcrumbJsonLd([
     { name: 'Home', path: '/' },
-    { name: 'Find Brokers', path: '/brokers' },
+    { name: 'Find Mortgage Originators', path: '/brokers' },
     { name: brokerName, path: `/brokers/${broker.profileSlug}` },
   ])
 

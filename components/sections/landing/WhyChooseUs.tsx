@@ -7,9 +7,9 @@ import { Shield, Clock, TrendingUp, Award, Lock, Headphones } from 'lucide-react
 
 const features = [
   {
-    title: 'Verified Mortgage Brokers Only',
+    title: 'Verified Mortgage Originators Only',
     description:
-      'Every mortgage broker on our platform is identity-verified with bank partnerships and credentials checked.',
+      'Every mortgage originator on our platform is identity-verified with bank partnerships and credentials checked.',
     icon: <Shield className="h-6 w-6 text-primary" />,
   },
   {
@@ -21,13 +21,13 @@ const features = [
   {
     title: 'Faster Matching',
     description:
-      'Our smart matching algorithm connects you with the right broker based on your profile.',
+      'Our smart matching algorithm connects you with the right mortgage originator based on your profile.',
     icon: <Clock className="h-6 w-6 text-primary" />,
   },
   {
     title: 'No Hidden Fees',
     description:
-      'Zero commission for borrowers. Compare mortgage brokers by price, service, and reviews.',
+      'Zero commission for borrowers. Compare mortgage originators by price, service, and reviews.',
     icon: <TrendingUp className="h-6 w-6 text-primary" />,
   },
   {
@@ -50,7 +50,7 @@ export default function WhyChooseUsSection() {
       <AnimatedContainer delay={0.1} variant="fadeUp">
         <SectionHeader
           title="Why choose HomeLoanMarket?"
-          subtitle="We have streamlined the broker-finding process so you can focus on what matters most — your home."
+          subtitle="We have streamlined the mortgage-originator-finding process so you can focus on what matters most — your home."
           centered
         />
       </AnimatedContainer>

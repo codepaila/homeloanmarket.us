@@ -114,6 +114,15 @@ export const adminClaimRevokeRateLimit = new Ratelimit({
   prefix: "ratelimit:admin-claim-revoke",
 });
 
+// Account deletion is destructive; bound per-user (self-service) and per-admin
+// (admin deletion) retries tightly so a client cannot hammer the endpoint.
+export const accountDeletionRateLimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.fixedWindow(3, "10 m"), // 3 deletion attempts per 10 minutes
+  analytics: true,
+  prefix: "ratelimit:account-deletion",
+});
+
 // In-memory rate limiting for email sending
 const emailAttempts = new Map<string, { count: number, firstAttempt: number }>()
 const EMAIL_RATE_LIMIT_WINDOW = 10 * 60 * 1000 // 10 minutes

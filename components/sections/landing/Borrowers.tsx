@@ -9,7 +9,7 @@ function BorrowSection() {
                 Designed to help borrowers
             </h3>
             <p className="text-center text-text-muted mb-12 max-w-2xl mx-auto">
-                Our platform empowers borrowers with comprehensive information and diverse mortgage options tailored to their needs. This ensures that mortgage brokers can easily assist clients in making informed mortgage decisions.
+                Our platform empowers borrowers with comprehensive information and diverse mortgage options tailored to their needs. This ensures that mortgage originators can easily assist clients in making informed mortgage decisions.
             </p>
 
             <div className="grid md:grid-cols-3 gap-6 mb-12">
@@ -46,7 +46,7 @@ function BorrowSection() {
 
             <div className="text-center">
                 <Link href="/brokers" className="btn btn-primary btn-sm">
-                    Find Mortgage Brokers <ArrowRight className='w-5 h-5 ml-2'/>
+                    Find Mortgage Originators <ArrowRight className='w-5 h-5 ml-2'/>
                 </Link>
             </div>
         </div>

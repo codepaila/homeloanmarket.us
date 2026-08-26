@@ -366,7 +366,7 @@ export default function SubscriptionPage() {
                         </div>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        Your broker profile is listed on the platform.
+                        Your mortgage originator profile is listed on the platform.
                       </p>
                     </div>
                   )}

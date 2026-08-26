@@ -51,7 +51,7 @@ interface FormData {
 export default function ContactForm({
   brokerId,
   brokerSlug,
-  brokerName = 'Mortgage Broker',
+  brokerName = 'Mortgage Originator',
 }: ContactFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errors, setErrors] = useState<

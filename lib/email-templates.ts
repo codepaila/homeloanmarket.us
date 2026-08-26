@@ -56,7 +56,7 @@ export const emailTemplates = {
     html: buildHomeLoanTemplate({
       title: 'Claim your HomeLoanMarket profile',
       subtitle: 'Your business profile is ready to be managed',
-      message: `HomeLoanMarket created a broker profile for ${broker.companyName || broker.displayName}. If you are authorized to represent this business, use the secure link below to begin the claim process.`,
+      message: `HomeLoanMarket created a mortgage originator profile for ${broker.companyName || broker.displayName}. If you are authorized to represent this business, use the secure link below to begin the claim process.`,
       highlightSection: `
         <div style="text-align: center; margin: 30px 0;">
           <a href="${claimLink}"
@@ -87,7 +87,7 @@ export const emailTemplates = {
     html: buildHomeLoanTemplate({
       title: 'Verify your email',
       subtitle: 'Continue claiming your existing business profile',
-      message: `Hello ${name}, please verify your email to continue the secure HomeLoanMarket profile claim process. This does not create a second broker profile.`,
+      message: `Hello ${name}, please verify your email to continue the secure HomeLoanMarket profile claim process. This does not create a second mortgage originator profile.`,
       highlightSection: `
         <div style="text-align: center; margin: 30px 0;">
           <a href="${verificationLink}" style="background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 16px;">Verify Email</a>
@@ -165,7 +165,7 @@ export const emailTemplates = {
         </div>
       `,
       infoItems: {
-        'Broker Name': broker.displayName,
+        'Mortgage Originator Name': broker.displayName,
         'Profile URL': `${APP_URL}/brokers/${broker.profileSlug}`,
         City: broker.city || '',
         Experience: `${broker.experienceYears} years`,
@@ -192,7 +192,7 @@ export const emailTemplates = {
             <div>
               <h3 style="margin: 0 0 5px 0; color: #92400e;">Contact the lead now</h3>
               <p style="margin: 0; color: #92400e; font-size: 14px;">
-                Homebuyers who are contacted quickly are more likely to choose a broker.
+                Homebuyers who are contacted quickly are more likely to choose a mortgage originator.
               </p>
             </div>
           </div>
@@ -493,11 +493,11 @@ export const emailTemplates = {
   }),
 
   contactMessageConfirmation: (user: any, broker: any, message: any) => ({
-    subject: `Your message was sent to ${broker.displayName || 'the broker'}`,
+    subject: `Your message was sent to ${broker.displayName || 'the mortgage originator'}`,
     html: buildHomeLoanTemplate({
       title: 'Message sent successfully!',
       subtitle: 'Your inquiry has been received',
-      message: `Thank you for reaching out. Your message was sent to ${broker.displayName || 'the broker'}, and they will get back to you soon.`,
+      message: `Thank you for reaching out. Your message was sent to ${broker.displayName || 'the mortgage originator'}, and they will get back to you soon.`,
       highlightSection: `
         <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #86efac;">
           <div style="display: flex; align-items: center; gap: 15px;">
@@ -509,14 +509,14 @@ export const emailTemplates = {
             <div>
               <h3 style="margin: 0 0 5px 0; color: #15803d;">Message delivered</h3>
               <p style="margin: 0; color: #15803d; font-size: 14px;">
-                The broker will typically respond within 24 hours
+                The mortgage originator will typically respond within 24 hours
               </p>
             </div>
           </div>
         </div>
       `,
       infoItems: {
-        Broker: broker.displayName || broker.companyName || 'Broker',
+        Broker: broker.displayName || broker.companyName || 'Mortgage Originator',
         Company: broker.companyName || 'Independent',
         Email: broker.email,
         Phone: broker.phone || 'Not provided',

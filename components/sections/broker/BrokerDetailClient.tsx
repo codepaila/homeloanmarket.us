@@ -9,15 +9,19 @@ import {
   MapPin,
   Phone,
   Mail,
-  Globe,
   Award,
   Star,
   Users,
   MessageCircle,
   ArrowRight,
-  Shield,
+  Facebook,
+  Twitter,
+  Linkedin,
+  Instagram,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { isSafeHttpUrl } from '@/lib/broker-social-links'
 import { useBroker, useAllBrokers, useBrokerReviews } from '@/hooks/useClient'
 import Image from 'next/image'
 import { RatingStars, RatingBadge } from '@/components/design/RatingStars'
@@ -28,7 +32,6 @@ import { MortgageExpertBadge } from '@/components/brokers/MortgageExpertBadge'
 import { PremiumButton } from '@/components/design/PremiumButton'
 import { BrokerReviewDialog } from '@/components/sections/broker/BrokerReviewDialog'
 import { BrokerDetailSkeleton } from '@/components/design/BrokerDetailSkeleton'
-import { cn } from '@/lib/utils'
 
 interface BrokerDetailClientProps {
   brokerSlug: string
@@ -106,6 +109,7 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
     logo,
     coverImage,
     profileImage,
+    socialLinks,
     isFeatured,
     isMortgageExpert,
     hasOwner,
@@ -132,17 +136,17 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
           </li>
           <li aria-hidden="true" className="text-muted-foreground/60">/</li>
           <li>
-            <Link href="/brokers" className="hover:text-primary">Find Brokers</Link>
+            <Link href="/brokers" className="hover:text-primary">Find Mortgage Originators</Link>
           </li>
           <li aria-hidden="true" className="text-muted-foreground/60">/</li>
           <li className="truncate font-medium text-foreground" aria-current="page">
-            {displayName || companyName || 'Broker'}
+            {displayName || companyName || 'Mortgage Originator'}
           </li>
         </ol>
       </nav>
       {/* Hero Banner */}
       <section className="relative">
-        <div className="relative h-48 w-full md:h-72 lg:h-80 overflow-hidden rounded-b-3xl">
+        <div className={`relative ${ coverImage ? 'h-48 w-full md:h-72 lg:h-80' : 'h-24 '  }overflow-hidden rounded-b-3xl`}>
           {coverImage ? (
             <Image
               src={coverImage}
@@ -152,9 +156,14 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
               priority
               sizes="100vw"
             />
-          ) : (
-            <div className="absolute inset-0 bg-muted" />
-          )}
+          ) : <></>
+          //  (
+
+            // <div className="absolute inset-0 bg-muted" >
+            //   <HouseIllustration  className="w-full max-w-md lg:max-w-md mx-auto" />
+            // </div>
+          // )
+          }
         </div>
 
         {/* Profile overlap */}
@@ -201,7 +210,7 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
             </div>
 
             <div className="flex items-center gap-2 flex-wrap justify-center">
-                  {isFeaturedBroker && <BrokerSubscriptionBadge className="h-20 w-30" />}
+              {isFeaturedBroker && <BrokerSubscriptionBadge className="h-20 w-30" />}
 
               {/* {isVerifiedBadge(currentBroker.verificationStatus) && (
                 <Badge className="bg-emerald-500/10 text-emerald-700 ring-1 ring-emerald-600/20">
@@ -218,7 +227,7 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
             </div>
           </div>
 
-       
+
         </header>
 
 
@@ -235,6 +244,8 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
               officeAddress={officeAddress}
             />
 
+            <SocialSection socialLinks={socialLinks} />
+
           </aside>
 
 
@@ -246,7 +257,7 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
             <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-text-main">
-                  Similar brokers
+                  Similar mortgage originators
                 </h2>
                 <p className="mt-1 text-sm text-text-muted">
                   More verified professionals in your area.
@@ -256,7 +267,7 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
                 href="/brokers"
                 className="inline-flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary"
               >
-                View all brokers
+                View all mortgage originators
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
@@ -266,8 +277,8 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
                 <BrokerGridCard
                   key={broker.id}
                   slug={broker.profileSlug}
-                  name={broker.displayName || broker.companyName || 'Mortgage Broker'}
-                  company={broker.companyName || 'Mortgage Broker'}
+                  name={broker.displayName || broker.companyName || 'Mortgage Originator'}
+                  company={broker.companyName || 'Mortgage Originator'}
                   location={[broker.city, broker.state].filter(Boolean).join(', ') || 'United States'}
                   nmls={broker.nmls}
                   logo={broker.logo}
@@ -283,17 +294,17 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
         <section className="">
           <div className=" px-6 py-14 text-center md:py-16">
             <h2 className="text-balance text-2xl font-bold text-text-main md:text-3xl">
-              Still comparing mortgage brokers?
+              Still comparing mortgage originators?
             </h2>
             <p className="mx-auto mt-3 max-w-xl text-sm text-text-muted">
-              View the full directory of verified mortgage brokers, compare
+              View the full directory of verified mortgage originators, compare
               ratings and reviews, and find the right match for your home
               loan journey.
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Link href="/brokers">
                 <PremiumButton size="lg">
-                  Find Mortgage Brokers
+                  Find Mortgage Originators
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </PremiumButton>
               </Link>
@@ -365,7 +376,7 @@ function ContactSection({
           </ContactRow>
         )}
 
-        {website && websiteHref && (
+        {/* {website && websiteHref && (
           <ContactRow icon={<Globe className="h-4 w-4" />} label="Website">
             <a
               href={websiteHref}
@@ -376,7 +387,7 @@ function ContactSection({
               {websiteDisplay}
             </a>
           </ContactRow>
-        )}
+        )} */}
 
         {officeAddress && (
           <ContactRow icon={<MapPin className="h-4 w-4" />} label="Office Location">
@@ -407,6 +418,49 @@ function ContactRow({
         <div className="mt-0.5 min-w-0 break-words text-sm font-medium text-text-main">{children}</div>
       </div>
     </div>
+  )
+}
+
+// Supported public social platforms. Each value is validated against the safe
+// HTTP(S) URL rule before it is rendered — legacy or malformed stored values
+// (e.g. javascript:/data:) are never turned into external links.
+const SOCIAL_PLATFORMS: { key: string; label: string; icon: LucideIcon; accessibleName: string }[] = [
+  { key: 'facebook', label: 'Facebook', icon: Facebook, accessibleName: 'Facebook profile' },
+  { key: 'twitter', label: 'X', icon: Twitter, accessibleName: 'X (Twitter) profile' },
+  { key: 'linkedin', label: 'LinkedIn', icon: Linkedin, accessibleName: 'LinkedIn profile' },
+  { key: 'instagram', label: 'Instagram', icon: Instagram, accessibleName: 'Instagram profile' },
+]
+
+// Renders the broker's social profiles as a set of compact, responsive pills.
+// The section is omitted entirely when there is nothing safe to show, so empty
+// platforms never render as placeholder rows.
+function SocialSection({ socialLinks }: { socialLinks?: Record<string, string | null> }) {
+  const links = SOCIAL_PLATFORMS.filter(({ key }) => {
+    const value = socialLinks?.[key]
+    return typeof value === 'string' && isSafeHttpUrl(value)
+  })
+
+  if (links.length === 0) return null
+
+  return (
+    <section className="space-y-4">
+      <h2 className="text-lg font-bold text-text-main">Social Profiles</h2>
+      <div className="flex flex-wrap gap-2">
+        {links.map(({ key, label, icon: Icon, accessibleName }) => (
+          <a
+            key={key}
+            href={socialLinks?.[key] as string}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={accessibleName}
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-2 text-sm font-medium text-text-main transition-colors hover:border-primary/40 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+            {/* {label} */}
+          </a>
+        ))}
+      </div>
+    </section>
   )
 }
 
@@ -444,11 +498,11 @@ function AboutSection({
       {showDescription && (
         <div className="space-y-4">
           <h2 className="text-2xl font-bold text-text-main">
-            About {displayName || 'this broker'}
+            About {displayName || 'this mortgage originator'}
           </h2>
           <p className="text-text-muted leading-relaxed whitespace-pre-line">
             {description ||
-              'Professional broker providing expert loan services with years of experience in the industry.'}
+              'Professional mortgage originator providing expert loan services with years of experience in the industry.'}
           </p>
         </div>
       )}
@@ -472,7 +526,7 @@ function ExperienceSection({
         Professional Experience
       </h3>
       <p className="text-text-muted">
-        With {experienceYears || 0}+ years in the mortgage industry, this broker
+        With {experienceYears || 0}+ years in the mortgage industry, this mortgage originator
         specializes in helping borrowers navigate the mortgage process with
         transparency and care.
       </p>
@@ -567,7 +621,7 @@ function ReviewsSection({
             No reviews at this time
           </h3>
           <p className="text-text-muted">
-            Be the first to review this broker.
+            Be the first to review this mortgage originator.
           </p>
         </div>
       )}

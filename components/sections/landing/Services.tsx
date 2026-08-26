@@ -14,16 +14,16 @@ import {
 
 const services = [
   {
-    title: 'Find Mortgage Brokers',
+    title: 'Find Mortgage Originators',
     description:
-      'Find verified mortgage brokers in your area with transparent pricing, ratings, and reviews.',
+      'Find verified mortgage originators in your area with transparent pricing, ratings, and reviews.',
     icon: <Search className="h-6 w-6 text-primary" />,
     link: '/brokers',
   },
   {
     title: 'Verified Reviews',
     description:
-      'Read real borrower reviews to choose a mortgage broker you can trust.',
+      'Read real borrower reviews to choose a mortgage originator you can trust.',
     icon: <Shield className="h-6 w-6 text-primary" />,
     link: '/guides',
   },
@@ -48,7 +48,7 @@ export default function ServicesSection() {
     <Section size="lg" className="bg-surface">
       <AnimatedContainer delay={0.1} variant="fadeUp">
         <SectionHeader
-          title="Everything you need to find the right mortgage broker"
+          title="Everything you need to find the right mortgage originator"
           subtitle="From discovery to decision, we guide you through every step of your mortgage journey."
           centered
         />

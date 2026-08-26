@@ -37,7 +37,7 @@ export default function SetupSuccessPage() {
               </h1>
               
               <p className="text-muted-foreground text-lg mb-2">
-                Thank you for applying to become a mortgage broker
+                Thank you for applying to become a mortgage originator
               </p>
               <p className="text-muted-foreground">
                 Your application is now under review

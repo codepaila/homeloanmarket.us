@@ -101,7 +101,7 @@ export default function CompanySubscriptionSelectPage() {
         <div className="mx-auto max-w-2xl text-center">
           <h1 className="text-3xl font-bold text-foreground">Choose your advertising plan</h1>
           <p className="mt-3 text-muted-foreground">
-            Select a company advertising plan to request local broker-listing advertisements.
+            Select a company advertising plan to request local mortgage originator listings.
           </p>
         </div>
         <div className="mx-auto mt-6 max-w-2xl rounded-xl border border-border bg-card p-4">

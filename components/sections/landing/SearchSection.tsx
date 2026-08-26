@@ -156,13 +156,13 @@ function SearchSection() {
   })
 
   return (
-    <div className="max-w-8xl mx-auto px-4 py-16 md:py-20 bg-white ">
+    <div className="max-w-8xl mx-auto px-4 py-8 pb-10 md:py-14 bg-white ">
       {/* Heading */}
       <motion.h2
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={motionTransition(0.1)}
-        className="text-center text-3xl font-bold text-secondary sm:text-4xl md:text-5xl"
+        className="text-center heading-3 sm:heading-1 font-bold text-secondary "
       >
         <span className="text-primary">
           Find Home Loan Experts
@@ -175,10 +175,10 @@ function SearchSection() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={motionTransition(0.25)}
-        className="mt-8 mx-auto max-w-4xl"
+        className="mt-4 sm:mt-8 mx-auto max-w-4xl"
       >
         {/* Main Search Bar */}
-        <div ref={searchRef} className="relative flex items-center gap-3 rounded-xl bg-white px-4 py-2.5 shadow-sm ring-1 ring-black/5 transition-all focus-within:ring-2 focus-within:ring-primary/50">
+        <div ref={searchRef} className="relative flex items-center gap-3 rounded bg-white px-4 py-2.5  ring-1 ring-black/5 transition-all focus-within:ring-2 focus-within:ring-primary/50">
           <Search className="h-5 w-5 flex-shrink-0 text-primary" />
           <input
             type="search"
@@ -188,7 +188,7 @@ function SearchSection() {
             onKeyDown={handleKeyDown}
             placeholder="Search by city or ZIP code"
             className="flex-1 bg-transparent py-1 text-sm font-medium text-secondary placeholder:text-muted-foreground/70 focus:outline-none"
-            aria-label="Search brokers by city or ZIP code"
+            aria-label="Search mortgage originators by city or ZIP code"
             aria-expanded={locationSuggestions.length > 0 || searching}
             aria-autocomplete="list"
             aria-controls="broker-search-suggestions"
@@ -197,9 +197,9 @@ function SearchSection() {
           {(searching || locationSuggestions.length > 0) && (
             <div id="broker-search-suggestions" className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-border bg-white shadow-xl" role="listbox" aria-label="Location suggestions">
               {searching && locationSuggestions.length === 0 ? (
-                <p className="px-4 py-3 text-sm text-muted-foreground">Searching brokers…</p>
+                <p className="px-4 py-3 text-sm text-muted-foreground">Searching mortgage originators…</p>
               ) : locationSuggestions.length === 0 ? (
-                <p className="px-4 py-3 text-sm text-muted-foreground">No brokers found</p>
+                <p className="px-4 py-3 text-sm text-muted-foreground">No mortgage originators found</p>
               ) : (
                 locationSuggestions.map((suggestion, index) => (
                   <button type="button" key={suggestion.placeId} role="option" aria-selected={index === activeSuggestionIndex} onMouseDown={(event) => event.preventDefault()} onClick={() => selectLocation(suggestion)} className={`flex w-full items-center gap-2 px-4 py-3 text-left text-sm text-secondary hover:bg-muted focus:bg-muted focus:outline-none ${index === activeSuggestionIndex ? 'bg-muted' : ''}`}>

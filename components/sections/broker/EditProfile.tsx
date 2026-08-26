@@ -2,7 +2,7 @@
 // components/sections/broker/EditProfile.tsx
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -29,26 +29,21 @@ import {
   MapPin,
   Globe,
   Briefcase,
-  Banknote,
   Users,
-  Award,
   X,
-  Plus,
   Save,
   Shield,
-  AlertCircle
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
-import { useUserPermissions } from '@/hooks/useCurrentUser'
 import ImageUpload from '@/components/ImageUpload'
 import { ProfileImageUpload } from '@/components/brokers/ProfileImageUpload'
 import { CoverImageUpload } from '@/components/brokers/CoverImageUpload'
 import { USLocationPicker, type SelectedUSLocation } from '@/components/location/USLocationPicker'
 import { US_STATES } from '@/lib/us-states'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { isSafeHttpUrl } from '@/lib/broker-social-links'
 
 // Form Schema based on Prisma schema
 const profileSchema = z.object({
@@ -92,10 +87,10 @@ const profileSchema = z.object({
   panNumber: z.string().max(20, 'Tax ID / EIN must be 20 characters or fewer').optional().or(z.literal('')),
 
   // Social Links
-  facebook: z.string().url().optional().or(z.literal('')),
-  twitter: z.string().url().optional().or(z.literal('')),
-  linkedin: z.string().url().optional().or(z.literal('')),
-  instagram: z.string().url().optional().or(z.literal('')),
+  facebook: z.string().trim().refine((v) => v === '' || isSafeHttpUrl(v), 'Enter a valid https:// URL').optional().or(z.literal('')),
+  twitter: z.string().trim().refine((v) => v === '' || isSafeHttpUrl(v), 'Enter a valid https:// URL').optional().or(z.literal('')),
+  linkedin: z.string().trim().refine((v) => v === '' || isSafeHttpUrl(v), 'Enter a valid https:// URL').optional().or(z.literal('')),
+  instagram: z.string().trim().refine((v) => v === '' || isSafeHttpUrl(v), 'Enter a valid https:// URL').optional().or(z.literal('')),
 
   // Profile visibility
   isVisible: z.boolean().default(true),
@@ -128,12 +123,70 @@ function locationFromBroker(broker: any) {
   }
 }
 
+// Map of form fields → their owning tab. Used to drive cross-tab validation
+// (switch to the first tab that contains an error, then focus its field) and
+// to render per-tab error indicators.
+const TAB_FIELDS = {
+  basic: ['displayName', 'companyName', 'profileSlug', 'description'],
+  contact: ['phone', 'whatsapp', 'email', 'website', 'location', 'officeAddress', 'city', 'state', 'pinCode'],
+  professional: ['experienceYears', 'nmls', 'licenseStates'],
+  social: ['facebook', 'twitter', 'linkedin', 'instagram'],
+} as const
+
+type TabName = keyof typeof TAB_FIELDS
+
+// Deterministic field order so the "first invalid field" is predictable.
+const FIELD_ORDER = [
+  ...TAB_FIELDS.basic,
+  ...TAB_FIELDS.contact,
+  ...TAB_FIELDS.professional,
+  ...TAB_FIELDS.social,
+] as string[]
+
+const TAB_TO_FIELD: Record<string, TabName> = {}
+for (const tab of Object.keys(TAB_FIELDS) as TabName[]) {
+  for (const field of TAB_FIELDS[tab]) TAB_TO_FIELD[field] = tab
+}
+
+function tabForField(field: string): TabName | undefined {
+  return TAB_TO_FIELD[field]
+}
+
+function computeTabErrors(errors: Record<string, unknown>): Record<TabName, number> {
+  const counts: Record<TabName, number> = { basic: 0, contact: 0, professional: 0, social: 0 }
+  for (const tab of Object.keys(TAB_FIELDS) as TabName[]) {
+    for (const field of TAB_FIELDS[tab]) {
+      if (errors[field]) counts[tab] += 1
+    }
+  }
+  return counts
+}
+
+// Focus + scroll to an invalid field. react-hook-form's Controller sets the
+// `name` attribute on the underlying DOM input, so a generic selector works
+// without adding ids to every field.
+function focusField(field: string) {
+  const el = document.querySelector<HTMLElement>(`[name="${field}"], [id="${field}"]`)
+  el?.focus()
+  el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
+function TabErrorBadge({ count }: { count: number }) {
+  return (
+    <Badge
+      variant="destructive"
+      className="h-5 min-w-5 px-1.5"
+      aria-label={`${count} error${count === 1 ? '' : 's'}`}
+    >
+      {count}
+    </Badge>
+  )
+}
+
 export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
   const router = useRouter()
-  const permissions = useUserPermissions()
 
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSavingTab, setIsSavingTab] = useState(false)
   const [activeTab, setActiveTab] = useState('basic')
 
   // Initialize form with broker data
@@ -164,70 +217,25 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
       registrationNumber: broker?.registrationNumber || '',
       panNumber: broker?.panNumber || '',
 
-      facebook: broker?.facebook || '',
-      twitter: broker?.twitter || '',
-      linkedin: broker?.linkedin || '',
-      instagram: broker?.instagram || '',
+      facebook: broker?.socialLinks?.facebook || '',
+      twitter: broker?.socialLinks?.twitter || '',
+      linkedin: broker?.socialLinks?.linkedin || '',
+      instagram: broker?.socialLinks?.instagram || '',
 
       isVisible: broker?.isVisible ?? true,
     }
   })
 
-  // Get tab-specific data
-  const getTabData = (tab: string): Partial<ProfileFormData> => {
-    const formData = form.getValues()
-    const tabData: Partial<ProfileFormData> = {}
-
-    switch (tab) {
-      case 'basic':
-        tabData.displayName = formData.displayName
-        tabData.companyName = formData.companyName
-        tabData.description = formData.description
-        tabData.profileSlug = formData.profileSlug
-        tabData.logo = formData.logo
-        break
-      case 'contact':
-        tabData.phone = formData.phone
-        tabData.whatsapp = formData.whatsapp
-        tabData.email = formData.email
-        tabData.website = formData.website
-        tabData.officeAddress = formData.officeAddress
-        tabData.city = formData.city
-        tabData.state = formData.state
-        tabData.pinCode = formData.pinCode
-        tabData.location = formData.location
-        break
-      case 'professional':
-        tabData.experienceYears = formData.experienceYears
-        tabData.nmls = formData.nmls
-        tabData.licenseStates = formData.licenseStates
-        break
-      case 'additional':
-        tabData.registrationNumber = formData.registrationNumber
-        tabData.panNumber = formData.panNumber
-        break
-      case 'social':
-        tabData.facebook = formData.facebook
-        tabData.twitter = formData.twitter
-        tabData.linkedin = formData.linkedin
-        tabData.instagram = formData.instagram
-        tabData.isVisible = formData.isVisible
-        break
-    }
-
-    return tabData
-  }
-
-  // Save current tab
-  const saveCurrentTab = async () => {
+  // Guard against double-submission: the submit button is disabled while a save
+  // is in flight, and this state check rejects any stray duplicate event.
+  const saveChanges = async (data: ProfileFormData) => {
+    if (isSubmitting) return
+    setIsSubmitting(true)
     try {
-      setIsSavingTab(true)
-      const tabData = getTabData(activeTab)
-
       const response = await fetch('/api/brokers/me', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(tabData),
+        body: JSON.stringify(data),
       })
 
       const result = await response.json()
@@ -236,88 +244,90 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
         throw new Error(result.message || 'Failed to update profile')
       }
 
-      toast.success('Changes saved successfully!')
-      form.reset(form.getValues()) // Reset dirty state
-    } catch (error: any) {
-      toast.error(error.message)
-    } finally {
-      setIsSavingTab(false)
-    }
-  }
-
-  // Save all changes
-  const saveAllChanges = async () => {
-    try {
-      setIsSubmitting(true)
-      const formData = form.getValues()
-
-      const response = await fetch('/api/brokers/me', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Failed to update profile')
-      }
-
-      toast.success('Profile updated successfully!')
-
-      // Redirect to profile page
-      router.push('/broker/profile')
+      toast.success('✓ Changes saved')
+      // Re-base the form on the saved state so "Reset Changes" restores the
+      // last save (never the database).
+      form.reset(data)
       router.refresh()
-
     } catch (error: any) {
-      toast.error(error.message)
+      toast.error(error?.message || 'Failed to update profile')
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  // Handle tab change with save prompt
-  const handleTabChange = async (newTab: string) => {
-    if (form.formState.isDirty) {
-      const shouldSave = window.confirm('You have unsaved changes. Save before switching tabs?')
-      if (shouldSave) {
-        await saveCurrentTab()
+  // Cross-tab validation: on an invalid submit, collect errors (react-hook-form
+  // has already validated every registered field), switch to the first tab that
+  // contains an error, and move focus to the first invalid field.
+  const onInvalidSubmit = () => {
+    const errors = form.formState.errors as Record<string, unknown>
+    for (const field of FIELD_ORDER) {
+      if (errors[field]) {
+        const tab = tabForField(field)
+        if (tab) setActiveTab(tab)
+        window.setTimeout(() => focusField(field), 0)
+        break
       }
     }
-    setActiveTab(newTab)
   }
 
-  // Reset changes
+  // Reset restores the last loaded/saved server state. It never touches the DB.
   const resetChanges = () => {
+    if (form.formState.isDirty && !window.confirm('Discard your unsaved changes?')) return
     form.reset()
     toast.success('Changes reset')
   }
 
+  // Cancel leaves the edit page, warning when there are unsaved changes.
+  const handleCancel = () => {
+    if (form.formState.isDirty && !window.confirm('You have unsaved changes. Leave anyway?')) return
+    router.push('/broker/profile')
+  }
+
+  // Warn on browser unload / navigation away with unsaved changes.
+  useEffect(() => {
+    if (!form.formState.isDirty) return
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault()
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [form.formState.isDirty])
+
+  const tabErrors = useMemo(
+    () => computeTabErrors(form.formState.errors as Record<string, unknown>),
+    [form.formState.errors]
+  )
+
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4">
+    <div className="max-w-6xl mx-auto  ">
       {/* Header */}
       <div className="mb-8">
-         <h1 className="text-3xl font-bold text-foreground mb-2">Edit Mortgage Broker Profile</h1>
+         <h1 className="text-3xl font-bold text-foreground mb-2">Edit Mortgage Originator Profile</h1>
         <p className="text-muted-foreground">
           Update your company information, services, and professional details
         </p>
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(saveAllChanges)} className="space-y-6">
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+        <form onSubmit={form.handleSubmit(saveChanges, onInvalidSubmit)} className="space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-2 md:grid-cols-5 mb-8 overflow-x-auto overflow-y-hidden">
               <TabsTrigger value="basic">
                 <Building className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Basic Info</span>
+                {tabErrors.basic > 0 && <TabErrorBadge count={tabErrors.basic} />}
               </TabsTrigger>
               <TabsTrigger value="contact">
                 <Phone className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Contact</span>
+                {tabErrors.contact > 0 && <TabErrorBadge count={tabErrors.contact} />}
               </TabsTrigger>
               <TabsTrigger value="professional">
                 <Briefcase className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Professional</span>
+                {tabErrors.professional > 0 && <TabErrorBadge count={tabErrors.professional} />}
               </TabsTrigger>
               {/* <TabsTrigger value="additional">
                 <Award className="h-4 w-4 mr-2" />
@@ -326,6 +336,7 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
               <TabsTrigger value="social">
                 <Users className="h-4 w-4 mr-2" />
                 <span className="hidden sm:inline">Social</span>
+                {tabErrors.social > 0 && <TabErrorBadge count={tabErrors.social} />}
               </TabsTrigger>
             </TabsList>
 
@@ -346,7 +357,7 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
                       uploadUrl="/api/brokers/me/profile-image"
                       removeUrl="/api/brokers/me/profile-image"
                       label="Profile image"
-                      helperText="Professional broker photo shown on public cards and profile."
+                      helperText="Professional mortgage originator photo shown on public cards and profile."
                     />
                   </div>
 
@@ -360,7 +371,7 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
                       label="Cover photo"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Upload from your device only — the admin Media Library is never used for broker profile photos.
+                      Upload from your device only — the admin Media Library is never used for mortgage originator profile photos.
                     </p>
                   </div>
 
@@ -489,27 +500,6 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
                 </CardContent>
               </Card>
 
-              {/* Save button for this tab */}
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  onClick={saveCurrentTab}
-                  disabled={isSavingTab || !form.formState.isDirty}
-                  className="gap-2"
-                >
-                  {isSavingTab ? (
-                    <>
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4" />
-                      Save Basic Info
-                    </>
-                  )}
-                </Button>
-              </div>
             </TabsContent>
 
             {/* Contact Information Tab */}
@@ -725,27 +715,6 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
                 </CardContent>
               </Card>
 
-              {/* Save button for this tab */}
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  onClick={saveCurrentTab}
-                  disabled={isSavingTab || !form.formState.isDirty}
-                  className="gap-2"
-                >
-                  {isSavingTab ? (
-                    <>
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4" />
-                      Save Contact Info
-                    </>
-                  )}
-                </Button>
-              </div>
             </TabsContent>
 
             {/* Professional Information Tab */}
@@ -856,27 +825,6 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
                 </CardContent>
               </Card>
 
-              {/* Save button for this tab */}
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  onClick={saveCurrentTab}
-                  disabled={isSavingTab || !form.formState.isDirty}
-                  className="gap-2"
-                >
-                  {isSavingTab ? (
-                    <>
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4" />
-                      Save Professional Info
-                    </>
-                  )}
-                </Button>
-              </div>
             </TabsContent>
 
             {/* Additional Information Tab */}
@@ -934,27 +882,6 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
                 </CardContent>
               </Card>
 
-              {/* Save button for this tab */}
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  onClick={saveCurrentTab}
-                  disabled={isSavingTab || !form.formState.isDirty}
-                  className="gap-2"
-                >
-                  {isSavingTab ? (
-                    <>
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4" />
-                      Save Additional Info
-                    </>
-                  )}
-                </Button>
-              </div>
             </TabsContent>
 
             {/* Social & Features Tab */}
@@ -1125,91 +1052,46 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
                   </CardContent>
                 </Card>
               </div>
-
-              {/* Save button for this tab */}
-              <div className="flex justify-end">
-                <Button
-                  type="button"
-                  onClick={saveCurrentTab}
-                  disabled={isSavingTab || !form.formState.isDirty}
-                  className="gap-2"
-                >
-                  {isSavingTab ? (
-                    <>
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4" />
-                      Save Social & Settings
-                    </>
-                  )}
-                </Button>
-              </div>
             </TabsContent>
           </Tabs>
 
           {/* Submit Buttons */}
           <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t pt-4 pb-6 -mx-4 px-4">
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4 max-w-6xl mx-auto">
-              <div>
+              <div className="flex w-full sm:w-auto items-center gap-3">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => router.push('/broker/profile')}
+                  onClick={handleCancel}
                 >
                   Cancel
                 </Button>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={resetChanges}
                   disabled={!form.formState.isDirty}
-                  className="order-2 sm:order-1"
                 >
                   Reset Changes
                 </Button>
-                <div className="flex gap-3 order-1 sm:order-2">
-                  {/* <Button
-                    type="button"
-                    onClick={saveCurrentTab}
-                    disabled={isSavingTab || !form.formState.isDirty}
-                    className="gap-2"
-                  >
-                    {isSavingTab ? (
-                      <>
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4" />
-                        Save Tab
-                      </>
-                    )}
-                  </Button> */}
-                  <Button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="gap-2 bg-green-600 hover:bg-green-700"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                        Saving All...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4" />
-                        Save All Changes
-                      </>
-                    )}
-                  </Button>
-                </div>
               </div>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="gap-2 w-full sm:w-auto"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Save Changes
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </form>

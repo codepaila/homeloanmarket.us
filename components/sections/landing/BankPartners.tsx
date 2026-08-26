@@ -23,7 +23,7 @@ export default function BankPartnersSection() {
       <AnimatedContainer delay={0.1} variant="fadeUp">
         <SectionHeader
           title="Bank partners"
-          subtitle="Our mortgage brokers work with leading banks to secure competitive mortgage rates for you."
+          subtitle="Our mortgage originators work with leading banks to secure competitive mortgage rates for you."
           centered
         />
       </AnimatedContainer>

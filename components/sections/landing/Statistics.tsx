@@ -16,7 +16,7 @@ import {
 const stats = [
   {
     value: '10,000+',
-    label: 'Verified Mortgage Brokers',
+    label: 'Verified Mortgage Originators',
     icon: <Users className="h-5 w-5" />,
     subvalue: 'Across 50+ states',
   },

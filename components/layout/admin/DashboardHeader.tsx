@@ -120,7 +120,7 @@ export function DashboardHeader({ onMenuClick, quickActions, user }: DashboardHe
           {user?.role === 'BROKER' && (
             <>
               <DropdownMenuItem asChild>
-                 <a href="/broker/profile">Mortgage Broker Profile</a>
+                 <a href="/broker/profile">Mortgage Originator Profile</a>
               </DropdownMenuItem>
               {user?.hasActiveSubscription && (
                 <DropdownMenuItem asChild>

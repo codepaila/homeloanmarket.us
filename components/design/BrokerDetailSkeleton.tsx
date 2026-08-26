@@ -17,7 +17,7 @@ import { SkeletonSubtle, SkeletonHeading } from '@/components/ui/skeleton'
  */
 export function BrokerDetailSkeleton({ className }: { className?: string }) {
   return (
-    <div role="status" aria-label="Loading broker profile" aria-busy="true" className={cn('min-h-screen bg-background', className)}>
+    <div role="status" aria-label="Loading mortgage originator profile" aria-busy="true" className={cn('min-h-screen bg-background', className)}>
       {/* Breadcrumb — real items with a placeholder for the broker name */}
       <nav aria-label="Breadcrumb" className="mx-auto max-w-7xl px-4 pt-4">
         <ol aria-hidden="true" className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
@@ -67,6 +67,17 @@ export function BrokerDetailSkeleton({ className }: { className?: string }) {
                       <SkeletonSubtle className="mt-1.5 h-4 w-40 max-w-full" />
                     </div>
                   </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Social Profiles: heading (primary/50) + wrapping platform pills,
+                mirroring the real SocialSection geometry on the loaded page */}
+            <section className="space-y-4">
+              <SkeletonHeading className="h-6 w-32" />
+              <div className="flex flex-wrap gap-2">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <SkeletonSubtle key={i} className="h-9 w-24 rounded-lg" />
                 ))}
               </div>
             </section>

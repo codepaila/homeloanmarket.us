@@ -66,7 +66,7 @@ export function PublicAdvertisement({ placement, className, location }: { placem
     // banner.
     return (
       <section className={cn('w-full py-2 sm:py-3', className)} aria-label="related local resources">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2 md:gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {validAds.map((ad) => {
             const isBanner = ad.creativeFormat === 'BANNER'
             return isBanner ? (
