@@ -30,13 +30,13 @@ export function FaqAccordion({ faqs }: { faqs: PublicFaq[] }) {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="relative mb-8">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-text-muted" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
         <input
           type="text"
           placeholder="Search for questions..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full rounded-xl border border-border bg-background/50 pl-12 pr-4 py-3 text-base transition-all duration-200 placeholder:text-text-muted/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+          className="w-full rounded-xl border border-border bg-background/50 pl-12 pr-4 py-3 text-base transition-all duration-200 placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
         />
       </div>
 
@@ -49,7 +49,7 @@ export function FaqAccordion({ faqs }: { faqs: PublicFaq[] }) {
               'px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200',
               selectedCategory === category
                 ? 'bg-primary text-white'
-                : 'bg-surface text-text-muted hover:bg-primary/10 hover:text-primary',
+                : 'bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary',
             )}
           >
             {category}
@@ -59,8 +59,8 @@ export function FaqAccordion({ faqs }: { faqs: PublicFaq[] }) {
 
       {filteredFAQs.length === 0 ? (
         <div className="text-center py-12">
-          <HelpCircle className="h-12 w-12 text-text-muted/30 mx-auto mb-4" />
-          <p className="text-text-muted">No questions found matching your search.</p>
+          <HelpCircle className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+          <p className="text-muted-foreground">No questions found matching your search.</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -76,9 +76,9 @@ export function FaqAccordion({ faqs }: { faqs: PublicFaq[] }) {
               <button type="button" onClick={() => setOpenId(openId === faq.id ? null : faq.id)} className="w-full text-left">
                 <div className="card">
                   <div className="flex items-center justify-between p-6">
-                    <h3 className="text-lg font-medium text-text-main pr-4">{faq.question}</h3>
+                    <h3 className="text-lg font-medium text-foreground pr-4">{faq.question}</h3>
                     <motion.div animate={{ rotate: openId === faq.id ? 180 : 0 }} transition={{ duration: 0.3 }} className="flex-shrink-0">
-                      <ChevronDown className="h-5 w-5 text-text-muted" />
+                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
                     </motion.div>
                   </div>
                   <AnimatePresence initial={false}>
@@ -92,7 +92,7 @@ export function FaqAccordion({ faqs }: { faqs: PublicFaq[] }) {
                         className="px-6 pb-4"
                       >
                         <div className="border-t border-border pt-4">
-                          <p className="text-text-muted leading-relaxed">{faq.answer}</p>
+                          <p className="text-muted-foreground leading-relaxed">{faq.answer}</p>
                         </div>
                       </motion.div>
                     )}

@@ -38,7 +38,7 @@ export function GoogleContinueButton({ callbackUrl, className, brokerIntent = fa
       onClick={handleGoogle}
       disabled={loading}
       className={cn(
-        'inline-flex w-full items-center justify-center gap-2.5 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-text-main shadow-soft transition-all duration-200',
+        'inline-flex w-full items-center justify-center gap-2.5 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground shadow-soft transition-all duration-200',
         'hover:bg-muted hover:border-border/80',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30',
         'disabled:pointer-events-none disabled:opacity-60',
@@ -47,7 +47,7 @@ export function GoogleContinueButton({ callbackUrl, className, brokerIntent = fa
     >
       {loading ? (
         <svg
-          className="h-4 w-4 animate-spin text-text-muted"
+          className="h-4 w-4 animate-spin text-muted-foreground"
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"

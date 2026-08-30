@@ -23,7 +23,7 @@ export function StatCard({
   const trendColors = {
     up: 'text-success',
     down: 'text-destructive',
-    neutral: 'text-text-muted',
+    neutral: 'text-muted-foreground',
   }
 
   return (
@@ -41,8 +41,8 @@ export function StatCard({
 
       <div className="relative flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <p className="text-sm font-medium text-text-muted">{label}</p>
-          <div className="text-3xl md:text-4xl font-bold text-text-main">
+          <p className="text-sm font-medium text-muted-foreground">{label}</p>
+          <div className="text-3xl md:text-4xl font-bold text-foreground">
             {value}
           </div>
           {subvalue && (

@@ -110,8 +110,8 @@ function VerifyEmailContent() {
             <CheckCircle className="h-10 w-10 text-success" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-xl font-semibold text-text-main">Email Verified!</h3>
-            <p className="text-sm text-text-muted">
+            <h3 className="text-xl font-semibold text-foreground">Email Verified!</h3>
+            <p className="text-sm text-muted-foreground">
               Your email has been verified successfully. Redirecting to plan selection...
             </p>
           </div>
@@ -123,8 +123,8 @@ function VerifyEmailContent() {
               <div className="flex h-20 w-20 items-center justify-center rounded-full bg-destructive/10 mx-auto mb-4">
                 <XCircle className="h-10 w-10 text-destructive" />
               </div>
-              <h3 className="text-xl font-semibold text-text-main">Verification Failed</h3>
-              <p className="text-sm text-text-muted">
+              <h3 className="text-xl font-semibold text-foreground">Verification Failed</h3>
+              <p className="text-sm text-muted-foreground">
                 The verification link is invalid or expired.
               </p>
             </div>
@@ -159,8 +159,8 @@ function VerifyEmailContent() {
               <div className="flex h-20 w-20 items-center justify-center rounded-full bg-info/10 mx-auto mb-4">
                 <Mail className="h-10 w-10 text-info" />
               </div>
-              <h3 className="text-xl font-semibold text-text-main">Verify Your Email</h3>
-              <p className="text-sm text-text-muted">
+              <h3 className="text-xl font-semibold text-foreground">Verify Your Email</h3>
+              <p className="text-sm text-muted-foreground">
                 {email ? `We sent a verification link to ${email}` : 'Check your email for the verification link'}
               </p>
             </div>
@@ -192,7 +192,7 @@ function VerifyEmailContent() {
             </PremiumButton>
 
             <div className="text-center">
-              <p className="text-xs text-text-muted mb-2">
+              <p className="text-xs text-muted-foreground mb-2">
                 Didn&apos;t receive the email? Check your spam folder.
               </p>
               <Link
@@ -219,7 +219,7 @@ export default function VerifyEmailPage() {
         fallback={
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent mx-auto mb-4"></div>
-            <p className="text-text-muted">Verifying your email...</p>
+            <p className="text-muted-foreground">Verifying your email...</p>
           </div>
         }
       >

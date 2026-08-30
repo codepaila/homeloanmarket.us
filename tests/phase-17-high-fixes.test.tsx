@@ -77,8 +77,12 @@ test('H1: public profile route exposes contact for every eligible broker', () =>
 
 test('H1: featured feed applies the public DTO instead of leaking raw records', () => {
   const source = read('app/api/brokers/featured/route.ts')
-  assert.ok(source.includes('toPublicBrokerRecord(broker, { includeContact: true })'), 'featured feed must use the canonical DTO')
+  // Each featured broker is explicitly projected to a public display record
+  // (id, identity, location, ratings, badges) rather than returned raw.
+  assert.match(source, /brokers: brokers\.map\(\(broker\) => \(\{/)
   assert.ok(!/return NextResponse\.json\(\{ brokers \}\)/.test(source), 'raw broker array must not be returned')
+  // Protected broker columns and account contact details never leak.
+  assert.ok(!/userId:|phone:|email:|officeAddress:/.test(source), 'protected broker fields must not leak from the featured feed')
 })
 
 // =============================================================

@@ -135,12 +135,12 @@ export default function AdminAdsOverviewPage() {
                            />
                          </>
                        ) : (
-                         <Megaphone className="h-4 w-4 text-text-muted" />
+                         <Megaphone className="h-4 w-4 text-muted-foreground" />
                        )}
                      </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{ad.title}</p>
-                      <p className="text-xs text-text-muted">
+                      <p className="text-xs text-muted-foreground">
                         {format(new Date(ad.createdAt), 'MMM d, yyyy')}
                       </p>
                     </div>
@@ -204,14 +204,14 @@ export default function AdminAdsOverviewPage() {
                           />
                         </>
                       ) : (
-                        <FileImage className="h-4 w-4 text-text-muted" />
+                        <FileImage className="h-4 w-4 text-muted-foreground" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">
                         {asset.title || asset.originalName || asset.fileName}
                       </p>
-                      <p className="text-xs text-text-muted">
+                      <p className="text-xs text-muted-foreground">
                         {format(new Date(asset.createdAt), 'MMM d, yyyy')}
                       </p>
                     </div>
@@ -242,7 +242,7 @@ export default function AdminAdsOverviewPage() {
                 <Megaphone className="mr-3 h-5 w-5" />
                 <div className="text-left">
                   <p className="font-medium">Manage Ads</p>
-                  <p className="text-xs text-text-muted">View and edit all ads</p>
+                  <p className="text-xs text-muted-foreground">View and edit all ads</p>
                 </div>
               </Button>
             </Link>
@@ -251,7 +251,7 @@ export default function AdminAdsOverviewPage() {
                 <FileImage className="mr-3 h-5 w-5" />
                 <div className="text-left">
                   <p className="font-medium">Media Library</p>
-                  <p className="text-xs text-text-muted">Browse and manage uploaded assets</p>
+                  <p className="text-xs text-muted-foreground">Browse and manage uploaded assets</p>
                 </div>
               </Button>
             </Link>
@@ -260,7 +260,7 @@ export default function AdminAdsOverviewPage() {
                 <FolderOpen className="mr-3 h-5 w-5" />
                 <div className="text-left">
                   <p className="font-medium">Folders</p>
-                  <p className="text-xs text-text-muted">Organize media folders</p>
+                  <p className="text-xs text-muted-foreground">Organize media folders</p>
                 </div>
               </Button>
             </Link>
@@ -269,7 +269,7 @@ export default function AdminAdsOverviewPage() {
                 <Plus className="mr-3 h-5 w-5" />
                 <div className="text-left">
                   <p className="font-medium">Create Ad</p>
-                  <p className="text-xs text-text-muted">Create a new advertisement</p>
+                  <p className="text-xs text-muted-foreground">Create a new advertisement</p>
                 </div>
               </Button>
             </Link>

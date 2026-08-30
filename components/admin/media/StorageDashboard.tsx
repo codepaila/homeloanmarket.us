@@ -33,7 +33,7 @@ export function StorageDashboard({ className }: StorageDashboardProps) {
               <stat.icon className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs text-text-muted">{stat.label}</p>
+              <p className="text-xs text-muted-foreground">{stat.label}</p>
               <p className="text-lg font-semibold">{stat.value}</p>
             </div>
           </CardContent>

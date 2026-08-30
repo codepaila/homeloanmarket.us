@@ -85,7 +85,7 @@ export function CustomerEmailSignup() {
       >
         Create Account
       </PremiumButton>
-      <p className="text-center text-xs text-text-muted">
+      <p className="text-center text-xs text-muted-foreground">
         Check your email to verify your account.
       </p>
     </form>

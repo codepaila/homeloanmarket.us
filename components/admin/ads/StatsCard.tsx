@@ -23,8 +23,8 @@ export function StatsCard({ title, value, cardIcon, trend, trendUp, className }:
 
       <div className="relative flex items-start justify-between gap-4">
         <div className="space-y-1">
-          <p className="text-sm font-medium text-text-muted">{title}</p>
-          <div className="text-3xl md:text-4xl font-bold text-text-main">
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <div className="text-3xl md:text-4xl font-bold text-foreground">
             {typeof value === 'number' ? value.toLocaleString() : value}
           </div>
           {trend && (

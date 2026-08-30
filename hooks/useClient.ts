@@ -28,10 +28,12 @@ export const useAllBrokers = (
   state?: string,
   location?: { latitude: number; longitude: number; city?: string; state?: string; zip?: string; token?: string },
   radius?: number,
+  options?: { enabled?: boolean },
 ) => {
   const queryParams = new URLSearchParams()
   queryParams.append('page', page.toString())
   queryParams.append('pageSize', pageSize.toString())
+  queryParams.append('mode', 'summary')
   if (minRating) queryParams.append('minRating', minRating.toString())
   if (verificationStatus) queryParams.append('verificationStatus', verificationStatus)
   if (featured !== undefined) queryParams.append('featured', featured.toString())
@@ -50,8 +52,9 @@ export const useAllBrokers = (
     if (location.token) queryParams.append('locationToken', location.token)
   }
 
+  const enabled = options?.enabled !== false
   const { data, error, mutate, isLoading } = useSWR(
-    `${baseUrl}/api/brokers?${queryParams.toString()}`,
+    enabled ? `${baseUrl}/api/brokers?${queryParams.toString()}` : null,
     fetcher
   )
   
@@ -90,7 +93,13 @@ export const useBroker = (slug: string) => {
 export const useBrokerReviews = (slug: string, page: number = 1, limit: number = 10) => {
   const { data, error, mutate, isLoading } = useSWR(
     slug ? `${baseUrl}/api/company/${slug}/reviews?page=${page}&limit=${limit}` : null,
-    fetcher
+    fetcher,
+    {
+      // The profile page server-renders the first reviews in `initialBroker`
+      // and only needs this hook's `mutate` to refresh after a review is
+      // submitted — so no initial fetch is needed.
+      revalidateOnMount: false,
+    }
   )
   
   return {

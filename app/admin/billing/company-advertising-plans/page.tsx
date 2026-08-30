@@ -67,7 +67,7 @@ export default async function AdminCompanyAdvertisingPlansPage() {
           <tbody className="divide-y divide-border">
             {plans.map((plan, index) => (
               <tr key={plan.id}>
-                <td className="px-4 py-3 font-semibold text-text-main">{plan.name}</td>
+                <td className="px-4 py-3 font-semibold text-foreground">{plan.name}</td>
                 <td className="px-4 py-3">{plan.price > 0 ? formatPlanPrice(plan.price, plan.currency) : 'Free'}</td>
                 <td className="px-4 py-3 capitalize">{plan.billingInterval}</td>
                 <td className="px-4 py-3">
@@ -81,7 +81,7 @@ export default async function AdminCompanyAdvertisingPlansPage() {
                 <td className="px-4 py-3">{stats[index].adRequests}</td>
                 <td className="px-4 py-3 text-xs text-muted-foreground">{new Date(plan.createdAt).toLocaleDateString()}</td>
                 <td className="px-4 py-3">
-                  <Link href={`/admin/billing/company-advertising-plans/${plan.id}`} className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-text-main">Manage</Link>
+                  <Link href={`/admin/billing/company-advertising-plans/${plan.id}`} className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-foreground">Manage</Link>
                 </td>
               </tr>
             ))}

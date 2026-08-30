@@ -47,12 +47,12 @@ export function EmptyState({
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.1 }}
       >
-        {icon || <Inbox className="h-6 w-6 text-text-muted" />}
+        {icon || <Inbox className="h-6 w-6 text-muted-foreground" />}
       </motion.div>
 
       <h3
         className={cn(
-          'font-semibold text-text-main mb-2',
+          'font-semibold text-foreground mb-2',
           size === 'sm' && 'text-lg',
           size === 'md' && 'text-xl',
           size === 'lg' && 'text-2xl',
@@ -62,7 +62,7 @@ export function EmptyState({
       </h3>
 
       {description && (
-        <p className="text-sm text-text-muted mb-6 max-w-md">
+        <p className="text-sm text-muted-foreground mb-6 max-w-md">
           {description}
         </p>
       )}
@@ -97,7 +97,7 @@ export function NoSearchResults({
           ? `We couldn't find any mortgage originators matching "${searchTerm}". Try adjusting your search or filters.`
           : 'Try a different search term or view all mortgage originators.'
       }
-      icon={<FileQuestion className="h-8 w-8 text-text-muted" />}
+      icon={<FileQuestion className="h-8 w-8 text-muted-foreground" />}
       action={onClear && (
         <button
           onClick={onClear}

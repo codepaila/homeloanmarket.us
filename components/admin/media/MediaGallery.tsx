@@ -16,8 +16,8 @@ export function MediaGallery({ assets, selectedIds, onToggleSelect, onSelectAsse
   if (assets.length === 0) {
     return (
       <div className="text-center py-16">
-        <FileImage className="h-12 w-12 text-text-muted mx-auto mb-3" />
-        <p className="text-sm text-text-muted">No media assets found</p>
+        <FileImage className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+        <p className="text-sm text-muted-foreground">No media assets found</p>
       </div>
     )
   }
@@ -57,7 +57,7 @@ export function MediaGallery({ assets, selectedIds, onToggleSelect, onSelectAsse
           </div>
           <div className="p-3">
             <p className="text-xs font-medium truncate">{asset.originalName}</p>
-            <p className="text-xs text-text-muted">{asset.width && asset.height ? `${asset.width}×${asset.height}` : '—'} • {formatFileSize(asset.fileSize)}</p>
+            <p className="text-xs text-muted-foreground">{asset.width && asset.height ? `${asset.width}×${asset.height}` : '—'} • {formatFileSize(asset.fileSize)}</p>
           </div>
         </motion.div>
       ))}

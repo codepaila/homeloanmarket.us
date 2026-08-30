@@ -438,7 +438,7 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
               )}
               <div>
                 <h1 className="text-lg font-bold tracking-tight">{isEditMode ? 'Edit Advertisement' : 'New Advertisement'}</h1>
-                <p className="text-xs text-text-muted">{isEditMode ? `Editing: ${ad?.title}` : 'Create a new advertisement campaign'}</p>
+                <p className="text-xs text-muted-foreground">{isEditMode ? `Editing: ${ad?.title}` : 'Create a new advertisement campaign'}</p>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -637,7 +637,7 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                           {ACTION_OPTIONS.map((option) => (
                             <button key={option.value} type="button" onClick={() => field.onChange(option.value)} className={cn('flex flex-col items-start gap-1 p-4 rounded-lg border-2 transition-all text-left', field.value === option.value ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50')}>
                               <span className="font-medium">{option.label}</span>
-                              <span className="text-xs text-text-muted">{option.needsButton && option.needsUrl ? 'Shows button with link' : option.needsUrl ? 'Banner is clickable' : 'Display only, no interaction'}</span>
+                              <span className="text-xs text-muted-foreground">{option.needsButton && option.needsUrl ? 'Shows button with link' : option.needsUrl ? 'Banner is clickable' : 'Display only, no interaction'}</span>
                             </button>
                           ))}
                         </div>
@@ -747,35 +747,35 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                       </CardHeader>
                       <CardContent className="space-y-4">
                         {placementInfo?.page ? (
-                          <div className="flex flex-wrap items-center gap-2 text-xs text-text-muted">
-                            <span className="font-semibold uppercase tracking-wide text-text-muted">Appears on</span>
-                            <span className="text-text-main">{placementInfo.page}</span>
+                          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                            <span className="font-semibold uppercase tracking-wide text-muted-foreground">Appears on</span>
+                            <span className="text-foreground">{placementInfo.page}</span>
                             <span>·</span>
                             <span>{placementInfo.position}</span>
                           </div>
                         ) : null}
 
                         <div className="rounded-lg border border-border bg-muted/30 p-4">
-                          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">
+                          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                             Responsive Display Height
                             {isFullWidthTop && maxDisplayHeight ? <span className="ml-2 text-primary">· Max {maxDisplayHeight}px on desktop</span> : null}
                           </p>
                           <div className="grid grid-cols-3 gap-3">
                             {displayHeights.map(({ device, value }) => (
                               <div key={device} className="rounded-lg bg-card p-3 text-center">
-                                <p className="text-[11px] font-medium uppercase tracking-wide text-text-muted">{device}</p>
-                                <p className="mt-1 text-lg font-bold text-text-main">{value}px</p>
+                                <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{device}</p>
+                                <p className="mt-1 text-lg font-bold text-foreground">{value}px</p>
                               </div>
                             ))}
                           </div>
-                          <p className="mt-2 text-[11px] text-text-muted">
+                          <p className="mt-2 text-[11px] text-muted-foreground">
                             {isFullWidthTop && maxDisplayHeight ? `Maximum Displayed Height: ${maxDisplayHeight}px on desktop. ` : ''}
                             The slot owns the banner height; the image never expands it.
                           </p>
                         </div>
 
                         <div className="rounded-lg border border-border bg-muted/30 p-4">
-                          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">Creative Sizes by Format</p>
+                          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Creative Sizes by Format</p>
                           <ul className="space-y-2">
                             {spec.formats.map((format) => {
                               const desktop = getRequiredDimensions(watchPlacement, format, 'desktop')
@@ -783,11 +783,11 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                               return (
                                 <li key={format} className="rounded-lg bg-card px-3 py-2">
                                   <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <span className="text-sm font-medium text-text-main">{format}</span>
-                                    <span className="text-xs text-text-muted">
+                                    <span className="text-sm font-medium text-foreground">{format}</span>
+                                    <span className="text-xs text-muted-foreground">
                                       Desktop {desktop.width} × {desktop.height}px · {desktop.aspectRatio}
                                     </span>
-                                    <span className="text-xs text-text-muted">
+                                    <span className="text-xs text-muted-foreground">
                                       Mobile {mobileDim.width} × {mobileDim.height}px · {mobileDim.aspectRatio}
                                     </span>
                                   </div>
@@ -799,8 +799,8 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
 
                         {isFullWidthTop && (
                           <div className="rounded-lg border border-border bg-muted/30 p-4">
-                            <p className="text-xs font-semibold uppercase tracking-wide text-text-muted">Tips for a full-width banner</p>
-                            <ul className="mt-2 list-disc space-y-1 pl-4 text-sm text-text-main">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tips for a full-width banner</p>
+                            <ul className="mt-2 list-disc space-y-1 pl-4 text-sm text-foreground">
                               <li>Use a wide horizontal creative for the best fit</li>
                               <li>Keep important text and logos inside the safe area</li>
                               <li>Avoid tall artwork — it will be scaled to fit</li>
@@ -819,7 +819,7 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                   </CardHeader>
                   <CardContent className="space-y-2">
                     {creativeAssignments.length === 0 ? (
-                      <p className="text-sm text-text-muted">No creative is assigned yet. Use the Creative Editor below.</p>
+                      <p className="text-sm text-muted-foreground">No creative is assigned yet. Use the Creative Editor below.</p>
                     ) : (
                       creativeAssignments.map((assignment) => {
                         const supported = isFormatCompatible(watchPlacement || '', assignment.format)
@@ -831,10 +831,10 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium">
                                 {assignment.format}
-                                <span className="text-xs text-text-muted"> · {required.width} × {required.height} px ({required.aspectRatio})</span>
+                                <span className="text-xs text-muted-foreground"> · {required.width} × {required.height} px ({required.aspectRatio})</span>
                               </p>
-                              <p className="truncate text-xs text-text-muted">{asset?.fileName || assignment.mediaAssetId}</p>
-                              {asset?.width && asset?.height ? <p className="text-xs text-text-muted">Uploaded {asset.width} × {asset.height} px</p> : null}
+                              <p className="truncate text-xs text-muted-foreground">{asset?.fileName || assignment.mediaAssetId}</p>
+                              {asset?.width && asset?.height ? <p className="text-xs text-muted-foreground">Uploaded {asset.width} × {asset.height} px</p> : null}
                             </div>
                             {!supported ? (
                               <Badge variant="destructive">Not supported for placement</Badge>
@@ -872,7 +872,7 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                       <CardContent className="space-y-4">
                         {allowedFormats.length > 1 ? (
                           <div>
-                            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-muted">Creative Format</p>
+                            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Creative Format</p>
                             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                               {allowedFormats.map((format) => {
                                 const req = getCreativeRequirementForFormat(watchPlacement, format)
@@ -887,8 +887,8 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                                     className={cn('rounded-xl border p-4 text-left transition-colors', isSelected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:border-primary/50')}
                                   >
                                     <span className="font-medium">{req.label}</span>
-                                    <span className="mt-1 block text-xs text-text-muted">{req.width} × {req.height} px</span>
-                                    <span className="block text-xs text-text-muted">Aspect ratio: {req.aspectRatio}</span>
+                                    <span className="mt-1 block text-xs text-muted-foreground">{req.width} × {req.height} px</span>
+                                    <span className="block text-xs text-muted-foreground">Aspect ratio: {req.aspectRatio}</span>
                                     {alreadyAssigned ? (
                                       <span className="mt-1 inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">Assigned</span>
                                     ) : null}
@@ -898,7 +898,7 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                             </div>
                           </div>
                         ) : (
-                          <p className="text-sm text-text-muted">
+                          <p className="text-sm text-muted-foreground">
                             {formatReq.label} is the only supported format for this placement and is selected automatically.
                           </p>
                         )}
@@ -906,7 +906,7 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                           <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                             <div>
                               <p className="text-sm font-semibold">{formatReq.label} Creative</p>
-                              <p className="text-xs text-text-muted">Required resolution: {formatReq.width} × {formatReq.height} px · {formatReq.aspectRatio}</p>
+                              <p className="text-xs text-muted-foreground">Required resolution: {formatReq.width} × {formatReq.height} px · {formatReq.aspectRatio}</p>
                             </div>
                             {selectedAssignment ? <Badge variant="secondary">Assigned</Badge> : null}
                           </div>
@@ -1012,26 +1012,26 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                     </CardHeader>
                     <CardContent>
                       <dl className="space-y-1.5 text-sm">
-                        <div className="flex justify-between gap-2"><dt className="text-text-muted">Placement</dt><dd className="text-right font-medium">{watchPlacement || '—'}</dd></div>
-                        <div className="flex justify-between gap-2"><dt className="text-text-muted">Type</dt><dd className="text-right">{watchType ? AD_TYPE_LABELS[watchType as AdType] : '—'}</dd></div>
-                        <div className="flex justify-between gap-2"><dt className="text-text-muted">Action</dt><dd className="text-right">{watchAction || '—'}</dd></div>
+                        <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Placement</dt><dd className="text-right font-medium">{watchPlacement || '—'}</dd></div>
+                        <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Type</dt><dd className="text-right">{watchType ? AD_TYPE_LABELS[watchType as AdType] : '—'}</dd></div>
+                        <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Action</dt><dd className="text-right">{watchAction || '—'}</dd></div>
                         {summaryFormatReq ? (
                           <>
-                            <div className="flex justify-between gap-2"><dt className="text-text-muted">Creative format</dt><dd className="text-right">{summaryFormatReq.label}</dd></div>
-                            <div className="flex justify-between gap-2"><dt className="text-text-muted">Required resolution</dt><dd className="text-right">{summaryFormatReq.width} × {summaryFormatReq.height} px</dd></div>
-                            <div className="flex justify-between gap-2"><dt className="text-text-muted">Uploaded resolution</dt><dd className="text-right">{summaryAsset?.width && summaryAsset?.height ? `${summaryAsset.width} × ${summaryAsset.height} px` : '—'}</dd></div>
+                            <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Creative format</dt><dd className="text-right">{summaryFormatReq.label}</dd></div>
+                            <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Required resolution</dt><dd className="text-right">{summaryFormatReq.width} × {summaryFormatReq.height} px</dd></div>
+                            <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Uploaded resolution</dt><dd className="text-right">{summaryAsset?.width && summaryAsset?.height ? `${summaryAsset.width} × ${summaryAsset.height} px` : '—'}</dd></div>
                           </>
                         ) : null}
-                        {companyLabel ? <div className="flex justify-between gap-2"><dt className="text-text-muted">Company</dt><dd className="truncate text-right">Linked</dd></div> : null}
-                        {requestId ? <div className="flex justify-between gap-2"><dt className="text-text-muted">Request</dt><dd className="text-right">Linked</dd></div> : null}
+                        {companyLabel ? <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Company</dt><dd className="truncate text-right">Linked</dd></div> : null}
+                        {requestId ? <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Request</dt><dd className="text-right">Linked</dd></div> : null}
                         {watchPlacement === 'BROKER_LISTING_LOCAL' && watchLocationTarget ? (
                           <>
-                            <div className="flex justify-between gap-2"><dt className="text-text-muted">Target</dt><dd className="truncate text-right">{watchLocationTarget.locationLabel || `${watchLocationTarget.city || ''}, ${watchLocationTarget.state || ''}`}</dd></div>
-                            <div className="flex justify-between gap-2"><dt className="text-text-muted">Radius</dt><dd className="text-right">{watchLocationTarget.radiusMiles} miles</dd></div>
+                            <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Target</dt><dd className="truncate text-right">{watchLocationTarget.locationLabel || `${watchLocationTarget.city || ''}, ${watchLocationTarget.state || ''}`}</dd></div>
+                            <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Radius</dt><dd className="text-right">{watchLocationTarget.radiusMiles} miles</dd></div>
                           </>
                         ) : null}
-                        <div className="flex justify-between gap-2"><dt className="text-text-muted">Schedule</dt><dd className="text-right">{watchStartDate ? new Date(watchStartDate).toLocaleDateString() : '—'} → {watchEndDate ? new Date(watchEndDate).toLocaleDateString() : '—'}</dd></div>
-                        <div className="flex justify-between gap-2"><dt className="text-text-muted">Status</dt><dd className="text-right">{watchIsEnabled ? 'Enabled' : 'Disabled'}</dd></div>
+                        <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Schedule</dt><dd className="text-right">{watchStartDate ? new Date(watchStartDate).toLocaleDateString() : '—'} → {watchEndDate ? new Date(watchEndDate).toLocaleDateString() : '—'}</dd></div>
+                        <div className="flex justify-between gap-2"><dt className="text-muted-foreground">Status</dt><dd className="text-right">{watchIsEnabled ? 'Enabled' : 'Disabled'}</dd></div>
                       </dl>
                     </CardContent>
                   </Card>
@@ -1125,8 +1125,8 @@ function PlacementPreview({
     return (
       <div className="aspect-video rounded-md border-2 border-dashed border-border flex items-center justify-center bg-muted/50">
         <div className="text-center">
-          <ImageIcon className="h-8 w-8 text-text-muted mx-auto mb-1" />
-          <p className="text-xs text-text-muted">Select a placement to preview</p>
+          <ImageIcon className="h-8 w-8 text-muted-foreground mx-auto mb-1" />
+          <p className="text-xs text-muted-foreground">Select a placement to preview</p>
         </div>
       </div>
     )
@@ -1150,8 +1150,8 @@ function PlacementPreview({
                 <img src={imageUrl} alt={title || 'Preview'} className="absolute inset-0 h-full w-full object-cover" />
               ) : (
                 <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-center">
-                  <ImageIcon className="h-6 w-6 text-text-muted mx-auto" />
-                  <p className="px-2 text-[10px] text-text-muted">No media selected</p>
+                  <ImageIcon className="h-6 w-6 text-muted-foreground mx-auto" />
+                  <p className="px-2 text-[10px] text-muted-foreground">No media selected</p>
                 </div>
               )}
               {hasText ? (
@@ -1166,7 +1166,7 @@ function PlacementPreview({
             </div>
           ))}
         </div>
-        <p className="text-[11px] text-text-muted">Renders responsively as compact square cards: 3 columns (desktop) · 2 (tablet) · 1 (mobile).</p>
+        <p className="text-[11px] text-muted-foreground">Renders responsively as compact square cards: 3 columns (desktop) · 2 (tablet) · 1 (mobile).</p>
       </div>
     )
   }
@@ -1175,8 +1175,8 @@ function PlacementPreview({
     return (
       <div className={cn('rounded-md border-2 border-dashed border-border flex items-center justify-center bg-muted/50', layout.slotClassName)}>
         <div className="text-center">
-          <ImageIcon className="h-8 w-8 text-text-muted mx-auto mb-1" />
-          <p className="text-xs text-text-muted">No media selected</p>
+          <ImageIcon className="h-8 w-8 text-muted-foreground mx-auto mb-1" />
+          <p className="text-xs text-muted-foreground">No media selected</p>
         </div>
       </div>
     )

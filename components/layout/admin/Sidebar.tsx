@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/utils'
 import {
-  Home,
   LogOut,
   Shield,
   Crown,
@@ -15,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { signOut } from 'next-auth/react'
 import { NavItem } from './Links'
 import { SubscriptionBadge } from './SubscriptionBadge'
+import { Logo } from '@/components/shared/Logo'
 import type { SidebarData, SidebarItem, UserPermissions } from '@/types/nav'
 
 interface DashboardSidebarProps {
@@ -52,10 +52,7 @@ export function DashboardSidebar({
       {/* Logo */}
       <div className="flex h-16 items-center border-b px-6">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <Home className="h-5 w-5 text-white" />
-          </div>
-           <span className="text-xl font-bold">HomeLoanMarket</span>
+          <Logo className="h-6" />
         </Link>
       </div>
 

@@ -402,7 +402,7 @@ export default function AdminAdsListPage() {
       fallback={
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent mx-auto mb-4"></div>
-          <p className="text-text-muted">Loading advertisements...</p>
+          <p className="text-muted-foreground">Loading advertisements...</p>
         </div>
       }
     >

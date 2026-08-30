@@ -15,6 +15,7 @@ export function BrokerAvatar({
   width = 96,
   height = 96,
   priority,
+  sizes,
 }: {
   src?: string | null
   alt: string
@@ -24,6 +25,7 @@ export function BrokerAvatar({
   width?: number
   height?: number
   priority?: boolean
+  sizes?: string
 }) {
   const [error, setError] = useState(false)
   const initials = (name || alt || 'H')
@@ -43,6 +45,9 @@ export function BrokerAvatar({
           width={width}
           height={height}
           priority={priority}
+          loading={priority ? undefined : 'lazy'}
+          decoding="async"
+          sizes={sizes || `${width}px`}
           className={cn('h-full w-full object-cover', imgClassName)}
           onError={() => setError(true)}
         />

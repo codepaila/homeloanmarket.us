@@ -49,7 +49,7 @@ export function FormInput({
       <label
         htmlFor={inputId}
         className={cn(
-          'flex items-center gap-1.5 text-sm font-medium text-text-main',
+          'flex items-center gap-1.5 text-sm font-medium text-foreground',
           labelClassName,
         )}
       >
@@ -61,7 +61,7 @@ export function FormInput({
         {icon && (
           <div
             className={cn(
-              'absolute left-3 top-1/2 -translate-y-1/2 text-text-muted',
+              'absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground',
               hasError && 'text-destructive',
             )}
           >
@@ -75,7 +75,7 @@ export function FormInput({
           type={inputType}
           className={cn(
             'w-full rounded-xl border border-border bg-background px-3 py-2.5 text-base',
-            'transition-all duration-200 placeholder:text-text-muted/50',
+            'transition-all duration-200 placeholder:text-muted-foreground/50',
             'focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15',
             icon && 'pl-10',
             togglePassword && 'pr-12',
@@ -92,7 +92,7 @@ export function FormInput({
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-text-muted transition-colors hover:text-text-main focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
             aria-label={showPassword ? 'Hide password' : 'Show password'}
           >
             {showPassword ? (
@@ -113,7 +113,7 @@ export function FormInput({
           <span>{error}</span>
         </div>
       )}
-      {hint && !hasError && <p className="text-xs text-text-muted">{hint}</p>}
+      {hint && !hasError && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
   )
 }
@@ -145,7 +145,7 @@ export function FormTextarea({
     <div className="space-y-2">
       <label
         htmlFor={textareaId}
-        className="flex items-center gap-1.5 text-sm font-medium text-text-main"
+        className="flex items-center gap-1.5 text-sm font-medium text-foreground"
       >
         {label}
         {required && <span className="text-destructive">*</span>}
@@ -154,7 +154,7 @@ export function FormTextarea({
         {icon && (
           <div
             className={cn(
-              'absolute left-3 top-3 text-text-muted',
+              'absolute left-3 top-3 text-muted-foreground',
               'has-error:text-destructive',
             )}
           >
@@ -166,7 +166,7 @@ export function FormTextarea({
           name={name}
           className={cn(
             'w-full min-h-[120px] resize-y rounded-xl border border-border bg-background px-3 py-2.5 text-base',
-            'transition-all duration-200 placeholder:text-text-muted/50',
+            'transition-all duration-200 placeholder:text-muted-foreground/50',
             'focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15',
             icon && 'pl-10',
             error &&
@@ -183,7 +183,7 @@ export function FormTextarea({
           <span>{error}</span>
         </div>
       )}
-      {hint && !error && <p className="text-xs text-text-muted">{hint}</p>}
+      {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
     </div>
   )
 }

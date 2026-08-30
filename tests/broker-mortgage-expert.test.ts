@@ -17,6 +17,7 @@ const schema = read('prisma/schema.prisma')
 const policy = read('lib/broker-policy.ts')
 const adminRoute = read('app/api/admin/brokers/[id]/mortgage-expert/route.ts')
 const listingApi = read('app/api/brokers/route.ts')
+const listingModule = read('lib/broker-listing.ts')
 const geo = read('lib/location/broker-geo.ts')
 const publicDto = read('lib/public-broker.ts')
 const gridCard = read('components/brokers/BrokerGridCard.tsx')
@@ -247,39 +248,42 @@ test('FREE + admin disabled + no profile image does not qualify', () => {
 // Broker priority ordering
 // ---------------------------------------------------------------------------
 
-test('listing ranks active FEATURED first via the existing subscription rank', () => {
-  assert.match(listingApi, /\{ featuredRank: 'desc' \}/)
+test('listing ranks active FEATURED first via the live subscription tier', () => {
+  assert.match(listingModule, /\$sort: \{ featured: -1/)
+  assert.match(listingModule, /featuredRank: -1/)
+  assert.doesNotMatch(listingModule, /brokerStatus: -1/)
   assert.doesNotMatch(listingApi, /brokerStatus: 'desc'/)
 })
 
-test('listing ranks admin-enabled Mortgage Expert brokers before profile-image brokers', () => {
-  const orderIdx = listingApi.indexOf('orderBy: [')
-  const featuredIdx = listingApi.indexOf("featuredRank: 'desc'")
-  const adminIdx = listingApi.indexOf("mortgageExpertEnabled: 'desc'")
-  const imageIdx = listingApi.indexOf("profileImage: 'desc'")
-  assert.ok(featuredIdx > orderIdx, 'featuredRank is inside orderBy')
+test('listing ranks admin-enabled Mortgage Expert brokers before image brokers', () => {
+  const sortBlock = listingModule.slice(listingModule.indexOf('$sort'), listingModule.indexOf('$skip'))
+  const featuredIdx = sortBlock.indexOf('featured: -1')
+  const adminIdx = sortBlock.indexOf('mortgageExpertEnabled: -1')
+  const imageIdx = sortBlock.indexOf('hasImage: -1')
+  assert.ok(featuredIdx > -1, 'featured tier is present')
   assert.ok(adminIdx > featuredIdx, 'admin-enabled tier follows the FEATURED tier')
-  assert.ok(imageIdx > adminIdx, 'profile-image tier follows the admin-enabled tier')
+  assert.ok(imageIdx > adminIdx, 'image tier follows the admin-enabled tier')
 })
 
 test('listing ordering is applied server-side before pagination', () => {
-  const findManyIdx = listingApi.indexOf('prisma.broker.findMany')
-  const orderIdx = listingApi.indexOf('orderBy: [')
-  const featuredIdx = listingApi.indexOf("featuredRank: 'desc'")
-  assert.ok(orderIdx > findManyIdx, 'orderBy is inside the same findMany that paginates')
-  assert.ok(featuredIdx > findManyIdx, 'ranking is applied inside the paginated query')
+  const pipeline = listingModule.slice(listingModule.indexOf('$sort'), listingModule.indexOf('cursor: {}'))
+  const sortIdx = pipeline.indexOf('$sort')
+  const skipIdx = pipeline.indexOf('$skip')
+  const limitIdx = pipeline.indexOf('$limit')
+  assert.ok(sortIdx > -1 && skipIdx > -1 && limitIdx > -1, 'aggregation contains sort + skip/limit')
+  assert.ok(sortIdx < skipIdx && sortIdx < limitIdx, 'ranking is applied before skip/limit')
 })
 
 test('radius search preserves the same FEATURED -> admin -> image priority', () => {
   assert.match(geo, /featured: -1/)
   assert.match(geo, /featuredRank: -1/)
   assert.match(geo, /mortgageExpertEnabled: -1/)
-  assert.match(geo, /profileImage: -1/)
+  assert.match(geo, /hasImage: -1/)
   const featuredIdx = geo.indexOf('featured: -1')
   const adminIdx = geo.indexOf('mortgageExpertEnabled: -1')
-  const imageIdx = geo.indexOf('profileImage: -1')
+  const imageIdx = geo.indexOf('hasImage: -1')
   assert.ok(adminIdx > featuredIdx, 'admin-enabled tier after FEATURED tier in radius sort')
-  assert.ok(imageIdx > adminIdx, 'profile-image tier after admin-enabled tier in radius sort')
+  assert.ok(imageIdx > adminIdx, 'image tier after admin-enabled tier in radius sort')
 })
 
 test('ranking never uses rating, reviews, or the badge itself', () => {

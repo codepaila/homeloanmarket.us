@@ -35,7 +35,7 @@ export default function CompanyRegisterForm() {
   }
 
   return (
-    <AuthFormWrapper showBackLink={false} title="Join as a Company" subtitle="Create your company account and get started with advertising opportunities across relevant mortgage originator listings." backHref="/register" backLabel="Back to registration" size="lg" footer={<p className="text-sm text-text-muted">Already registered? <Link href="/auth/signin" className="text-primary">Sign in</Link></p>}>
+    <AuthFormWrapper showBackLink={false} title="Join as a Company" subtitle="Create your company account and get started with advertising opportunities across relevant mortgage originator listings." backHref="/register" backLabel="Back to registration" size="lg" footer={<p className="text-sm text-muted-foreground">Already registered? <Link href="/auth/signin" className="text-primary">Sign in</Link></p>}>
       <form onSubmit={submit} className="space-y-4">
         <GoogleContinueButton callbackUrl="/company/register/continue" companyIntent />
         <AuthDivider label="or register with email" />
@@ -43,7 +43,7 @@ export default function CompanyRegisterForm() {
         <FormInput label="Email" name="email" type="email" required value={String(data.email || '')} onChange={(event) => set('email', event.target.value)} />
         <FormInput label="Password" name="password" type="password" required value={String(data.password || '')} onChange={(event) => set('password', event.target.value)} />
         <FormInput label="Confirm password" name="confirmPassword" type="password" required value={String(data.confirmPassword || '')} onChange={(event) => set('confirmPassword', event.target.value)} />
-        <label className="flex items-start gap-3 text-sm text-text-muted"><input type="checkbox" checked={Boolean(data.agreeTerms)} onChange={(event) => set('agreeTerms', event.target.checked)} className="mt-1" />I agree to the Terms of Service and Privacy Policy.</label>
+        <label className="flex items-start gap-3 text-sm text-muted-foreground"><input type="checkbox" checked={Boolean(data.agreeTerms)} onChange={(event) => set('agreeTerms', event.target.checked)} className="mt-1" />I agree to the Terms of Service and Privacy Policy.</label>
         <PremiumButton type="submit" fullWidth loading={loading} loadingText="Creating account..." leftIcon={!loading && <ArrowRight className="h-4 w-4" />}>Create Company Account</PremiumButton>
       </form>
     </AuthFormWrapper>

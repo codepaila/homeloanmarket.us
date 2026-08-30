@@ -6,7 +6,7 @@ import { Home, Search, ArrowLeft } from 'lucide-react'
 
 export default function NotFoundPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-surface/20 py-12 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 py-12 px-4">
       <div className="w-full max-w-2xl">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -20,10 +20,10 @@ export default function NotFoundPage() {
             transition={{ duration: 0.5, delay: 0.1, type: 'spring', stiffness: 100 }}
             className="mb-8"
           >
-            <div className="text-9xl font-bold text-gradient-brand leading-none">
+            <div className="text-9xl font-bold text-foreground leading-none">
               404
             </div>
-            <div className="text-2xl text-text-muted mt-2">Page Not Found</div>
+            <div className="text-2xl text-muted-foreground mt-2">Page Not Found</div>
           </motion.div>
 
           <motion.div
@@ -32,7 +32,7 @@ export default function NotFoundPage() {
             transition={{ duration: 0.5, delay: 0.2 }}
             className="mb-8"
           >
-            <p className="text-lg text-text-muted max-w-md mx-auto leading-relaxed">
+            <p className="text-lg text-muted-foreground max-w-md mx-auto leading-relaxed">
               The page you&apos;re looking for doesn&apos;t exist or has been moved. Try searching
               for what you need or use the navigation above.
             </p>
@@ -58,7 +58,7 @@ export default function NotFoundPage() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.98 }}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-6 py-3 text-base font-medium text-text-main transition-all duration-200 hover:bg-surface"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-6 py-3 text-base font-medium text-foreground transition-all duration-200 hover:bg-muted"
               >
                  <Search className="h-5 w-5" />
                  Find Mortgage Originators
@@ -74,7 +74,7 @@ export default function NotFoundPage() {
           >
             <Link
               href="/"
-              className="inline-flex items-center gap-2 text-sm text-text-muted hover:text-primary transition-colors"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />
               Back to previous page

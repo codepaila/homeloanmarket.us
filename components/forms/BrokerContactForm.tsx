@@ -314,7 +314,7 @@ export default function ContactForm({
     <div className="space-y-8">
       {/* Personal Information */}
       <div className="space-y-5">
-        <h3 className="text-lg font-bold text-text-main">Your Information</h3>
+        <h3 className="text-lg font-bold text-foreground">Your Information</h3>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <FormInput
             label="First Name"
@@ -363,7 +363,7 @@ export default function ContactForm({
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label className="flex items-center gap-1.5 text-sm font-medium text-text-main">
+              <Label className="flex items-center gap-1.5 text-sm font-medium text-foreground">
                 Country <span className="text-destructive">*</span>
               </Label>
               <div
@@ -387,7 +387,7 @@ export default function ContactForm({
             </div>
 
             <div className="space-y-2">
-              <Label className="flex items-center gap-1.5 text-sm font-medium text-text-main">
+              <Label className="flex items-center gap-1.5 text-sm font-medium text-foreground">
                 State <span className="text-destructive">*</span>
               </Label>
               <div
@@ -413,7 +413,7 @@ export default function ContactForm({
           </div>
 
           <div className="space-y-2">
-            <Label className="flex items-center gap-1.5 text-sm font-medium text-text-main">
+            <Label className="flex items-center gap-1.5 text-sm font-medium text-foreground">
               City <span className="text-destructive">*</span>
             </Label>
             <div
@@ -445,7 +445,7 @@ export default function ContactForm({
 
       {/* Message */}
       <div className="space-y-5">
-        <h3 className="text-lg font-bold text-text-main">Your Message</h3>
+        <h3 className="text-lg font-bold text-foreground">Your Message</h3>
         <FormInput
           label="Subject"
           name="subject"
@@ -466,7 +466,7 @@ export default function ContactForm({
         />
 
         <div className="space-y-2">
-          <Label className="flex items-center gap-1.5 text-sm font-medium text-text-main">
+          <Label className="flex items-center gap-1.5 text-sm font-medium text-foreground">
             Preferred Contact Method
           </Label>
           <Select
@@ -488,7 +488,7 @@ export default function ContactForm({
 
       {/* Security Verification */}
       <div className="space-y-4">
-        <h3 className="text-lg font-bold text-text-main">Security Verification</h3>
+        <h3 className="text-lg font-bold text-foreground">Security Verification</h3>
         <HoldCaptcha
           onChange={setIsCaptchaVerified}
           duration={3}
@@ -514,7 +514,7 @@ export default function ContactForm({
             }
             className={errors.agreeToTerms ? 'border-destructive' : ''}
           />
-          <Label htmlFor="agreeToTerms" className="text-sm text-text-muted">
+          <Label htmlFor="agreeToTerms" className="text-sm text-muted-foreground">
             I agree that {brokerName} can contact me regarding mortgage services.
             I understand that I can unsubscribe at any time.
           </Label>
@@ -535,7 +535,7 @@ export default function ContactForm({
               handleCheckboxChange('agreeToMarketing', checked as boolean)
             }
           />
-          <Label htmlFor="agreeToMarketing" className="text-sm text-text-muted">
+          <Label htmlFor="agreeToMarketing" className="text-sm text-muted-foreground">
             I would like to receive marketing communications about mortgage
             offers, interest rate updates, and mortgage tips from {brokerName}.
           </Label>

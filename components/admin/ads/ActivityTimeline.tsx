@@ -34,7 +34,7 @@ const STATUS_EVENTS: Record<string, TimelineEvent> = {
     label: 'Archived',
     date: null,
     user: null,
-    color: 'text-text-muted',
+    color: 'text-muted-foreground',
   },
   restored: {
     icon: RotateCcw,
@@ -64,7 +64,7 @@ export function ActivityTimeline({ advertisement, metrics, className }: Activity
     return (
       <Card className={cn('border-dashed', className)}>
         <CardContent className="py-6 text-center">
-          <p className="text-sm text-text-muted">Load an advertisement to see activity</p>
+          <p className="text-sm text-muted-foreground">Load an advertisement to see activity</p>
         </CardContent>
       </Card>
     )
@@ -78,7 +78,7 @@ export function ActivityTimeline({ advertisement, metrics, className }: Activity
       label: 'Created',
       date: toISOStringSafe(advertisement.createdAt),
       user: null,
-      color: 'text-text-muted',
+      color: 'text-muted-foreground',
     })
   }
 
@@ -88,7 +88,7 @@ export function ActivityTimeline({ advertisement, metrics, className }: Activity
       label: 'Updated',
       date: toISOStringSafe(advertisement.updatedAt),
       user: null,
-      color: 'text-text-muted',
+      color: 'text-muted-foreground',
     })
   }
 
@@ -127,7 +127,7 @@ export function ActivityTimeline({ advertisement, metrics, className }: Activity
                 <div className="flex-1 min-w-0 pt-0.5">
                   <p className="text-xs font-medium">{event.label}</p>
                   {event.date && (
-                    <p className="text-xs text-text-muted mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       {formatDate(event.date)}
                     </p>
                   )}
@@ -155,7 +155,7 @@ interface StatusRowProps {
 function StatusRow({ label, value }: StatusRowProps) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-xs text-text-muted">{label}</span>
+      <span className="text-xs text-muted-foreground">{label}</span>
       <Badge variant="secondary" className="text-xs">{value}</Badge>
     </div>
   )

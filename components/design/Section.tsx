@@ -94,14 +94,14 @@ export function SectionHeader({
       <h2
         className={cn(
           'heading-2 font-bold',
-          'text-text-main',
+          'text-foreground',
           'tracking-tight',
         )}
       >
         {title}
       </h2>
       {subtitle && (
-        <p className="mt-4 text-lg text-text-muted leading-relaxed">
+        <p className="mt-4 text-lg text-muted-foreground leading-relaxed">
           {subtitle}
         </p>
       )}

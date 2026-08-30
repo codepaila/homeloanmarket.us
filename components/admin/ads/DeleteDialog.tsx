@@ -64,8 +64,8 @@ export function DeleteDialog({
 
         {itemName && (
           <div className="space-y-2">
-            <p className="text-sm text-text-muted">
-              Type <span className="font-mono font-semibold text-text-main">{itemName}</span> to confirm:
+            <p className="text-sm text-muted-foreground">
+              Type <span className="font-mono font-semibold text-foreground">{itemName}</span> to confirm:
             </p>
             <Input
               value={confirmText}

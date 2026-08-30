@@ -14,16 +14,16 @@ export default function ChooseHomeSection() {
       <AnimatedContainer delay={0.1} variant="fadeUp">
         <div className="grid gap-10 lg:grid-cols-2 lg:items-center lg:gap-16">
           <div className="space-y-6">
-            <h2 className="text-balance text-3xl font-bold text-text-main sm:text-4xl">
+            <h2 className="text-balance text-3xl font-bold text-foreground sm:text-4xl">
               A smarter way to choose your mortgage
             </h2>
-            <p className="text-text-muted max-w-2xl">
+            <p className="text-muted-foreground max-w-2xl">
               Mortgage options aren&apos;t one-size-fits-all. Rates, programs, and
               approvals can vary widely based on the lender, location, and
               borrower profile. That&apos;s why transparency and choice matter when
               selecting a mortgage.
             </p>
-            <p className="text-text-muted max-w-2xl pt-2">
+            <p className="text-muted-foreground max-w-2xl pt-2">
               This platform is built to bring multiple lending professionals into
               one place — so you can explore your options clearly, ask the right
               questions, and move forward with confidence instead of

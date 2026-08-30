@@ -8,7 +8,7 @@ const autocompleteRoute = fs.readFileSync('app/api/location/autocomplete/route.t
 
 test('search input value updates immediately from local state', () => {
   assert.match(listing, /value=\{searchInput\}/)
-  assert.match(listing, /onChange=\{\(e\) => \{\n?\s*setSearchInput\(e\.target\.value\)/)
+  assert.match(listing, /onChange=\{\(e\) => \{\n?\s*(autocompleteUserInteractedRef\.current = true\n?\s*)?setSearchInput\(e\.target\.value\)/)
   assert.doesNotMatch(listing, /setSearchInput\(e\.target\.value\).*setTimeout/)
 })
 

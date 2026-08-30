@@ -46,16 +46,16 @@ export function AdvertisementCard({ ad, className }: AdvertisementCardProps) {
                   />
                 </>
               ) : (
-                <Eye className="h-4 w-4 text-text-muted" />
+                <Eye className="h-4 w-4 text-muted-foreground" />
               )}
             </div>
           </div>
         </CardHeader>
         <CardContent className="pt-0">
-          <p className="text-sm text-text-muted line-clamp-2 mb-3">
+          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
             {ad.description || 'No description'}
           </p>
-          <div className="flex items-center justify-between text-xs text-text-muted">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Priority: {ad.priority}</span>
             <span>{formatAdminDate(ad.updatedAt, false)}</span>
           </div>

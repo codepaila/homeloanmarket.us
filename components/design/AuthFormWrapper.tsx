@@ -66,7 +66,7 @@ export function AuthFormWrapper({
           >
             <Link
               href={backHref}
-              className="inline-flex items-center gap-2 text-sm text-text-muted transition-colors hover:text-text-main focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 rounded-md"
+              className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 rounded-md"
             >
               <ArrowLeft className="h-4 w-4" />
               {backLabel}
@@ -83,12 +83,12 @@ export function AuthFormWrapper({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3, delay: reduceMotion ? 0 : 0.05 }}
-              className="text-2xl font-bold tracking-tight text-text-main sm:text-3xl"
+              className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl"
             >
               {title}
             </motion.h1>
             {subtitle && (
-              <p className="mx-auto mt-2 max-w-sm text-sm text-text-muted sm:text-base">
+              <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground sm:text-base">
                 {subtitle}
               </p>
             )}

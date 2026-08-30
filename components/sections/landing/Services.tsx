@@ -45,7 +45,7 @@ const services = [
 
 export default function ServicesSection() {
   return (
-    <Section size="lg" className="bg-surface">
+    <Section size="lg" className="bg-muted">
       <AnimatedContainer delay={0.1} variant="fadeUp">
         <SectionHeader
           title="Everything you need to find the right mortgage originator"

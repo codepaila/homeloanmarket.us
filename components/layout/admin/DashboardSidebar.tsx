@@ -20,7 +20,7 @@ import { signOut } from 'next-auth/react'
 import { NavItem } from './NavItem'
 import { SubscriptionBadge } from './SubscriptionBadge'
 import type { SidebarData, SidebarItem, UserPermissions } from '@/types/nav'
-import Image from 'next/image'
+import { Logo } from '@/components/shared/Logo'
 
 interface DashboardSidebarProps {
   data: SidebarData
@@ -47,16 +47,7 @@ export function DashboardSidebar({ data, permissions, className }: DashboardSide
       {/* Logo & Platform Name */}
       <div className="flex h-16 items-center border-b px-6">
         <Link href="/dashboard" className="flex items-center gap-2">
-        <Image
-        src={"/assets/logo.png"}
-        width={180}
-        height={50}
-        alt="Home Loan Market Logo"
-        />
-          {/* <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <Home className="h-5 w-5 text-white" />
-          </div>
-          <span className="text-xl font-bold text-foreground">Home Loan Market</span> */}
+          <Logo className="h-6" />
         </Link>
       </div>
 

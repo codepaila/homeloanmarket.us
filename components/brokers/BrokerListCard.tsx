@@ -112,7 +112,7 @@ export default function BrokerListCard({
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               {name && (
-                <h3 className="line-clamp-1 text-lg font-bold text-text-main">
+                <h3 className="line-clamp-1 text-lg font-bold text-foreground">
                   <Link
                     href={`/brokers/${slug}`}
                     className="transition-colors hover:text-primary"
@@ -166,7 +166,7 @@ export default function BrokerListCard({
                 'flex h-8 w-8 items-center justify-center rounded-full border transition-all duration-200',
                 isFavorite
                   ? 'border-red-200 bg-red-50 text-red-500 dark:border-red-500/30 dark:bg-red-500/10'
-                  : 'border-border bg-background text-text-muted hover:border-red-300 hover:text-red-500',
+                  : 'border-border bg-background text-muted-foreground hover:border-red-300 hover:text-red-500',
               )}
             >
               <Heart className={cn('h-4 w-4', isFavorite && 'fill-current')} />
@@ -183,14 +183,14 @@ export default function BrokerListCard({
 
         {/* ===== Company ===== */}
         {company && (
-          <p className="truncate text-[11px] font-semibold uppercase tracking-wider text-text-muted">
+          <p className="truncate text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
             {company}
           </p>
         )}
 
         {/* ===== Meta: Experience • Location ===== */}
         {(yearsExperience > 0 || displayLocation) && (
-          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-text-muted">
+          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
             {yearsExperience > 0 && <span>{yearsExperience}+ Years of Experience</span>}
             {yearsExperience > 0 && displayLocation && <Dot />}
             {displayLocation && <span>{displayLocation}</span>}
@@ -199,9 +199,9 @@ export default function BrokerListCard({
 
         {/* ===== Meta: Bank Partners ===== */}
         {validBanks.length > 0 && (
-          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-text-muted">
+          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-foreground">
             <span>
-              <span className="font-medium text-text-main">
+              <span className="font-medium text-foreground">
                 Bank Partners:
               </span>{' '}
               {validBanks.slice(0, 3).join(', ')}
@@ -212,7 +212,7 @@ export default function BrokerListCard({
 
         {/* ===== Short description ===== */}
         {description && (
-          <p className="line-clamp-1 text-sm leading-snug text-text-muted">
+          <p className="line-clamp-1 text-sm leading-snug text-muted-foreground">
             {description}
           </p>
         )}
@@ -241,7 +241,7 @@ export default function BrokerListCard({
 
 function Dot() {
   return (
-    <span aria-hidden="true" className="text-text-muted/50">
+    <span aria-hidden="true" className="text-muted-foreground/50">
       •
     </span>
   )

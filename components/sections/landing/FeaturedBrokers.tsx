@@ -72,7 +72,7 @@ export default function FeaturedBrokersSection() {
   }, [brokers])
 
   return (
-    <Section size="lg" className="bg-card-deep/40">
+    <Section size="lg" className="bg-muted/40">
       <AnimatedContainer delay={0.1} variant="fadeUp">
         <div className="mb-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-xl">
@@ -80,10 +80,10 @@ export default function FeaturedBrokersSection() {
               <BadgeCheck className="h-3.5 w-3.5" />
               Handpicked &amp; Verified
             </span>
-            <h2 className="mt-3 text-2xl font-bold tracking-tight text-text-main md:text-3xl lg:text-4xl">
+            <h2 className="mt-3 text-2xl font-bold tracking-tight text-foreground md:text-3xl lg:text-4xl">
               Featured Mortgage Originators
             </h2>
-            <p className="mt-2 text-sm leading-relaxed text-text-muted md:text-base">
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground md:text-base">
               Our top-rated, verified professionals — reviewed by real
               borrowers and handpicked for exceptional service.
             </p>

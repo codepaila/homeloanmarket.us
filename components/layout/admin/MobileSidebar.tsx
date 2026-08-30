@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import { NavItem } from "./NavItem"
 import { SubscriptionBadge } from "./SubscriptionBadge"
+import { Logo } from "@/components/shared/Logo"
 import { usePathname } from "next/navigation"
 import type { SidebarData, SidebarItem, UserPermissions } from "@/types/nav"
 
@@ -33,12 +34,7 @@ export function MobileSidebar({ isOpen, onClose, data, permissions }: MobileSide
     <Sheet open={isOpen} onOpenChange={onClose}>
       <SheetContent side="left" className="p-0 w-80">
         <div className="flex h-16 items-center justify-between border-b px-6">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-white font-bold">M</span>
-            </div>
-             <span className="text-xl font-bold text-foreground">HomeLoanMarket</span>
-          </div>
+          <Logo className="h-6" />
           <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="h-5 w-5" />
           </Button>

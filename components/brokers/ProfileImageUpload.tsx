@@ -90,7 +90,7 @@ export function ProfileImageUpload({
       </div>
 
       <div className="flex-1 space-y-2">
-        <p className="text-sm font-medium text-text-main">{label}</p>
+        <p className="text-sm font-medium text-foreground">{label}</p>
         <p className="text-sm text-muted-foreground">{helperText}</p>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -106,7 +106,7 @@ export function ProfileImageUpload({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={busy}
-            className="inline-flex h-9 items-center rounded-lg border border-border bg-background px-3.5 text-sm font-medium text-text-main transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-9 items-center rounded-lg border border-border bg-background px-3.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
           >
             {uploading ? 'Uploading…' : preview ? 'Change image' : 'Upload image'}
           </button>

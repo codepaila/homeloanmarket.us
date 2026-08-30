@@ -92,7 +92,7 @@ export function AdvertisementTable({
         <EmptyState
           title="Failed to load advertisements"
           description={error.message || 'An error occurred while fetching data. Please try again.'}
-          icon={<ImageIcon className="h-12 w-12 text-text-muted" />}
+          icon={<ImageIcon className="h-12 w-12 text-muted-foreground" />}
           action={
             <Button onClick={() => window.location.reload()}>
               Retry
@@ -120,7 +120,7 @@ export function AdvertisementTable({
         <EmptyState
           title="No advertisements yet"
           description="Get started by creating your first advertisement campaign."
-          icon={<ImageIcon className="h-12 w-12 text-text-muted" />}
+          icon={<ImageIcon className="h-12 w-12 text-muted-foreground" />}
         />
       </div>
     )
@@ -188,14 +188,14 @@ export function AdvertisementTable({
                             />
                           </>
                         ) : (
-                          <ImageIcon className="h-4 w-4 text-text-muted" />
+                          <ImageIcon className="h-4 w-4 text-muted-foreground" />
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="min-w-0">
                         <p className="font-medium truncate max-w-[200px]">{ad.title}</p>
-                        <p className="text-xs text-text-muted truncate max-w-[200px]">
+                        <p className="text-xs text-muted-foreground truncate max-w-[200px]">
                           {ad.description || 'No description'}
                         </p>
                       </div>
@@ -204,7 +204,7 @@ export function AdvertisementTable({
                       <PlacementBadge placement={ad.placement} />
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
-                      <span className="text-sm text-text-muted">
+                      <span className="text-sm text-muted-foreground">
                         {ad.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                       </span>
                     </TableCell>
@@ -214,13 +214,13 @@ export function AdvertisementTable({
                     <TableCell className="hidden sm:table-cell">
                       <AdvertisementStatusBadge status={status} />
                     </TableCell>
-                    <TableCell className="hidden md:table-cell text-sm text-text-muted">
+                    <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
                       {ad.startDate ? format(new Date(ad.startDate), 'MMM d, yyyy') : '-'}
                     </TableCell>
-                    <TableCell className="hidden lg:table-cell text-sm text-text-muted">
+                    <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
                       {ad.endDate ? format(new Date(ad.endDate), 'MMM d, yyyy') : '-'}
                     </TableCell>
-                    <TableCell className="hidden xl:table-cell text-sm text-text-muted">
+                    <TableCell className="hidden xl:table-cell text-sm text-muted-foreground">
                       {format(new Date(ad.updatedAt), 'MMM d, yyyy')}
                     </TableCell>
                     <TableCell>
@@ -247,7 +247,7 @@ export function AdvertisementTable({
       {/* Pagination */}
       {!isLoading && ads.length > 0 && (
         <div className="flex items-center justify-between px-4 py-3 border-t">
-          <div className="text-sm text-text-muted">
+          <div className="text-sm text-muted-foreground">
             Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, total)} of {total} advertisements
           </div>
           <div className="flex items-center gap-2">

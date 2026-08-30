@@ -14,8 +14,8 @@ export default function ResourceCard({resource}: {resource: any}) {
                 {resource?.icon}
               </div>
               <div>
-                <h4 className="font-bold text-text-main mb-2">{resource?.title}</h4>
-                <p className="text-text-muted text-sm mb-4">{resource?.description}</p>
+                <h4 className="font-bold text-foreground mb-2">{resource?.title}</h4>
+                <p className="text-muted-foreground text-sm mb-4">{resource?.description}</p>
               </div>
                 <Link 
                   href={resource?.link as string}

@@ -15,7 +15,7 @@ export function PlacementSpecs({ placement, className }: PlacementSpecsProps) {
     return (
       <Card className={cn('border-dashed', className)}>
         <CardContent className="py-6 text-center">
-          <p className="text-sm text-text-muted">Select a placement to see specifications</p>
+          <p className="text-sm text-muted-foreground">Select a placement to see specifications</p>
         </CardContent>
       </Card>
     )
@@ -57,11 +57,11 @@ export function PlacementSpecs({ placement, className }: PlacementSpecsProps) {
 
         {isFullWidthTop && (
           <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-1.5">
-            <p className="flex items-center gap-1.5 text-xs font-semibold text-text-main">
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
               <Lightbulb className="h-3.5 w-3.5 text-primary" />
               Tips for a full-width banner
             </p>
-            <ul className="list-disc space-y-1 pl-4 text-xs text-text-muted">
+            <ul className="list-disc space-y-1 pl-4 text-xs text-muted-foreground">
               <li>Use a wide horizontal creative for the best fit</li>
               <li>Keep important text and logos inside the safe area</li>
               <li>Avoid tall artwork — it will be scaled to fit</li>
@@ -83,7 +83,7 @@ interface SpecItemProps {
 function SpecItem({ icon: Icon, label, value }: SpecItemProps) {
   return (
     <div className="space-y-1">
-      <div className="flex items-center gap-1.5 text-text-muted">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
         <Icon className="h-3 w-3" />
         <span className="text-xs">{label}</span>
       </div>

@@ -1,5 +1,3 @@
-'use client'
-
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -405,7 +403,7 @@ export default function LocalExpertSection() {
 
           <div className="mt-10 grid gap-6 sm:grid-cols-3">
             {options.map((option) => (
-              <div key={option.title} className="group card-plain flex h-full flex-col p-6 lg:p-7">
+              <div key={option.title} className="group flex h-full flex-col rounded-lg border border-border bg-card p-6 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-medium lg:p-7">
                 {/* icon zone */}
                 <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-muted text-foreground transition-colors duration-300 group-hover:border-primary/40 group-hover:bg-background">
                   <option.icon className="h-7 w-7" />
@@ -478,10 +476,10 @@ export default function LocalExpertSection() {
             Wide editorial banner (~60 content / ~40 illustration).
            ========================================================== */}
         <div>
-          <div className="relative overflow-hidden rounded border border-border bg-card shadow-soft">
-            <div className="grid gap-10 p-8 sm:p-12 lg:grid-cols-5 lg:items-center lg:gap-12 lg:p-16">
+          <div className="relative overflow-hidden">
+            <div className="grid gap-10  lg:grid-cols-5 lg:items-center lg:gap-12">
               <div className="lg:col-span-3">
-                <h3 className="text-lg font-medium sm:heading-3 text-foreground">
+                <h3 className="text-xl font-medium sm:text-3xl text-foreground">
                   Your Home. Your Loan. Your Choice.
                 </h3>
                 <p className="mt-2 sm:mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">

@@ -39,7 +39,7 @@ function SignInContent() {
       backHref="/"
       backLabel="Back to Home"
       footer={
-        <p className="text-sm text-text-muted">
+        <p className="text-sm text-muted-foreground">
           Don&apos;t have an account?{' '}
           <Link
             href="/auth/signup"

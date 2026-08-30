@@ -50,14 +50,14 @@ export default function CalculatorPage() {
 
   return (
     <div className="min-h-screen">
-        <Section className="bg-surface">
+        <Section className="bg-muted">
         <AnimatedContainer>
           <div className="text-center max-w-3xl mx-auto">
             <Calculator className="h-12 w-12 text-primary mx-auto mb-4" />
-            <h1 className="heading-1 text-text-main mb-4">
+            <h1 className="heading-1 text-foreground mb-4">
               Mortgage Calculator
             </h1>
-            <p className="text-xl text-text-muted max-w-2xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Calculate your potential mortgage repayments and understand your borrowing power
               with our easy-to-use calculator.
             </p>
@@ -75,16 +75,16 @@ export default function CalculatorPage() {
               className="card card-hover"
             >
               <div className="p-8">
-                <h2 className="text-2xl font-bold text-text-main mb-6">Calculate Your Payment</h2>
+                <h2 className="text-2xl font-bold text-foreground mb-6">Calculate Your Payment</h2>
 
                 <div className="space-y-8">
                   <div className="space-y-4">
-                    <label className="flex items-center justify-between text-sm font-medium text-text-main">
+                    <label className="flex items-center justify-between text-sm font-medium text-foreground">
                       <span>Loan Amount</span>
                       <span className="text-primary">{formatCurrency(loanAmount)}</span>
                     </label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-text-muted" />
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                       <input
                         type="range"
                         min="50000"
@@ -92,7 +92,7 @@ export default function CalculatorPage() {
                         step="10000"
                         value={loanAmount}
                         onChange={(e) => setLoanAmount(parseInt(e.target.value))}
-                        className="w-full h-2 bg-surface rounded-lg appearance-none cursor-pointer"
+                        className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
                       />
                     </div>
                     <input
@@ -106,7 +106,7 @@ export default function CalculatorPage() {
                       max="2000000"
                       className={cn('input', inputClass, 'pl-10')}
                     />
-                    <div className="flex justify-between text-xs text-text-muted">
+                    <div className="flex justify-between text-xs text-muted-foreground">
                       <span>$50K</span>
                       <span>$500K</span>
                       <span>$1M</span>
@@ -115,7 +115,7 @@ export default function CalculatorPage() {
                   </div>
 
                   <div className="space-y-4">
-                    <label className="flex items-center justify-between text-sm font-medium text-text-main">
+                    <label className="flex items-center justify-between text-sm font-medium text-foreground">
                       <span>Down Payment</span>
                       <span className="text-secondary">{downPayment}%</span>
                     </label>
@@ -126,9 +126,9 @@ export default function CalculatorPage() {
                       step="1"
                       value={downPayment}
                       onChange={(e) => setDownPayment(parseInt(e.target.value))}
-                      className="w-full h-2 bg-surface rounded-lg appearance-none cursor-pointer"
+                      className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
                     />
-                    <div className="flex justify-between text-xs text-text-muted">
+                    <div className="flex justify-between text-xs text-muted-foreground">
                       <span>0%</span>
                       <span>10%</span>
                       <span>20%</span>
@@ -139,7 +139,7 @@ export default function CalculatorPage() {
                   </div>
 
                   <div className="space-y-4">
-                    <label className="flex items-center justify-between text-sm font-medium text-text-main">
+                    <label className="flex items-center justify-between text-sm font-medium text-foreground">
                       <span>Interest Rate</span>
                       <span className="text-primary">{interestRate}%</span>
                     </label>
@@ -150,9 +150,9 @@ export default function CalculatorPage() {
                       step="0.1"
                       value={interestRate}
                       onChange={(e) => setInterestRate(parseFloat(e.target.value))}
-                      className="w-full h-2 bg-surface rounded-lg appearance-none cursor-pointer"
+                      className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
                     />
-                    <div className="flex justify-between text-xs text-text-muted">
+                    <div className="flex justify-between text-xs text-muted-foreground">
                       <span>1%</span>
                       <span>5%</span>
                       <span>10%</span>
@@ -161,7 +161,7 @@ export default function CalculatorPage() {
                   </div>
 
                   <div className="space-y-4">
-                    <label className="text-sm font-medium text-text-main">Loan Term</label>
+                    <label className="text-sm font-medium text-foreground">Loan Term</label>
                     <div className="grid grid-cols-4 gap-2">
                       {[10, 15, 20, 30].map((term) => (
                         <button
@@ -172,7 +172,7 @@ export default function CalculatorPage() {
                             'py-2 rounded-xl text-sm font-medium transition-all duration-200',
                             loanTerm === term
                               ? 'bg-primary text-white shadow-medium'
-                              : 'bg-surface text-text-main hover:bg-primary/10 hover:text-primary'
+                              : 'bg-muted text-foreground hover:bg-primary/10 hover:text-primary'
                           )}
                         >
                           {term} years
@@ -188,21 +188,21 @@ export default function CalculatorPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="card bg-surface"
+              className="card bg-muted"
             >
               <div className="p-8">
-                <h2 className="text-2xl font-bold text-text-main mb-8">Payment Summary</h2>
+                <h2 className="text-2xl font-bold text-foreground mb-8">Payment Summary</h2>
 
                 <div className="text-center mb-8">
-                  <div className="text-4xl md:text-5xl font-bold text-text-main mb-2">
+                  <div className="text-4xl md:text-5xl font-bold text-foreground mb-2">
                     {formatCurrency(results.monthlyPayment)}
                   </div>
-                  <p className="text-text-muted">Monthly Payment</p>
+                  <p className="text-muted-foreground">Monthly Payment</p>
                 </div>
 
                 <div className="space-y-4 mb-8">
-                  <div className="flex justify-between items-center p-4 bg-surface/30 rounded-xl">
-                    <span className="text-text-muted flex items-center gap-2">
+                  <div className="flex justify-between items-center p-4 bg-muted/30 rounded-xl">
+                    <span className="text-muted-foreground flex items-center gap-2">
                       <Home className="h-4 w-4" />
                       Loan Amount
                     </span>
@@ -210,8 +210,8 @@ export default function CalculatorPage() {
                       {formatCurrency(results.principal)}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center p-4 bg-surface/30 rounded-xl">
-                    <span className="text-text-muted flex items-center gap-2">
+                  <div className="flex justify-between items-center p-4 bg-muted/30 rounded-xl">
+                    <span className="text-muted-foreground flex items-center gap-2">
                       <Percent className="h-4 w-4" />
                       Down Payment ({downPayment}%)
                     </span>
@@ -219,8 +219,8 @@ export default function CalculatorPage() {
                       {formatCurrency(results.downPaymentAmount)}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center p-4 bg-surface/30 rounded-xl">
-                    <span className="text-text-muted flex items-center gap-2">
+                  <div className="flex justify-between items-center p-4 bg-muted/30 rounded-xl">
+                    <span className="text-muted-foreground flex items-center gap-2">
                       <TrendingUp className="h-4 w-4" />
                       Total Interest Paid
                     </span>
@@ -228,8 +228,8 @@ export default function CalculatorPage() {
                       {formatCurrency(results.totalInterest)}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center p-4 bg-surface/50 rounded-xl border border-primary/20">
-                    <span className="text-text-main font-medium flex items-center gap-2">
+                  <div className="flex justify-between items-center p-4 bg-muted/50 rounded-xl border border-primary/20">
+                    <span className="text-foreground font-medium flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       Total Payment
                     </span>
@@ -239,7 +239,7 @@ export default function CalculatorPage() {
                   </div>
                 </div>
 
-                <p className="text-xs text-text-muted text-center">
+                <p className="text-xs text-muted-foreground text-center">
                   Results are estimates. Actual terms may vary based on credit score,
                   location, and other factors.
                 </p>

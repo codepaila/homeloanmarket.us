@@ -79,7 +79,9 @@ export async function findBrokerIdsWithinRadius(input: BrokerGeoSearchInput): Pr
   // The canonical FEATURED definition is an ACTIVE FEATURED subscription (see
   // hasPaidEntitlement). Ordering must put those brokers first, then the
   // admin-managed featuredRank, regardless of whether featuredRank is set.
-  const now = new Date()
+  // $runCommandRaw serializes JS Date to a string, so use the explicit BSON
+  // extended-JSON date form for the expiry comparison.
+  const now = { $date: new Date().toISOString() }
   pipeline.push(
     { $lookup: { from: 'broker_subscriptions', localField: '_id', foreignField: 'brokerId', as: 'sub' } },
     {
@@ -110,6 +112,21 @@ export async function findBrokerIdsWithinRadius(input: BrokerGeoSearchInput): Pr
             0,
           ],
         },
+        // Same "has usable profile/company image" rule as the plain listing
+        // (profileImage || logo), so paid/Mortgage-Export/free brokers with a
+        // company logo are ranked consistently everywhere.
+        hasImage: {
+          $cond: [
+            {
+              $or: [
+                { $and: [{ $ne: ['$profileImage', null] }, { $ne: ['$profileImage', ''] }] },
+                { $and: [{ $ne: ['$logo', null] }, { $ne: ['$logo', ''] }] },
+              ],
+            },
+            1,
+            0,
+          ],
+        },
       },
     },
   )
@@ -118,7 +135,7 @@ export async function findBrokerIdsWithinRadius(input: BrokerGeoSearchInput): Pr
     $facet: {
       metadata: [{ $count: 'total' }],
       data: [
-        { $sort: { featured: -1, featuredRank: -1, mortgageExpertEnabled: -1, profileImage: -1, experienceYears: -1, _id: 1 } },
+        { $sort: { featured: -1, featuredRank: -1, mortgageExpertEnabled: -1, hasImage: -1, experienceYears: -1, _id: 1 } },
         { $skip: input.take * (input.page - 1) },
         { $limit: input.take },
         { $project: { _id: 1, distanceMeters: 1 } },

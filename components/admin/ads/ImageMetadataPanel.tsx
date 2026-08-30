@@ -28,7 +28,7 @@ export function ImageMetadataPanel({ asset, className }: ImageMetadataPanelProps
     return (
       <Card className={cn('border-dashed', className)}>
         <CardContent className="py-6 text-center">
-          <p className="text-sm text-text-muted">Select media to view metadata</p>
+          <p className="text-sm text-muted-foreground">Select media to view metadata</p>
         </CardContent>
       </Card>
     )
@@ -59,7 +59,7 @@ export function ImageMetadataPanel({ asset, className }: ImageMetadataPanelProps
 
           {asset.tags && asset.tags.length > 0 && (
             <div className="space-y-1.5">
-              <div className="flex items-center gap-1.5 text-text-muted">
+              <div className="flex items-center gap-1.5 text-muted-foreground">
                 <Tag className="h-3 w-3" />
                 <span className="text-xs">Tags</span>
               </div>
@@ -88,7 +88,7 @@ interface MetadataItemProps {
 function MetadataItem({ icon: Icon, label, value, mono }: MetadataItemProps) {
   return (
     <div className="space-y-1">
-      <div className="flex items-center gap-1.5 text-text-muted">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
         <Icon className="h-3 w-3" />
         <span className="text-xs">{label}</span>
       </div>

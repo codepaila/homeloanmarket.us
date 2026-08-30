@@ -63,7 +63,7 @@ export default function FAQSection() {
                 <AccordionTrigger className="text-left font-semibold py-4">
                   {faq.question}
                 </AccordionTrigger>
-                <AccordionContent className="text-text-muted pb-4">
+                <AccordionContent className="text-muted-foreground pb-4">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>

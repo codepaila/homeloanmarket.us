@@ -133,7 +133,7 @@ export function MediaPickerDialog({
         {/* Toolbar */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search media..."
               value={search}
@@ -214,9 +214,9 @@ export function MediaPickerDialog({
 
           {!error && !isLoading && sortedAssets.length === 0 && (
             <div className="py-12 text-center">
-              <FolderOpen className="h-12 w-12 text-text-muted mx-auto mb-3" />
-              <p className="text-sm font-medium text-text-main">No media found</p>
-              <p className="text-xs text-text-muted mt-1">
+              <FolderOpen className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+              <p className="text-sm font-medium text-foreground">No media found</p>
+              <p className="text-xs text-muted-foreground mt-1">
                 {search ? 'Try adjusting your search terms' : 'Upload media in the Media Library'}
               </p>
             </div>
@@ -250,7 +250,7 @@ export function MediaPickerDialog({
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <ImageIcon className="h-8 w-8 text-text-muted" />
+                            <ImageIcon className="h-8 w-8 text-muted-foreground" />
                           </div>
                         )}
 
@@ -310,13 +310,13 @@ export function MediaPickerDialog({
                         {previewUrl ? (
                           <img src={previewUrl} alt={asset.altText || asset.originalName} className="h-full w-full object-cover" />
                         ) : (
-                          <ImageIcon className="h-5 w-5 text-text-muted" />
+                          <ImageIcon className="h-5 w-5 text-muted-foreground" />
                         )}
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{asset.originalName}</p>
-                        <p className="text-xs text-text-muted">
+                        <p className="text-xs text-muted-foreground">
                           {getFileTypeLabel(asset.mimeType)} • {formatFileSize(asset.fileSize)}
                           {asset.width && asset.height && ` • ${asset.width}×${asset.height}`}
                         </p>
@@ -337,7 +337,7 @@ export function MediaPickerDialog({
 
         {/* Footer */}
         <div className="flex items-center justify-between pt-4 border-t">
-          <p className="text-xs text-text-muted">
+          <p className="text-xs text-muted-foreground">
             {total} asset{total !== 1 ? 's' : ''} total
           </p>
           <div className="flex gap-2">

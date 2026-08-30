@@ -27,7 +27,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
 import type { SiteSettings } from '@/lib/site/settings'
-import Image from 'next/image'
+import { Logo } from '@/components/shared/Logo'
 import { Button } from '../ui/button'
 
 const navigation = [
@@ -233,20 +233,11 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
             {/* Logo */}
             <div className="flex-shrink-0">
               <Link href="/" className="flex items-center gap-2">
-                {settings?.siteLogo ? (
-                  <Image width={300} height={100} src={settings.siteLogo} alt={settings.siteName}
-                   className="h-12 max-w-48 object-contain" />
-                ) : (
-                  <>
-                    <Image
-                      width={350}
-                      height={200}
-                      src="/assets/logo.png"
-                      alt="HomeLoanMarket"
-                      className="h-12 max-w-52 md:max-w-56 object-contain"
-                    />
-                  </>
-                )}
+                <Logo
+                  src={settings?.siteLogo}
+                  alt={settings?.siteName || 'HomeLoanMarket'}
+                  className={settings?.siteLogo ? 'h-12 max-w-48' : 'h-12 max-w-52 md:max-w-56'}
+                />
               </Link>
             </div>
 
@@ -286,7 +277,7 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
                     whileTap={{ scale: 0.97 }}
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     aria-expanded={isUserMenuOpen}
-                    className="flex items-center gap-2 rounded-lg bg-surface p-1 transition-colors hover:bg-muted "
+                    className="flex items-center gap-2 rounded-lg bg-muted p-1 transition-colors hover:bg-muted "
                   >
                     <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-foreground text-sm font-semibold text-background">
                       {user.image ? (
@@ -429,7 +420,7 @@ function UserDropdown({
             className={cn(
               'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
               isActive(item.href)
-                ? 'bg-surface text-foreground font-medium'
+                ? 'bg-muted text-foreground font-medium'
                 : 'text-foreground hover:bg-muted'
             )}
             onClick={onClose}

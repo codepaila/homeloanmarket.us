@@ -42,13 +42,13 @@ export default async function RegisterPage() {
           <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
             <Home className="h-5 w-5" aria-hidden="true" />
           </div>
-          <h2 className="text-lg font-semibold text-text-main">I&apos;m a Home Buyer</h2>
-          <p className="mt-1 text-sm text-text-muted">
+          <h2 className="text-lg font-semibold text-foreground">I&apos;m a Home Buyer</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
             Search, compare, and connect with the right mortgage expert.
           </p>
           <ul className="mt-4 space-y-2">
             {buyerFeatures.map((feature) => (
-              <li key={feature} className="flex items-start gap-2 text-sm text-text-muted">
+              <li key={feature} className="flex items-start gap-2 text-sm text-muted-foreground">
                 <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
                 <span>{feature}</span>
               </li>
@@ -71,13 +71,13 @@ export default async function RegisterPage() {
               Mortgage Originator
             </span>
           </div>
-          <h2 className="text-lg font-semibold text-text-main">Join as a Mortgage Originator</h2>
-          <p className="mt-1 text-sm text-text-muted">
+          <h2 className="text-lg font-semibold text-foreground">Join as a Mortgage Originator</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
             Create your mortgage originator profile and start receiving leads from borrowers.
           </p>
           <ul className="mt-4 space-y-2">
             {brokerFeatures.map((feature) => (
-              <li key={feature} className="flex items-start gap-2 text-sm text-text-muted">
+              <li key={feature} className="flex items-start gap-2 text-sm text-muted-foreground">
                 <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
                 <span>{feature}</span>
               </li>
@@ -91,11 +91,11 @@ export default async function RegisterPage() {
             <AuthDivider label="or" />
             <Link
               href="/auth/signup"
-              className="inline-flex w-full items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-text-main transition-colors hover:bg-muted"
+              className="inline-flex w-full items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
             >
               Register with Email
             </Link>
-            <p className="text-center text-sm text-text-muted">
+            <p className="text-center text-sm text-muted-foreground">
               Already registered?{' '}
               <Link href="/auth/signin" className="font-medium text-primary hover:text-primary/80">
                 Sign in

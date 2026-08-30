@@ -200,7 +200,7 @@ export default function PreviewAdPage({ params }: PreviewAdPageProps) {
               <div className="space-y-4">
                 {/* Desktop & Mobile Side-by-Side on Desktop */}
                 <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/30 p-3">
-                  <span className="text-xs font-medium text-text-muted">Creative format:</span>
+                  <span className="text-xs font-medium text-muted-foreground">Creative format:</span>
                   {availableFormats.map((format) => (
                     <Button key={format} type="button" variant={activePreviewFormat === format ? 'default' : 'outline'} size="sm" onClick={() => setPreviewFormat(format)}>
                       {ADVERTISEMENT_FORMAT_INFO[format].label}
@@ -284,7 +284,7 @@ export default function PreviewAdPage({ params }: PreviewAdPageProps) {
                 {/* Controls */}
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-text-muted">Background:</span>
+                    <span className="text-xs text-muted-foreground">Background:</span>
                     <select
                       value={previewBackground.id}
                       onChange={(e) => setPreviewBackground(PREVIEW_BACKGROUNDS.find(b => b.id === e.target.value) || PREVIEW_BACKGROUNDS[0])}
@@ -333,24 +333,24 @@ export default function PreviewAdPage({ params }: PreviewAdPageProps) {
               <CardContent className="space-y-3">
                 {ad.startDate && (
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-text-muted" />
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="text-xs text-text-muted">Start Date</p>
+                      <p className="text-xs text-muted-foreground">Start Date</p>
                       <p className="text-sm font-medium">{format(new Date(ad.startDate), 'MMM d, yyyy')}</p>
                     </div>
                   </div>
                 )}
                 {ad.endDate && (
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-text-muted" />
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="text-xs text-text-muted">End Date</p>
+                      <p className="text-xs text-muted-foreground">End Date</p>
                       <p className="text-sm font-medium">{format(new Date(ad.endDate), 'MMM d, yyyy')}</p>
                     </div>
                   </div>
                 )}
                 {!ad.startDate && !ad.endDate && (
-                  <p className="text-sm text-text-muted">No schedule set</p>
+                  <p className="text-sm text-muted-foreground">No schedule set</p>
                 )}
               </CardContent>
             </Card>
@@ -397,7 +397,7 @@ export default function PreviewAdPage({ params }: PreviewAdPageProps) {
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm text-text-muted">{label}</span>
+      <span className="text-sm text-muted-foreground">{label}</span>
       <div className="flex items-center">{value}</div>
     </div>
   )
@@ -424,8 +424,8 @@ function PlacementPreviewRenderer({
     return (
       <div className="aspect-video rounded-md border-2 border-dashed border-border flex items-center justify-center bg-muted/50">
         <div className="text-center">
-          <ImageIcon className="h-8 w-8 text-text-muted mx-auto mb-1" />
-          <p className="text-xs text-text-muted">Select a placement to preview</p>
+          <ImageIcon className="h-8 w-8 text-muted-foreground mx-auto mb-1" />
+          <p className="text-xs text-muted-foreground">Select a placement to preview</p>
         </div>
       </div>
     )
@@ -451,8 +451,8 @@ function PlacementPreviewRenderer({
                 <img src={imageUrl} alt={title || 'Preview'} className="absolute inset-0 h-full w-full object-cover" />
               ) : (
                 <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-center">
-                  <ImageIcon className="h-6 w-6 text-text-muted mx-auto" />
-                  <p className="px-2 text-[10px] text-text-muted">No media selected</p>
+                  <ImageIcon className="h-6 w-6 text-muted-foreground mx-auto" />
+                  <p className="px-2 text-[10px] text-muted-foreground">No media selected</p>
                 </div>
               )}
               {hasText ? (
@@ -464,7 +464,7 @@ function PlacementPreviewRenderer({
             </div>
           ))}
         </div>
-        <p className="text-[11px] text-text-muted">
+        <p className="text-[11px] text-muted-foreground">
           Renders responsively as compact cards: 3 columns (desktop) · 2 (tablet) · 1 (mobile).
           {format ? ` Selected format ${formatLabel} — ${formatAspectRatio(format)}.` : ''}
         </p>
@@ -476,8 +476,8 @@ function PlacementPreviewRenderer({
     return (
       <div className="aspect-video rounded-md border-2 border-dashed border-border flex items-center justify-center bg-muted/50">
         <div className="text-center">
-          <ImageIcon className="h-8 w-8 text-text-muted mx-auto mb-1" />
-          <p className="text-xs text-text-muted">No media selected</p>
+          <ImageIcon className="h-8 w-8 text-muted-foreground mx-auto mb-1" />
+          <p className="text-xs text-muted-foreground">No media selected</p>
         </div>
       </div>
     )

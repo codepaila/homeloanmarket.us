@@ -11,13 +11,13 @@ const detail = read('components/sections/broker/BrokerDetailClient.tsx')
 
 test('premium badge renders the existing pro-mortage asset with accessible alt text', () => {
   assert.match(badge, /\/assets\/images\/pro-mortage-icon\.PNG/)
-  assert.match(badge, /alt="Premium subscribed broker"/)
+  assert.match(badge, /alt="Premium subscribed mortgage originator"/)
   assert.match(badge, /next\/image/)
 })
 
 test('broker card shows the badge only when isPremium is true', () => {
   assert.match(card, /isPremium = false/)
-  assert.match(card, /\{isPremium && <BrokerSubscriptionBadge/)
+  assert.match(card, /\{isPremium && <div[\s\S]*<BrokerSubscriptionBadge/)
 })
 
 test('broker listing passes the active-subscription flag to the card', () => {

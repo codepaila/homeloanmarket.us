@@ -54,13 +54,13 @@ const guides = [
 export default function GuidesPage() {
   return (
     <div className="min-h-screen">
-      <Section className="bg-surface">
+      <Section className="bg-muted">
         <AnimatedContainer>
           <div className="text-center max-w-3xl mx-auto">
-            <h1 className="heading-1 text-text-main mb-4">
+            <h1 className="heading-1 text-foreground mb-4">
               Mortgage Guides
             </h1>
-            <p className="text-xl text-text-muted max-w-2xl mx-auto">
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Comprehensive resources to help you understand every aspect of the mortgage process,
               from first-time buyer tips to advanced refinancing strategies.
             </p>
@@ -89,10 +89,10 @@ export default function GuidesPage() {
                           Guide
                         </span>
                       </div>
-                      <h3 className="text-xl font-bold text-text-main mb-3 group-hover:text-primary transition-colors">
+                      <h3 className="text-xl font-bold text-foreground mb-3 group-hover:text-primary transition-colors">
                         {guide.title}
                       </h3>
-                      <p className="text-text-muted mb-4 text-sm leading-relaxed">
+                      <p className="text-muted-foreground mb-4 text-sm leading-relaxed">
                         {guide.description}
                       </p>
                       <div className="space-y-2 mb-6">
@@ -101,7 +101,7 @@ export default function GuidesPage() {
                             <svg className="w-4 h-4 text-primary mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            <span className="text-text-muted">{topic}</span>
+                            <span className="text-muted-foreground">{topic}</span>
                           </div>
                         ))}
                       </div>

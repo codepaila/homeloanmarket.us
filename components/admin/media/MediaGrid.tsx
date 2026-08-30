@@ -63,8 +63,8 @@ export function MediaGrid({ selectedIds, onToggleSelect, onSelectAsset, showDele
   if (assets.length === 0) {
     return (
       <div className="text-center py-16">
-        <FileImage className="h-12 w-12 text-text-muted mx-auto mb-3" />
-        <p className="text-sm text-text-muted">No media assets found</p>
+        <FileImage className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+        <p className="text-sm text-muted-foreground">No media assets found</p>
       </div>
     )
   }
@@ -149,13 +149,13 @@ export function MediaGrid({ selectedIds, onToggleSelect, onSelectAsset, showDele
                   </div>
                   <div className="p-3 space-y-1">
                     <p className="text-xs font-medium truncate">{asset.originalName}</p>
-                    <div className="flex items-center justify-between text-xs text-text-muted">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>{asset.width && asset.height ? `${asset.width}×${asset.height}` : '—'}</span>
                       <Badge variant="secondary" className="text-xs">{asset.extension.toUpperCase()}</Badge>
                     </div>
-                    <p className="text-xs text-text-muted">{formatFileSize(asset.fileSize)}</p>
+                    <p className="text-xs text-muted-foreground">{formatFileSize(asset.fileSize)}</p>
                     {asset.folderId && folderMap.get(asset.folderId) && (
-                      <p className="text-xs text-text-muted truncate">{folderMap.get(asset.folderId)}</p>
+                      <p className="text-xs text-muted-foreground truncate">{folderMap.get(asset.folderId)}</p>
                     )}
                   </div>
                 </CardContent>

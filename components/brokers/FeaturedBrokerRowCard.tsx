@@ -44,6 +44,7 @@ interface FeaturedBrokerRowCardProps {
     user?: { name?: string; phone?: string; email?: string }
     bankPartners?: { bankName: string }[]
     subscription?: { plan?: string; isActive?: boolean; endDate?: string | Date | null }
+    isFeatured?: boolean
     isMortgageExpert?: boolean
   }
 }
@@ -77,9 +78,10 @@ export default function FeaturedBrokerRowCard({ broker }: FeaturedBrokerRowCardP
   const yearsExperience = broker.experienceYears || 0
   const isVerified = broker.verificationStatus === 'VERIFIED'
   const isFeatured =
-    broker.subscription?.isActive === true &&
+    broker.isFeatured === true ||
+    (broker.subscription?.isActive === true &&
     broker.subscription?.plan === 'FEATURED' &&
-    (!broker.subscription.endDate || new Date(broker.subscription.endDate) > new Date())
+    (!broker.subscription.endDate || new Date(broker.subscription.endDate) > new Date()))
   const description = broker.description
   const supportedBanks = (broker.bankPartners || []).map((bp) => bp.bankName)
 
@@ -108,7 +110,7 @@ export default function FeaturedBrokerRowCard({ broker }: FeaturedBrokerRowCardP
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
             {name && (
-              <h3 className="text-lg font-bold text-text-main md:text-xl">
+              <h3 className="text-lg font-bold text-foreground md:text-xl">
                 {name}
               </h3>
             )}
@@ -124,7 +126,7 @@ export default function FeaturedBrokerRowCard({ broker }: FeaturedBrokerRowCardP
 
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             {company && (
-              <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 {company}
               </span>
             )}
@@ -149,7 +151,7 @@ export default function FeaturedBrokerRowCard({ broker }: FeaturedBrokerRowCardP
             {broker.isMortgageExpert && <MortgageExpertBadge />}
           </div>
 
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-muted">
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
             {yearsExperience > 0 && (
               <span>{yearsExperience}+ years experience</span>
             )}
@@ -157,9 +159,9 @@ export default function FeaturedBrokerRowCard({ broker }: FeaturedBrokerRowCardP
           </div>
 
           {validBanks.length > 0 && (
-            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-text-muted">
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
               <span>
-                <span className="font-medium text-text-main">Bank Partners:</span>{' '}
+                <span className="font-medium text-foreground">Bank Partners:</span>{' '}
                 {validBanks.slice(0, 3).join(', ')}
                 {validBanks.length > 3 && ` +${validBanks.length - 3}`}
               </span>
@@ -167,7 +169,7 @@ export default function FeaturedBrokerRowCard({ broker }: FeaturedBrokerRowCardP
           )}
 
           {description && (
-            <p className="mt-2 line-clamp-2 text-sm leading-snug text-text-muted">
+            <p className="mt-2 line-clamp-2 text-sm leading-snug text-muted-foreground">
               {description}
             </p>
           )}
@@ -196,7 +198,7 @@ export default function FeaturedBrokerRowCard({ broker }: FeaturedBrokerRowCardP
               'flex h-9 items-center justify-center gap-1.5 rounded-xl border text-sm font-medium transition-all duration-200',
               isFavorite
                 ? 'border-red-200 bg-red-50 text-red-500 dark:border-red-500/30 dark:bg-red-500/10'
-                : 'border-border bg-background text-text-muted hover:border-red-300 hover:text-red-500',
+                : 'border-border bg-background text-muted-foreground hover:border-red-300 hover:text-red-500',
             )}
           >
             <Heart

@@ -222,7 +222,7 @@ function ToggleRow({ label, description, checked, onCheckedChange }: ToggleRowPr
     <div className="flex items-center justify-between gap-4">
       <div className="space-y-0.5">
         <p className="text-sm font-medium">{label}</p>
-        <p className="text-xs text-text-muted">{description}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
       </div>
       <Switch checked={checked} onCheckedChange={onCheckedChange} />
     </div>

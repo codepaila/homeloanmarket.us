@@ -95,7 +95,7 @@ export function PublishReadinessChecklist({ advertisement, className }: PublishR
     return (
       <Card className={cn('border-dashed', className)}>
         <CardContent className="py-6 text-center">
-          <p className="text-sm text-text-muted">Load an advertisement to check readiness</p>
+          <p className="text-sm text-muted-foreground">Load an advertisement to check readiness</p>
         </CardContent>
       </Card>
     )
@@ -123,7 +123,7 @@ export function PublishReadinessChecklist({ advertisement, className }: PublishR
             {canPublish ? 'Ready to Publish' : 'Action Required'}
           </Badge>
         </div>
-        <p className="text-xs text-text-muted mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           {requiredPassed}/{requiredTotal} required checks passed
           {warningTotal > 0 && ` • ${warningPassed}/${warningTotal} recommended`}
         </p>
@@ -134,12 +134,12 @@ export function PublishReadinessChecklist({ advertisement, className }: PublishR
             {item.passed ? (
               <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
             ) : (
-              <Circle className="h-4 w-4 text-text-muted shrink-0 mt-0.5" />
+              <Circle className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
             )}
             <div className="flex-1 min-w-0">
               <p className={cn(
                 'text-xs font-medium',
-                item.passed ? 'text-text-main' : 'text-text-muted'
+                item.passed ? 'text-foreground' : 'text-muted-foreground'
               )}>
                 {item.label}
               </p>

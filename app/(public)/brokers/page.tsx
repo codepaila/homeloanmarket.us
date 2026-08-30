@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { useReducedMotion } from 'motion/react'
 import {
@@ -43,6 +43,11 @@ const experienceOptions = [
   { value: '15', label: '15+ years' },
 ]
 
+// Broker cards are pure per-broker: memoizing them keeps the listing grid from
+// re-rendering every card when unrelated state changes (e.g. dragging the
+// radius slider), which is especially costly on mobile Safari.
+const MemoizedBrokerCard = memo(BrokerGridCard)
+
 export default function BrokersPage() {
   const reducedMotion = useReducedMotion()
   const [searchInput, setSearchInput] = useState('')
@@ -62,6 +67,19 @@ export default function BrokersPage() {
   const [urlHydrated, setUrlHydrated] = useState(false)
   const filtersButtonRef = useRef<HTMLButtonElement>(null)
   const autocompleteRequestRef = useRef(0)
+  const autocompleteCacheRef = useRef<Map<string, Array<{ placeId: string; label: string }>>>(new Map())
+  // True once the user actually types (or edits) the search field. Guards the
+  // autocomplete effect against firing for a value that was only hydrated from
+  // the URL query — a free-text ?search= term is not a location, so showing
+  // Google place suggestions for it wastes a request AND leaves the dropdown
+  // open over the top of the result cards, blocking their clicks.
+  const autocompleteUserInteractedRef = useRef(false)
+  // True while a browser back/forward popstate is being applied, so filter/page
+  // side effects (reset-to-page-1, scroll-to-top) are suppressed and Next.js's
+  // native scroll restoration is left to run.
+  const popStateRef = useRef(false)
+  const resetHydratedRef = useRef(false)
+  const scrollHydratedRef = useRef(false)
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1)
   const searchRef = useRef<HTMLDivElement>(null)
   const suggestionsOpenRef = useRef(false)
@@ -99,10 +117,14 @@ export default function BrokersPage() {
       setPage(Number.isInteger(pageParam) && pageParam > 1 ? pageParam : 1)
     }
     syncFromUrl()
-    window.addEventListener('popstate', syncFromUrl)
+    const onPopState = () => {
+      popStateRef.current = true
+      syncFromUrl()
+    }
+    window.addEventListener('popstate', onPopState)
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setUrlHydrated(true)
-    return () => window.removeEventListener('popstate', syncFromUrl)
+    return () => window.removeEventListener('popstate', onPopState)
   }, [])
 
   const { brokers, total, totalPages, isLoading, error: brokerError } = useAllBrokers(
@@ -118,6 +140,7 @@ export default function BrokersPage() {
     undefined,
     selectedLocation ? { latitude: selectedLocation.latitude, longitude: selectedLocation.longitude, city: selectedLocation.city, state: selectedLocation.state, zip: selectedLocation.zip, token: selectedLocation.token } : undefined,
     radius,
+    { enabled: urlHydrated },
   )
 
   // Typing only updates local input state. The broker query, location
@@ -126,7 +149,7 @@ export default function BrokersPage() {
 
   useEffect(() => {
     const value = searchInput.trim()
-    if (value.length < 2 || selectedLocation?.normalizedAddress === value) {
+    if (value.length < 2 || selectedLocation?.normalizedAddress === value || !autocompleteUserInteractedRef.current) {
       autocompleteRequestRef.current += 1
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocationSuggestions([])
@@ -135,13 +158,24 @@ export default function BrokersPage() {
     }
     const requestId = ++autocompleteRequestRef.current
     const controller = new AbortController()
+    // Serve repeated terms from an in-memory cache so typing a previously
+    // searched location (or restoring a session) never re-hits the API.
+    const cached = autocompleteCacheRef.current.get(value)
+    if (cached) {
+      setLocationSuggestions(cached)
+      setLocationError('')
+      setActiveSuggestionIndex(-1)
+      return
+    }
     const timeout = window.setTimeout(async () => {
       try {
         const response = await fetch(`/api/location/autocomplete?input=${encodeURIComponent(value)}`, { signal: controller.signal })
         const data = await response.json()
         if (!response.ok) throw new Error(data.error || 'Location autocomplete is unavailable')
         if (requestId !== autocompleteRequestRef.current) return
-        setLocationSuggestions(Array.isArray(data.suggestions) ? data.suggestions : [])
+        const suggestions = Array.isArray(data.suggestions) ? data.suggestions : []
+        if (suggestions.length > 0) autocompleteCacheRef.current.set(value, suggestions)
+        setLocationSuggestions(suggestions)
         setLocationError('')
         setActiveSuggestionIndex(-1)
       } catch (error) {
@@ -225,10 +259,37 @@ export default function BrokersPage() {
     }
   }
 
+  // Reset to the first page whenever the search/filter criteria change. The
+  // hydration render is skipped so a deep-linked ?page=N (or a back/forward
+  // restore) is never clobbered back to page 1.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!urlHydrated) return
+    if (!resetHydratedRef.current) {
+      resetHydratedRef.current = true
+      return
+    }
+    if (popStateRef.current) return
     setPage(1)
-  }, [search, minExperience, minRating, featuredOnly, radius, selectedLocation])
+  }, [search, minExperience, minRating, featuredOnly, radius, selectedLocation, urlHydrated])
+
+  // New searches, filter changes, and pagination start at the top of the
+  // results. Browser back/forward restores are excluded so Next.js's native
+  // scroll restoration (and the restored listing) is left untouched.
+  useEffect(() => {
+    if (!urlHydrated || typeof window === 'undefined') return
+    if (!scrollHydratedRef.current) {
+      scrollHydratedRef.current = true
+      return
+    }
+    if (popStateRef.current) {
+      popStateRef.current = false
+      return
+    }
+    const results = document.getElementById('broker-results')
+    if (results) {
+      results.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' })
+    }
+  }, [page, committedSearch, minExperience, minRating, featuredOnly, radius, selectedLocation, urlHydrated, reducedMotion])
 
   // Normalize an out-of-range page (e.g. a stale ?page= URL or a search that
   // narrowed the result set) to the last valid page instead of rendering empty.
@@ -288,18 +349,22 @@ export default function BrokersPage() {
     featuredOnly && 'featured',
   ].filter(Boolean).length
 
-  const sortedBrokers = [...(brokers || [])].sort((a: any, b: any) => {
-    switch (sortBy) {
-      case 'rating':
-        return (b.avgRating || 0) - (a.avgRating || 0)
-      case 'experience':
-        return (b.experienceYears || 0) - (a.experienceYears || 0)
-      case 'reviews':
-        return (b.totalReviews || 0) - (a.totalReviews || 0)
-      default:
-        return 0
-    }
-  })
+  const sortedBrokers = useMemo(() => {
+    const list = brokers || []
+    if (sortBy === 'relevance') return list
+    return [...list].sort((a: any, b: any) => {
+      switch (sortBy) {
+        case 'rating':
+          return (b.avgRating || 0) - (a.avgRating || 0)
+        case 'experience':
+          return (b.experienceYears || 0) - (a.experienceYears || 0)
+        case 'reviews':
+          return (b.totalReviews || 0) - (a.totalReviews || 0)
+        default:
+          return 0
+      }
+    })
+  }, [brokers, sortBy])
 
   // Lock body scroll and close with Escape while the filter sheet is open
   useEffect(() => {
@@ -341,7 +406,7 @@ export default function BrokersPage() {
         <div className="space-y-2 rounded-xl border border-border bg-background p-3">
           <label className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-muted-foreground">
             <span>Search Radius</span>
-            <span className="font-medium normal-case text-text-main">{radius} miles</span>
+            <span className="font-medium normal-case text-foreground">{radius} miles</span>
           </label>
           <div className="flex items-center justify-between text-xs text-muted-foreground"><span>0 miles</span><span>100 miles</span></div>
           <input type="range" min="0" max="100" step="1" value={radius} onChange={(event) => setRadius(Number(event.target.value))} aria-label="Search radius in miles" className="w-full accent-primary" />
@@ -410,7 +475,7 @@ export default function BrokersPage() {
     <div className="flex items-center gap-3 border-t border-border p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
       <button type="button"
         onClick={clearAllFilters}
-        className="flex-1 rounded-xl border border-border px-4 py-3 text-sm font-medium text-text-main transition-colors hover:bg-muted"
+        className="flex-1 rounded-xl border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
       >
         Clear all
       </button>
@@ -426,7 +491,7 @@ export default function BrokersPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Discovery header */}
-      <section className="relative overflow-hidden border-b border-border bg-surface py-8 md:py-10">
+      <section className="relative overflow-hidden border-b border-border bg-muted py-8 md:py-10">
         <div
           className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/5 blur-3xl"
           aria-hidden="true"
@@ -437,13 +502,13 @@ export default function BrokersPage() {
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
               Verified mortgage broker directory
             </div> */}
-            <h1 className="heading-2 text-text-main text-balance">
+            <h1 className="heading-2 text-foreground text-balance">
               Find the right mortgage originator
             </h1>
-            <p className="mx-auto mt-3 max-w-2xl text-base text-text-muted md:text-lg">
+            <p className="mx-auto mt-3 max-w-2xl text-base text-muted-foreground md:text-lg">
               Search by mortgage originator, company, ZIP code, address or location, then compare verified mortgage professionals.
             </p>
-            {/* <p className="mx-auto mt-3 max-w-3xl text-sm text-text-muted">
+            {/* <p className="mx-auto mt-3 max-w-3xl text-sm text-muted-foreground">
               HomeLoanMarket helps you find and compare verified mortgage brokers across the United States.
               Search by city, state, or ZIP code to discover local mortgage professionals, compare their
               experience and ratings, and connect with the right home-loan expert for your situation.
@@ -458,10 +523,10 @@ export default function BrokersPage() {
       </section>
 
       {/* Sticky search + toolbar */}
-      <section className="sticky top-16 z-30 border-b border-border bg-card/80 backdrop-blur-lg md:top-[72px]">
+      <section className="sticky top-16 z-30 border-b border-border bg-card md:top-[72px]">
         <div className="container-custom py-4 md:py-5 grid grid-cols-5 gap-3 md:gap-5 items-center">
           <div ref={searchRef} className="relative  col-span-full sm:col-span-3">
-            <Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-text-muted" />
+            <Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
               name="q"
@@ -475,6 +540,7 @@ export default function BrokersPage() {
               placeholder="Search by City , ZIP code"
               value={searchInput}
               onChange={(e) => {
+                autocompleteUserInteractedRef.current = true
                 setSearchInput(e.target.value)
                 setSelectedLocation(null)
                 setRadius(25)
@@ -500,7 +566,7 @@ export default function BrokersPage() {
                   setActiveSuggestionIndex(-1)
                 }
               }}
-              className="h-10 w-full rounded border border-border bg-background pl-11 pr-2 text-sm text-text-main  placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="h-10 w-full rounded border border-border bg-background pl-11 pr-2 text-base text-foreground  placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 md:text-sm"
             />
             {locationSuggestions.length > 0 && (
               <div id="broker-location-suggestions" className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-border bg-card shadow-large" role="listbox" aria-label="Location suggestions">
@@ -513,7 +579,7 @@ export default function BrokersPage() {
                     aria-selected={locationSuggestions.indexOf(suggestion) === activeSuggestionIndex}
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => selectLocation(suggestion)}
-                    className={cn('flex w-full items-center gap-2 px-4 py-3 text-left text-xs text-text-main hover:bg-muted focus:bg-muted focus:outline-none', locationSuggestions.indexOf(suggestion) === activeSuggestionIndex && 'bg-muted', 'border-b border-border')}
+                    className={cn('flex w-full items-center gap-2 px-4 py-3 text-left text-xs text-foreground hover:bg-muted focus:bg-muted focus:outline-none', locationSuggestions.indexOf(suggestion) === activeSuggestionIndex && 'bg-muted', 'border-b border-border')}
                   >
                     <MapPin className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
                     {suggestion.label}
@@ -526,7 +592,7 @@ export default function BrokersPage() {
               {searchInput && (
                 <button type="button"
                  onClick={() => { setSearchInput(''); setSearch(''); setCommittedSearch(''); setSelectedLocation(null); setRadius(25); setLocationSuggestions([]); setLocationError(''); setActiveSuggestionIndex(-1) }}
-                  className="rounded-full p-1 text-text-muted hover:bg-muted hover:text-text-main"
+                  className="rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
                   aria-label="Clear search"
                 >
                   <X className="h-4 w-4" />
@@ -537,13 +603,13 @@ export default function BrokersPage() {
         
           <div className="col-span-full sm:col-span-2  flex items-center justify-between gap-4">
 
-            <div className="text-sm text-text-muted">
+            <div className="text-sm text-muted-foreground">
               {isLoading ? (
                 <span className="inline-block h-4 w-16 animate-pulse rounded bg-muted" />
               ) : (
                 <span>
                   {/* {searchInput && <span className="inline">Showing Mortage Originators Near  &quot;{searchInput}&quot;</span> } */}
-                  <span className="font-semibold text-text-main">{total || 0}</span>{' '}
+                  <span className="font-semibold text-foreground">{total || 0}</span>{' '}
                   <span className="inline font-medium text-sm">mortgage originator{total === 1 ? '' : 's'} found 
                     {/* {searchInput && ` Near ${searchInput}`} */}
 
@@ -558,7 +624,7 @@ export default function BrokersPage() {
               type="button"
               onClick={openFilters}
               className={cn(
-                ' inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm font-medium text-text-main transition-colors hover:bg-muted',
+                ' inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted',
                 filtersOpen && 'bg-muted',
               )}
               aria-expanded={filtersOpen}
@@ -585,7 +651,7 @@ export default function BrokersPage() {
                 type="button"
                 onClick={openFilters}
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm font-medium text-text-main transition-colors hover:bg-muted',
+                  'inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted',
                   filtersOpen && 'bg-muted',
                 )}
                 aria-expanded={filtersOpen}
@@ -600,22 +666,22 @@ export default function BrokersPage() {
                 )}
               </button>
 
-              <div className="hidden items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm text-text-muted sm:inline-flex">
+              <div className="hidden items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm text-muted-foreground sm:inline-flex">
                 <span>Sort:</span>
                 <Select
                   value={sortBy}
                   onValueChange={setSortBy}
                   options={sortOptions}
-                  triggerClassName="border-0 shadow-none bg-transparent text-text-main font-medium"
+                  triggerClassName="border-0 shadow-none bg-transparent text-foreground font-medium"
                 />
               </div>
 
               <div className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm">
-                <span className="hidden text-text-muted sm:inline">View:</span>
+                <span className="hidden text-muted-foreground sm:inline">View:</span>
                 <button type="button"
                   onClick={() => setViewMode('grid')}
                   className={cn(
-                    'rounded-md p-1 text-text-muted transition-colors hover:bg-muted hover:text-text-main',
+                    'rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
                     viewMode === 'grid' && 'bg-muted text-primary',
                   )}
                   aria-label="Grid view"
@@ -625,7 +691,7 @@ export default function BrokersPage() {
                 <button type="button"
                   onClick={() => setViewMode('list')}
                   className={cn(
-                    'rounded-md p-1 text-text-muted transition-colors hover:bg-muted hover:text-text-main',
+                    'rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground',
                     viewMode === 'list' && 'bg-muted text-primary',
                   )}
                   aria-label="List view"
@@ -635,12 +701,12 @@ export default function BrokersPage() {
               </div>
             </div>
 
-            <div className="text-sm text-text-muted">
+            <div className="text-sm text-muted-foreground">
               {isLoading ? (
                 <span className="inline-block h-4 w-16 animate-pulse rounded bg-muted" />
               ) : (
                 <span>
-                  <span className="font-semibold text-text-main">{total || 0}</span>{' '}
+                  <span className="font-semibold text-foreground">{total || 0}</span>{' '}
                   <span className="hidden sm:inline">mortgage broker{total === 1 ? '' : 's'} found</span>
                   <span className="sm:hidden">broker{total === 1 ? '' : 's'}</span>
                 </span>
@@ -658,7 +724,7 @@ export default function BrokersPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: reducedMotion ? 0 : 0.2 }}
-            className="fixed inset-0 z-50 bg-black/30 backdrop-blur-[2px]"
+            className="fixed inset-0 z-50 bg-black/40"
             onClick={closeFilters}
             aria-hidden="true"
           />
@@ -681,13 +747,13 @@ export default function BrokersPage() {
           >
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <div>
-                <h2 className="text-lg font-bold text-text-main">Filters</h2>
+                <h2 className="text-lg font-bold text-foreground">Filters</h2>
                 <p className="text-xs text-muted-foreground">Refine mortgage originators</p>
               </div>
               <button type="button"
                 data-filter-close
                 onClick={closeFilters}
-                className="rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-text-main"
+                className="rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
                 aria-label="Close filters"
               >
                 <X className="h-5 w-5" />
@@ -717,13 +783,13 @@ export default function BrokersPage() {
           >
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
               <div>
-                <h2 className="text-lg font-bold text-text-main">Filters</h2>
+                <h2 className="text-lg font-bold text-foreground">Filters</h2>
                 <p className="text-xs text-muted-foreground">Refine mortgage originators</p>
               </div>
               <button type="button"
                 data-filter-close
                 onClick={closeFilters}
-                className="rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-text-main"
+                className="rounded-full p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
                 aria-label="Close filters"
               >
                 <X className="h-5 w-5" />
@@ -738,7 +804,7 @@ export default function BrokersPage() {
       </AnimatePresence>
 
       {/* Results */}
-      <section className="py-8 md:py-12">
+      <section id="broker-results" className="scroll-mt-40 py-8 md:py-12">
         <div className="container-custom">
           {isLoading ? (
             <BrokerCardSkeleton count={PAGE_SIZE} view={viewMode} />
@@ -754,18 +820,17 @@ export default function BrokersPage() {
             />
           ) : sortedBrokers && sortedBrokers.length > 0 ? (
             <>
-              <motion.div
+              <div
                 className={cn(
                   'grid gap-6',
                   viewMode === 'grid'
                     ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
                     : 'grid-cols-1',
                 )}
-                layout
               >
-                {sortedBrokers.map((broker: any, ind: number) => (
-                  <BrokerGridCard
-                    key={broker.id + "hlm" + ind}
+                {sortedBrokers.map((broker: any) => (
+                  <MemoizedBrokerCard
+                    key={broker.id}
                     slug={broker.profileSlug}
                     name={broker.displayName || broker.companyName || 'Mortgage Originator'}
                     company={broker.companyName || 'Mortgage Originator'}
@@ -777,7 +842,7 @@ export default function BrokersPage() {
                     isMortgageExpert={broker.isMortgageExpert === true}
                   />
                 ))}
-              </motion.div>
+              </div>
 
               {totalPages > 1 && (
                 <Pagination
@@ -808,10 +873,10 @@ export default function BrokersPage() {
       </section>
 
       {selectedLocation && (
-        <section className="border-t border-border bg-surface/40 py-8 md:py-10" aria-label="Related Local Resources">
+        <section className="border-t border-border bg-muted/40 py-8 md:py-10" aria-label="Related Local Resources">
           <div className="container-custom">
-            <h2 className="text-xl font-bold text-text-main">Related Local Resources</h2>
-            <p className="mt-1 text-sm text-text-muted">Resources serving {selectedLocation.city || selectedLocation.normalizedAddress}</p>
+            <h2 className="text-xl font-bold text-foreground">Related Local Resources</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Resources serving {selectedLocation.city || selectedLocation.normalizedAddress}</p>
             <AdvertisementRenderer
               placement="BROKER_LISTING_LOCAL"
               location={{ latitude: selectedLocation.latitude, longitude: selectedLocation.longitude, token: selectedLocation.token }}
@@ -833,7 +898,6 @@ function FilterChip({
 }) {
   return (
     <motion.div
-      layout
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
@@ -868,7 +932,7 @@ function FilterChip({
 // }) {
 //   return (
 //     <div className="space-y-1.5">
-//       <label className="text-xs font-medium uppercase tracking-wide text-text-muted">
+//       <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
 //         {label}
 //       </label>
 //       <div className="relative">
@@ -877,7 +941,7 @@ function FilterChip({
 //           onChange={(e) => onChange(e.target.value)}
 //           disabled={disabled || loading}
 //           className={cn(
-//             'w-full appearance-none rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-text-main',
+//             'w-full appearance-none rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground',
 //             'transition-all focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15',
 //             (loading || disabled) && 'opacity-60',
 //           )}
@@ -888,9 +952,9 @@ function FilterChip({
 //             </option>
 //           ))}
 //         </select>
-//         <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+//         <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
 //       </div>
-//       {loading && <p className="text-xs text-text-muted">Loading mortgage brokers...</p>}
+//       {loading && <p className="text-xs text-muted-foreground">Loading mortgage brokers...</p>}
 //     </div>
 //   )
 // }
@@ -951,14 +1015,14 @@ function Pagination({
       <button type="button"
         onClick={() => onPageChange(page - 1)}
         disabled={page <= 1}
-        className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-main transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
       >
         Previous
       </button>
 
       {pageItems.map((item) =>
         item === 'ellipsis-start' || item === 'ellipsis-end' ? (
-          <span key={item} className="px-1 text-sm text-text-muted" aria-hidden="true">…</span>
+          <span key={item} className="px-1 text-sm text-muted-foreground" aria-hidden="true">…</span>
         ) : (
           <button type="button"
             key={item}
@@ -967,8 +1031,8 @@ function Pagination({
             className={cn(
               'h-9 min-w-9 rounded-lg border px-2 text-sm font-medium transition-colors',
               item === page
-                ? 'border-primary bg-primary text-white'
-                : 'border-border text-text-main hover:bg-muted',
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border text-foreground hover:bg-muted',
             )}
           >
             {item}
@@ -979,7 +1043,7 @@ function Pagination({
       <button type="button"
         onClick={() => onPageChange(page + 1)}
         disabled={page >= totalPages}
-        className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-text-main transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
       >
         Next
       </button>

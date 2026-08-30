@@ -303,7 +303,7 @@ export default function HeroSection() {
                   onChange={(event) => { setQuery(event.target.value); setSelectedLocation(null); setActiveSuggestionIndex(-1) }}
                   onKeyDown={handleKeyDown}
                   placeholder="Search by city or ZIP code"
-                  className="flex-1 bg-transparent py-1 text-sm font-medium text-secondary placeholder:text-muted-foreground/70 focus:outline-none"
+                  className="flex-1 bg-transparent py-1 text-base font-medium text-secondary placeholder:text-muted-foreground/70 focus:outline-none"
                   aria-label="Search mortgage originators by city or ZIP code"
                   aria-expanded={locationSuggestions.length > 0 || searching}
                   aria-autocomplete="list"

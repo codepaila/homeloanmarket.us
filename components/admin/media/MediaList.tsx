@@ -21,8 +21,8 @@ export function MediaList({ assets, selectedIds, onToggleSelect, onSelectAsset, 
   if (assets.length === 0) {
     return (
       <div className="text-center py-16">
-        <FileImage className="h-12 w-12 text-text-muted mx-auto mb-3" />
-        <p className="text-sm text-text-muted">No media assets found</p>
+        <FileImage className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+        <p className="text-sm text-muted-foreground">No media assets found</p>
       </div>
     )
   }
@@ -33,20 +33,20 @@ export function MediaList({ assets, selectedIds, onToggleSelect, onSelectAsset, 
         <table className="w-full">
           <thead className="bg-muted/50 border-b border-border">
             <tr>
-              <th className="p-3 text-left text-xs font-medium text-text-muted w-10">
+              <th className="p-3 text-left text-xs font-medium text-muted-foreground w-10">
                 <input type="checkbox" className="rounded" onChange={(e) => {
                   if (e.target.checked) assets.forEach(a => onToggleSelect(a.id))
                   else assets.forEach(a => selectedIds.has(a.id) && onToggleSelect(a.id))
                 }} />
               </th>
-              <th className="p-3 text-left text-xs font-medium text-text-muted">Preview</th>
-              <th className="p-3 text-left text-xs font-medium text-text-muted">Filename</th>
-              <th className="p-3 text-left text-xs font-medium text-text-muted">Folder</th>
-              <th className="p-3 text-left text-xs font-medium text-text-muted">Dimensions</th>
-              <th className="p-3 text-left text-xs font-medium text-text-muted">Size</th>
-              <th className="p-3 text-left text-xs font-medium text-text-muted">Format</th>
-              <th className="p-3 text-left text-xs font-medium text-text-muted">Created</th>
-              <th className="p-3 text-left text-xs font-medium text-text-muted">Actions</th>
+              <th className="p-3 text-left text-xs font-medium text-muted-foreground">Preview</th>
+              <th className="p-3 text-left text-xs font-medium text-muted-foreground">Filename</th>
+              <th className="p-3 text-left text-xs font-medium text-muted-foreground">Folder</th>
+              <th className="p-3 text-left text-xs font-medium text-muted-foreground">Dimensions</th>
+              <th className="p-3 text-left text-xs font-medium text-muted-foreground">Size</th>
+              <th className="p-3 text-left text-xs font-medium text-muted-foreground">Format</th>
+              <th className="p-3 text-left text-xs font-medium text-muted-foreground">Created</th>
+              <th className="p-3 text-left text-xs font-medium text-muted-foreground">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
@@ -75,15 +75,15 @@ export function MediaList({ assets, selectedIds, onToggleSelect, onSelectAsset, 
                 </td>
                 <td className="p-3">
                   <p className="text-sm font-medium truncate max-w-[200px]">{asset.originalName}</p>
-                  <p className="text-xs text-text-muted truncate max-w-[200px]">{asset.title || asset.fileName}</p>
+                  <p className="text-xs text-muted-foreground truncate max-w-[200px]">{asset.title || asset.fileName}</p>
                 </td>
-                <td className="p-3 text-sm text-text-muted">{asset.folderId ? folderMap.get(asset.folderId) || '—' : 'Root'}</td>
-                <td className="p-3 text-sm text-text-muted">{asset.width && asset.height ? `${asset.width}×${asset.height}` : '—'}</td>
-                <td className="p-3 text-sm text-text-muted">{formatFileSize(asset.fileSize)}</td>
+                <td className="p-3 text-sm text-muted-foreground">{asset.folderId ? folderMap.get(asset.folderId) || '—' : 'Root'}</td>
+                <td className="p-3 text-sm text-muted-foreground">{asset.width && asset.height ? `${asset.width}×${asset.height}` : '—'}</td>
+                <td className="p-3 text-sm text-muted-foreground">{formatFileSize(asset.fileSize)}</td>
                 <td className="p-3">
                   <Badge variant="secondary" className="text-xs">{asset.extension.toUpperCase()}</Badge>
                 </td>
-                <td className="p-3 text-sm text-text-muted">{new Date(asset.createdAt).toLocaleDateString()}</td>
+                <td className="p-3 text-sm text-muted-foreground">{new Date(asset.createdAt).toLocaleDateString()}</td>
                 <td className="p-3">
                   <Button variant="ghost" size="sm" onClick={() => onSelectAsset(asset)}>View</Button>
                 </td>

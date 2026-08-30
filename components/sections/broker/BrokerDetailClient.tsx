@@ -9,7 +9,6 @@ import {
   MapPin,
   Phone,
   Mail,
-  Award,
   Star,
   Users,
   MessageCircle,
@@ -22,7 +21,7 @@ import {
 import type { LucideIcon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { isSafeHttpUrl } from '@/lib/broker-social-links'
-import { useBroker, useAllBrokers, useBrokerReviews } from '@/hooks/useClient'
+import { useBrokerReviews } from '@/hooks/useClient'
 import Image from 'next/image'
 import { RatingStars, RatingBadge } from '@/components/design/RatingStars'
 import { BrokerGridCard } from '@/components/brokers'
@@ -31,16 +30,21 @@ import { BrokerSubscriptionBadge } from '@/components/brokers/BrokerSubscription
 import { MortgageExpertBadge } from '@/components/brokers/MortgageExpertBadge'
 import { PremiumButton } from '@/components/design/PremiumButton'
 import { BrokerReviewDialog } from '@/components/sections/broker/BrokerReviewDialog'
-import { BrokerDetailSkeleton } from '@/components/design/BrokerDetailSkeleton'
+import { Button } from '@/components/ui/button'
 
 interface BrokerDetailClientProps {
   brokerSlug: string
   initialBroker: any
+  initialRelated?: any[]
 }
 
-export default function BrokerDetailClient({ brokerSlug, initialBroker }: BrokerDetailClientProps) {
-  const { broker, isLoading: isLoadingBroker } = useBroker(brokerSlug)
-  const currentBroker = broker || initialBroker
+export default function BrokerDetailClient({ brokerSlug, initialBroker, initialRelated = [] }: BrokerDetailClientProps) {
+  // The profile content is fully server-rendered: the server component
+  // passes the complete public record (with contact + badges) as
+  // `initialBroker`, so no client-side refetch of the same broker is needed
+  // on mount. This keeps the initial HTML meaningful and avoids a redundant
+  // full-payload request + skeleton flash on every profile visit.
+  const currentBroker = initialBroker
   const [activeTab, setActiveTab] = useState('about')
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false)
   const [reviewKey, setReviewKey] = useState(0)
@@ -61,10 +65,11 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
     })
   }, [brokerSlug])
 
-  // Similar brokers
-  const { brokers: similarBrokers } = useAllBrokers(1, 4)
-  const similar = (similarBrokers || [])
-    .filter((b: any) => b.id !== currentBroker?.id && b.profileSlug !== brokerSlug)
+  // Similar brokers are resolved server-side (`initialRelated`) through the same
+  // priority ordering as /brokers, so the section is present in the initial HTML
+  // — no client fetch and no mount-time layout shift.
+  const similar = initialRelated
+    .filter((b: any) => b.profileSlug !== brokerSlug)
     .slice(0, 3)
 
   const handleWriteReview = () => {
@@ -78,10 +83,6 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
   const handleReviewSubmitted = () => {
     setReviewKey((k) => k + 1)
     mutateReviews()
-  }
-
-  if (isLoadingBroker) {
-    return <BrokerDetailSkeleton />
   }
 
   if (!currentBroker) {
@@ -117,7 +118,6 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
   } = currentBroker
 
   const totalReviewsCount = _count?.reviews || totalReviews || 0
-  const isPremium = false
   const isFeaturedBroker = isFeatured
   const showDescription = hasOwner !== false
 
@@ -173,10 +173,9 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
           </div>
 
           {isFeaturedBroker && (
-            // <BrokerSubscriptionBadge className="h-20 w-30  absolute -top-10 right-1 z-10" />
             <div className="absolute -top-2 -right-2 z-10">
-              <Badge className="flex items-center gap-1 rounded bg-primary px-2.5 py-1 text-xs font-semibold text-white shadow-md">
-                <Star className="h-3 w-3 fill-white" />
+              <Badge className="flex items-center gap-1 rounded bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground shadow-md">
+                <Star className="h-3 w-3 fill-current" />
                 Featured
               </Badge>
             </div>
@@ -191,19 +190,19 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
             <div className="text-center md:text-left">
               {displayName && (
                 <div className="flex flex-col items-start justify-center gap-2 md:justify-start">
-                  <h1 className="text-3xl font-bold text-text-main md:text-4xl">
+                  <h1 className="text-3xl font-bold text-foreground md:text-4xl">
                     {displayName}
                   </h1>
                   {isMortgageExpert && <MortgageExpertBadge />}
                 </div>
               )}
               {nmls && (
-                <p className="mt-1.5 text-sm font-medium text-text-muted">
+                <p className="mt-1.5 text-sm font-medium text-muted-foreground">
                   NMLS #{nmls}
                 </p>
               )}
               {companyName && (
-                <p className="mt-1 text-lg text-text-muted">
+                <p className="mt-1 text-lg text-muted-foreground">
                   {companyName}
                 </p>
               )}
@@ -218,12 +217,6 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
                   Verified Mortgage Broker
                 </Badge>
               )} */}
-              {isPremium && (
-                <Badge className="bg-purple-500/15 text-purple-700 ring-1 ring-purple-600/25">
-                  <Award className="h-3 w-3 mr-1" />
-                  Premium Partner
-                </Badge>
-              )}
             </div>
           </div>
 
@@ -256,10 +249,10 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
           <section className="mt-16">
             <div className="mb-8 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-text-main">
+                <h2 className="text-2xl font-bold text-foreground">
                   Similar mortgage originators
                 </h2>
-                <p className="mt-1 text-sm text-text-muted">
+                <p className="mt-1 text-sm text-muted-foreground">
                   More verified professionals in your area.
                 </p>
               </div>
@@ -293,20 +286,20 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
         {/* Directory prompt */}
         <section className="">
           <div className=" px-6 py-14 text-center md:py-16">
-            <h2 className="text-balance text-2xl font-bold text-text-main md:text-3xl">
+            <h2 className="text-balance text-2xl font-bold text-foreground md:text-3xl">
               Still comparing mortgage originators?
             </h2>
-            <p className="mx-auto mt-3 max-w-xl text-sm text-text-muted">
+            <p className="mx-auto mt-3 max-w-xl text-sm text-muted-foreground">
               View the full directory of verified mortgage originators, compare
               ratings and reviews, and find the right match for your home
               loan journey.
             </p>
             <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
               <Link href="/brokers">
-                <PremiumButton size="lg">
+                <Button size="lg">
                   Find Mortgage Originators
                   <ArrowRight className="ml-2 h-4 w-4" />
-                </PremiumButton>
+                </Button>
               </Link>
             </div>
           </div>
@@ -323,9 +316,7 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker }: Broker
   )
 }
 
-function isVerifiedBadge(status: string) {
-  return status === 'VERIFIED'
-}
+
 
 function ContactSection({
   phone,
@@ -345,11 +336,11 @@ function ContactSection({
 
   return (
     <section className="space-y-4">
-      <h2 className="text-lg font-bold text-text-main">Contact</h2>
+      <h2 className="text-lg font-bold text-foreground">Contact</h2>
       <div className="divide-y divide-border border-y border-border">
         {phone && (
           <ContactRow icon={<Phone className="h-4 w-4" />} label="Phone">
-            <a href={`tel:${phone}`} className="break-all text-text-main transition-colors hover:text-primary">
+            <a href={`tel:${phone}`} className="break-all text-foreground transition-colors hover:text-primary">
               {phone}
             </a>
           </ContactRow>
@@ -361,7 +352,7 @@ function ContactSection({
               href={`https://wa.me/${whatsapp?.replace(/\D/g, '')}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="break-all text-text-main transition-colors hover:text-primary"
+              className="break-all text-foreground transition-colors hover:text-primary"
             >
               {whatsapp}
             </a>
@@ -370,7 +361,7 @@ function ContactSection({
 
         {email && (
           <ContactRow icon={<Mail className="h-4 w-4" />} label="Email">
-            <a href={`mailto:${email}`} className="break-all text-text-main transition-colors hover:text-primary">
+            <a href={`mailto:${email}`} className="break-all text-foreground transition-colors hover:text-primary">
               {email}
             </a>
           </ContactRow>
@@ -382,7 +373,7 @@ function ContactSection({
               href={websiteHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="break-all text-text-main transition-colors hover:text-primary"
+              className="break-all text-foreground transition-colors hover:text-primary"
             >
               {websiteDisplay}
             </a>
@@ -391,7 +382,7 @@ function ContactSection({
 
         {officeAddress && (
           <ContactRow icon={<MapPin className="h-4 w-4" />} label="Office Location">
-            <p className="break-words text-text-main">{officeAddress}</p>
+            <p className="break-words text-foreground">{officeAddress}</p>
           </ContactRow>
         )}
       </div>
@@ -410,12 +401,12 @@ function ContactRow({
 }) {
   return (
     <div className="flex items-start gap-3 py-3">
-      <span aria-hidden="true" className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center text-text-muted">
+      <span aria-hidden="true" className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center text-muted-foreground">
         {icon}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-medium uppercase tracking-wide text-text-muted">{label}</p>
-        <div className="mt-0.5 min-w-0 break-words text-sm font-medium text-text-main">{children}</div>
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+        <div className="mt-0.5 min-w-0 break-words text-sm font-medium text-foreground">{children}</div>
       </div>
     </div>
   )
@@ -444,7 +435,7 @@ function SocialSection({ socialLinks }: { socialLinks?: Record<string, string | 
 
   return (
     <section className="space-y-4">
-      <h2 className="text-lg font-bold text-text-main">Social Profiles</h2>
+      <h2 className="text-lg font-bold text-foreground">Social Profiles</h2>
       <div className="flex flex-wrap gap-2">
         {links.map(({ key, label, icon: Icon, accessibleName }) => (
           <a
@@ -453,7 +444,7 @@ function SocialSection({ socialLinks }: { socialLinks?: Record<string, string | 
             target="_blank"
             rel="noopener noreferrer"
             aria-label={accessibleName}
-            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-2 text-sm font-medium text-text-main transition-colors hover:border-primary/40 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
             {/* {label} */}
@@ -464,15 +455,19 @@ function SocialSection({ socialLinks }: { socialLinks?: Record<string, string | 
   )
 }
 
+function isVerifiedBadge(status: string) {
+  return status === 'VERIFIED'
+}
+
 function BankPartnersSection({ bankPartners }: { bankPartners: any[] }) {
   return (
     <section className="space-y-4">
-      <h2 className="text-lg font-bold text-text-main">Bank Partnerships</h2>
+      <h2 className="text-lg font-bold text-foreground">Bank Partnerships</h2>
       <div className="divide-y divide-border border-y border-border">
         {bankPartners.slice(0, 8).map((bank: any, idx: number) => (
           <div key={idx} className="flex items-center justify-between gap-3 py-3">
-            <span className="min-w-0 break-words text-sm font-medium text-text-main">{bank.bankName}</span>
-            <span className="shrink-0 text-xs text-text-muted">{bank.bankType}</span>
+            <span className="min-w-0 break-words text-sm font-medium text-foreground">{bank.bankName}</span>
+            <span className="shrink-0 text-xs text-muted-foreground">{bank.bankType}</span>
           </div>
         ))}
       </div>
@@ -497,10 +492,10 @@ function AboutSection({
     <div className="space-y-8">
       {showDescription && (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-text-main">
+          <h2 className="text-2xl font-bold text-foreground">
             About {displayName || 'this mortgage originator'}
           </h2>
-          <p className="text-text-muted leading-relaxed whitespace-pre-line">
+          <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
             {description ||
               'Professional mortgage originator providing expert loan services with years of experience in the industry.'}
           </p>
@@ -522,10 +517,10 @@ function ExperienceSection({
 }) {
   return (
     <div className="space-y-4">
-      <h3 className="text-xl font-bold text-text-main">
+      <h3 className="text-xl font-bold text-foreground">
         Professional Experience
       </h3>
-      <p className="text-text-muted">
+      <p className="text-muted-foreground">
         With {experienceYears || 0}+ years in the mortgage industry, this mortgage originator
         specializes in helping borrowers navigate the mortgage process with
         transparency and care.
@@ -550,7 +545,7 @@ function ReviewsSummary({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold text-text-main">
+        <h3 className="text-xl font-bold text-foreground">
           What borrowers are saying
         </h3>
         <div className="flex items-center gap-4">
@@ -589,19 +584,19 @@ function ReviewsSection({
     <div className="space-y-8" id="reviews">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-text-main">
+          <h2 className="text-2xl font-bold text-foreground">
             Customer Reviews
           </h2>
-          <p className="mt-1 text-sm text-text-muted">
+          <p className="mt-1 text-sm text-muted-foreground">
             <RatingStars rating={avgRating} totalReviews={0} size="sm" showCount={false} className="inline-flex" />
-            <span className="ml-1 font-semibold text-text-main">{avgRating > 0 ? avgRating.toFixed(1) : '—'}</span>
+            <span className="ml-1 font-semibold text-foreground">{avgRating > 0 ? avgRating.toFixed(1) : '—'}</span>
             <span className="ml-1">· {totalReviews} review{totalReviews === 1 ? '' : 's'}</span>
           </p>
         </div>
         <button
           type="button"
           onClick={onWriteReview}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90"
+          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
         >
           <Star className="h-4 w-4" />
           Write a Review
@@ -616,11 +611,11 @@ function ReviewsSection({
         </div>
       ) : (
         <div className="py-16 text-center">
-          <Star className="h-12 w-12 text-text-muted/30 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-text-main mb-2">
+          <Star className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-foreground mb-2">
             No reviews at this time
           </h3>
-          <p className="text-text-muted">
+          <p className="text-muted-foreground">
             Be the first to review this mortgage originator.
           </p>
         </div>
@@ -643,14 +638,14 @@ function ReviewItem({ review }: { review: any }) {
               className="object-cover"
             />
           ) : (
-            <Users className="h-5 w-5 text-text-muted" />
+            <Users className="h-5 w-5 text-muted-foreground" />
           )}
         </div>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="break-words font-medium text-text-main">
+              <p className="break-words font-medium text-foreground">
                 {review.user?.name || 'Anonymous'}
               </p>
               <RatingStars
@@ -660,7 +655,7 @@ function ReviewItem({ review }: { review: any }) {
                 showCount={false}
               />
             </div>
-            <span className="shrink-0 text-xs text-text-muted">
+            <span className="shrink-0 text-xs text-muted-foreground">
               {new Date(review.createdAt).toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'short',
@@ -670,7 +665,7 @@ function ReviewItem({ review }: { review: any }) {
           </div>
 
           {review.comment && (
-            <p className="mt-3 text-sm text-text-muted">
+            <p className="mt-3 text-sm text-muted-foreground">
               {review.comment}
             </p>
           )}
@@ -690,7 +685,9 @@ function StatBox({
   return (
     <div className="rounded-xl border border-border bg-muted/30 p-4 text-center">
       <div className="text-2xl font-bold text-primary">{value}</div>
-      <div className="text-xs text-text-muted">{label}</div>
+      <div className="text-xs text-muted-foreground">{label}</div>
     </div>
   )
 }
+
+

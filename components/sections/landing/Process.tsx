@@ -75,10 +75,10 @@ export default function ProcessSection() {
                     </span>
                   </div>
 
-                  <h3 className="text-base font-bold text-text-main">
+                  <h3 className="text-base font-bold text-foreground">
                     {step.title}
                   </h3>
-                  <p className="mt-2 max-w-[240px] text-sm leading-relaxed text-text-muted">
+                  <p className="mt-2 max-w-[240px] text-sm leading-relaxed text-muted-foreground">
                     {step.description}
                   </p>
                 </motion.div>

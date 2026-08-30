@@ -36,11 +36,13 @@ test('visibility is admin-only and cannot be mass-assigned by broker users', () 
 
 test('public and radius queries preserve the same unowned visibility rule', () => {
   const publicApi = read('app/api/brokers/route.ts')
+  const listingQuery = read('lib/broker-listing.ts')
   const geoQuery = read('lib/location/broker-geo.ts')
-  assert.match(publicApi, /isVisible: true/)
-  assert.match(publicApi, /\{ userId: null \}/)
-  assert.match(publicApi, /brokerStatus: \{ not: 'SUSPENDED' \}/)
-  assert.match(geoQuery, /match\.isVisible = true/)
+  assert.match(publicApi, /publicBrokerWhere\(\)|getPublicListingPage/)
+  assert.match(listingQuery, /isVisible: true/)
+  assert.match(listingQuery, /\{ userId: null \}/)
+  assert.match(listingQuery, /\$ne: 'SUSPENDED'/)
+  assert.match(geoQuery, /conditions\.push\(\{ isVisible: true \}\)/)
   assert.match(geoQuery, /\{ userId: null \}/)
 })
 

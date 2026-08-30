@@ -47,8 +47,8 @@ export const DEMO_IMAGES = {
       { key: 'ad-popup-1', url: U('photo-1600607688969-a5bfcd646154', 1200, 900), alt: 'Bright home interior for a mortgage consultation offer', width: 1200, height: 900 },
     ],
     mobile: [
-      { key: 'ad-mobile-1', url: U('photo-1600566753086-00f18fb6b3ea', 750, 400), alt: 'Bright home interior mobile banner', width: 750, height: 400 },
-      { key: 'ad-mobile-2', url: U('photo-1512917774080-9991f1c4c750', 750, 400), alt: 'Modern home mobile banner', width: 750, height: 400 },
+      { key: 'ad-mobile-1', url: U('photo-1600566753086-00f18fb6b3ea', 750, 320), alt: 'Bright home interior mobile banner', width: 750, height: 320 },
+      { key: 'ad-mobile-2', url: U('photo-1512917774080-9991f1c4c750', 750, 320), alt: 'Modern home mobile banner', width: 750, height: 320 },
     ],
     square: [
       { key: 'ad-square-1', url: U('photo-1505691938895-1758d7feb511', 800, 800), alt: 'Home buying square promotion', width: 800, height: 800 },

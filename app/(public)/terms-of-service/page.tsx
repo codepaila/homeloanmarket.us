@@ -55,12 +55,12 @@ const termsSections = [
 export default function TermsPage() {
   return (
     <div className="min-h-screen">
-      <Section className="bg-surface">
+      <Section className="bg-muted">
         <AnimatedContainer>
           <div className="text-center max-w-3xl mx-auto">
             <Scale className="h-12 w-12 text-primary mx-auto mb-4" />
-            <h1 className="heading-1 text-text-main mb-4">Terms of Service</h1>
-            <p className="text-xl text-text-muted">
+            <h1 className="heading-1 text-foreground mb-4">Terms of Service</h1>
+            <p className="text-xl text-muted-foreground">
               Last updated: August 6, 2026
             </p>
           </div>
@@ -73,7 +73,7 @@ export default function TermsPage() {
             <div className="card">
               <div className="p-8">
                 <div className="prose dark:prose-invert max-w-none">
-                  <p className="text-text-muted leading-relaxed mb-6">
+                  <p className="text-muted-foreground leading-relaxed mb-6">
                     These Terms of Service (&quot;Terms&quot;) govern your access to and use of the HomeLoanMarket
                     website and mobile application (collectively, the &quot;Service&quot;). Please read these Terms
                     carefully before using the Service.
@@ -85,8 +85,8 @@ export default function TermsPage() {
             {termsSections.map((section) => (
               <div key={section.title} className="card">
                 <div className="p-8">
-                  <h2 className="heading-3 text-text-main mb-4">{section.title}</h2>
-                  <p className="text-text-muted leading-relaxed whitespace-pre-line">
+                  <h2 className="heading-3 text-foreground mb-4">{section.title}</h2>
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
                     {section.content}
                   </p>
                 </div>
@@ -94,7 +94,7 @@ export default function TermsPage() {
             ))}
 
             <div className="text-center pt-6 border-t border-border">
-              <p className="text-sm text-text-muted">
+              <p className="text-sm text-muted-foreground">
                 For questions about these Terms, contact us at{' '}
                 <a href="mailto:legal@homeloanmarket.com" className="text-primary hover:text-primary">
                   legal@homeloanmarket.com

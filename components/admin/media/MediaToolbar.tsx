@@ -85,7 +85,7 @@ export function MediaToolbar({
       <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
         <div className="flex-1 w-full lg:max-w-md">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search by filename, title, alt text, tags..."
               value={search}
@@ -163,7 +163,7 @@ export function MediaToolbar({
         </div>
       </div>
 
-      <div className="flex items-center justify-between text-sm text-text-muted">
+      <div className="flex items-center justify-between text-sm text-muted-foreground">
         <div className="flex items-center gap-4">
           <span>{totalAssets} asset{totalAssets !== 1 ? 's' : ''}</span>
           <span className="flex items-center gap-1">

@@ -173,8 +173,8 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
           <section className="rounded-xl border bg-card p-5">
             <h2 className="text-lg font-semibold">Request Details</h2>
             <dl className="mt-3 space-y-3 text-sm">
-              <div><dt className="text-muted-foreground">Message</dt><dd className="mt-0.5 text-text-main">{request.requestDetails || '—'}</dd></div>
-              <div><dt className="text-muted-foreground">Submitted</dt><dd className="mt-0.5 flex items-center gap-1.5 text-text-main"><CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />{new Date(request.createdAt).toLocaleString()}</dd></div>
+              <div><dt className="text-muted-foreground">Message</dt><dd className="mt-0.5 text-foreground">{request.requestDetails || '—'}</dd></div>
+              <div><dt className="text-muted-foreground">Submitted</dt><dd className="mt-0.5 flex items-center gap-1.5 text-foreground"><CalendarDays className="h-3.5 w-3.5 text-muted-foreground" />{new Date(request.createdAt).toLocaleString()}</dd></div>
             </dl>
           </section>
 
@@ -183,7 +183,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
             <div className="mt-3 flex items-start gap-3 rounded-lg border bg-muted/40 p-4">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
               <div>
-                <p className="font-medium text-text-main">{formatRequestTargetLocation(location)}</p>
+                <p className="font-medium text-foreground">{formatRequestTargetLocation(location)}</p>
                 <p className="mt-1 text-xs text-muted-foreground">The advertisement can appear to users searching within this location.</p>
               </div>
             </div>

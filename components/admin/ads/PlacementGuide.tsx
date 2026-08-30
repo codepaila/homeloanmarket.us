@@ -16,8 +16,8 @@ export function PlacementGuide({ placement, className }: PlacementGuideProps) {
     return (
       <Card className={cn('border-dashed', className)}>
         <CardContent className="py-8 text-center">
-          <Info className="h-8 w-8 text-text-muted mx-auto mb-2" />
-          <p className="text-sm text-text-muted">Select a placement to see details</p>
+          <Info className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">Select a placement to see details</p>
         </CardContent>
       </Card>
     )
@@ -46,15 +46,15 @@ export function PlacementGuide({ placement, className }: PlacementGuideProps) {
       <CardContent className="space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
           <div>
-            <p className="text-text-muted text-xs uppercase tracking-wider mb-1">Position</p>
+            <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Position</p>
             <p className="font-medium">{info.position}</p>
           </div>
           <div>
-            <p className="text-text-muted text-xs uppercase tracking-wider mb-1">Visibility</p>
+            <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Visibility</p>
             <p className="font-medium">{info.visibility}</p>
           </div>
           <div className="sm:col-span-2">
-            <p className="text-text-muted text-xs uppercase tracking-wider mb-1">Priority</p>
+            <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Priority</p>
             <p className="font-medium">{info.priority}</p>
           </div>
         </div>

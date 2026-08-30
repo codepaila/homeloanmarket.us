@@ -33,7 +33,7 @@ export default function SmartToolsSection() {
   ]
 
   return (
-    <section className="section-spacing bg-bg-deep">
+    <section className="section-spacing bg-background">
       <div className="container-custom">
         <div className="grid gap-12 lg:grid-cols-5 lg:items-center lg:gap-16">
 
@@ -98,7 +98,7 @@ export default function SmartToolsSection() {
             transition={motionTransition(0.25)}
             className="lg:col-span-3"
           >
-            <div className="card card-hover-accent group p-8 sm:p-10 lg:p-12">
+            <div className="card group p-8 transition-colors hover:border-border sm:p-10 lg:p-12">
               <div className="flex items-center gap-3 border-b border-border pb-6">
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
                   <Calculator className="h-5 w-5" />

@@ -94,11 +94,11 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen">
-      <Section className="bg-surface">
+      <Section className="bg-muted">
         <AnimatedContainer>
           <div className="text-center max-w-3xl mx-auto">
-             <h1 className="heading-1 text-text-main mb-4">Contact</h1>
-            <p className="text-xl text-text-muted">
+             <h1 className="heading-1 text-foreground mb-4">Contact</h1>
+            <p className="text-xl text-muted-foreground">
               Have questions? Reach out to our team and we&apos;ll get back to you within 24 hours.
             </p>
           </div>
@@ -109,8 +109,8 @@ export default function ContactPage() {
         <AnimatedContainer>
           <div className="grid lg:grid-cols-2 gap-8">
             <div className="space-y-8">
-              <h2 className="heading-3 text-text-main">Get in Touch</h2>
-              <p className="text-text-muted leading-relaxed">
+              <h2 className="heading-3 text-foreground">Get in Touch</h2>
+              <p className="text-muted-foreground leading-relaxed">
                 We&apos;re here to help. Whether you&apos;re looking for a mortgage originator or have questions
                 about our platform, our team is ready to assist you.
               </p>
@@ -121,8 +121,8 @@ export default function ContactPage() {
                     <MapPin className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                     <h3 className="font-semibold text-text-main mb-1">Our Office</h3>
-                     <p className="text-text-muted">
+                     <h3 className="font-semibold text-foreground mb-1">Our Office</h3>
+                     <p className="text-muted-foreground">
                        539 W Commerce St.<br />
                        Dallas, TX 75208
                      </p>
@@ -133,8 +133,8 @@ export default function ContactPage() {
                     <Phone className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-text-main mb-1">Phone</h3>
-                    <p className="text-text-muted">1-800-466-3562</p>
+                    <h3 className="font-semibold text-foreground mb-1">Phone</h3>
+                    <p className="text-muted-foreground">1-800-466-3562</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -142,8 +142,8 @@ export default function ContactPage() {
                     <Mail className="h-5 w-5 text-accent" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-text-main mb-1">Email</h3>
-                    <p className="text-text-muted">support@homeloanmarket.com</p>
+                    <h3 className="font-semibold text-foreground mb-1">Email</h3>
+                    <p className="text-muted-foreground">support@homeloanmarket.com</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -151,8 +151,8 @@ export default function ContactPage() {
                     <Clock className="h-5 w-5 text-secondary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-text-main mb-1">Business Hours</h3>
-                    <p className="text-text-muted">
+                    <h3 className="font-semibold text-foreground mb-1">Business Hours</h3>
+                    <p className="text-muted-foreground">
                       Monday - Friday: 9:00 AM - 7:00 PM<br />
                       Saturday: 10:00 AM - 4:00 PM
                     </p>
@@ -163,7 +163,7 @@ export default function ContactPage() {
 
             <div className="card card-hover">
               <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                <h3 className="text-xl font-semibold text-text-main mb-4">
+                <h3 className="text-xl font-semibold text-foreground mb-4">
                   Send us a message
                 </h3>
 
@@ -210,7 +210,7 @@ export default function ContactPage() {
                 />
 
                 <div className="space-y-2">
-                  <label className="flex items-center gap-1.5 text-sm font-medium text-text-main">
+                  <label className="flex items-center gap-1.5 text-sm font-medium text-foreground">
                     Message <span className="text-destructive">*</span>
                   </label>
                   <textarea
@@ -219,7 +219,7 @@ export default function ContactPage() {
                     placeholder="Tell us about your inquiry..."
                     rows={5}
                     className={cn(
-                      'w-full rounded-xl border border-border bg-background/50 px-3 py-2.5 text-base transition-all duration-200 placeholder:text-text-muted/50 resize-y focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15',
+                      'w-full rounded-xl border border-border bg-background/50 px-3 py-2.5 text-base transition-all duration-200 placeholder:text-muted-foreground/50 resize-y focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15',
                       errors.message && 'border-destructive focus:border-destructive focus:ring-destructive/15'
                     )}
                     required

@@ -5,6 +5,7 @@ import test from 'node:test'
 const read = (path: string) => fs.readFileSync(path, 'utf8')
 
 const api = read('app/api/brokers/route.ts')
+const listing = read('lib/broker-listing.ts')
 const page = read('app/(public)/brokers/page.tsx')
 
 test('pagination sanitizes invalid page values to 1', () => {
@@ -16,13 +17,15 @@ test('pagination clamps an out-of-range page to the last valid page', () => {
   assert.match(api, /if \(page > totalPages\) page = totalPages/)
 })
 
-test('total count uses the same where as the broker query', () => {
-  assert.match(api, /prisma\.broker\.count\(\{ where \}\)/)
-  assert.match(api, /where: geoResult \? \{ \.\.\.geoWhere, id: \{ in: geoResult\.ids \} \} : where/)
+test('total count uses the same match as the listing ordering', () => {
+  // The listing aggregation resolves the total from the SAME $match conditions
+  // used for ordering/pagination, so the page count always matches the query.
+  assert.match(listing, /\$count: 'total'/)
+  assert.match(api, /getPublicListingPage\(listingFilters/)
 })
 
 test('pagination applies a stable secondary sort key', () => {
-  assert.match(api, /\{ id: 'asc' \}/)
+  assert.match(listing, /_id: 1/)
 })
 
 test('client resets page to 1 when search/filter changes', () => {

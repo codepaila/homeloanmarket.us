@@ -50,12 +50,13 @@ export default function BrokerCard({
           alt={company || name || 'Mortgage Originator'}
           name={name || company}
           className="h-24 w-24"
+          sizes="96px"
           />
                 
           </div>
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex min-w-0 items-center gap-1.5">
-            <h3 className="truncate text-base md:text-lg font-bold text-text-main transition-colors group-hover:text-primary">
+            <h3 className="truncate text-base md:text-lg font-bold text-foreground transition-colors group-hover:text-primary">
               {name}
             </h3>
      
@@ -64,12 +65,12 @@ export default function BrokerCard({
               <BrokerSubscriptionBadge className=" h-8 w-20 shrink-0" />
             </div>}
           </div>
-          <p className="truncate text-sm text-text-muted">{company}</p>
+          <p className="truncate text-sm text-muted-foreground">{company}</p>
           {nmls && (
-            <p className=" text-xs font-medium text-text-muted">NMLS #{nmls}</p>
+            <p className=" text-xs font-medium text-muted-foreground">NMLS #{nmls}</p>
           )}
 
-      <div className=" flex items-center gap-1.5 text-sm text-text-muted">
+      <div className=" flex items-center gap-1.5 text-sm text-muted-foreground">
           {isMortgageExpert && <MortgageExpertBadge />}
         {/* <MapPin className="h-3 w-3 flex-shrink-0" /> */}
         {/* <span className="truncate">{location}</span> */}

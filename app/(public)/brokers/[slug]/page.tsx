@@ -3,11 +3,44 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import prisma from '@/lib/prisma'
 import BrokerDetailClient from '@/components/sections/broker/BrokerDetailClient'
-import { isPublicBroker, isMortgageExpertBroker } from '@/lib/broker-policy'
+import { isPublicBroker, isMortgageExpertBroker, hasPaidEntitlement } from '@/lib/broker-policy'
 import { BROKER_PLAN_FEATURES, brokerSubscriptionHasFeature } from '@/lib/broker-plans'
 import { canonicalUrl, safeJsonLd, brokerLocalBusinessJsonLd, breadcrumbJsonLd } from '@/lib/seo'
 import { locationHasValidCoordinates } from '@/lib/location/broker-location'
-import { toPublicBrokerRecord } from '@/lib/public-broker'
+import { toPublicBrokerRecord, toPublicBrokerListRecord } from '@/lib/public-broker'
+import { getPublicListingPage } from '@/lib/broker-listing'
+
+// Compact column set for the "Similar mortgage originators" cards on the
+// profile page — the same fields the public listing grid renders (identity +
+// rating + the two server-computed badges). Rendered server-side so the section
+// is present in the initial HTML (no client fetch, no mount-time layout shift).
+const RELATED_SELECT = {
+  id: true,
+  profileSlug: true,
+  displayName: true,
+  companyName: true,
+  city: true,
+  state: true,
+  nmls: true,
+  logo: true,
+  profileImage: true,
+  avgRating: true,
+  totalReviews: true,
+  experienceYears: true,
+  mortgageExpertEnabled: true,
+  subscription: {
+    select: {
+      plan: true,
+      isActive: true,
+      endDate: true,
+      planRef: {
+        select: {
+          features: { select: { code: true, enabled: true } },
+        },
+      },
+    },
+  },
+} as const
 
 interface PageProps {
   params: Promise<{
@@ -115,11 +148,34 @@ export default async function PublicBrokerPage({ params }: PageProps) {
   const publicBroker = {
     ...toPublicBrokerRecord(broker, { includeContact: true }),
     hasOwner: Boolean(broker.userId),
+    isFeatured: hasPaidEntitlement(broker.subscription),
     isMortgageExpert: isMortgageExpertBroker({
       mortgageExpertEnabled: broker.mortgageExpertEnabled,
       profileBadge: brokerSubscriptionHasFeature(broker.subscription, BROKER_PLAN_FEATURES.PROFILE_BADGE),
     }),
   }
+
+  // Similar brokers: the top-priority public brokers, excluding this one,
+  // resolved server-side through the same listing ordering used by /brokers.
+  // Passed as initialRelated so the section is server-rendered and never
+  // triggers a client fetch or a mount-time layout shift.
+  const relatedPage = await getPublicListingPage({}, { page: 1, take: 4, admin: false })
+  const relatedIds = relatedPage.ids.filter((id) => id !== broker.id)
+  const relatedBrokers = relatedIds.length
+    ? await prisma.broker.findMany({
+        where: { id: { in: relatedIds } },
+        select: RELATED_SELECT,
+      })
+    : []
+  const initialRelated = relatedBrokers.map((related) =>
+    toPublicBrokerListRecord(related, {
+      isFeatured: hasPaidEntitlement(related.subscription),
+      isMortgageExpert: isMortgageExpertBroker({
+        mortgageExpertEnabled: related.mortgageExpertEnabled,
+        profileBadge: brokerSubscriptionHasFeature(related.subscription, BROKER_PLAN_FEATURES.PROFILE_BADGE),
+      }),
+    }),
+  )
 
   const brokerName = broker.companyName || broker.displayName
   const locationValue = broker.location as { type?: string; coordinates?: unknown } | null | undefined
@@ -161,7 +217,7 @@ export default async function PublicBrokerPage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbLd) }}
       />
-      <BrokerDetailClient brokerSlug={brokerSlug} initialBroker={publicBroker} />
+      <BrokerDetailClient brokerSlug={brokerSlug} initialBroker={publicBroker} initialRelated={initialRelated} />
     </>
   )
 }

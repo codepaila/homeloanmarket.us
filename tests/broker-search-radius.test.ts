@@ -9,6 +9,7 @@ const searchSection = read('components/sections/landing/SearchSection.tsx')
 const searchLib = read('lib/search.ts')
 const geo = read('lib/location/broker-geo.ts')
 const api = read('app/api/brokers/route.ts')
+const listingModule = read('lib/broker-listing.ts')
 const utils = read('utils/index.ts')
 
 // A. Home autocomplete selection activates radius at 25 miles and navigates
@@ -66,7 +67,7 @@ test('clearing a location disables radius and drops stale params', () => {
 // Mortgage Expert brokers, then brokers with an uploaded profile image, then
 // the rest — all after geographic filtering.
 test('radius geo pipeline orders FEATURED brokers before FREE before pagination', () => {
-  assert.match(geo, /\$sort: \{ featured: -1, featuredRank: -1, mortgageExpertEnabled: -1, profileImage: -1, experienceYears: -1, _id: 1 \}/)
+  assert.match(geo, /\$sort: \{ featured: -1, featuredRank: -1, mortgageExpertEnabled: -1, hasImage: -1, experienceYears: -1, _id: 1 \}/)
   assert.ok(geo.indexOf('$sort') < geo.indexOf('$skip'), 'ordering happens before pagination')
 })
 
@@ -83,14 +84,16 @@ test('radius geo ordering never ranks by rating or reviews', () => {
   assert.doesNotMatch(geo, /totalReviews: -1/)
 })
 
-test('non-geo listing orders by featuredRank descending', () => {
-  assert.match(api, /featuredRank: 'desc'/)
+test('non-geo listing orders paid/subscribed brokers first via the live aggregation', () => {
+  assert.match(listingModule, /\$sort: \{ featured: -1/)
+  assert.match(listingModule, /featuredRank: -1/)
+  assert.doesNotMatch(api, /featuredRank: 'desc'/)
 })
 
-// F. Exactly 20 brokers per page
-test('broker listing page size is exactly 20', () => {
-  assert.match(utils, /export const PAGE_SIZE = 20/)
-  assert.match(utils, /export const TABLE_ROW_PAGE = 20/)
+// F. Exactly 15 brokers per page
+test('broker listing page size is exactly 15', () => {
+  assert.match(utils, /export const PAGE_SIZE = 15/)
+  assert.match(utils, /export const TABLE_ROW_PAGE = 15/)
   assert.match(api, /const take = TABLE_ROW_PAGE/)
 })
 

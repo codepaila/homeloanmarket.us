@@ -213,7 +213,7 @@ export default function MediaLibraryPage() {
               title="No media assets"
               description="Upload your first image to get started"
               action={<Button onClick={() => setShowUpload(true)}>Upload Media</Button>}
-              icon={<FileImage className="h-8 w-8 text-text-muted" />}
+              icon={<FileImage className="h-8 w-8 text-muted-foreground" />}
             />
           ) : (
             <>

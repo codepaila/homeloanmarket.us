@@ -65,13 +65,13 @@ export default function SubscriptionPage() {
 
   return (
     <div className="min-h-screen">
-              <Section className="bg-surface">
+              <Section className="bg-muted">
         <AnimatedContainer>
           <div className="text-center max-w-3xl mx-auto">
-            <h1 className="heading-1 text-text-main mb-4">
+            <h1 className="heading-1 text-foreground mb-4">
               Choose Your Plan
             </h1>
-            <p className="text-xl text-text-muted">
+            <p className="text-xl text-muted-foreground">
               Simple, transparent pricing designed for mortgage originators of all sizes. Start with our free plan
               or upgrade to get featured placement and advanced tools.
             </p>
@@ -106,10 +106,10 @@ export default function SubscriptionPage() {
         </AnimatedContainer>
       </Section>
 
-      <Section className="bg-surface/30">
+      <Section className="bg-muted/30">
         <AnimatedContainer>
           <div className="max-w-4xl mx-auto">
-            <h2 className="heading-3 text-center text-text-main mb-8">
+            <h2 className="heading-3 text-center text-foreground mb-8">
               What&apos;s Included
             </h2>
             <div className="grid md:grid-cols-3 gap-8 text-center">
@@ -117,8 +117,8 @@ export default function SubscriptionPage() {
                 <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
                   <Shield className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold text-text-main">Verified Listing</h3>
-                <p className="text-sm text-text-muted">
+                <h3 className="font-semibold text-foreground">Verified Listing</h3>
+                <p className="text-sm text-muted-foreground">
                   All plans include basic mortgage originator listing with verification badge
                 </p>
               </div>
@@ -126,8 +126,8 @@ export default function SubscriptionPage() {
                 <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
                   <BarChart3 className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold text-text-main">Analytics</h3>
-                <p className="text-sm text-text-muted">
+                <h3 className="font-semibold text-foreground">Analytics</h3>
+                <p className="text-sm text-muted-foreground">
                   Track profile views, lead performance, and more
                 </p>
               </div>
@@ -135,8 +135,8 @@ export default function SubscriptionPage() {
                 <div className="h-12 w-12 rounded-full bg-accent/10 flex items-center justify-center mx-auto">
                   <Zap className="h-6 w-6 text-accent" />
                 </div>
-                <h3 className="font-semibold text-text-main">Priority Support</h3>
-                <p className="text-sm text-text-muted">
+                <h3 className="font-semibold text-foreground">Priority Support</h3>
+                <p className="text-sm text-muted-foreground">
                   Get help faster with priority email support
                 </p>
               </div>
@@ -148,7 +148,7 @@ export default function SubscriptionPage() {
       <Section>
         <AnimatedContainer>
           <div className="text-center max-w-3xl mx-auto">
-            <h2 className="heading-3 text-text-main mb-4">
+            <h2 className="heading-3 text-foreground mb-4">
               Have questions about our plans?
             </h2>
             <Link

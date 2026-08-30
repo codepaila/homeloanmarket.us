@@ -24,19 +24,19 @@ export function OwnerSelector({
     const company = companies.find((c) => c.id === requestContext.companyId)
     return (
       <section className="space-y-4">
-        <h2 className="text-lg font-bold text-text-main">Advertisement Owner</h2>
+        <h2 className="text-lg font-bold text-foreground">Advertisement Owner</h2>
         <div className="space-y-3">
           <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-4">
             <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary" aria-hidden="true">
               <Building2 className="h-4 w-4" />
             </span>
             <div className="min-w-0">
-              <p className="text-xs font-medium uppercase tracking-wide text-text-muted">Company</p>
-              <p className="truncate font-semibold text-text-main">{company?.name || 'Linked company'}</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Company</p>
+              <p className="truncate font-semibold text-foreground">{company?.name || 'Linked company'}</p>
             </div>
-            <span className="ml-auto shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs text-text-muted">Locked</span>
+            <span className="ml-auto shrink-0 rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">Locked</span>
           </div>
-          <p className="text-xs text-text-muted">Ownership is derived from the company request and cannot be changed.</p>
+          <p className="text-xs text-muted-foreground">Ownership is derived from the company request and cannot be changed.</p>
         </div>
       </section>
     )
@@ -44,7 +44,7 @@ export function OwnerSelector({
 
   return (
     <section className="space-y-4">
-      <h2 className="text-lg font-bold text-text-main">Advertisement Owner</h2>
+      <h2 className="text-lg font-bold text-foreground">Advertisement Owner</h2>
       <div className="grid gap-3 sm:grid-cols-2">
         <button
           type="button"
@@ -61,8 +61,8 @@ export function OwnerSelector({
             <Globe className="h-4 w-4" />
           </span>
           <span>
-            <span className="block font-medium text-text-main">Platform / No Company</span>
-            <span className="mt-1 block text-xs text-text-muted">The advertisement is owned by the platform and appears per its placement rules.</span>
+            <span className="block font-medium text-foreground">Platform / No Company</span>
+            <span className="mt-1 block text-xs text-muted-foreground">The advertisement is owned by the platform and appears per its placement rules.</span>
           </span>
         </button>
 
@@ -81,19 +81,19 @@ export function OwnerSelector({
             <Building2 className="h-4 w-4" />
           </span>
           <span>
-            <span className="block font-medium text-text-main">Specific Company</span>
-            <span className="mt-1 block text-xs text-text-muted">The advertisement is owned by an active company.</span>
+            <span className="block font-medium text-foreground">Specific Company</span>
+            <span className="mt-1 block text-xs text-muted-foreground">The advertisement is owned by an active company.</span>
           </span>
         </button>
       </div>
 
       {value.type === 'COMPANY' && (
         <div className="space-y-2">
-          <label htmlFor="advertisement-company-select" className="block text-sm font-medium text-text-main">
+          <label htmlFor="advertisement-company-select" className="block text-sm font-medium text-foreground">
             Company
           </label>
           {isLoading ? (
-            <p className="text-sm text-text-muted">Loading companies…</p>
+            <p className="text-sm text-muted-foreground">Loading companies…</p>
           ) : (
             <select
               id="advertisement-company-select"
@@ -113,7 +113,7 @@ export function OwnerSelector({
             </select>
           )}
           {!isLoading && companies.length === 0 && (
-            <p className="text-sm text-text-muted">No active companies are available.</p>
+            <p className="text-sm text-muted-foreground">No active companies are available.</p>
           )}
         </div>
       )}

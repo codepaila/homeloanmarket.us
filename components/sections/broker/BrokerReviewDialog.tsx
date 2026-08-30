@@ -80,7 +80,7 @@ export function BrokerReviewDialog({
 
         <div className="space-y-4">
           <div>
-            <p className="mb-2 text-sm font-medium text-text-main">Your rating</p>
+            <p className="mb-2 text-sm font-medium text-foreground">Your rating</p>
             <div className="flex items-center gap-1" role="radiogroup" aria-label="Rating">
               {[1, 2, 3, 4, 5].map((value) => {
                 const active = value <= displayed
@@ -107,13 +107,13 @@ export function BrokerReviewDialog({
                 )
               })}
             </div>
-            <p aria-live="polite" className="mt-1 text-xs text-text-muted">
+            <p aria-live="polite" className="mt-1 text-xs text-muted-foreground">
               {rating > 0 ? STAR_LABELS[rating - 1] : 'Select a rating'}
             </p>
           </div>
 
           <div>
-            <label htmlFor="review-comment" className="mb-1 block text-sm font-medium text-text-main">
+            <label htmlFor="review-comment" className="mb-1 block text-sm font-medium text-foreground">
               Your review
             </label>
             <textarea
@@ -123,7 +123,7 @@ export function BrokerReviewDialog({
               rows={4}
               maxLength={2000}
               placeholder="What was your experience like?"
-              className="w-full rounded-lg border bg-background px-3 py-2 text-sm text-text-main placeholder:text-text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
 

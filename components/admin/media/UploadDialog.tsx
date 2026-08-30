@@ -184,7 +184,7 @@ export function UploadDialog({ open, onOpenChange, folderId, onUploaded }: Uploa
           <div className="flex items-center justify-between p-6 border-b border-border">
             <div>
               <h2 className="text-lg font-semibold">Upload Media</h2>
-              <p className="text-sm text-text-muted">Drag & drop images or paste from clipboard</p>
+              <p className="text-sm text-muted-foreground">Drag & drop images or paste from clipboard</p>
             </div>
             <Button variant="ghost" size="icon" onClick={handleClose}>
               <X className="h-4 w-4" />
@@ -202,9 +202,9 @@ export function UploadDialog({ open, onOpenChange, folderId, onUploaded }: Uploa
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
             >
-              <Upload className="h-12 w-12 text-text-muted mx-auto mb-3" />
+              <Upload className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
               <p className="text-sm font-medium">Drop images here, click to browse, or paste</p>
-              <p className="text-xs text-text-muted mt-1">JPEG, PNG, WebP, GIF, SVG — Max 10 MB</p>
+              <p className="text-xs text-muted-foreground mt-1">JPEG, PNG, WebP, GIF, SVG — Max 10 MB</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -258,12 +258,12 @@ export function UploadDialog({ open, onOpenChange, folderId, onUploaded }: Uploa
                       ) : file.status === 'uploading' ? (
                         <Loader2 className="h-5 w-5 animate-spin text-primary" />
                       ) : (
-                        <FileImage className="h-5 w-5 text-text-muted" />
+                        <FileImage className="h-5 w-5 text-muted-foreground" />
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{file.file.name}</p>
-                      <p className="text-xs text-text-muted">{formatFileSize(file.file.size)}</p>
+                      <p className="text-xs text-muted-foreground">{formatFileSize(file.file.size)}</p>
                       {file.status === 'uploading' && <Progress value={file.progress} className="h-1 mt-1" />}
                       {file.status === 'error' && <p className="text-xs text-destructive mt-0.5">{file.error}</p>}
                     </div>

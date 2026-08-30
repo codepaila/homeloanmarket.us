@@ -18,7 +18,7 @@ import {
   CheckCircle2,
 } from 'lucide-react'
 import type { SiteSettings } from '@/lib/site/settings'
-import Image from 'next/image'
+import { Logo } from '@/components/shared/Logo'
 
 const footerColumns = [
   {
@@ -104,7 +104,7 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
   }
 
   return (
-    <footer className="border-t border-border bg-bg-deep">
+    <footer className="border-t border-border bg-background">
       <div className="container-custom">
         {/* Newsletter — compact horizontal CTA */}
         <div className="flex flex-col gap-6 py-10 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
@@ -113,10 +113,10 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
               <Mail className="h-5 w-5" />
             </span>
             <div>
-              <h3 className="text-lg font-bold text-text-main sm:text-xl">
+              <h3 className="text-lg font-bold text-foreground sm:text-xl">
                 Get mortgage insights in your inbox
               </h3>
-              <p className="mt-1 max-w-md text-sm leading-relaxed text-text-muted">
+              <p className="mt-1 max-w-md text-sm leading-relaxed text-muted-foreground">
                 Market updates, eligibility tips, and mortgage advice. No
                 unwanted emails, unsubscribe anytime.
               </p>
@@ -134,12 +134,12 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 aria-label="Email for newsletter"
-                className="w-full bg-transparent px-3 py-2 text-sm text-text-main outline-none placeholder:text-text-muted/60"
+                className="w-full bg-transparent px-3 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground/60"
               />
               <button
                 type="submit"
                 disabled={newsletterLoading}
-                className="flex h-10 flex-shrink-0 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-semibold text-white transition-all hover:bg-primary/90"
+                className="flex h-10 flex-shrink-0 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90"
               >
                 {subscribed ? (
                   <>
@@ -158,27 +158,17 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
         </div>
 
         {/* Main footer grid */}
-        <div className="grid grid-cols-1 gap-10 py-12 sm:grid-cols-2 lg:grid-cols-5 lg:gap-8">
+        <div className="grid grid-cols-1 gap-10 pb-12 sm:grid-cols-2 lg:grid-cols-5 lg:gap-8">
           {/* Brand */}
           <div className="space-y-4 lg:col-span-2">
             <Link href="/" className="flex items-center gap-2">
-              {settings?.siteLogo ? (
-                <Image
-                  width={300}
-                  height={100} src={settings.siteLogo} alt={settings.siteName} className="h-9 max-w-40 object-contain" />
-              ) : (
-                <>
-                  <Image
-                    width={350}
-                    height={200}
-                    src="/assets/logo.png"
-                    alt="HomeLoanMarket"
-                    className="h-12 max-w-52 md:max-w-56 object-contain"
-                  />
-                </>
-              )}
+              <Logo
+                src={settings?.siteLogo}
+                alt={settings?.siteName || 'HomeLoanMarket'}
+                className="h-9 max-w-40"
+              />
             </Link>
-            <p className="max-w-xs text-sm leading-relaxed text-text-muted">
+            <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
               {settings?.footerDescription || 'HomeLoanMarket helps home buyers find and compare verified mortgage originators across the United States.'}
             </p>
             <div className="flex gap-2">
@@ -189,7 +179,7 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
                   aria-label={social.name}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-text-muted transition-colors hover:border-primary hover:text-primary"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-colors hover:border-primary hover:text-primary"
                 >
                   <social.icon className="h-4 w-4" />
                 </motion.a>
@@ -200,7 +190,7 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
           {/* Link columns */}
           {footerColumns.map((column) => (
             <div key={column.title} className="space-y-3.5">
-              <h3 className="text-sm font-bold uppercase tracking-wide text-text-main">
+              <h3 className="text-sm font-bold uppercase tracking-wide text-foreground">
                 {column.title}
               </h3>
               <ul className="space-y-2.5">
@@ -208,7 +198,7 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
                   <li key={link.name}>
                     <Link
                       href={link.href}
-                      className="group inline-flex items-center gap-1 text-sm text-text-muted transition-colors hover:text-primary"
+                      className="group inline-flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-primary"
                     >
                       {link.name}
                       <ArrowRight className="h-3 w-3 -translate-x-1 opacity-0 transition-all group-hover:translate-x-0 group-hover:opacity-100" />
@@ -222,8 +212,8 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
         </div>
 
         {/* Contact — horizontal block separated by whitespace */}
-        <div className="pb-12">
-          <h3 className="text-sm font-bold uppercase tracking-wide text-text-main">
+        {/* <div className="pb-12">
+          <h3 className="text-sm font-bold uppercase tracking-wide text-foreground">
             Contact
           </h3>
           <ul className="mt-5 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:gap-x-10">
@@ -233,20 +223,20 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
                   <item.icon className="h-3.5 w-3.5 text-primary" />
                 </span>
                 <span>
-                  <span className="block text-xs text-text-muted">
+                  <span className="block text-xs text-muted-foreground">
                     {item.label}
                   </span>
-                  <span className="text-sm font-medium text-text-main">
+                  <span className="text-sm font-medium text-foreground">
                     {item.value}
                   </span>
                 </span>
               </li>
             ))}
           </ul>
-        </div>
+        </div> */}
 
         {/* Bottom bar */}
-        <div className="flex flex-col items-center justify-between gap-3 border-t border-border py-6 text-sm text-text-muted sm:flex-row">
+        <div className="flex flex-col items-center justify-between gap-3 border-t border-border py-6 text-sm text-muted-foreground sm:flex-row">
           <p>
             {settings?.copyrightText || `© ${new Date().getFullYear()} HomeLoanMarket. All rights reserved.`}
           </p>

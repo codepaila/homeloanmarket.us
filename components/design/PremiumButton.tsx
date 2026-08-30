@@ -22,7 +22,7 @@ const buttonVariants = cva(
           'text-white shadow-soft hover:shadow-medium hover:-translate-y-0.5',
         ),
         secondary: cn(
-          'bg-card text-text-main border border-border',
+          'bg-card text-foreground border border-border',
           'hover:bg-accent hover:text-accent-foreground',
         ),
         outline: cn(
@@ -30,7 +30,7 @@ const buttonVariants = cva(
           'hover:bg-primary hover:text-primary-foreground',
         ),
         ghost: cn(
-          'text-text-muted hover:bg-accent hover:text-accent-foreground',
+          'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
         ),
         link: cn('text-primary underline-offset-4 hover:underline'),
         destructive: cn(

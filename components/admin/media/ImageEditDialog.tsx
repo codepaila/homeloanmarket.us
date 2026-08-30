@@ -76,12 +76,12 @@ export function ImageEditDialog({ asset, open, onOpenChange, onUpdated }: ImageE
           </div>
 
           <div className="space-y-1">
-            <p className="text-xs text-text-muted">Filename</p>
+            <p className="text-xs text-muted-foreground">Filename</p>
             <p className="text-sm font-mono">{asset.fileName}</p>
           </div>
 
           <div className="space-y-1">
-            <p className="text-xs text-text-muted">Format</p>
+            <p className="text-xs text-muted-foreground">Format</p>
             <p className="text-sm">{asset.mimeType} • {formatFileSize(asset.fileSize)}</p>
           </div>
         </motion.div>

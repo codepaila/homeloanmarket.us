@@ -93,7 +93,7 @@ test('whatsapp uses the safe external wa.me link with noopener', () => {
 
 test('office location is display-only text, not a map link', () => {
   const officeRow = detail.slice(detail.indexOf('label="Office Location"'), detail.indexOf('function ContactRow'))
-  assert.match(officeRow, /<p className="break-words text-text-main">\{officeAddress\}<\/p>/)
+  assert.match(officeRow, /<p className="break-words text-foreground">\{officeAddress\}<\/p>/)
   assert.doesNotMatch(officeRow, /href=.*officeAddress/)
 })
 
@@ -114,7 +114,7 @@ test('long contact values never overflow horizontally', () => {
 test('contact section uses flat rows with subtle dividers, not rounded cards', () => {
   assert.match(detail, /divide-y divide-border border-y border-border/)
   assert.doesNotMatch(detail, /Contact Information/)
-  assert.match(detail, /<h2 className="text-lg font-bold text-text-main">Contact<\/h2>/)
+  assert.match(detail, /<h2 className="text-lg font-bold text-foreground">Contact<\/h2>/)
 })
 
 test('accessibility: decorative icons are hidden and tabs expose current selection', () => {

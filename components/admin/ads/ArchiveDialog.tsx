@@ -67,19 +67,19 @@ export function ArchiveDialog({ open, onOpenChange, adId, adTitle, onSuccess }: 
           <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-3">
             <p className="text-sm font-medium">What happens when you archive?</p>
             <ul className="space-y-2">
-              <li className="flex items-start gap-2 text-sm text-text-muted">
+              <li className="flex items-start gap-2 text-sm text-muted-foreground">
                 <span className="text-primary mt-0.5">•</span>
                 The advertisement will be removed from all public pages immediately
               </li>
-              <li className="flex items-start gap-2 text-sm text-text-muted">
+              <li className="flex items-start gap-2 text-sm text-muted-foreground">
                 <span className="text-primary mt-0.5">•</span>
                 All data, settings, and media references will be preserved
               </li>
-              <li className="flex items-start gap-2 text-sm text-text-muted">
+              <li className="flex items-start gap-2 text-sm text-muted-foreground">
                 <span className="text-primary mt-0.5">•</span>
                 Statistics (impressions, clicks) will be retained
               </li>
-              <li className="flex items-start gap-2 text-sm text-text-muted">
+              <li className="flex items-start gap-2 text-sm text-muted-foreground">
                 <span className="text-primary mt-0.5">•</span>
                 You can restore this advertisement at any time from the archive
               </li>

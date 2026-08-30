@@ -20,17 +20,17 @@ const stats = [
 export default function AboutPage() {
   return (
     <div className="min-h-screen">
-      <Section className="bg-surface">
+      <Section className="bg-muted">
         <AnimatedContainer>
           <div className="text-center max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-medium text-primary mb-6">
               <Award className="h-4 w-4" />
               Trusted since 2018
             </div>
-            <h1 className="heading-1 text-text-main mb-6">
+            <h1 className="heading-1 text-foreground mb-6">
               Connecting Home Buyers with Trusted Mortgage Experts
             </h1>
-              <p className="text-xl text-text-muted leading-relaxed max-2xl mx-auto">
+              <p className="text-xl text-muted-foreground leading-relaxed max-2xl mx-auto">
                 HomeLoanMarket is America&apos;s premier platform that bridges the gap between mortgage borrowers
                 and verified mortgage originators. We simplify the complex mortgage process by providing
                 transparent access to expert guidance, competitive rates, and seamless service.
@@ -54,24 +54,24 @@ export default function AboutPage() {
         </AnimatedContainer>
       </Section>
 
-      <Section className="bg-surface/30">
+      <Section className="bg-muted/30">
         <AnimatedContainer>
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-6">
-              <h2 className="heading-3 text-text-main">Our Mission</h2>
-              <p className="text-text-muted leading-relaxed">
+              <h2 className="heading-3 text-foreground">Our Mission</h2>
+              <p className="text-muted-foreground leading-relaxed">
                 Our mission is to democratize access to home financing in the United States. We believe every
                 homebuyer deserves expert guidance, transparent pricing, and a seamless experience
                 from application to approval.
               </p>
-              <p className="text-text-muted leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed">
                  By connecting borrowers with verified and rated mortgage professionals, we ensure
                  that the mortgage process is efficient, trustworthy, and tailored to each
                  individual&apos;s unique financial situation.
               </p>
               <div className="flex items-center gap-4 pt-2">
                 <Shield className="h-5 w-5 text-primary" />
-                <span className="text-sm font-medium text-text-main">Licensed Mortgage Partners</span>
+                <span className="text-sm font-medium text-foreground">Licensed Mortgage Partners</span>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -79,29 +79,29 @@ export default function AboutPage() {
                 <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                   <Users className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold text-text-main mb-1">Verified Mortgage Originators</h3>
-                <p className="text-sm text-text-muted">All mortgage originators are verified and rated by clients</p>
+                <h3 className="font-semibold text-foreground mb-1">Verified Mortgage Originators</h3>
+                <p className="text-sm text-muted-foreground">All mortgage originators are verified and rated by clients</p>
               </div>
               <div className="card p-6 text-center">
                 <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                   <TrendingUp className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="font-semibold text-text-main mb-1">Transparent Rates</h3>
-                <p className="text-sm text-text-muted">Compare rates across 20+ lending partners</p>
+                <h3 className="font-semibold text-foreground mb-1">Transparent Rates</h3>
+                <p className="text-sm text-muted-foreground">Compare rates across 20+ lending partners</p>
               </div>
               <div className="card p-6 text-center">
                 <div className="h-12 w-12 rounded-full bg-accent/10 flex items-center justify-center mx-auto mb-3">
                   <Shield className="h-6 w-6 text-accent" />
                 </div>
-                <h3 className="font-semibold text-text-main mb-1">Secure Process</h3>
-                <p className="text-sm text-text-muted">Bank-grade encryption protecting your data</p>
+                <h3 className="font-semibold text-foreground mb-1">Secure Process</h3>
+                <p className="text-sm text-muted-foreground">Bank-grade encryption protecting your data</p>
               </div>
               <div className="card p-6 text-center">
                 <div className="h-12 w-12 rounded-full bg-secondary/10 flex items-center justify-center mx-auto mb-3">
                   <Award className="h-6 w-6 text-secondary" />
                 </div>
-                <h3 className="font-semibold text-text-main mb-1">Expert Network</h3>
-                <p className="text-sm text-text-muted">Access to industry&apos;s top mortgage experts</p>
+                <h3 className="font-semibold text-foreground mb-1">Expert Network</h3>
+                <p className="text-sm text-muted-foreground">Access to industry&apos;s top mortgage experts</p>
               </div>
             </div>
           </div>
@@ -111,8 +111,8 @@ export default function AboutPage() {
       <Section>
         <AnimatedContainer>
           <div className="text-center max-w-3xl mx-auto">
-             <h2 className="heading-3 text-text-main mb-6">Contact</h2>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-text-muted">
+             <h2 className="heading-3 text-foreground mb-6">Contact</h2>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Mail className="h-4 w-4 text-primary" />
                 <span>support@homeloanmarket.com</span>

@@ -65,7 +65,7 @@ export default async function AdminBrokerPlansPage() {
               return (
                 <tr key={plan.id}>
                   <td className="px-4 py-3">
-                    <div className="font-semibold text-text-main">{plan.name}</div>
+                    <div className="font-semibold text-foreground">{plan.name}</div>
                     <div className="text-xs text-muted-foreground">{plan.code}</div>
                   </td>
                   <td className="px-4 py-3">{plan.price > 0 ? formatPrice(plan.price, plan.currency) : 'Free'}</td>
@@ -91,7 +91,7 @@ export default async function AdminBrokerPlansPage() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <Link href={`/admin/billing/broker-plans/${plan.id}`} className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-text-main">Manage</Link>
+                    <Link href={`/admin/billing/broker-plans/${plan.id}`} className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-foreground">Manage</Link>
                   </td>
                 </tr>
               )

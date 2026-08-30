@@ -71,7 +71,7 @@ export function RatingStars({
         })}
       </div>
       {showCount && totalReviews > 0 && (
-        <span className="text-sm text-text-muted">
+        <span className="text-sm text-muted-foreground">
           ({totalReviews} review{totalReviews !== 1 ? 's' : ''})
         </span>
       )}

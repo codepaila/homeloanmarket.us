@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { Logo } from '@/components/shared/Logo'
 import { adminNavigation, isAdminNavItemActive } from '@/lib/admin/navigation'
 import { AdminNavItem } from './AdminNavItem'
 
@@ -16,10 +17,7 @@ export function AdminMobileSidebar({ open, onClose }: { open: boolean; onClose: 
       <SheetContent side="left" className="w-80 p-0">
         <div className="flex h-16 items-center justify-between border-b px-6">
           <Link href="/admin" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <LayoutDashboard className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-xl font-bold">HomeLoanMarket</span>
+            <Logo className="h-6" />
           </Link>
           <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close navigation">
             <X className="h-5 w-5" />

@@ -38,11 +38,11 @@ export default async function FAQPage() {
   return (
     <div className="min-h-screen">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
-      <Section className="bg-surface">
+      <Section className="bg-muted">
         <AnimatedContainer>
           <div className="text-center max-w-3xl mx-auto">
-            <h1 className="heading-1 text-text-main mb-4">Frequently Asked Questions</h1>
-            <p className="text-xl text-text-muted">
+            <h1 className="heading-1 text-foreground mb-4">Frequently Asked Questions</h1>
+            <p className="text-xl text-muted-foreground">
               Find answers to common questions about HomeLoanMarket and the mortgage process.
             </p>
           </div>
@@ -52,7 +52,7 @@ export default async function FAQPage() {
       <Section className="bg-background">
         <AnimatedContainer>
           {faqs.length === 0 ? (
-            <div className="max-w-4xl mx-auto text-center py-12 text-text-muted">No FAQs are available right now.</div>
+            <div className="max-w-4xl mx-auto text-center py-12 text-muted-foreground">No FAQs are available right now.</div>
           ) : (
             <FaqAccordion faqs={faqs} />
           )}

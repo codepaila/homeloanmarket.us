@@ -19,7 +19,7 @@ const banks = [
 
 export default function BankPartnersSection() {
   return (
-    <Section size="md" className="bg-card-deep/40">
+    <Section size="md" className="bg-muted/40">
       <AnimatedContainer delay={0.1} variant="fadeUp">
         <SectionHeader
           title="Bank partners"

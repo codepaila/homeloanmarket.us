@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import prisma from '@/lib/prisma'
 
 export type SiteSettings = {
@@ -44,7 +45,10 @@ const DEFAULTS: SiteSettings = {
   siteFavicon: null,
 }
 
-export async function getSiteSettings(): Promise<SiteSettings> {
+// Wrapped in React.cache so the identical read is executed once per request
+// even though it is awaited by generateMetadata, the (public) layout, and the
+// page itself — previously this issued up to 3 identical DB queries per page.
+export const getSiteSettings = cache(async function getSiteSettings(): Promise<SiteSettings> {
   const rows = await prisma.setting.findMany({ select: { key: true, value: true } })
   const values = new Map<string, string>(rows.map((row) => [row.key, row.value]))
 
@@ -69,4 +73,4 @@ export async function getSiteSettings(): Promise<SiteSettings> {
     siteLogo: values.get('site.logo') || DEFAULTS.siteLogo,
     siteFavicon: values.get('site.favicon') || DEFAULTS.siteFavicon,
   }
-}
+})

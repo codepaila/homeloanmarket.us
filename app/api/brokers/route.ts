@@ -4,10 +4,9 @@ import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/currentUser'
 import prisma from '@/lib/prisma'
 import { TABLE_ROW_PAGE } from '@/utils'
-import { VerificationStatus, BrokerStatus } from '@prisma/client'
-import { hasPaidEntitlement, isMortgageExpertBroker, publicBrokerWhere } from '@/lib/broker-policy'
+import { hasPaidEntitlement, isMortgageExpertBroker } from '@/lib/broker-policy'
 import { BROKER_PLAN_FEATURES, brokerSubscriptionHasFeature } from '@/lib/broker-plans'
-import { toPublicBrokerRecord } from '@/lib/public-broker'
+import { toPublicBrokerRecord, toPublicBrokerListRecord } from '@/lib/public-broker'
 import { createBrokerForExistingUser } from '@/lib/broker-registration'
 import { validateLicenseStates, normalizeNmls, nmlsValidationError } from '@/lib/broker-licensing'
 import { findBrokerIdsWithinRadius } from '@/lib/location/broker-geo'
@@ -15,6 +14,40 @@ import { resolveUSPlace } from '@/lib/location/google-place'
 import { requireValidResolvedUSLocation } from '@/lib/location/broker-location'
 import { verifySearchLocationToken } from '@/lib/location/search-token'
 import { isSameOriginRequest } from '@/lib/origin'
+import { getPublicListingPage } from '@/lib/broker-listing'
+
+// Slim column set used for the public listing grid (`mode=summary`). The grid
+// cards render only identity + rating badges, so reviews, bank partners,
+// contact/social fields, and free-text are skipped entirely. Subscriptions are
+// still fetched (with features) because the FEATURED and Mortgage Expert
+// badges are computed server-side from the active plan.
+const SUMMARY_SELECT = {
+  id: true,
+  profileSlug: true,
+  displayName: true,
+  companyName: true,
+  city: true,
+  state: true,
+  nmls: true,
+  logo: true,
+  profileImage: true,
+  avgRating: true,
+  totalReviews: true,
+  experienceYears: true,
+  mortgageExpertEnabled: true,
+  subscription: {
+    select: {
+      plan: true,
+      isActive: true,
+      endDate: true,
+      planRef: {
+        select: {
+          features: { select: { code: true, enabled: true } },
+        },
+      },
+    },
+  },
+} as const
 
 export async function GET(request: Request) {
   try {
@@ -22,6 +55,7 @@ export async function GET(request: Request) {
     const pageParam = parseInt(searchParams.get('page') || '1')
     const requestedPage = Number.isInteger(pageParam) && pageParam >= 1 ? pageParam : 1
     const take = TABLE_ROW_PAGE
+    const summaryMode = searchParams.get('mode') === 'summary'
 
     const state = searchParams.get('state')
     const zip = searchParams.get('zip')
@@ -40,33 +74,6 @@ export async function GET(request: Request) {
 
     const currentUser = await getCurrentUser()
     const isAdmin = currentUser?.role === 'ADMIN'
-
-    const publicEligibility: any = isAdmin ? {} : publicBrokerWhere()
-
-    const buildSearchFilter = (term: string | null | undefined) => term ? {
-      OR: [
-        { displayName: { contains: term, mode: 'insensitive' } },
-        { companyName: { contains: term, mode: 'insensitive' } },
-        { description: { contains: term, mode: 'insensitive' } },
-        { officeAddress: { contains: term, mode: 'insensitive' } },
-        { city: { contains: term, mode: 'insensitive' } },
-        { state: { contains: term, mode: 'insensitive' } },
-        { pinCode: { contains: term, mode: 'insensitive' } },
-      ],
-    } : {}
-
-    const where: any = {
-      ...publicEligibility,
-      ...buildSearchFilter(search),
-    }
-
-    // Apply non-geographic filters for the normal (non-radius) listing.
-    if (state) where.state = { contains: state, mode: 'insensitive' }
-    if (zip) where.pinCode = { contains: zip, mode: 'insensitive' }
-    if (minRating) where.avgRating = { gte: parseFloat(minRating) }
-    if (verificationStatus) where.verificationStatus = verificationStatus as VerificationStatus
-    if (brokerStatus) where.brokerStatus = brokerStatus as BrokerStatus
-    if (minExperience) where.experienceYears = { gte: parseInt(minExperience) }
 
     const hasAnyCoordinate = latitudeParam !== null || longitudeParam !== null || radiusParam !== null || locationToken !== null
     let verifiedLocation
@@ -89,25 +96,40 @@ export async function GET(request: Request) {
     // expansion". A verified city selection constrains city + state; a ZIP
     // selection constrains pinCode + state. Never reduce a city selection to
     // state-only, and never filter by a service-area array.
+    let resolvedCity: string | null = null
+    let resolvedState: string | null = null
+    let resolvedZip: string | null = null
     if (radius === 0) {
-      const resolvedCity = locationCity || verifiedLocation?.city
-      const resolvedState = locationState || verifiedLocation?.state
-      const resolvedZip = locationZip || verifiedLocation?.zip
-      if (resolvedCity) where.city = { contains: resolvedCity, mode: 'insensitive' }
-      if (!state && resolvedState) where.state = { contains: resolvedState, mode: 'insensitive' }
-      if (!zip && resolvedZip) where.pinCode = { contains: resolvedZip, mode: 'insensitive' }
+      resolvedCity = locationCity || verifiedLocation?.city || null
+      resolvedState = locationState || verifiedLocation?.state || null
+      resolvedZip = locationZip || verifiedLocation?.zip || null
     }
 
-    const geoWhere: any = {
-      ...publicEligibility,
-      ...buildSearchFilter(search),
+    // The non-radius listing resolves visibility, search, filters, ordering,
+    // and pagination in a single aggregation (lib/broker-listing.ts) so the
+    // business-priority sort (paid -> Mortgage Export -> image -> free) is
+    // applied BEFORE pagination. The radius path keeps its geo pipeline.
+    const listingFilters = {
+      search,
+      state,
+      zip,
+      minRating,
+      verificationStatus,
+      brokerStatus,
+      minExperience,
+      locationCity: resolvedCity,
+      locationState: resolvedState,
+      locationZip: resolvedZip,
     }
 
     let page = requestedPage
-    let geoResult: any = null
+    let listingPage: { ids: string[]; total: number } | null = null
 
+    // Resolve the page against the SAME visibility/search/filter conditions
+    // used for the total count. Both radius and plain listing paths return the
+    // ordered IDs for the page so ordering is applied BEFORE pagination.
     if (radius > 0) {
-      geoResult = await findBrokerIdsWithinRadius({
+      listingPage = await findBrokerIdsWithinRadius({
         latitude: latitude!,
         longitude: longitude!,
         radiusMiles: radius,
@@ -116,89 +138,100 @@ export async function GET(request: Request) {
         search,
         admin: isAdmin,
       })
+    } else {
+      listingPage = await getPublicListingPage(listingFilters, { page, take, admin: isAdmin })
     }
 
-    // Resolve the total page count against the SAME visibility/search/filter
-    // conditions as the broker query, then clamp the requested page to a valid
-    // range so an out-of-range page never renders an empty result set.
-    const total = geoResult
-      ? geoResult.total
-      : await prisma.broker.count({ where })
+    const total = listingPage.total
     const totalPages = total > 0 ? Math.ceil(total / take) : 1
     if (page > totalPages) page = totalPages
 
-    // Re-run the geo facet if the page was clamped so the returned IDs match
-    // the corrected page.
-    if (radius > 0 && page !== requestedPage) {
-      geoResult = await findBrokerIdsWithinRadius({
-        latitude: latitude!,
-        longitude: longitude!,
-        radiusMiles: radius,
-        page,
-        take,
-        search,
-        admin: isAdmin,
-      })
+    // Re-run the ordering facet if the page was clamped so the returned IDs
+    // match the corrected page.
+    if (page !== requestedPage) {
+      if (radius > 0) {
+        listingPage = await findBrokerIdsWithinRadius({
+          latitude: latitude!,
+          longitude: longitude!,
+          radiusMiles: radius,
+          page,
+          take,
+          search,
+          admin: isAdmin,
+        })
+      } else {
+        listingPage = await getPublicListingPage(listingFilters, { page, take, admin: isAdmin })
+      }
     }
+
+    const pageIds = listingPage.ids
 
     const [brokers] = await Promise.all([
       prisma.broker.findMany({
-        skip: geoResult ? 0 : take * (page - 1),
-        take: geoResult ? Math.max(geoResult.ids.length, 1) : take,
-        where: geoResult ? { ...geoWhere, id: { in: geoResult.ids } } : where,
-        include: {
-          user: {
-            select: {
-              name: true,
-              image: true,
-              isActive: true,
-            }
-          },
-          reviews: {
-            where: { status: 'APPROVED' },
-            take: 5,
-            orderBy: { createdAt: 'desc' },
-            include: {
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  image: true
+        where: { id: { in: pageIds } },
+        ...(summaryMode
+          ? { select: SUMMARY_SELECT }
+          : {
+              include: {
+                user: {
+                  select: {
+                    name: true,
+                    image: true,
+                    isActive: true,
+                  }
+                },
+                reviews: {
+                  where: { status: 'APPROVED' },
+                  take: 5,
+                  orderBy: { createdAt: 'desc' },
+                  include: {
+                    user: {
+                      select: {
+                        id: true,
+                        name: true,
+                        image: true
+                      }
+                    }
+                  }
+                },
+                bankPartners: {
+                  select: {
+                    id: true,
+                    bankName: true,
+                    bankType: true
+                  }
+                },
+                subscription: {
+                  select: {
+                    plan: true,
+                    planId: true,
+                    isActive: true,
+                    endDate: true,
+                    planRef: { include: { features: true } },
+                  }
                 }
-              }
-            }
-          },
-          bankPartners: {
-            select: {
-              id: true,
-              bankName: true,
-              bankType: true
-            }
-          },
-          subscription: {
-            select: {
-              plan: true,
-              planId: true,
-              isActive: true,
-              endDate: true,
-              planRef: { include: { features: true } },
-            }
-          }
-        },
-        orderBy: [
-          { featuredRank: 'desc' },           // Tier 1: active FEATURED subscribers
-          { mortgageExpertEnabled: 'desc' },  // Tier 2: admin-enabled Mortgage Expert brokers
-          { profileImage: 'desc' },           // Tier 3: brokers with an uploaded profile photo
-          { experienceYears: 'desc' },
-          { id: 'asc' },
-        ]
-      }),
+              },
+            }),
+      } as any),
     ])
 
-    const orderedBrokers = geoResult
-      ? [...brokers].sort((a, b) => geoResult.ids.indexOf(a.id) - geoResult.ids.indexOf(b.id))
-      : brokers
-    const publicBrokers = orderedBrokers.map((broker) => {
+    // The aggregation already applied the business-priority ordering and
+    // pagination; reorder the fetched page to that exact order.
+    const orderedBrokers = [...brokers].sort(
+      (a, b) => pageIds.indexOf(a.id) - pageIds.indexOf(b.id),
+    )
+    const publicBrokers = summaryMode
+      ? orderedBrokers.map((broker: any) => {
+          const subscription = broker.subscription
+          return toPublicBrokerListRecord(broker, {
+            isFeatured: hasPaidEntitlement(subscription),
+            isMortgageExpert: isMortgageExpertBroker({
+              mortgageExpertEnabled: broker.mortgageExpertEnabled,
+              profileBadge: brokerSubscriptionHasFeature(subscription, BROKER_PLAN_FEATURES.PROFILE_BADGE),
+            }),
+          })
+        })
+      : orderedBrokers.map((broker: any) => {
       const canShowContact = hasPaidEntitlement(broker.subscription)
       return {
         ...toPublicBrokerRecord(broker, { includeContact: canShowContact }),

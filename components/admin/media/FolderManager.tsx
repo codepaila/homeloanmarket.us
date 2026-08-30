@@ -90,7 +90,7 @@ export function FolderManager({ onSelectFolder, selectedFolderId }: FolderManage
       </div>
 
       {folders.length === 0 ? (
-        <p className="text-sm text-text-muted py-4 text-center">No folders yet. Create one to organize your media.</p>
+        <p className="text-sm text-muted-foreground py-4 text-center">No folders yet. Create one to organize your media.</p>
       ) : (
         <div className="space-y-1">
           <FolderTreeItem
@@ -250,7 +250,7 @@ function FolderTreeItem({
           <DialogHeader>
             <DialogTitle>Delete Folder</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-text-muted">This will delete the folder and all its assets. This action cannot be undone.</p>
+          <p className="text-sm text-muted-foreground">This will delete the folder and all its assets. This action cannot be undone.</p>
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setDeletingId(null)}>Cancel</Button>
             <Button variant="destructive" onClick={() => deletingId && handleDelete(deletingId)}>Delete</Button>

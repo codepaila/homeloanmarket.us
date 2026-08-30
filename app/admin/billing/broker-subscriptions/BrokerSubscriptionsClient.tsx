@@ -135,7 +135,7 @@ export default function BrokerSubscriptionsClient({ subscriptions, summary, admi
       <div className="overflow-x-auto rounded-xl border bg-card">
         {subscriptions.length === 0 ? (
           <div className="p-10 text-center">
-            <p className="text-sm font-medium text-text-main">No broker subscriptions found</p>
+            <p className="text-sm font-medium text-foreground">No broker subscriptions found</p>
             <p className="mt-1 text-sm text-muted-foreground">Broker subscriptions will appear here once brokers are created or imported.</p>
           </div>
         ) : (
@@ -158,7 +158,7 @@ export default function BrokerSubscriptionsClient({ subscriptions, summary, admi
             {subscriptions.map((subscription) => (
               <tr key={subscription.id}>
                 <td className="px-4 py-3">
-                  <div className="font-semibold text-text-main">{subscription.broker.displayName || subscription.broker.companyName || '—'}</div>
+                  <div className="font-semibold text-foreground">{subscription.broker.displayName || subscription.broker.companyName || '—'}</div>
                   <div className="text-xs text-muted-foreground">{subscription.broker.email || '—'}</div>
                 </td>
                 <td className="px-4 py-3">
@@ -176,7 +176,7 @@ export default function BrokerSubscriptionsClient({ subscriptions, summary, admi
                 <td className="px-4 py-3 text-xs text-muted-foreground">{subscription.endDate ? new Date(subscription.endDate).toLocaleDateString() : '—'}</td>
                 <td className="px-4 py-3"><MigrationBadge status={subscription.migrationStatus} /></td>
                 <td className="px-4 py-3">
-                  <Link href={`/admin/billing/broker-subscriptions/${subscription.id}`} className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-text-main">View</Link>
+                  <Link href={`/admin/billing/broker-subscriptions/${subscription.id}`} className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-foreground">View</Link>
                 </td>
               </tr>
             ))}

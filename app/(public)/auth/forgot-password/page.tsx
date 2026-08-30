@@ -67,7 +67,7 @@ export default function ForgotPasswordPage() {
       backHref="/auth/signin"
       backLabel="Back to Sign In"
       footer={
-        <p className="text-sm text-text-muted">
+        <p className="text-sm text-muted-foreground">
           Remember your password?{' '}
           <Link
             href="/auth/signin"
@@ -89,13 +89,13 @@ export default function ForgotPasswordPage() {
             <CheckCircle className="h-10 w-10 text-success" />
           </div>
           <div className="space-y-2">
-            <h3 className="text-xl font-semibold text-text-main">Check Your Email</h3>
-            <p className="text-sm text-text-muted">
+            <h3 className="text-xl font-semibold text-foreground">Check Your Email</h3>
+            <p className="text-sm text-muted-foreground">
               We&apos;ve sent password reset instructions to{' '}
-              <span className="font-medium text-text-main">{email}</span>
+              <span className="font-medium text-foreground">{email}</span>
             </p>
           </div>
-          <p className="text-xs text-text-muted">
+          <p className="text-xs text-muted-foreground">
               The link will expire in 1 hour. If you don&apos;t see the email, check your spam folder.
           </p>
           <button

@@ -56,7 +56,7 @@ export default async function AdminCompanySubscriptionsPage() {
             {subscriptions.map((sub) => (
               <tr key={sub.id}>
                 <td className="px-4 py-3">
-                  <div className="font-semibold text-text-main">{sub.company.name}</div>
+                  <div className="font-semibold text-foreground">{sub.company.name}</div>
                   <div className="text-xs text-muted-foreground">{sub.company.type}</div>
                 </td>
                 <td className="px-4 py-3">

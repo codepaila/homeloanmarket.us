@@ -49,13 +49,13 @@ export function BankCard({
               className="object-contain"
             />
           ) : (
-            <span className="text-sm font-bold text-text-muted">
+            <span className="text-sm font-bold text-muted-foreground">
               {bankName.charAt(0)}
             </span>
           )}
         </div>
         <div>
-          <p className="font-medium text-text-main">{bankName}</p>
+          <p className="font-medium text-foreground">{bankName}</p>
           {bankType && (
             <span
               className={cn(
@@ -103,7 +103,7 @@ export function TestimonialCard({
         ))}
       </div>
 
-      <p className="mb-6 text-sm italic text-text-muted">
+      <p className="mb-6 text-sm italic text-muted-foreground">
         &quot;{content}&quot;
       </p>
 
@@ -124,8 +124,8 @@ export function TestimonialCard({
           )}
         </div>
         <div>
-          <p className="font-semibold text-text-main">{name}</p>
-          <p className="text-sm text-text-muted">{role}</p>
+          <p className="font-semibold text-foreground">{name}</p>
+          <p className="text-sm text-muted-foreground">{role}</p>
         </div>
       </div>
     </motion.div>
@@ -189,8 +189,8 @@ export function ProcessCard({
           )}
         </div>
         <div>
-          <h3 className="font-bold text-text-main">{title}</h3>
-          <p className="mt-1 text-sm text-text-muted">{description}</p>
+          <h3 className="font-bold text-foreground">{title}</h3>
+          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         </div>
       </div>
     </motion.div>
@@ -223,8 +223,8 @@ export function FeatureCard({
       <div className="mb-4 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
         {icon}
       </div>
-      <h3 className="text-lg font-semibold text-text-main">{title}</h3>
-      <p className="mt-2 text-sm text-text-muted flex-1">{description}</p>
+      <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+      <p className="mt-2 text-sm text-muted-foreground flex-1">{description}</p>
       {children}
     </div>
   )

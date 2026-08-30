@@ -88,9 +88,9 @@ export default function FoldersPage() {
             </div>
           ) : rootFolders.length === 0 ? (
             <div className="text-center py-16">
-              <FolderOpen className="h-12 w-12 text-text-muted mx-auto mb-3" />
+              <FolderOpen className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
               <h3 className="text-lg font-semibold mb-1">No folders yet</h3>
-              <p className="text-sm text-text-muted mb-4">Create a folder to organize your media assets</p>
+              <p className="text-sm text-muted-foreground mb-4">Create a folder to organize your media assets</p>
             </div>
           ) : (
             <div className="space-y-1">
@@ -139,7 +139,7 @@ export default function FoldersPage() {
           <DialogHeader>
             <DialogTitle>Delete Folder</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-text-muted">This will delete the folder and all its assets. This action cannot be undone.</p>
+          <p className="text-sm text-muted-foreground">This will delete the folder and all its assets. This action cannot be undone.</p>
           <div className="flex justify-end gap-3">
             <Button variant="outline" onClick={() => setDeletingId(null)}>Cancel</Button>
             <Button variant="destructive" onClick={() => deletingId && handleDelete(deletingId)}>Delete</Button>

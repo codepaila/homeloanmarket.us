@@ -75,9 +75,10 @@ test('radius geo input is limited to coordinates, radius, pagination, optional s
   assert.match(geo, /admin: boolean/)
 })
 
-test('radius broker API builds a geographic-only where and keeps public eligibility', () => {
-  assert.match(api, /const geoWhere/)
-  assert.match(api, /publicBrokerWhere\(\)/)
+test('radius broker API delegates to the geographic-only pipeline that keeps public eligibility', () => {
+  assert.match(api, /findBrokerIdsWithinRadius\(\{/)
+  assert.match(geo, /function baseMatch/)
+  assert.match(geo, /isVisible: true/)
   assert.match(policy, /isVisible: true/)
   assert.match(policy, /verificationStatus: 'VERIFIED'/)
   assert.match(policy, /brokerStatus: \{ not: 'SUSPENDED' \}/)

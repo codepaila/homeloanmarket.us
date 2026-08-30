@@ -89,7 +89,7 @@ export function BrokerListingSkeleton({ count = 9 }: { count?: number }) {
   return (
     <div role="status" aria-label="Loading mortgage originators" aria-busy="true" className="min-h-screen bg-background">
       {/* Discovery header */}
-      <section aria-hidden="true" className="relative overflow-hidden border-b border-border bg-surface py-8 md:py-10">
+      <section aria-hidden="true" className="relative overflow-hidden border-b border-border bg-muted py-8 md:py-10">
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/5 blur-3xl" />
         <div className="container-custom relative">
           <div className="mx-auto max-w-3xl text-center">

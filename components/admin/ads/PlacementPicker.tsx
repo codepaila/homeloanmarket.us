@@ -34,7 +34,7 @@ export function PlacementPicker({ value, onChange, className }: PlacementPickerP
     <div className={cn('space-y-6', className)}>
       {Object.entries(PLACEMENT_CATEGORIES).map(([key, category]) => (
         <div key={key}>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-text-muted">{category.label}</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{category.label}</p>
           <div className="grid gap-3 sm:grid-cols-2">
             {category.values.map((placement) => {
               const info = getPlacementInfo(placement as PlacementKey)
@@ -63,9 +63,9 @@ export function PlacementPicker({ value, onChange, className }: PlacementPickerP
                     <p className="text-sm font-semibold">{info?.label || placement.replace(/_/g, ' ')}</p>
                   </div>
                   {info?.page ? <Badge variant="secondary" className="mt-2 text-[10px]">{info.page}</Badge> : null}
-                  <p className="mt-1.5 text-xs text-text-muted">{info?.description || 'Advertisement placement'}</p>
+                  <p className="mt-1.5 text-xs text-muted-foreground">{info?.description || 'Advertisement placement'}</p>
                   {spec ? (
-                    <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-text-muted">
+                    <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
                       <span>Desktop {spec.display.desktop}px</span>
                       <span>·</span>
                       <span>Tablet {spec.display.tablet}px</span>
@@ -75,7 +75,7 @@ export function PlacementPicker({ value, onChange, className }: PlacementPickerP
                     </div>
                   ) : null}
                   {formats.length > 0 ? (
-                    <p className="mt-1.5 text-[11px] text-text-muted">
+                    <p className="mt-1.5 text-[11px] text-muted-foreground">
                       Formats: {formats.map((format) => ADVERTISEMENT_FORMAT_INFO[format].label).join(', ')}
                     </p>
                   ) : null}

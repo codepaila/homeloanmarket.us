@@ -36,7 +36,7 @@ export function ImageValidationPanel({ asset, placement, className }: ImageValid
   if (!asset) {
     return (
       <div className={cn('rounded-lg border border-border bg-card p-4', className)}>
-        <p className="text-sm text-text-muted">No media selected</p>
+        <p className="text-sm text-muted-foreground">No media selected</p>
       </div>
     )
   }
@@ -86,7 +86,7 @@ export function ImageValidationPanel({ asset, placement, className }: ImageValid
                 {validation.message}
               </p>
               {validation.details && (
-                <p className="text-xs text-text-muted mt-0.5">{validation.details}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{validation.details}</p>
               )}
             </div>
           </div>

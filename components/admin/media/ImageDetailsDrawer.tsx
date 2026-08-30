@@ -115,14 +115,14 @@ export function ImageDetailsDrawer({ asset, open, onOpenChange, onUpdated }: Ima
               <div className="flex items-center justify-between p-4 rounded-lg border border-border">
                 <div>
                   <p className="text-sm font-medium">Desktop Advertisements</p>
-                  <p className="text-xs text-text-muted">Used as desktop media</p>
+                  <p className="text-xs text-muted-foreground">Used as desktop media</p>
                 </div>
                 <Badge variant="secondary">0</Badge>
               </div>
               <div className="flex items-center justify-between p-4 rounded-lg border border-border">
                 <div>
                   <p className="text-sm font-medium">Mobile Advertisements</p>
-                  <p className="text-xs text-text-muted">Used as mobile media</p>
+                  <p className="text-xs text-muted-foreground">Used as mobile media</p>
                 </div>
                 <Badge variant="secondary">0</Badge>
               </div>
@@ -131,7 +131,7 @@ export function ImageDetailsDrawer({ asset, open, onOpenChange, onUpdated }: Ima
         </Tabs>
 
         <div className="flex items-center justify-between pt-4 border-t border-border">
-          <div className="flex items-center gap-2 text-xs text-text-muted">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Calendar className="h-3 w-3" />
             <span>Uploaded {new Date(asset.createdAt).toLocaleDateString()}</span>
           </div>
@@ -156,7 +156,7 @@ export function ImageDetailsDrawer({ asset, open, onOpenChange, onUpdated }: Ima
             <DialogHeader>
               <DialogTitle>Delete Asset</DialogTitle>
             </DialogHeader>
-            <p className="text-sm text-text-muted">This will soft-delete this asset. It can be restored later.</p>
+            <p className="text-sm text-muted-foreground">This will soft-delete this asset. It can be restored later.</p>
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>Cancel</Button>
               <Button variant="destructive" onClick={handleDelete}>Delete</Button>
@@ -178,7 +178,7 @@ interface DetailItemProps {
 function DetailItem({ icon: Icon, label, value, mono }: DetailItemProps) {
   return (
     <div className="space-y-1">
-      <div className="flex items-center gap-1.5 text-text-muted">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
         <Icon className="h-3 w-3" />
         <span className="text-xs">{label}</span>
       </div>

@@ -101,3 +101,33 @@ export function toPublicBrokerRecord(value: unknown, options?: PublicBrokerOptio
       : undefined,
   }
 }
+
+// Compact public record for listing grid cards. Only the fields the public
+// broker-card UI actually renders (plus the two server-computed badges) are
+// emitted — reviews, bank partners, contact details, social links, and free
+// text are deliberately excluded to keep the listing payload small.
+export function toPublicBrokerListRecord(
+  value: unknown,
+  options: { isFeatured: boolean; isMortgageExpert: boolean },
+) {
+  const broker = objectValue(value)
+  const raw = (broker ?? {}) as Record<string, unknown>
+  const str = (v: unknown) => (v == null || v === '' ? null : String(v))
+  const num = (v: unknown) => Number(v) || 0
+  return {
+    id: str(raw.id) ?? '',
+    profileSlug: str(raw.profileSlug) ?? '',
+    displayName: String(raw.displayName ?? ''),
+    companyName: str(raw.companyName),
+    city: str(raw.city),
+    state: str(raw.state),
+    nmls: str(raw.nmls),
+    logo: str(raw.logo),
+    profileImage: str(raw.profileImage),
+    avgRating: num(raw.avgRating),
+    totalReviews: num(raw.totalReviews),
+    experienceYears: num(raw.experienceYears),
+    isFeatured: options.isFeatured,
+    isMortgageExpert: options.isMortgageExpert,
+  }
+}

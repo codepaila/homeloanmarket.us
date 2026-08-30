@@ -55,12 +55,12 @@ const sections = [
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen">
-      <Section className="bg-surface">
+      <Section className="bg-muted">
         <AnimatedContainer>
           <div className="text-center max-w-3xl mx-auto">
             <Lock className="h-12 w-12 text-primary mx-auto mb-4" />
-            <h1 className="heading-1 text-text-main mb-4">Privacy Policy</h1>
-            <p className="text-xl text-text-muted">
+            <h1 className="heading-1 text-foreground mb-4">Privacy Policy</h1>
+            <p className="text-xl text-muted-foreground">
               Last updated: August 6, 2026
             </p>
           </div>
@@ -71,7 +71,7 @@ export default function PrivacyPage() {
         <AnimatedContainer>
           <div className="max-w-4xl mx-auto space-y-12">
             <div className="text-center">
-              <p className="text-text-muted leading-relaxed">
+              <p className="text-muted-foreground leading-relaxed">
                 HomeLoanMarket (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) operates the HomeLoanMarket.com website and
                 mobile application (the &quot;Service&quot;). This Privacy Policy informs you of our policies
                 regarding the collection, use, and disclosure of personal information we receive
@@ -82,10 +82,10 @@ export default function PrivacyPage() {
             {sections.map((section, idx) => (
               <div key={section.title} className="card">
                 <div className="p-8">
-                  <h2 className="heading-3 text-text-main mb-4">{section.title}</h2>
+                  <h2 className="heading-3 text-foreground mb-4">{section.title}</h2>
                   <ul className="space-y-3">
                     {section.content.map((item, i) => (
-                      <li key={i} className="flex items-start gap-3 text-text-muted leading-relaxed">
+                      <li key={i} className="flex items-start gap-3 text-muted-foreground leading-relaxed">
                         <span
                           className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary"
                           aria-hidden="true"
@@ -101,28 +101,28 @@ export default function PrivacyPage() {
             <div className="grid md:grid-cols-4 gap-6">
               <div className="card text-center p-6">
                 <Shield className="h-8 w-8 text-primary mx-auto mb-3" />
-                <h3 className="font-semibold text-text-main mb-1">Encrypted</h3>
-                <p className="text-sm text-text-muted">256-bit SSL encryption</p>
+                <h3 className="font-semibold text-foreground mb-1">Encrypted</h3>
+                <p className="text-sm text-muted-foreground">256-bit SSL encryption</p>
               </div>
               <div className="card text-center p-6">
                 <Database className="h-8 w-8 text-primary mx-auto mb-3" />
-                <h3 className="font-semibold text-text-main mb-1">Secure Storage</h3>
-                <p className="text-sm text-text-muted">ISO 27001 certified servers</p>
+                <h3 className="font-semibold text-foreground mb-1">Secure Storage</h3>
+                <p className="text-sm text-muted-foreground">ISO 27001 certified servers</p>
               </div>
               <div className="card text-center p-6">
                 <UserCheck className="h-8 w-8 text-accent mx-auto mb-3" />
-                <h3 className="font-semibold text-text-main mb-1">Your Control</h3>
-                <p className="text-sm text-text-muted">Access and modify your data</p>
+                <h3 className="font-semibold text-foreground mb-1">Your Control</h3>
+                <p className="text-sm text-muted-foreground">Access and modify your data</p>
               </div>
               <div className="card text-center p-6">
                 <Globe className="h-8 w-8 text-secondary mx-auto mb-3" />
-                <h3 className="font-semibold text-text-main mb-1">Compliance</h3>
-                <p className="text-sm text-text-muted">GDPR & local regulations</p>
+                <h3 className="font-semibold text-foreground mb-1">Compliance</h3>
+                <p className="text-sm text-muted-foreground">GDPR & local regulations</p>
               </div>
             </div>
 
             <div className="text-center pt-6 border-t border-border">
-              <p className="text-sm text-text-muted">
+              <p className="text-sm text-muted-foreground">
                 For privacy-related inquiries, contact us at{' '}
                 <a href="mailto:privacy@homeloanmarket.com" className="text-primary hover:text-primary">
                   privacy@homeloanmarket.com

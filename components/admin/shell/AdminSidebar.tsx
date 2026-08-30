@@ -3,9 +3,10 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
-import { LayoutDashboard, LogOut } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Logo } from '@/components/shared/Logo'
 import { adminNavigation, isAdminNavItemActive } from '@/lib/admin/navigation'
 import { AdminNavItem } from './AdminNavItem'
 
@@ -16,10 +17,7 @@ export function AdminSidebar({ className }: { className?: string }) {
     <aside className={cn('flex flex-col border-r bg-sidebar', className)}>
       <div className="flex h-16 items-center border-b px-6">
         <Link href="/admin" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <LayoutDashboard className="h-5 w-5 text-white" />
-          </div>
-          <span className="text-xl font-bold">HomeLoanMarket</span>
+          <Logo className="h-6" />
         </Link>
       </div>
 

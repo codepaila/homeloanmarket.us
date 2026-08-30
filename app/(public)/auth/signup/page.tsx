@@ -109,7 +109,7 @@ export default function BrokerSignupPage() {
       backLabel="Back to registration"
       size="lg"
       footer={
-        <p className="text-sm text-text-muted">
+        <p className="text-sm text-muted-foreground">
           Already have an account?{' '}
           <Link href="/auth/signin" className="font-medium text-primary hover:text-primary/80">Sign in</Link>
         </p>
@@ -172,7 +172,7 @@ export default function BrokerSignupPage() {
         </AuthSection>
 
         <AuthSection title="Security and terms">
-          <p className="flex items-center gap-2 rounded-xl border border-primary/10 bg-primary/5 px-4 py-3 text-sm font-medium text-text-main">
+          <p className="flex items-center gap-2 rounded-xl border border-primary/10 bg-primary/5 px-4 py-3 text-sm font-medium text-foreground">
             <ShieldCheck className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
             What is {captcha.question}?
           </p>
@@ -187,7 +187,7 @@ export default function BrokerSignupPage() {
             onChange={(event) => setCaptchaAnswer(event.target.value ? Number(event.target.value) : '')}
             error={hasError('captcha') ? errors.captcha : undefined}
           />
-          <label htmlFor="agreeTerms" className="flex cursor-pointer items-start gap-3 text-sm text-text-muted">
+          <label htmlFor="agreeTerms" className="flex cursor-pointer items-start gap-3 text-sm text-muted-foreground">
             <input
               type="checkbox"
               id="agreeTerms"
@@ -208,7 +208,7 @@ export default function BrokerSignupPage() {
           <PremiumButton type="submit" loading={loading} loadingText="Creating Account..." disabled={loading} fullWidth leftIcon={!loading && <ArrowRight className="h-4 w-4" />}>
             Create Mortgage Originator Account
           </PremiumButton>
-          <p className="text-center text-xs text-text-muted">Email verification is required before continuing.</p>
+          <p className="text-center text-xs text-muted-foreground">Email verification is required before continuing.</p>
         </div>
       </form>
     </AuthFormWrapper>

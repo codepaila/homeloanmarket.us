@@ -21,6 +21,7 @@ function SearchSection() {
   const suggestionsOpenRef = useRef(false)
 
   const [selectedLocation, setSelectedLocation] = useState<ResolvedLocation | null>(null)
+  const autocompleteCacheRef = useRef<Map<string, Array<{ placeId: string; label: string }>>>(new Map())
 
   useEffect(() => {
     const value = query.trim()
@@ -33,6 +34,15 @@ function SearchSection() {
     }
     const requestId = ++requestRef.current
     const controller = new AbortController()
+    // Serve repeated terms from an in-memory cache so re-typing a previously
+    // searched location never re-hits the Google Places API.
+    const cached = autocompleteCacheRef.current.get(value)
+    if (cached) {
+      setSearching(false)
+      setLocationSuggestions(cached)
+      setActiveSuggestionIndex(-1)
+      return
+    }
     setSearching(true)
     const timer = window.setTimeout(() => {
       fetch(`/api/location/autocomplete?input=${encodeURIComponent(value)}`, { signal: controller.signal })
@@ -40,7 +50,9 @@ function SearchSection() {
         .then((data) => {
           if (requestId !== requestRef.current) return
           setSearching(false)
-          setLocationSuggestions(Array.isArray(data.suggestions) ? data.suggestions : [])
+          const suggestions = Array.isArray(data.suggestions) ? data.suggestions : []
+          if (suggestions.length > 0) autocompleteCacheRef.current.set(value, suggestions)
+          setLocationSuggestions(suggestions)
           setActiveSuggestionIndex(-1)
         })
         .catch(() => {
@@ -156,7 +168,7 @@ function SearchSection() {
   })
 
   return (
-    <div className="max-w-8xl mx-auto px-4 py-8 pb-10 md:py-14 bg-white ">
+    <div className="max-w-8xl mx-auto px-4 py-8 pb-10 md:py-14 bg-white dark:bg-background ">
       {/* Heading */}
       <motion.h2
         initial={{ opacity: 0, y: 20 }}
@@ -167,7 +179,7 @@ function SearchSection() {
         <span className="text-primary">
           Find Home Loan Experts
         </span>
-        <span className="text-secondary"> Near You</span>
+        <span className="text-primary"> Near You</span>
       </motion.h2>
 
       <motion.form
@@ -178,7 +190,7 @@ function SearchSection() {
         className="mt-4 sm:mt-8 mx-auto max-w-4xl"
       >
         {/* Main Search Bar */}
-        <div ref={searchRef} className="relative flex items-center gap-3 rounded bg-white px-4 py-2.5  ring-1 ring-black/5 transition-all focus-within:ring-2 focus-within:ring-primary/50">
+        <div ref={searchRef} className="relative flex items-center gap-3 rounded bg-background px-4 py-2.5  ring-1 ring-ring/5 transition-all focus-within:ring-2 focus-within:ring-primary/50">
           <Search className="h-5 w-5 flex-shrink-0 text-primary" />
           <input
             type="search"
@@ -187,7 +199,7 @@ function SearchSection() {
             onChange={(event) => { setQuery(event.target.value); setSelectedLocation(null); setActiveSuggestionIndex(-1) }}
             onKeyDown={handleKeyDown}
             placeholder="Search by city or ZIP code"
-            className="flex-1 bg-transparent py-1 text-sm font-medium text-secondary placeholder:text-muted-foreground/70 focus:outline-none"
+            className="flex-1 bg-transparent py-1 text-base font-medium text-secondary placeholder:text-muted-foreground/70 focus:outline-none"
             aria-label="Search mortgage originators by city or ZIP code"
             aria-expanded={locationSuggestions.length > 0 || searching}
             aria-autocomplete="list"

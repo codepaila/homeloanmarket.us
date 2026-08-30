@@ -59,7 +59,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${jakarta.variable} ${inter.variable} h-screen `}>
+      <body className={`${jakarta.variable} ${inter.variable} min-h-screen `}>
         <Toaster />
         <SessionProvider>{children}</SessionProvider>
       </body>

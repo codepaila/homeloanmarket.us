@@ -54,18 +54,18 @@ export function PricingCard({
       )}
 
       <div className="text-center">
-        <h3 className="text-xl font-bold text-text-main">{name}</h3>
-        <p className="mt-1 text-sm text-text-muted">{description}</p>
+        <h3 className="text-xl font-bold text-foreground">{name}</h3>
+        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
 
         <div className="my-6">
           <div className="flex items-baseline justify-center gap-1">
-            <span className="text-4xl font-bold text-text-main">
+            <span className="text-4xl font-bold text-foreground">
               ${price}
             </span>
-            <span className="text-sm text-text-muted">{priceSuffix}</span>
+            <span className="text-sm text-muted-foreground">{priceSuffix}</span>
           </div>
           {price === 0 && (
-            <p className="mt-1 text-xs text-text-muted">No credit card required</p>
+            <p className="mt-1 text-xs text-muted-foreground">No credit card required</p>
           )}
         </div>
       </div>
@@ -76,17 +76,17 @@ export function PricingCard({
             <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-success">
               <Check className="h-3 w-3" />
             </div>
-            <span className="text-sm text-text-muted">{feature}</span>
+            <span className="text-sm text-muted-foreground">{feature}</span>
           </div>
         ))}
       </div>
 
       {limits && (
-        <div className="mb-6 space-y-2 text-xs text-text-muted">
+        <div className="mb-6 space-y-2 text-xs text-muted-foreground">
           {Object.entries(limits).map(([key, value]) => (
             <div key={key} className="flex justify-between">
               <span>{key.replace(/([A-Z])/g, ' $1')}</span>
-              <span className="font-medium text-text-main">
+              <span className="font-medium text-foreground">
                 {value === true ? 'Yes' : value === false ? 'No' : String(value)}
               </span>
             </div>
@@ -96,7 +96,7 @@ export function PricingCard({
 
       <div className="mt-auto">
         {isCurrent ? (
-          <div className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-border bg-muted/50 text-sm font-medium text-text-muted">
+          <div className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-border bg-muted/50 text-sm font-medium text-muted-foreground">
             Current Plan
           </div>
         ) : (
