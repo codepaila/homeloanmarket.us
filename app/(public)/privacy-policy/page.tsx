@@ -41,6 +41,17 @@ const sections = [
     ],
   },
   {
+    title: 'Analytics & Cookies',
+    content: [
+      'We use analytics cookies to understand how visitors use the site so we can improve the experience',
+      'Analytics is handled through Google Analytics and Google Tag Manager',
+      'These cookies collect anonymous, aggregate information such as pages visited, time spent, and navigation patterns',
+      'We do not use analytics to collect personal information such as names, email addresses, phone numbers, or mortgage details',
+      'Analytics is only activated after you accept our analytics cookie consent; you may reject or change your choice at any time',
+      'You can review or revoke your consent at any time via the cookie settings link in the website footer',
+    ],
+  },
+  {
     title: 'Data Sharing & Disclosure',
     content: [
       'We do NOT sell, trade, or rent your personal information to third parties',

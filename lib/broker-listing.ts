@@ -113,8 +113,13 @@ export async function getPublicListingPage(
 
   if (!opts.admin) {
     pipeline.push(
+      // Owner is required to be active AND not an active Company member (an
+      // advertising/company account is never a public broker owner). Unowned
+      // (userId: null) brokers are always eligible owner-wise. Mirrors the
+      // publicBrokerWhere() ownership clause.
       { $lookup: { from: 'users', localField: 'userId', foreignField: '_id', as: 'owner' } },
-      { $match: { $or: [{ userId: null }, { owner: { $elemMatch: { isActive: true } } }] } },
+      { $lookup: { from: 'company_memberships', localField: 'userId', foreignField: 'userId', as: 'compMem' } },
+      { $match: { $or: [{ userId: null }, { $and: [{ owner: { $elemMatch: { isActive: true } } }, { compMem: { $not: { $elemMatch: { isActive: true } } } }] }] } },
     )
   }
 

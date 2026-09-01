@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import type { SiteSettings } from '@/lib/site/settings'
 import { Logo } from '@/components/shared/Logo'
+import { CookieSettingsLink } from '@/components/analytics/CookieSettingsLink'
 
 const footerColumns = [
   {
@@ -250,6 +251,7 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
             <Link href="/contact" className="transition-colors hover:text-primary">
               Support
             </Link>
+            <CookieSettingsLink />
           </div>
         </div>
       </div>

@@ -23,7 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         brokerStatus: true,
         creationSource: true,
         updatedAt: true,
-        user: { select: { isActive: true } },
+        user: { select: { isActive: true, companyMemberships: { where: { isActive: true }, select: { id: true } } } },
       },
     }),
     prisma.blogPost.findMany({
@@ -46,6 +46,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     creationSource: broker.creationSource,
     userId: broker.userId,
     userIsActive: broker.user?.isActive,
+    // An advertising/company account is never indexable as a public broker.
+    hasActiveCompanyMembership: (broker.user?.companyMemberships?.length ?? 0) > 0,
   })).map((broker) => ({
     url: canonicalUrl(`/brokers/${broker.profileSlug}`),
     lastModified: broker.updatedAt,

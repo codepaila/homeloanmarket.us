@@ -7,6 +7,13 @@ export type BrokerPublicState = {
   creationSource?: BrokerCreationSource | null
   userId: string | null
   userIsActive?: boolean
+  // True when the owning User is an active member of a Company (an account that
+  // "joined as a company" for advertising/service purposes rather than as a
+  // genuine mortgage professional). Such accounts are ineligible to be public
+  // broker owners and their broker profiles must be excluded from every public
+  // broker discovery surface. Mirrors the ownership eligibility enforced by
+  // lib/claim-completion.ts (company members cannot attach to a broker).
+  hasActiveCompanyMembership?: boolean
 }
 
 export type BrokerEntitlement = {
@@ -35,9 +42,12 @@ export function isBrokerOwner(brokerUserId: string | null, userId: string) {
 
 export function isPublicBroker(state: BrokerPublicState) {
   const sourceEligible = state.creationSource === 'ADMIN_CREATED' || state.verificationStatus === 'VERIFIED'
+  const ownerEligible =
+    state.userId === null ||
+    (state.userIsActive === true && state.hasActiveCompanyMembership !== true)
   return state.isVisible &&
     state.brokerStatus !== 'SUSPENDED' &&
-    (state.userId === null || state.userIsActive === true) &&
+    ownerEligible &&
     sourceEligible
 }
 
@@ -47,13 +57,20 @@ export function isPublicBroker(state: BrokerPublicState) {
 // self-registration verification lifecycle, so they are public unless they are
 // suspended or hard-hidden via `isVisible`. SELF_REGISTERED brokers must still
 // be VERIFIED and visible. Both branches share the suspension and ownership
-// protections.
+// protections. An owned broker is additionally excluded when its owner is an
+// active Company member (an advertising/company account is not a genuine
+// mortgage broker owner).
 export function publicBrokerWhere(): Prisma.BrokerWhereInput {
   return {
     isVisible: true,
     brokerStatus: { not: 'SUSPENDED' },
     AND: [
-      { OR: [{ userId: null }, { user: { isActive: true } }] },
+      {
+        OR: [
+          { userId: null },
+          { user: { isActive: true, companyMemberships: { none: { isActive: true } } } },
+        ],
+      },
       { OR: [{ creationSource: 'ADMIN_CREATED' }, { verificationStatus: 'VERIFIED' }] },
     ],
   }

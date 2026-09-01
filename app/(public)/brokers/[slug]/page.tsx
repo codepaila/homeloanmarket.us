@@ -64,7 +64,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       verificationStatus: true,
       brokerStatus: true,
       userId: true,
-      user: { select: { isActive: true } },
+      user: { select: { isActive: true, companyMemberships: { where: { isActive: true }, select: { id: true } } } },
     },
   })
 
@@ -74,6 +74,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     brokerStatus: broker.brokerStatus,
     userId: broker.userId,
     userIsActive: broker.user?.isActive,
+    hasActiveCompanyMembership: (broker.user?.companyMemberships?.length ?? 0) > 0,
   })) {
     return { title: 'Mortgage Originator Profile Not Found', robots: { index: false, follow: false } }
   }
@@ -109,6 +110,7 @@ export default async function PublicBrokerPage({ params }: PageProps) {
             name: true,
             image: true,
             isActive: true,
+            companyMemberships: { where: { isActive: true }, select: { id: true } },
           }
         },
         bankPartners: {
@@ -141,6 +143,7 @@ export default async function PublicBrokerPage({ params }: PageProps) {
     brokerStatus: broker.brokerStatus,
     userId: broker.userId,
     userIsActive: broker.user?.isActive,
+    hasActiveCompanyMembership: (broker.user?.companyMemberships?.length ?? 0) > 0,
   })) {
     notFound()
   }

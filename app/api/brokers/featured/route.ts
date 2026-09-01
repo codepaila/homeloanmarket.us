@@ -41,7 +41,11 @@ export async function GET() {
         isVisible: true,
         verificationStatus: 'VERIFIED',
         brokerStatus: { not: 'SUSPENDED' },
-        user: { isActive: true },
+        user: {
+          isActive: true,
+          // An advertising/company account is never a public broker owner.
+          companyMemberships: { none: { isActive: true } },
+        },
         subscription: {
           is: {
             isActive: true,

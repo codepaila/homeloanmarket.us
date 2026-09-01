@@ -5,6 +5,7 @@ import SessionProvider from "./providers/SessionProvider";
 import { Toaster } from "react-hot-toast";
 import { getSiteUrl } from "@/lib/seo";
 import { getSiteSettings } from "@/lib/site/settings";
+import { AnalyticsProvider } from "@/lib/analytics/provider";
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-heading",
@@ -61,7 +62,9 @@ export default function RootLayout({
       </head>
       <body className={`${jakarta.variable} ${inter.variable} min-h-screen `}>
         <Toaster />
-        <SessionProvider>{children}</SessionProvider>
+        <AnalyticsProvider>
+          <SessionProvider>{children}</SessionProvider>
+        </AnalyticsProvider>
       </body>
     </html>
   );

@@ -22,6 +22,7 @@ export async function GET(
             name: true,
             image: true,
             isActive: true,
+            companyMemberships: { where: { isActive: true }, select: { id: true } },
           }
         },
         bankPartners: {
@@ -86,6 +87,7 @@ export async function GET(
         creationSource: broker.creationSource,
         userId: broker.userId,
         userIsActive: broker.user?.isActive,
+        hasActiveCompanyMembership: (broker.user?.companyMemberships?.length ?? 0) > 0,
       })) {
         return NextResponse.json(
           { message: 'Broker profile not available' },
