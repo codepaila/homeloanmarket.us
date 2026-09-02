@@ -84,7 +84,7 @@ test('BROKER_LISTING_LOCAL requires a SQUARE or BANNER creative at creation time
         creativeAssignments: [],
         locationTarget: { locationLabel: 'Dallas, TX', countryCode: 'US', city: 'Dallas', state: 'TX', latitude: 32.7767, longitude: -96.797, radiusMiles: 25 },
       }),
-      /require a SQUARE or BANNER creative/,
+      /require a SQUARE, BANNER, or WIDE_RECTANGLE creative/,
       'BROKER_LISTING_LOCAL must reject an ad without a SQUARE or BANNER creative',
     )
   } finally {
@@ -206,7 +206,7 @@ test('BROKER_LISTING_LOCAL rejects an incompatible RECTANGLE creative', async ()
         creativeAssignments: [{ mediaAssetId: media.id, format: 'RECTANGLE' }],
         locationTarget: { locationLabel: 'Dallas, TX', countryCode: 'US', city: 'Dallas', state: 'TX', latitude: 32.7767, longitude: -96.797, radiusMiles: 25 },
       }),
-      /require a SQUARE or BANNER creative/,
+      /require a SQUARE, BANNER, or WIDE_RECTANGLE creative/,
       'BROKER_LISTING_LOCAL must reject a RECTANGLE creative',
     )
   } finally {

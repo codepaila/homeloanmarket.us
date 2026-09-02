@@ -523,7 +523,7 @@ export default function BrokersPage() {
       </section>
 
       {/* Sticky search + toolbar */}
-      <section className="sticky top-16 z-30 border-b border-border bg-card md:top-[72px]">
+      <section className="sticky top-16 z-20 border-b border-border bg-card md:top-[72px]">
         <div className="container-custom py-4 md:py-5 grid grid-cols-5 gap-3 md:gap-5 items-center">
           <div ref={searchRef} className="relative  col-span-full sm:col-span-3">
             <Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />

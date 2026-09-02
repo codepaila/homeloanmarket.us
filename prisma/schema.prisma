@@ -210,6 +210,7 @@ enum AdvertisementFormat {
   RECTANGLE
   MOBILE
   BANNER
+  WIDE_RECTANGLE
 }
 
 // User model for authentication

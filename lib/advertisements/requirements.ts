@@ -117,6 +117,7 @@ function formatLabel(format: AdvertisementFormat): string {
     VERTICAL: 'Vertical',
     MOBILE: 'Mobile Banner',
     BANNER: 'Rectangle Display Banner',
+    WIDE_RECTANGLE: 'Wide Rectangle',
   }
   return labels[format]
 }
@@ -191,4 +192,5 @@ const FORMAT_LABELS: Record<AdvertisementFormat, string> = {
   VERTICAL: 'Vertical',
   MOBILE: 'Mobile Banner',
   BANNER: 'Rectangle Display Banner',
+  WIDE_RECTANGLE: 'Wide Rectangle',
 }

@@ -474,7 +474,7 @@ export class AdvertisementRepository {
         if (ad.endDate && ad.endDate < now) return false
         if (placement === 'BROKER_LISTING_LOCAL') {
           if (!location || !ad.locationTarget || ad.locationTarget.countryCode !== 'US') return false
-          if (!ad.creatives.some((creative) => creative.format === 'SQUARE' || creative.format === 'BANNER')) return false
+          if (!ad.creatives.some((creative) => creative.format === 'SQUARE' || creative.format === 'BANNER' || creative.format === 'WIDE_RECTANGLE')) return false
           return distanceMiles(location.latitude, location.longitude, ad.locationTarget.latitude, ad.locationTarget.longitude) <= ad.locationTarget.radiusMiles
         }
         return true

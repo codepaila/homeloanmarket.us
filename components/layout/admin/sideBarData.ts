@@ -117,7 +117,7 @@ export const appSidebarData = (user: SidebarUserInput): SidebarData => {
       { title: "Company Advertising Plans", url: "/admin/billing/company-advertising-plans" },
       { title: "Company Subscriptions", url: "/admin/billing/company-subscriptions" },
     ] },
-    { title: "Content", url: "/admin/content", icon: FileSpreadsheet },
+    { title: "Blogs Content", url: "/admin/content", icon: FileSpreadsheet },
     { title: "FAQs", url: "/admin/faqs", icon: HelpCircle },
     { title: "Support Tickets", url: "/admin/support/tickets", icon: HelpCircle },
     { title: "Settings", url: "/admin/settings", icon: Settings },

@@ -277,7 +277,7 @@ test('duplicate BROKER_LISTING_LOCAL without SQUARE/BANNER creative is rejected'
 
     await assert.rejects(
       () => AdvertisementService.duplicate(legacy.id, { title: 'Copy', createdById: user.id }),
-      /require a SQUARE or BANNER creative/,
+      /require a SQUARE, BANNER, or WIDE_RECTANGLE creative/,
       'duplicating a local ad without a SQUARE/BANNER creative must be rejected',
     )
   } finally {

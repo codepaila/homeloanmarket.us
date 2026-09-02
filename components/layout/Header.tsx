@@ -23,6 +23,7 @@ import {
   Settings,
   Users,
   BarChart3,
+  BookOpen,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCurrentUser } from '@/hooks/useCurrentUser'
@@ -46,6 +47,7 @@ const navigation = [
     href: '/calculator',
     icon: Calculator,
   },
+  { name: 'Blogs', href: '/blog', icon: BookOpen },
   { name: 'About', href: '/about', icon: Info },
   { name: 'Contact', href: '/contact', icon: Phone },
 ]
@@ -60,16 +62,19 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
   const user = useCurrentUser()
   const headerRef = useRef<HTMLDivElement>(null)
   const mobileMenuRef = useRef<HTMLDivElement>(null)
+  const toggleButtonRef = useRef<HTMLButtonElement>(null)
 
   const { scrollY } = useScroll()
   useMotionValueEvent(scrollY, 'change', (latest) => {
     setScrolled(latest > 6)
   })
 
-  // Close menus on Escape
+  // Close menus on Escape, returning focus to the toggle when the mobile menu
+  // was closed via the keyboard.
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (isMenuOpen) toggleButtonRef.current?.focus()
         setIsMenuOpen(false)
         setIsUserMenuOpen(false)
         setOpenDropdown(null)
@@ -77,7 +82,7 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
     }
     window.addEventListener('keydown', handleKey)
     return () => window.removeEventListener('keydown', handleKey)
-  }, [])
+  }, [isMenuOpen])
 
   // Close dropdowns and the mobile menu on outside click
   useEffect(() => {
@@ -96,15 +101,23 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [openDropdown, isUserMenuOpen, isMenuOpen])
 
-  // Lock scroll when mobile menu or user menu is open
+  // Lock page scroll while the mobile menu or user menu is open. We lock the
+  // root <html> scroller (the viewport) rather than <body>: the globals CSS
+  // explicitly warns that giving <body> an overflow value turns it into its own
+  // scroll container, which silently breaks `position: sticky` on the header.
+  // With the root locked, the header stays sticky-anchored to the top of the
+  // viewport and the page stops scrolling WITHOUT moving or resetting the
+  // current scroll offset — so opening the menu while scrolled down never makes
+  // the header jump or the page reposition. The previous inline overflow is
+  // captured once and restored exactly on close/unmount, so route changes,
+  // Escape, outside clicks, sign-out, or Header unmount all clean up correctly.
   useEffect(() => {
-    if (isMenuOpen || isUserMenuOpen) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
+    if (!isMenuOpen && !isUserMenuOpen) return
+    const root = document.documentElement
+    const previousRootOverflow = root.style.overflow
+    root.style.overflow = 'hidden'
     return () => {
-      document.body.style.overflow = ''
+      root.style.overflow = previousRootOverflow
     }
   }, [isMenuOpen, isUserMenuOpen])
 
@@ -115,6 +128,18 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
     setOpenDropdown(null)
     setIsUserMenuOpen(false)
   }, [pathname])
+
+  // The mobile menu only renders below the lg breakpoint. If the viewport
+  // crosses to desktop while the menu is open, close it so the root scroll lock
+  // is released and no stale menu state lingers after a resize.
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)')
+    const handleChange = () => {
+      if (mq.matches) setIsMenuOpen(false)
+    }
+    mq.addEventListener('change', handleChange)
+    return () => mq.removeEventListener('change', handleChange)
+  }, [])
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(href + '/')
@@ -135,6 +160,7 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
     ...(dashboardNavItem ? [dashboardNavItem] : []),
     navigation[3],
     navigation[4],
+    navigation[5],
   ]
 
   // Get user initials for avatar
@@ -223,8 +249,8 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
       <header
         ref={headerRef}
         className={cn(
-          'sticky top-0 z-40 border-b bg-background',
-          scrolled ? 'border-border shadow-soft' : 'border-transparent',
+          'sticky  top-0 z-40 border-b bg-background',
+          scrolled ? 'border-border shadow-soft ' : 'border-transparent',
           reducedMotion ? '' : 'transition-[background-color,border-color,box-shadow] duration-200 ease-out',
         )}
       >
@@ -277,7 +303,7 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
                     whileTap={{ scale: 0.97 }}
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                     aria-expanded={isUserMenuOpen}
-                    className="flex items-center gap-2 rounded-lg bg-muted p-1 transition-colors hover:bg-muted "
+                    className="flex items-center gap-2 "
                   >
                     <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-foreground text-sm font-semibold text-background">
                       {user.image ? (
@@ -290,12 +316,12 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
                         <span>{getUserInitials()}</span>
                       )}
                     </div>
-                    <ChevronDown
+                    {/* <ChevronDown
                       className={cn(
                         'h-4 w-4 text-muted-foreground transition-transform duration-200',
                         isUserMenuOpen && 'rotate-180',
                       )}
-                    />
+                    /> */}
                   </motion.button>
 
                   <AnimatePresence>
@@ -328,9 +354,10 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
 
               {/* Mobile Menu Button */}
               <button
+                ref={toggleButtonRef}
                 className="rounded-xl p-2  text-foreground transition-colors hover:bg-muted lg:hidden"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                aria-label="Toggle menu"
+                aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
                 aria-expanded={isMenuOpen}
                 aria-controls="mobile-menu"
               >
@@ -476,73 +503,82 @@ function MobileMenu({
     <motion.div
       id="mobile-menu"
       ref={menuRef}
-      initial={{ opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: 'auto' }}
-      exit={{ opacity: 0, height: 0 }}
-      transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-      className="fixed inset-x-0 top-16 z-30 overflow-hidden border-b border-border bg-card shadow-large md:top-[72px] lg:hidden"
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+      className="fixed inset-x-0 top-16  z-30 overflow-hidden border-b border-border bg-card shadow-large md:top-[72px] lg:hidden"
     >
-      <div className="container-custom space-y-1 py-3">
-        {navigation.map((item) => (
-          <div key={item.name}>
-            <Link
-              href={item.href}
-              className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-              onClick={onClose}
-            >
-              <item.icon className="h-5 w-5 text-muted-foreground" />
-              {item.name}
-            </Link>
-            {item.children && (
-              <div className="ml-4 space-y-0.5 border-l border-border pl-3">
-                {item.children.map((child) => (
-                  <Link
-                    key={child.name}
-                    href={child.href}
-                    className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    onClick={onClose}
-                  >
-                    <child.icon className="h-4 w-4" />
-                    {child.name}
-                  </Link>
-                ))}
+      {/* Scrollable panel anchored between the sticky header (top-16 /
+          md:top-[72px]) and the viewport bottom (bottom-0). It stays fixed to
+          the viewport — never part of the page flow — and scrolls internally if
+          its content is taller than the viewport. */}
+      <nav
+        aria-label="Mobile navigation"
+        className=" overflow-y-auto  overscroll-behavior-contain"
+      >
+        <div className="container-custom space-y-1 py-3">
+          {navigation.map((item) => (
+            <div key={item.name}>
+              <Link
+                href={item.href}
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                onClick={onClose}
+              >
+                <item.icon className="h-5 w-5 text-muted-foreground" />
+                {item.name}
+              </Link>
+              {item.children && (
+                <div className="ml-4 space-y-0.5 border-l border-border pl-3">
+                  {item.children.map((child) => (
+                    <Link
+                      key={child.name}
+                      href={child.href}
+                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      onClick={onClose}
+                    >
+                      <child.icon className="h-4 w-4" />
+                      {child.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+
+          <div className="border-t border-border pt-2">
+            {user ? (
+              <>
+                <button
+                  onClick={() => {
+                    onSignOut()
+                    onClose()
+                  }}
+                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-destructive transition-colors hover:bg-destructive/5"
+                >
+                  <LogOut className="h-5 w-5" />
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <Link href="/auth/signin" onClick={onClose}>
+                  <Button variant="outline" className="w-full text-sm">
+                    <User className="h-4 w-4 mr-1.5" />
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/auth/signup" onClick={onClose}>
+                  <Button className="w-full text-sm">
+                    <Plus className="h-4 w-4 mr-1.5" />
+                    Get Listed
+                  </Button>
+                </Link>
               </div>
             )}
           </div>
-        ))}
-
-        <div className="border-t border-border pt-2">
-          {user ? (
-            <>
-              <button
-                onClick={() => {
-                  onSignOut()
-                  onClose()
-                }}
-                className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-destructive transition-colors hover:bg-destructive/5"
-              >
-                <LogOut className="h-5 w-5" />
-                Sign Out
-              </button>
-            </>
-          ) : (
-            <div className="grid grid-cols-2 gap-2 pt-1">
-              <Link href="/auth/signin" onClick={onClose}>
-                <Button variant="outline" className="w-full text-sm">
-                  <User className="h-4 w-4 mr-1.5" />
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/auth/signup" onClick={onClose}>
-                <Button className="w-full text-sm">
-                  <Plus className="h-4 w-4 mr-1.5" />
-                  Get Listed
-                </Button>
-              </Link>
-            </div>
-          )}
         </div>
-      </div>
+      </nav>
     </motion.div>
   )
 }

@@ -64,9 +64,10 @@ test('edit form radius control uses the same synchronized component', () => {
 // ---------------------------------------------------------------------------
 
 test('BROKER_LISTING_LOCAL supports SQUARE and BANNER only (no Rectangle)', () => {
-  assert.deepEqual(getPlacementFormats('BROKER_LISTING_LOCAL'), ['SQUARE', 'BANNER'])
+  assert.deepEqual(getPlacementFormats('BROKER_LISTING_LOCAL'), ['SQUARE', 'BANNER', 'WIDE_RECTANGLE'])
   assert.equal(isFormatCompatible('BROKER_LISTING_LOCAL', 'SQUARE'), true)
   assert.equal(isFormatCompatible('BROKER_LISTING_LOCAL', 'BANNER'), true)
+  assert.equal(isFormatCompatible('BROKER_LISTING_LOCAL', 'WIDE_RECTANGLE'), true)
   assert.equal(isFormatCompatible('BROKER_LISTING_LOCAL', 'RECTANGLE'), false)
 })
 
@@ -107,12 +108,12 @@ test('admin preview derives BROKER_LISTING_LOCAL card aspect from the format', (
 test('public renderer uses format-derived aspect and DisplayBannerCard for BANNER', () => {
   const renderer = read('components/advertisements/PublicAdvertisement.tsx')
   assert.match(renderer, /formatAspectClass\(ad\.creativeFormat\)/)
-  assert.match(renderer, /isBanner = ad\.creativeFormat === 'BANNER'/)
+  assert.match(renderer, /isDisplayBanner = ad\.creativeFormat === 'BANNER' \|\| ad\.creativeFormat === 'WIDE_RECTANGLE'/)
   assert.match(renderer, /DisplayBannerCard ad=\{ad\} \/>/)
   assert.doesNotMatch(renderer, /aspect-square min-w-0 overflow-hidden rounded-lg bg-card/)
 })
 
-function bannerAd(id: string, format: 'SQUARE' | 'BANNER' = 'SQUARE'): PublicAdResponse {
+function bannerAd(id: string, format: 'SQUARE' | 'BANNER' | 'WIDE_RECTANGLE' = 'SQUARE'): PublicAdResponse {
   return {
     id,
     title: `Ad ${id}`,
@@ -142,18 +143,24 @@ test('DisplayBannerCard renders a 2:1 aspect unit (BANNER format)', () => {
   assert.match(html, /object-cover/)
 })
 
+test('DisplayBannerCard renders an 8:5 aspect unit (WIDE_RECTANGLE format)', () => {
+  const html = renderToStaticMarkup(<DisplayBannerCard ad={bannerAd('w', 'WIDE_RECTANGLE')} />)
+  assert.match(html, /style="padding-top:62.5%"/, '8:5 via padding-top 62.5%')
+  assert.match(html, /object-cover/)
+})
+
 test('Square card and Banner card do not share a single forced aspect', () => {
   // SQUARE creative → aspect-square; BANNER creative → DisplayBannerCard (2:1).
   assert.equal(formatAspectClass('SQUARE'), 'aspect-square')
   assert.equal(formatAspectClass('BANNER'), 'aspect-[2/1]')
 })
 
-test('mixed formats are all resolvable (SQUARE + BANNER)', () => {
+test('mixed formats are all resolvable (SQUARE + BANNER + WIDE_RECTANGLE)', () => {
   // The renderer branches per-ad on creativeFormat; both formats coexist in the
   // grid and are never collapsed to a single format.
   const renderer = read('components/advertisements/PublicAdvertisement.tsx')
   assert.match(renderer, /validAds\.map\(\(ad\)/)
-  assert.match(renderer, /ad\.creativeFormat === 'BANNER'/)
+  assert.match(renderer, /ad\.creativeFormat === 'BANNER' \|\| ad\.creativeFormat === 'WIDE_RECTANGLE'/)
 })
 
 // ---------------------------------------------------------------------------

@@ -30,7 +30,7 @@ export default async function BlogPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+      <div className="mx-auto max-w-6xl px-4 py-4 md:py-12 sm:px-6">
         <h1 className="text-3xl font-bold tracking-tight">Articles</h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
           Practical guides and resources about mortgages, home buying, and refinancing.

@@ -68,8 +68,8 @@ export function PublicAdvertisement({ placement, className, location }: { placem
       <section className={cn('w-full py-2 sm:py-3', className)} aria-label="related local resources">
         <div className="grid grid-cols-2 gap-2 md:gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {validAds.map((ad) => {
-            const isBanner = ad.creativeFormat === 'BANNER'
-            return isBanner ? (
+            const isDisplayBanner = ad.creativeFormat === 'BANNER' || ad.creativeFormat === 'WIDE_RECTANGLE'
+            return isDisplayBanner ? (
               <div key={ad.id} className="min-w-0 overflow-hidden rounded-lg bg-card">
                 <DisplayBannerCard ad={ad} />
               </div>

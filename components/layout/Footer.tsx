@@ -27,7 +27,7 @@ const footerColumns = [
     links: [
       { name: 'Mortgage Originator Directory', href: '/brokers' },
       { name: 'Mortgage Guides', href: '/guides' },
-      { name: 'Articles', href: '/blog' },
+      { name: 'Blogs', href: '/blog' },
       { name: 'Mortgage Calculator', href: '/calculator' },
       { name: 'FAQ', href: '/faq' },
     ],

@@ -1,4 +1,4 @@
-export const ADVERTISEMENT_FORMATS = ['HORIZONTAL', 'VERTICAL', 'SQUARE', 'RECTANGLE', 'MOBILE', 'BANNER'] as const
+export const ADVERTISEMENT_FORMATS = ['HORIZONTAL', 'VERTICAL', 'SQUARE', 'RECTANGLE', 'MOBILE', 'BANNER', 'WIDE_RECTANGLE'] as const
 
 export type AdvertisementFormat = typeof ADVERTISEMENT_FORMATS[number]
 
@@ -12,6 +12,7 @@ export const ADVERTISEMENT_FORMAT_INFO: Record<AdvertisementFormat, {
   RECTANGLE: { label: 'Rectangle', description: 'Standard promotional creative for content and sidebar placements.' },
   MOBILE: { label: 'Mobile', description: 'Mobile-specific banner or portrait creative.' },
   BANNER: { label: 'Rectangle Display Banner', description: 'Wide 2:1 display banner for local broker-listing placements.' },
+  WIDE_RECTANGLE: { label: 'Wide Rectangle', description: 'Large 1600×1000 creative for popup overlays and local broker-listing placements.' },
 }
 
 export const PLACEMENT_FORMATS: Record<string, AdvertisementFormat[]> = {
@@ -22,7 +23,7 @@ export const PLACEMENT_FORMATS: Record<string, AdvertisementFormat[]> = {
   HOMEPAGE_BANKS: ['SQUARE', 'HORIZONTAL', 'RECTANGLE'],
   HOMEPAGE_CTA: ['HORIZONTAL', 'RECTANGLE', 'MOBILE'],
   BROKER_LISTING: ['HORIZONTAL', 'RECTANGLE', 'MOBILE'],
-  BROKER_LISTING_LOCAL: ['SQUARE', 'BANNER'],
+  BROKER_LISTING_LOCAL: ['SQUARE', 'BANNER', 'WIDE_RECTANGLE'],
   BROKER_PROFILE_HEADER: ['HORIZONTAL', 'RECTANGLE', 'MOBILE'],
   BROKER_LISTING_SIDEBAR: ['VERTICAL', 'RECTANGLE', 'SQUARE', 'MOBILE'],
   LOAN_CALCULATOR: ['RECTANGLE', 'HORIZONTAL', 'SQUARE', 'MOBILE'],
@@ -30,7 +31,7 @@ export const PLACEMENT_FORMATS: Record<string, AdvertisementFormat[]> = {
   FOOTER: ['HORIZONTAL', 'RECTANGLE', 'MOBILE'],
   ANNOUNCEMENT_TOP: ['HORIZONTAL', 'MOBILE'],
   ANNOUNCEMENT_BOTTOM: ['HORIZONTAL', 'MOBILE'],
-  POPUP_OVERLAY: ['RECTANGLE', 'SQUARE', 'HORIZONTAL', 'VERTICAL', 'MOBILE'],
+  POPUP_OVERLAY: ['RECTANGLE', 'SQUARE', 'HORIZONTAL', 'VERTICAL', 'MOBILE', 'WIDE_RECTANGLE'],
   MOBILE_HEADER_BANNER: ['MOBILE', 'HORIZONTAL', 'RECTANGLE'],
 }
 

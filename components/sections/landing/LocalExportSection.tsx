@@ -413,12 +413,12 @@ export default function LocalExpertSection() {
                   {option.description}
                 </p>
                 {/* action indicator */}
-                <span
+                {/* <span
                   aria-hidden="true"
                   className="mt-auto inline-flex justify-end pt-6 text-primary/60 transition-colors duration-300 group-hover:text-primary"
                 >
                   <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
-                </span>
+                </span> */}
               </div>
             ))}
           </div>
@@ -479,7 +479,7 @@ export default function LocalExpertSection() {
           <div className="relative overflow-hidden">
             <div className="grid gap-10  lg:grid-cols-5 lg:items-center lg:gap-12">
               <div className="lg:col-span-3">
-                <h3 className="text-xl font-medium sm:text-3xl text-foreground">
+                <h3 className="text-xl font-medium sm:text-4xl text-foreground">
                   Your Home. Your Loan. Your Choice.
                 </h3>
                 <p className="mt-2 sm:mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">

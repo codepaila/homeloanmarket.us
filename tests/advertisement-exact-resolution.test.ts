@@ -51,10 +51,11 @@ test('failure result reports the exact required and uploaded resolution', () => 
   }
 })
 
-test('BROKER_LISTING_LOCAL allows SQUARE and BANNER creative', () => {
-  assert.deepEqual(getPlacementFormats('BROKER_LISTING_LOCAL'), ['SQUARE', 'BANNER'])
+test('BROKER_LISTING_LOCAL allows SQUARE, BANNER, and WIDE_RECTANGLE creative', () => {
+  assert.deepEqual(getPlacementFormats('BROKER_LISTING_LOCAL'), ['SQUARE', 'BANNER', 'WIDE_RECTANGLE'])
   assert.equal(isFormatCompatible('BROKER_LISTING_LOCAL', 'SQUARE'), true)
   assert.equal(isFormatCompatible('BROKER_LISTING_LOCAL', 'BANNER'), true)
+  assert.equal(isFormatCompatible('BROKER_LISTING_LOCAL', 'WIDE_RECTANGLE'), true)
   assert.equal(isFormatCompatible('BROKER_LISTING_LOCAL', 'RECTANGLE'), false)
   assert.equal(isFormatCompatible('BROKER_LISTING_LOCAL', 'HORIZONTAL'), false)
 })

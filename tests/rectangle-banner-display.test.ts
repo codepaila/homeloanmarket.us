@@ -98,7 +98,7 @@ test('public renderer renders broker-listing local ads as a responsive grid resp
   assert.match(renderer, /grid-cols-1.*sm:grid-cols-2.*lg:grid-cols-3/)
   assert.match(renderer, /formatAspectClass\(ad\.creativeFormat\)/)
   assert.match(renderer, /DisplayBannerCard/)
-  assert.match(renderer, /isBanner = ad\.creativeFormat === 'BANNER'/)
+  assert.match(renderer, /isDisplayBanner = ad\.creativeFormat === 'BANNER' \|\| ad\.creativeFormat === 'WIDE_RECTANGLE'/)
   // The aspect helper maps SQUARE → 1:1 (aspect-square) and BANNER → 2:1.
   assert.match(aspect, /case '1:1':/)
   assert.match(aspect, /case '2:1':/)

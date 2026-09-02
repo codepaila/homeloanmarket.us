@@ -28,6 +28,8 @@ export function aspectRatioClass(ratio: string): string {
       return 'aspect-[16/3]'
     case '75:32':
       return 'aspect-[75/32]'
+    case '8:5':
+      return 'aspect-[8/5]'
     default:
       return 'aspect-square'
   }

@@ -25,7 +25,7 @@ test('BROKER_LISTING_LOCAL supports mobile rendering (device visibility is not t
 })
 
 test('SQUARE is the primary broker-listing local format and no MOBILE format is required', () => {
-  assert.deepEqual(getPlacementFormats('BROKER_LISTING_LOCAL'), ['SQUARE', 'BANNER'])
+  assert.deepEqual(getPlacementFormats('BROKER_LISTING_LOCAL'), ['SQUARE', 'BANNER', 'WIDE_RECTANGLE'])
 })
 
 test('wizard defaults mobile visibility from the placement requirement (never silently disables mobile)', () => {
