@@ -875,7 +875,7 @@ export default function BrokersPage() {
       {selectedLocation && (
         <section className="border-t border-border bg-muted/40 py-8 md:py-10" aria-label="Related Local Resources">
           <div className="container-custom">
-            <h2 className="text-xl font-bold text-foreground">Related Local Resources</h2>
+            <h2 className="text-xl font-bold text-foreground">Related Local Services</h2>
             <p className="mt-1 text-sm text-muted-foreground">Resources serving {selectedLocation.city || selectedLocation.normalizedAddress}</p>
             <AdvertisementRenderer
               placement="BROKER_LISTING_LOCAL"
