@@ -5,16 +5,21 @@ import { signIn } from 'next-auth/react'
 import { toast } from 'react-hot-toast'
 import { cn } from '@/lib/utils'
 
-export function GoogleContinueButton({ callbackUrl, className, brokerIntent = false, companyIntent = false }: { callbackUrl: string; className?: string; brokerIntent?: boolean; companyIntent?: boolean }) {
+export function GoogleContinueButton({ callbackUrl, className, brokerIntent = false, companyIntent = false, plan }: { callbackUrl: string; className?: string; brokerIntent?: boolean; companyIntent?: boolean; plan?: string | null }) {
   const [loading, setLoading] = useState(false)
 
   const handleGoogle = async () => {
     setLoading(true)
     try {
       if (brokerIntent) {
+        const body: Record<string, string> = {}
+        if (plan === 'FREE' || plan === 'FEATURED') {
+          body.plan = plan
+        }
         const intentResponse = await fetch('/api/auth/broker-intent', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
         })
         if (!intentResponse.ok) throw new Error('Unable to start mortgage originator registration')
       }
@@ -25,7 +30,10 @@ export function GoogleContinueButton({ callbackUrl, className, brokerIntent = fa
         })
         if (!intentResponse.ok) throw new Error('Unable to start company registration')
       }
-      await signIn('google', { callbackUrl })
+      const oauthCallback = plan === 'FREE' || plan === 'FEATURED'
+        ? `${callbackUrl}?plan=${plan}`
+        : callbackUrl
+      await signIn('google', { callbackUrl: oauthCallback })
     } catch {
       toast.error('Something went wrong. Please try again.')
       setLoading(false)
@@ -38,7 +46,7 @@ export function GoogleContinueButton({ callbackUrl, className, brokerIntent = fa
       onClick={handleGoogle}
       disabled={loading}
       className={cn(
-        'inline-flex w-full items-center justify-center gap-2.5 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground shadow-soft transition-all duration-200',
+        'inline-flex w-full items-center justify-center gap-2.5 rounded border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground  transition-all duration-200',
         'hover:bg-muted hover:border-border/80',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30',
         'disabled:pointer-events-none disabled:opacity-60',

@@ -67,11 +67,11 @@ export default function SubscriptionPage() {
   }
 
   useEffect(() => {
-    if (sessionStatus === 'unauthenticated') {
-      router.push('/auth/signin')
-    } else if (sessionStatus === 'authenticated') {
+    // Allow guests to view subscription plans, but only load user data for authenticated users.
+    if (sessionStatus === 'authenticated') {
       fetchSubscriptionData()
     }
+    // Guests stay on the page and see public subscription plans.
   }, [sessionStatus, router])
 
   const handlePortal = async () => {
@@ -93,6 +93,14 @@ export default function SubscriptionPage() {
   }
 
   const handleCheckout = async (priceId: string, planName: string) => {
+    // If user is not authenticated, redirect to signup with the selected plan
+    if (sessionStatus === 'unauthenticated') {
+      const params = new URLSearchParams()
+      if (planName) params.set('plan', planName)
+      window.location.href = `/auth/signup?${params.toString()}`
+      return
+    }
+
     try {
       const response = await fetch('/api/subscription/checkout', {
         method: 'POST',

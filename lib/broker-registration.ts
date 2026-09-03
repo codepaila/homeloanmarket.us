@@ -121,6 +121,8 @@ export async function createBrokerRegistration(input: BrokerAccountRegistrationI
         role: 'BROKER',
         isActive: true,
         emailVerified: false,
+        agreeToTerms: true,
+        agreeToPrivacy: true,
       },
     })
 
@@ -175,6 +177,8 @@ export async function createBrokerAccount(input: BrokerRegistrationInput) {
         role: selfRegisteredBrokerDefaults.role,
         isActive: true,
         emailVerified: false,
+        agreeToTerms: true,
+        agreeToPrivacy: true,
       },
     })
 

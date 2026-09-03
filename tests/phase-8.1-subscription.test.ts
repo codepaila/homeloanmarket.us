@@ -35,10 +35,20 @@ test('initial dynamic plans are FREE, FEATURED, PREMIUM with no PRO', () => {
   assert.doesNotMatch(DEFAULT_BROKER_PLANS.map((plan) => plan.code).join(' '), /PRO/)
 })
 
-test('initial dynamic feature configuration matches the product', () => {
-  assert.deepEqual(DEFAULT_BROKER_PLAN_FEATURES.FREE, { PROFILE_BADGE: false, SUPPORT_TICKETS: false })
-  assert.deepEqual(DEFAULT_BROKER_PLAN_FEATURES.FEATURED, { PROFILE_BADGE: true, SUPPORT_TICKETS: true })
-  assert.deepEqual(DEFAULT_BROKER_PLAN_FEATURES.PREMIUM, { PROFILE_BADGE: true, SUPPORT_TICKETS: true })
+test('initial dynamic feature configuration matches the product (display-only)', () => {
+  const freeLabels = DEFAULT_BROKER_PLAN_FEATURES.FREE.map((f) => f.label)
+  const featuredLabels = DEFAULT_BROKER_PLAN_FEATURES.FEATURED.map((f) => f.label)
+  // FREE never lists the Mortgage Expert badge; FEATURED does.
+  assert.equal(freeLabels.includes('Mortgage Expert Badge + 5 Green Stars'), false)
+  assert.equal(featuredLabels.includes('Mortgage Expert Badge + 5 Green Stars'), true)
+  // Feature rows are display-only (label/enabled/sortOrder).
+  for (const plan of ['FREE', 'FEATURED', 'PREMIUM']) {
+    for (const f of DEFAULT_BROKER_PLAN_FEATURES[plan]) {
+      assert.ok(typeof f.enabled === 'boolean')
+      assert.ok(typeof f.label === 'string' && f.label.length > 0)
+      assert.ok(typeof f.sortOrder === 'number')
+    }
+  }
 })
 
 test('subscription service no longer imports the static subscriptionPlans catalog', () => {

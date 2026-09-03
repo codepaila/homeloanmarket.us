@@ -161,7 +161,7 @@ export default async function AdminBrokersPage({ searchParams }: { searchParams:
         <select name="status" defaultValue={filters.status || ''} className="rounded-lg border bg-background px-3 py-2 text-sm">
           <option value="">All broker status</option>
           <option value="FREE">Active</option>
-          <option value="FEATURED">Featured</option>
+          <option value="FEATURED">Mortgage Expert</option>
           <option value="SUSPENDED">Suspended</option>
         </select>
         <select name="source" defaultValue={filters.source || ''} className="rounded-lg border bg-background px-3 py-2 text-sm">

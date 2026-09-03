@@ -11,7 +11,7 @@ import {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, email, password, agreeTerms, captchaAnswer, expectedCaptcha } = body
+    const { name, email, password, agreeToTerms, agreeToPrivacy, captchaAnswer, expectedCaptcha } = body
 
     const normalized = normalizeBrokerAccountRegistrationInput({
       name: typeof name === 'string' ? name : '',
@@ -29,6 +29,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Legal consent verification (server-authoritative — must not be bypassed)
+    if (agreeToTerms !== true || agreeToPrivacy !== true) {
+      return NextResponse.json(
+        { error: 'You must agree to both the Terms & Conditions and Privacy Policy.', status: 400 }
+      )
+    }
+
     // CAPTCHA verification
     if (typeof captchaAnswer !== 'number' || captchaAnswer !== expectedCaptcha) {
       return NextResponse.json(
@@ -38,7 +45,6 @@ export async function POST(request: NextRequest) {
     }
 
     const validationErrors = validateBrokerAccountRegistrationInput(normalized)
-    if (agreeTerms !== true) validationErrors.push('Terms agreement is required')
     if (validationErrors.length > 0) {
       return NextResponse.json(
         { error: validationErrors[0] },

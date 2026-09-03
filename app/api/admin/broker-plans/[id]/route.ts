@@ -4,13 +4,14 @@ import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/currentUser'
 import prisma from '@/lib/prisma'
 import {
-  ALL_BROKER_PLAN_FEATURES,
+  getBrokerPlanDisplayName,
   normalizePlanCode,
-  upsertPlanFeatures,
+  sanitizeFeatureDrafts,
+  syncPlanFeatures,
   validateStripePriceId,
   validateStripeProductId,
-  type BrokerPlanFeatureInput,
 } from '@/lib/broker-plans'
+import { assertStripePriceIsolation } from '@/lib/plan-price-isolation'
 
 async function getAdminUser() {
   const user = await getCurrentUser()
@@ -28,7 +29,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     },
   })
   if (!plan) return NextResponse.json({ message: 'Plan not found' }, { status: 404 })
-  return NextResponse.json({ plan })
+  return NextResponse.json({ plan: { ...plan, displayName: getBrokerPlanDisplayName(plan.code) || plan.name } })
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -48,20 +49,23 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const data: Record<string, unknown> = {}
 
-  if (body.name !== undefined) {
-    const name = typeof body.name === 'string' ? body.name.trim() : ''
-    if (!name) return NextResponse.json({ message: 'Name is required' }, { status: 422 })
-    if (name.length > 100) return NextResponse.json({ message: 'Plan name must be 100 characters or fewer' }, { status: 422 })
-    data.name = name
-  }
+  // Plan identity (code) is immutable. Any attempt to change it into another
+  // fixed plan (FREE->FEATURED, FEATURED->FREE) is rejected.
   if (body.code !== undefined) {
     const code = normalizePlanCode(body.code)
-    if (!code) return NextResponse.json({ message: 'A stable plan code is required' }, { status: 422 })
-    if (code.length > 50) return NextResponse.json({ message: 'Plan code must be 50 characters or fewer' }, { status: 422 })
-    const conflict = await prisma.brokerSubscriptionPlan.findFirst({ where: { code, id: { not: id } } })
-    if (conflict) return NextResponse.json({ message: 'A plan with this code already exists' }, { status: 409 })
-    data.code = code
+    if (code && code !== plan.code) {
+      return NextResponse.json({ message: 'Plan identity cannot be changed.' }, { status: 400 })
+    }
   }
+  // The customer-facing name is derived from the fixed plan identity and may
+  // not be overridden with arbitrary input. Supported fixed plans always store
+  // their canonical name. Legacy/unsupported plans keep their stored name.
+  const canonicalName = getBrokerPlanDisplayName(plan.code)
+  if (canonicalName && typeof body.name === 'string' && body.name.trim() && body.name.trim() !== canonicalName) {
+    return NextResponse.json({ message: 'Plan name is derived from the fixed plan identity and cannot be changed.' }, { status: 400 })
+  }
+  if (canonicalName) data.name = canonicalName
+
   if (body.description !== undefined) data.description = typeof body.description === 'string' ? body.description : null
   if (body.price !== undefined) data.price = Number.isFinite(Number(body.price)) ? Math.max(0, Math.round(Number(body.price))) : 0
   if (body.billingInterval !== undefined) {
@@ -107,6 +111,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     )
   }
 
+  // Product isolation: the resulting Broker Price must not already be assigned
+  // to a Company advertising plan (excluding this very plan).
+  const isolation = await assertStripePriceIsolation(resultingPriceId, 'BROKER', id)
+  if (!isolation.ok) return NextResponse.json({ message: isolation.message }, { status: 422 })
+
   // Detect a destructive Stripe mapping change on a plan that is actively used.
   // Mirrors the CompanyAdvertisingPlan guard: changing the Stripe Product/Price
   // (or the DB price that drives checkout amount) under active subscribers would
@@ -134,18 +143,36 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     )
   }
 
-  const features: BrokerPlanFeatureInput = {}
-  for (const featureCode of ALL_BROKER_PLAN_FEATURES) {
-    if (typeof body[`feature_${featureCode}`] === 'boolean') {
-      features[featureCode] = body[`feature_${featureCode}`] as boolean
+  // Features are submitted as a full list of display rows. A request that
+  // includes `features` performs a full sync (create/update/delete); a request
+  // without it (e.g. a deactivate toggle) leaves features untouched.
+  let features: ReturnType<typeof sanitizeFeatureDrafts> = null
+  let hasFeatures = false
+  if (body.features !== undefined) {
+    hasFeatures = true
+    features = sanitizeFeatureDrafts(body.features)
+    if (features === null) {
+      return NextResponse.json(
+        { message: 'Features must be an array of { id?, label, enabled, sortOrder } with a non-empty label.' },
+        { status: 422 },
+      )
+    }
+    // Every submitted feature ID must belong to this plan.
+    const owned = new Set((await prisma.brokerSubscriptionPlanFeature.findMany({ where: { planId: id }, select: { id: true } })).map((f) => f.id))
+    const foreign = features.filter((f) => f.id && !owned.has(f.id))
+    if (foreign.length > 0) {
+      return NextResponse.json(
+        { message: 'One or more features do not belong to this plan.' },
+        { status: 422 },
+      )
     }
   }
 
   try {
     const updated = await prisma.$transaction(async (tx) => {
       const result = await tx.brokerSubscriptionPlan.update({ where: { id }, data })
-      if (Object.keys(features).length > 0) {
-        await upsertPlanFeatures(tx as never, id, features)
+      if (hasFeatures) {
+        await syncPlanFeatures(tx as never, id, features!)
       }
       return result
     })

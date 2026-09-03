@@ -108,13 +108,14 @@ test('company dashboard redirects to onboarding until the company is onboarded',
   assert.match(dashboardPage, /redirect\('\/company\/onboarding'\)/)
 })
 
-test('company coupon validation is server-side via Stripe and fails closed', () => {
-  assert.match(couponLib, /stripe\.coupons\.retrieve/)
-  assert.match(couponLib, /Coupon validation is unavailable/)
+test('company coupon validation is server-side via Stripe promotion codes and fails closed', () => {
+  assert.match(couponLib, /promotionCodes\.list\(\{ code/)
+  assert.match(couponLib, /Coupon validation is unavailable|This promotion code is not valid/)
   assert.doesNotMatch(couponLib, /process\.env\.STRIPE_SECRET_KEY\s*=\s*/)
+  assert.doesNotMatch(couponLib, /stripe\.coupons\.retrieve\(normalized\)/)
 })
 
-test('checkout applies a server-validated coupon and never trusts client discounts', () => {
+test('checkout applies a server-validated promotion code and never trusts client discounts', () => {
   assert.match(checkout, /validateCompanyCoupon/)
-  assert.match(checkout, /discounts: \[\{ coupon: coupon\.id \}\]/)
+  assert.match(checkout, /discounts: \[\{ promotion_code: coupon\.promotionCodeId \}\]/)
 })

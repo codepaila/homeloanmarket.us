@@ -49,18 +49,21 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     }
   }
 
-  // Effective entitlements come from the linked dynamic plan only.
+  // Planned features come from the linked dynamic plan (display-only).
   const planRef = subscription.planRef
-  const entitlements = planRef
-    ? Object.fromEntries(planRef.features.map((feature) => [feature.code, feature.enabled]))
-    : {}
+  const features = planRef
+    ? planRef.features
+        .filter((feature) => feature.enabled)
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((feature) => feature.label)
+    : []
 
   return NextResponse.json({
     subscription: {
       ...subscription,
       migrationStatus,
       matchingPlan,
-      entitlements,
+      features,
     },
   })
 }

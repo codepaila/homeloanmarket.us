@@ -141,7 +141,7 @@ export default function BrokerListCard({
               {isFeatured && !isPremium && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-700 ring-1 ring-amber-600/20 dark:text-amber-300 dark:ring-amber-400/30">
                   <Star className="h-3 w-3 fill-current" />
-                  Featured
+                  Mortgage Expert
                 </span>
               )}
               {isVerified && (

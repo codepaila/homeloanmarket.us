@@ -26,6 +26,8 @@ export async function getCurrentUser() {
       role: true,
       isActive: true,
       emailVerified: true,
+      agreeToTerms: true,
+      agreeToPrivacy: true,
       createdAt: true,
       brokerProfile: {
         take: 1,

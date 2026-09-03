@@ -4,11 +4,7 @@ import test from 'node:test'
 import {
   isMortgageExpertBroker,
 } from '../lib/broker-policy'
-import {
-  BROKER_PLAN_FEATURES,
-  brokerSubscriptionHasFeature,
-  planHasFeature,
-} from '../lib/broker-plans'
+import { brokerSubscriptionHasProfileBadge } from '../lib/broker-plans'
 
 const read = (path: string) => fs.readFileSync(path, 'utf8')
 
@@ -33,16 +29,21 @@ const brokerData = read('lib/admin/broker-data.ts')
 const adminCreateRoute = read('app/api/admin/brokers/route.ts')
 const publicDto = read('lib/public-broker.ts')
 
-const sub = (features: { code: string; enabled: boolean }[], isActive = true, endDate: Date | null = null) =>
-  ({ plan: 'FEATURED', isActive, endDate, planRef: { features } })
+const sub = (plan: string = 'FEATURED', isActive = true, endDate: Date | null = null) =>
+  ({ plan, isActive, endDate })
 
 // ---------------------------------------------------------------------------
 // Effective badge rules
 // ---------------------------------------------------------------------------
 
-test('plan PROFILE_BADGE entitlement alone grants the badge', () => {
-  assert.equal(brokerSubscriptionHasFeature(sub([{ code: 'PROFILE_BADGE', enabled: true }]), BROKER_PLAN_FEATURES.PROFILE_BADGE), true)
+test('paid plan subscription alone grants the badge', () => {
+  assert.equal(brokerSubscriptionHasProfileBadge(sub('FEATURED')), true)
+  assert.equal(brokerSubscriptionHasProfileBadge(sub('PREMIUM')), true)
   assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, profileBadge: true }), true)
+})
+
+test('FREE plan subscription alone grants no badge', () => {
+  assert.equal(brokerSubscriptionHasProfileBadge(sub('FREE')), false)
 })
 
 test('admin override alone grants the badge without any paid subscription', () => {
@@ -58,12 +59,13 @@ test('admin override works when subscription is FREE (profileBadge false)', () =
 })
 
 test('admin override works when subscription is inactive', () => {
-  assert.equal(brokerSubscriptionHasFeature(sub([{ code: 'PROFILE_BADGE', enabled: true }], false), BROKER_PLAN_FEATURES.PROFILE_BADGE), false)
+  assert.equal(brokerSubscriptionHasProfileBadge(sub('FEATURED', false)), false)
   assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: true, profileBadge: false }), true)
 })
 
-test('disabled plan feature removes plan-based entitlement but not the admin override', () => {
-  assert.equal(planHasFeature({ features: [{ code: 'PROFILE_BADGE', enabled: false }] }, 'PROFILE_BADGE'), false)
+test('display feature rows never gate the badge; only plan tier does', () => {
+  // Badge entitlement is derived from the plan tier, not display feature rows.
+  assert.equal(brokerSubscriptionHasProfileBadge(sub('FEATURED')), true)
   assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: true, profileBadge: false }), true)
   assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, profileBadge: false }), false)
 })
@@ -73,8 +75,8 @@ test('disabled individual override removes only the override, not plan entitleme
 })
 
 test('inactive/expired subscription grants no plan entitlement', () => {
-  assert.equal(brokerSubscriptionHasFeature(sub([{ code: 'PROFILE_BADGE', enabled: true }], false), BROKER_PLAN_FEATURES.PROFILE_BADGE), false)
-  assert.equal(brokerSubscriptionHasFeature(sub([{ code: 'PROFILE_BADGE', enabled: true }], true, new Date(Date.now() - 1000)), BROKER_PLAN_FEATURES.PROFILE_BADGE), false)
+  assert.equal(brokerSubscriptionHasProfileBadge(sub('FEATURED', false)), false)
+  assert.equal(brokerSubscriptionHasProfileBadge(sub('FEATURED', true, new Date(Date.now() - 1000))), false)
 })
 
 // ---------------------------------------------------------------------------
@@ -88,12 +90,12 @@ test('no static subscription catalog is used for listing entitlement', () => {
   assert.doesNotMatch(companyDetailApi, /from '@\/lib\/stripe'|subscriptionPlans/)
 })
 
-test('badge entitlement is derived from plan features, never hard-coded FREE/FEATURED/PREMIUM', () => {
-  // The listing/detail surfaces resolve the badge via brokerSubscriptionHasFeature + isMortgageExpertBroker.
-  assert.match(listingApi, /brokerSubscriptionHasFeature/)
+test('badge entitlement is derived from the paid plan tier, never hard-coded FREE/FEATURED/PREMIUM', () => {
+  // The listing/detail surfaces resolve the badge via brokerSubscriptionHasProfileBadge + isMortgageExpertBroker.
+  assert.match(listingApi, /brokerSubscriptionHasProfileBadge/)
   assert.match(listingApi, /isMortgageExpertBroker/)
-  assert.match(featuredApi, /brokerSubscriptionHasFeature/)
-  assert.match(companyDetailApi, /brokerSubscriptionHasFeature/)
+  assert.match(featuredApi, /brokerSubscriptionHasProfileBadge/)
+  assert.match(companyDetailApi, /brokerSubscriptionHasProfileBadge/)
 })
 
 test('the effective badge rule is the single OR of plan feature and admin override', () => {
@@ -130,7 +132,7 @@ test('public listing passes the server-derived isMortgageExpert to cards', () =>
 
 test('broker profile detail page computes and renders the same effective badge', () => {
   assert.match(publicDetailPage, /isMortgageExpertBroker\(/)
-  assert.match(publicDetailPage, /brokerSubscriptionHasFeature/)
+  assert.match(publicDetailPage, /brokerSubscriptionHasProfileBadge/)
   assert.match(detailClient, /isMortgageExpert && <MortgageExpertBadge/)
 })
 
@@ -196,16 +198,18 @@ test('listing and detail queries include planRef.features to avoid N+1', () => {
 // No PRO / only existing features
 // ---------------------------------------------------------------------------
 
-test('only PROFILE_BADGE and SUPPORT_TICKETS exist; no PRO plan code', () => {
-  const enumFeature = plansLib.match(/BROKER_PLAN_FEATURES = \{[\s\S]*?\}/)?.[0] || ''
-  assert.match(enumFeature, /PROFILE_BADGE: 'PROFILE_BADGE'/)
-  assert.match(enumFeature, /SUPPORT_TICKETS: 'SUPPORT_TICKETS'/)
-  // The only feature codes are PROFILE_BADGE and SUPPORT_TICKETS — no PRO plan.
-  const codes = (enumFeature.match(/'([A-Z_]+)'/g) || []).map((m) => m.replace(/'/g, ''))
-  assert.deepEqual(codes.sort(), ['PROFILE_BADGE', 'SUPPORT_TICKETS'])
+test('no entitlement feature codes exist; the badge derives from plan tier; no PRO plan', () => {
+  // Code-based feature/BROKER_PLAN_FEATURES entitlement is gone.
+  assert.doesNotMatch(plansLib, /SUPPORT_TICKETS/)
+  assert.doesNotMatch(plansLib, /PROFILE_BADGE: 'PROFILE_BADGE'/)
+  // No PRO entitlement / plan code exists.
+  assert.doesNotMatch(plansLib, /'PRO'/g)
 })
 
-test('schema keeps exactly the two known features and no PRO plan code', () => {
+test('schema BrokerSubscriptionPlanFeature is display-only (label/enabled/sortOrder, no code, no PRO)', () => {
   const featureModel = schema.match(/model BrokerSubscriptionPlanFeature \{[\s\S]*?\}/)?.[0] || ''
+  assert.match(featureModel, /label\s+String/)
+  assert.match(featureModel, /enabled\s+Boolean/)
+  assert.match(featureModel, /sortOrder\s+Int/)
   assert.doesNotMatch(featureModel, /PRO/)
 })

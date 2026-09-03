@@ -142,6 +142,24 @@ async function handleStripeEvent(event: Stripe.Event) {
       )
       return
     }
+    case 'checkout.session.expired': {
+      // An abandoned Company Checkout Session must not leave the local company
+      // subscription permanently in CHECKOUT_PENDING. Reconcile it to the
+      // neutral EXPIRED state only when no live subscription exists; a stale
+      // expiry never cancels an ACTIVE subscription and a late
+      // checkout.session.completed can still establish ACTIVE afterwards.
+      const session = event.data.object as Stripe.Checkout.Session
+      const ownerType = session.metadata?.ownerType || null
+      // Other products do not keep a persistent CHECKOUT_PENDING that this
+      // expiry needs to reconcile; COMPANY is the only product with this state.
+      if (ownerType !== 'COMPANY' || !session.customer) return
+      await SubscriptionService.reconcileCompanyCheckoutExpired(
+        session.customer as string,
+        ownerType,
+        { companyId: session.metadata?.companyId || null },
+      )
+      return
+    }
     case 'customer.subscription.updated': {
       const subscription = event.data.object as Stripe.Subscription
       await SubscriptionService.updateSubscriptionFromStripe(

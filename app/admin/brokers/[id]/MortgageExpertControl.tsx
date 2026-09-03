@@ -16,15 +16,15 @@ type SubscriptionState = {
 type MortgageExpertControlProps = {
   brokerId: string
   mortgageExpertEnabled: boolean
-  // PROFILE_BADGE entitlement resolved server-side from the broker's active
-  // plan feature configuration.
+  // Plan-derived badge entitlement resolved server-side from the broker's
+  // active paid (non-FREE) subscription plan.
   profileBadge: boolean
   subscription: SubscriptionState | null
 }
 
 function qualificationSource(profileBadge: boolean, adminEnabled: boolean) {
-  if (profileBadge && adminEnabled) return 'Plan feature + Admin enabled'
-  if (profileBadge) return 'Plan PROFILE_BADGE feature'
+  if (profileBadge && adminEnabled) return 'Paid plan + Admin enabled'
+  if (profileBadge) return 'Paid plan (Mortgage Expert)'
   if (adminEnabled) return 'Admin enabled'
   return 'Not qualified'
 }
@@ -94,7 +94,7 @@ export default function MortgageExpertControl({
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
         <div className="rounded-lg border p-4">
           <h3 className="text-sm font-semibold">Subscription qualification</h3>
-          <p className="mt-1 text-sm text-muted-foreground">PROFILE_BADGE plan feature</p>
+          <p className="mt-1 text-sm text-muted-foreground">Paid plan (Mortgage Expert)</p>
           {profileBadge ? (
             <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600">
               <ShieldCheck className="h-4 w-4" aria-hidden="true" />
@@ -104,7 +104,7 @@ export default function MortgageExpertControl({
             <p className="mt-2 text-sm text-muted-foreground">Not granted by current plan</p>
           )}
           <p className="mt-2 text-xs text-muted-foreground">
-            Plan feature grants are managed from the broker plan configuration. This cannot be changed from the badge controls.
+            The badge is granted by the broker&apos;s paid subscription plan. This cannot be changed from the badge controls.
           </p>
         </div>
 

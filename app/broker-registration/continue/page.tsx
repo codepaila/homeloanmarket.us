@@ -17,7 +17,13 @@ export default function BrokerRegistrationContinuePage() {
       try {
         const response = await fetch('/api/auth/broker-intent', { method: 'PUT' })
         const data = await response.json()
-        if (!response.ok) throw new Error(data.error || 'Unable to continue mortgage originator registration')
+        if (!response.ok) {
+          if (data?.consentRequired) {
+            router.replace('/broker-registration/consent')
+            return
+          }
+          throw new Error(data.error || 'Unable to continue mortgage originator registration')
+        }
 
         await refreshSession()
         router.replace(data.redirectTo || '/broker/subscription/select')

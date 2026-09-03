@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
+import { DEFAULT_BROKER_PLAN_FEATURES } from '../lib/broker-plans'
 
 const read = (path: string) => fs.readFileSync(path, 'utf8')
 const exists = (path: string) => fs.existsSync(path)
@@ -14,7 +15,7 @@ const companyCreateApi = read('app/api/admin/company-advertising-plans/route.ts'
 const companyDetailApi = read('app/api/admin/company-advertising-plans/[id]/route.ts')
 const companyNewPage = read('app/admin/billing/company-advertising-plans/new/page.tsx')
 const companyDetailPage = read('app/admin/billing/company-advertising-plans/[id]/page.tsx')
-const featureDefs = read('lib/broker-plan-features.ts')
+const featureDefs = DEFAULT_BROKER_PLAN_FEATURES
 const navigation = read('lib/admin/navigation.ts')
 const schema = read('prisma/schema.prisma')
 
@@ -22,34 +23,35 @@ const schema = read('prisma/schema.prisma')
 // Create: basic fields + feature flags (broker)
 // ---------------------------------------------------------------------------
 
-test('broker create form sends plan basics and converts USD to cents', () => {
+test('broker create form sends plan basics and feature array (label/enabled/sortOrder)', () => {
   assert.match(brokerNewPage, /\.\.\.form/)
   assert.match(brokerNewPage, /price: Math\.round\(Number\(form\.price\) \* 100\)/)
   assert.match(brokerNewPage, /displayOrder: Number\(form\.displayOrder\)/)
-  assert.match(brokerNewPage, /feature_PROFILE_BADGE/)
-  assert.match(brokerNewPage, /feature_SUPPORT_TICKETS/)
+  assert.match(brokerNewPage, /features\.map/)
 })
 
-test('broker create form exposes feature toggles with accessible Switch controls', () => {
-  assert.match(brokerNewPage, /feature_PROFILE_BADGE: features\.PROFILE_BADGE/)
-  assert.match(brokerNewPage, /feature_SUPPORT_TICKETS: features\.SUPPORT_TICKETS/)
-  assert.match(brokerNewPage, /BROKER_FEATURE_DEFS/)
+test('broker create form exposes feature toggles, editable labels, and sort orders', () => {
+  assert.match(brokerNewPage, /features\.map/)
   assert.match(brokerNewPage, /Switch/)
-  assert.match(brokerNewPage, /aria-label={\`\$\{feature\.label\}/)
+  assert.match(brokerNewPage, /updateFeature/)
+  assert.match(brokerNewPage, /label/)
 })
 
-test('broker feature metadata is client-safe and carries label + description', () => {
-  assert.doesNotMatch(featureDefs, /from '@\/lib\/prisma'|from 'stripe'|@prisma\/client/)
-  assert.match(featureDefs, /PROFILE_BADGE/)
-  assert.match(featureDefs, /SUPPORT_TICKETS/)
-  assert.match(featureDefs, /not a review or customer rating/)
-  assert.match(featureDefs, /label/)
-  assert.match(featureDefs, /description/)
+test('broker feature metadata is display-only (label/enabled/sortOrder, no entitlement codes)', () => {
+  // The feature catalog is now a simple array of display drafts with label/enabled/sortOrder.
+  assert.ok(DEFAULT_BROKER_PLAN_FEATURES.FREE.length > 0)
+  for (const feature of DEFAULT_BROKER_PLAN_FEATURES.FREE) {
+    assert.ok(typeof feature.label === 'string' && feature.label.length > 0)
+    assert.ok(typeof feature.enabled === 'boolean')
+    assert.ok(typeof feature.sortOrder === 'number')
+  }
 })
 
-test('broker features are boolean entitlements only (no numeric limits introduced)', () => {
+test('broker features carry enabled, display label, and sort order (no quota limits introduced)', () => {
   const brokerPlan = schema.slice(schema.indexOf('model BrokerSubscriptionPlanFeature'), schema.indexOf('model BrokerRegistration'))
   assert.match(brokerPlan, /enabled\s+Boolean/)
+  assert.match(brokerPlan, /label\s+String/)
+  assert.match(brokerPlan, /sortOrder\s+Int/)
   assert.doesNotMatch(brokerPlan, /limit|quota|max/)
 })
 
@@ -66,9 +68,9 @@ test('broker create API enforces paid plans must reference Stripe Product and Pr
   assert.match(brokerCreateApi, /Paid plans require a Stripe Product ID and a Stripe Price ID\./)
 })
 
-test('broker create API only accepts allowlisted feature keys with boolean values', () => {
-  assert.match(brokerCreateApi, /for \(const featureCode of ALL_BROKER_PLAN_FEATURES\)/)
-  assert.match(brokerCreateApi, /typeof body\[`feature_\$\{featureCode\}`\] === 'boolean'/)
+test('broker create API sends feature array with optional id, label, enabled, sortOrder', () => {
+  assert.match(brokerCreateApi, /sanitizeFeatureDrafts/)
+  assert.match(brokerCreateApi, /features: /)
 })
 
 test('broker create API allowlists billing interval and lowercases currency', () => {
@@ -77,9 +79,33 @@ test('broker create API allowlists billing interval and lowercases currency', ()
   assert.match(brokerCreateApi, /body\.isActive === true/)
 })
 
-test('broker create API enforces name and code length caps', () => {
-  assert.match(brokerCreateApi, /Plan name must be 100 characters or fewer/)
-  assert.match(brokerCreateApi, /Plan code must be 50 characters or fewer/)
+test('broker create API accepts only the fixed supported plans (FREE/FEATURED)', () => {
+  assert.match(brokerCreateApi, /isSupportedBrokerPlanCode/)
+  assert.match(brokerCreateApi, /Only FREE and FEATURED plans are supported/)
+  assert.match(brokerCreateApi, /Unsupported plan/)
+})
+
+test('broker create API derives the name from the fixed plan identity (no arbitrary name)', () => {
+  assert.match(brokerCreateApi, /getBrokerPlanDisplayName/)
+  assert.match(brokerCreateApi, /Plan name is derived from the fixed plan identity and cannot be changed/)
+  assert.doesNotMatch(brokerCreateApi, /Plan name must be 100 characters or fewer/)
+})
+
+test('broker update API rejects changing plan identity (FREE<->FEATURED)', () => {
+  assert.match(brokerDetailApi, /Plan identity cannot be changed/)
+  assert.doesNotMatch(brokerDetailApi, /data\.code = code/)
+})
+
+test('broker create form uses a fixed plan selector instead of free-text name/code fields', () => {
+  assert.doesNotMatch(brokerNewPage, /label="Name"/)
+  assert.doesNotMatch(brokerNewPage, /label="Code"/)
+  assert.match(brokerNewPage, /Select a fixed plan to create/)
+})
+
+test('broker edit form shows plan identity as read-only', () => {
+  assert.match(brokerDetailPage, /Plan identity and customer-facing name are fixed and cannot be changed/)
+  assert.doesNotMatch(brokerDetailPage, /onChange=\{\(e\) => setField\('name'/)
+  assert.doesNotMatch(brokerDetailPage, /onChange=\{\(e\) => setField\('code'/)
 })
 
 test('broker admin APIs reject non-admin callers', () => {
@@ -97,11 +123,9 @@ test('broker edit form loads price in USD and saves back in cents (create/edit p
   assert.match(brokerDetailPage, /Price \(USD\)/)
 })
 
-test('broker edit form toggles a feature ON/OFF and persists immediately', () => {
-  assert.match(brokerDetailPage, /async function toggleFeature\(code: string, enabled: boolean\)/)
-  assert.match(brokerDetailPage, /onCheckedChange=\{\(checked\) => void toggleFeature\(feature\.code, checked\)\}/)
-  assert.match(brokerDetailPage, /feature_PROFILE_BADGE: plan\.features\?\.some/)
-  assert.match(brokerDetailPage, /feature_SUPPORT_TICKETS: plan\.features\?\.some/)
+test('broker edit form toggles and updates feature array rows by index', () => {
+  assert.match(brokerDetailPage, /updateFeature/)
+  assert.match(brokerDetailPage, /const features = \[\.\.\.plan\.features\]/)
 })
 
 test('broker edit form surfaces a load-error state instead of hanging on loading', () => {
@@ -125,8 +149,9 @@ test('broker PATCH lowercases currency and allowlists billing interval', () => {
   assert.match(brokerDetailApi, /\['day', 'week', 'month', 'year'\]/)
 })
 
-test('broker list page renders human-readable feature labels', () => {
-  assert.match(brokerListPage, /brokerFeatureLabel\(code\)/)
+test('broker list page renders feature label array (no feature codes)', () => {
+  assert.match(brokerListPage, /features: /)
+  assert.doesNotMatch(brokerListPage, /brokerFeatureLabel/)
 })
 
 // ---------------------------------------------------------------------------

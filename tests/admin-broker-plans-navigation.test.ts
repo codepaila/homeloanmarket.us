@@ -95,11 +95,14 @@ test('lib/stripe.ts no longer defines a subscriptionPlans catalog', () => {
 // 6. Features come from BrokerSubscriptionPlanFeature
 // ---------------------------------------------------------------------------
 
-test('Broker Plans pages use dynamic PROFILE_BADGE / SUPPORT_TICKETS feature rows', () => {
-  assert.match(detailPage, /PROFILE_BADGE/)
-  assert.match(detailPage, /SUPPORT_TICKETS/)
-  assert.match(newPage, /PROFILE_BADGE/)
-  assert.match(newPage, /SUPPORT_TICKETS/)
+test('Broker Plans pages use dynamic feature rows (DRY, display-only)', () => {
+  // The detail page renders features dynamically from DB rows (label/enabled/sortOrder).
+  assert.match(detailPage, /feature\.label/)
+  assert.match(detailPage, /feature\.sortOrder/)
+  assert.match(detailPage, /feature\.enabled/)
+  // The new page exposes feature rows as label/enabled/sortOrder arrays.
+  assert.match(newPage, /label/)
+  assert.match(newPage, /sortOrder/)
 })
 
 test('no stale legacy limits exist in Broker Plans admin pages', () => {
@@ -116,9 +119,9 @@ test('no stale legacy limits exist in Broker Plans admin pages', () => {
 test('FREE/FEATURED/PREMIUM appear only as seed/codes, not as entitlement branching', () => {
   // The admin pages do not branch on plan codes for entitlement.
   assert.doesNotMatch(listPage + newPage + detailPage, /plan === 'FREE'|plan === 'FEATURED'|plan === 'PREMIUM'/)
-  // Entitlement flows through plan features, not plan-code checks.
-  assert.match(brokerPlansLib, /planHasFeature/)
-  assert.match(brokerPlansLib, /features\?\.some\(\(feature\) => feature\?\.code === featureCode/)
+  // Badge entitlement derives from plan tier (paid vs FREE), not from feature codes.
+  assert.match(brokerPlansLib, /brokerSubscriptionHasProfileBadge/)
+  assert.match(brokerPlansLib, /subscription\.plan !== 'FREE'/)
 })
 
 // ---------------------------------------------------------------------------

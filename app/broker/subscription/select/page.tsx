@@ -1,8 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Loader2 } from 'lucide-react'
 import { PricingCard } from '@/components/design/PricingCard'
+import { cn } from '@/lib/utils'
 
 type PublicPlan = {
   id: string
@@ -14,14 +16,19 @@ type PublicPlan = {
   billingInterval: string
   displayOrder: number
   stripePriceId: string | null
+  isActive: boolean
   features: string[]
 }
 
-export default function BrokerRegistrationSubscriptionPage() {
+const VALID_PLAN_CODES = ['FREE', 'FEATURED'] as const
+
+function SubscriptionSelectContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [loading, setLoading] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [plans, setPlans] = useState<PublicPlan[]>([])
+  const [selectedPlanCode, setSelectedPlanCode] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -30,14 +37,25 @@ export default function BrokerRegistrationSubscriptionPage() {
         const response = await fetch('/api/subscription/plans')
         const data = await response.json()
         if (!response.ok) throw new Error(data.error || 'Unable to load plans')
-        if (active) setPlans(Array.isArray(data.plans) ? data.plans : [])
+        if (!active) return
+        const loadedPlans = Array.isArray(data.plans) ? data.plans : []
+        setPlans(loadedPlans)
+
+        const planParam = searchParams.get('plan')
+        if (
+          planParam &&
+          (VALID_PLAN_CODES as readonly string[]).includes(planParam) &&
+          loadedPlans.some((p: PublicPlan) => p.code === planParam && p.isActive)
+        ) {
+          setSelectedPlanCode(planParam)
+        }
       } catch (cause) {
         if (active) setError(cause instanceof Error ? cause.message : 'Unable to load plans')
       }
     }
     void load()
     return () => { active = false }
-  }, [])
+  }, [searchParams])
 
   async function selectFree() {
     setLoading('FREE')
@@ -85,26 +103,50 @@ export default function BrokerRegistrationSubscriptionPage() {
         ) : (
         <div className="mt-10 grid gap-8 md:grid-cols-2">
           {plans.map((plan) => (
-            <PricingCard
+            <div
               key={plan.id}
-              name={plan.name}
-              description={plan.description || ''}
-              price={plan.price / 100}
-              priceSuffix={`/${plan.billingInterval}`}
-              features={plan.features}
-              stripePriceId={plan.stripePriceId || undefined}
-              isPopular={plan.code === 'FEATURED'}
-              isCurrent={false}
-              onSelect={(priceId, planName) => {
-                if (plan.code === 'FREE') void selectFree()
-                else void selectPaid(planName || plan.code, priceId)
-              }}
-              className={loading === plan.code ? 'pointer-events-none opacity-60' : undefined}
-            />
+              className={cn(
+                'rounded-2xl transition-all duration-200',
+                selectedPlanCode === plan.code && 'ring-2 ring-primary/40',
+              )}
+            >
+              <PricingCard
+                name={plan.name}
+                description={plan.description || ''}
+                price={plan.price / 100}
+                priceSuffix={`/${plan.billingInterval}`}
+                features={plan.features}
+                stripePriceId={plan.stripePriceId || undefined}
+                isPopular={plan.code === 'FEATURED'}
+                isCurrent={false}
+                onSelect={(priceId, planName) => {
+                  if (plan.code === 'FREE') void selectFree()
+                  else void selectPaid(planName || plan.code, priceId)
+                }}
+                className={loading === plan.code ? 'pointer-events-none opacity-60' : undefined}
+              />
+            </div>
           ))}
         </div>
         )}
       </div>
     </main>
+  )
+}
+
+export default function BrokerRegistrationSubscriptionPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+            <p className="mt-3 text-sm text-muted-foreground">Loading plans…</p>
+          </div>
+        </main>
+      }
+    >
+      <SubscriptionSelectContent />
+    </Suspense>
   )
 }

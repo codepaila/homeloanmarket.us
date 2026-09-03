@@ -1,14 +1,19 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { Suspense, useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowRight, Mail, Lock, User, ShieldCheck } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { Loader2 } from 'lucide-react'
 import { AuthFormWrapper } from '@/components/design/AuthFormWrapper'
 import { FormInput } from '@/components/design/FormInput'
 import { PremiumButton } from '@/components/design/PremiumButton'
 import { AuthSection } from '@/components/auth/AuthSection'
+import { GoogleContinueButton } from '@/components/auth/GoogleContinueButton'
+import { AuthDivider } from '@/components/auth/AuthDivider'
+
+const VALID_PLAN_CODES = ['FREE', 'FEATURED'] as const
 
 const validateEmail = (email: string) => {
   if (!email.trim()) return 'Email is required'
@@ -28,8 +33,20 @@ const validatePassword = (password: string) => {
   return ''
 }
 
-export default function BrokerSignupPage() {
+function generateCaptcha() {
+  const first = Math.floor(Math.random() * 10) + 1
+  const second = Math.floor(Math.random() * 10) + 1
+  return { question: `${first} + ${second}`, answer: first + second }
+}
+
+function BrokerSignupForm() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const selectedPlan = searchParams.get('plan')
+  const validPlan = selectedPlan && (VALID_PLAN_CODES as readonly string[]).includes(selectedPlan)
+    ? selectedPlan
+    : null
+
   const [loading, setLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [touched, setTouched] = useState<Record<string, boolean>>({})
@@ -38,14 +55,20 @@ export default function BrokerSignupPage() {
     email: '',
     password: '',
     confirmPassword: '',
-    agreeTerms: false,
+    agreeToTerms: false,
+    agreeToPrivacy: false,
   })
-  const [captcha] = useState(() => {
-    const first = Math.floor(Math.random() * 10) + 1
-    const second = Math.floor(Math.random() * 10) + 1
-    return { question: `${first} + ${second}`, answer: first + second }
-  })
+  // Hydration-safe CAPTCHA: start with a deterministic placeholder that matches
+  // between server and client, then generate the real CAPTCHA after hydration.
+  const [captcha, setCaptcha] = useState({ question: '7 + 6', answer: 13 })
   const [captchaAnswer, setCaptchaAnswer] = useState<number | ''>('')
+  const [hydrated, setHydrated] = useState(false)
+
+  // Generate a random CAPTCHA after hydration to avoid SSR/client mismatch.
+  useEffect(() => {
+    setCaptcha(generateCaptcha())
+    setHydrated(true)
+  }, [])
 
   const update = (field: string, value: string | boolean | number) => {
     setFormData((current) => ({ ...current, [field]: value }))
@@ -59,7 +82,8 @@ export default function BrokerSignupPage() {
       password: validatePassword(formData.password),
       confirmPassword: formData.password === formData.confirmPassword ? '' : 'Passwords do not match',
       captcha: Number(captchaAnswer) === captcha.answer ? '' : 'Incorrect CAPTCHA answer',
-      agreeTerms: formData.agreeTerms ? '' : 'You must agree to the terms and conditions',
+      agreeToTerms: formData.agreeToTerms ? '' : 'You must agree to the Terms & Conditions',
+      agreeToPrivacy: formData.agreeToPrivacy ? '' : 'You must agree to the Privacy Policy',
     }
     setErrors(next)
     setTouched(Object.fromEntries(Object.keys(next).map((key) => [key, true])))
@@ -82,7 +106,8 @@ export default function BrokerSignupPage() {
           name: formData.name.trim(),
           email: formData.email.trim().toLowerCase(),
           password: formData.password,
-          agreeTerms: formData.agreeTerms,
+          agreeToTerms: formData.agreeToTerms,
+          agreeToPrivacy: formData.agreeToPrivacy,
           captchaAnswer: Number(captchaAnswer),
           expectedCaptcha: captcha.answer,
         }),
@@ -90,7 +115,12 @@ export default function BrokerSignupPage() {
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Registration failed')
       toast.success('Account created. Please verify your email to continue.')
-      router.push(data.data?.redirectTo || '/auth/verify-email')
+      let redirectTo = data.data?.redirectTo || '/auth/verify-email'
+      if (validPlan) {
+        const separator = redirectTo.includes('?') ? '&' : '?'
+        redirectTo += `${separator}plan=${validPlan}`
+      }
+      router.push(redirectTo)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Registration failed')
     } finally {
@@ -115,6 +145,9 @@ export default function BrokerSignupPage() {
         </p>
       }
     >
+      {/* <GoogleContinueButton callbackUrl="/broker-registration/continue" brokerIntent plan={validPlan} />
+      <AuthDivider label="or" className='my-2 text-lg' /> */}
+  
       <form onSubmit={handleSubmit} className="space-y-6">
         <AuthSection title="Account details" description="These are the only profile details required to create your mortgage originator account.">
           <FormInput
@@ -187,21 +220,34 @@ export default function BrokerSignupPage() {
             onChange={(event) => setCaptchaAnswer(event.target.value ? Number(event.target.value) : '')}
             error={hasError('captcha') ? errors.captcha : undefined}
           />
-          <label htmlFor="agreeTerms" className="flex cursor-pointer items-start gap-3 text-sm text-muted-foreground">
+          <label htmlFor="agreeToTerms" className="flex cursor-pointer items-start gap-3 text-sm text-muted-foreground">
             <input
               type="checkbox"
-              id="agreeTerms"
-              checked={formData.agreeTerms}
-              onChange={(event) => update('agreeTerms', event.target.checked)}
+              id="agreeToTerms"
+              checked={formData.agreeToTerms}
+              onChange={(event) => update('agreeToTerms', event.target.checked)}
               className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-primary/40"
             />
             <span>
-              I agree to the <Link href="/terms" className="font-medium text-primary">Terms of Service</Link> and{' '}
-              <Link href="/privacy" className="font-medium text-primary">Privacy Policy</Link>.
+              I agree to the <Link href="/terms-of-service" className="font-medium text-primary">Terms &amp; Conditions</Link>
               <span className="text-destructive"> *</span>
             </span>
           </label>
-          {hasError('agreeTerms') && <p className="text-xs text-destructive" role="alert">{errors.agreeTerms}</p>}
+          <label htmlFor="agreeToPrivacy" className="flex cursor-pointer items-start gap-3 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              id="agreeToPrivacy"
+              checked={formData.agreeToPrivacy}
+              onChange={(event) => update('agreeToPrivacy', event.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-border text-primary focus:ring-primary/40"
+            />
+            <span>
+              I agree to the <Link href="/privacy-policy" className="font-medium text-primary">Privacy Policy</Link>
+              <span className="text-destructive"> *</span>
+            </span>
+          </label>
+          {hasError('agreeToTerms') && <p className="text-xs text-destructive" role="alert">{errors.agreeToTerms}</p>}
+          {hasError('agreeToPrivacy') && <p className="text-xs text-destructive" role="alert">{errors.agreeToPrivacy}</p>}
         </AuthSection>
 
         <div className="space-y-3">
@@ -212,5 +258,19 @@ export default function BrokerSignupPage() {
         </div>
       </form>
     </AuthFormWrapper>
+  )
+}
+
+export default function BrokerSignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[60vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      }
+    >
+      <BrokerSignupForm />
+    </Suspense>
   )
 }

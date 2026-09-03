@@ -228,7 +228,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
 
   const brokerStatus = {
     FREE: { label: "Free", color: "gray", icon: Building },
-    FEATURED: { label: "Featured", color: "premium", icon: Star },
+    FEATURED: { label: "Mortgage Expert", color: "premium", icon: Star },
     SUSPENDED: { label: "Suspended", color: "destructive", icon: AlertCircle }
   }
 

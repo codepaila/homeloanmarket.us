@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { isMortgageExpertBroker } from '@/lib/broker-policy'
-import { BROKER_PLAN_FEATURES, brokerSubscriptionHasFeature } from '@/lib/broker-plans'
+import { brokerSubscriptionHasProfileBadge } from '@/lib/broker-plans'
 
 // The featured row card renders identity, ratings, description, bank partner
 // names, and the two server-computed badges. Contact details, reviews, and the
@@ -87,7 +87,7 @@ export async function GET() {
         isFeatured: true,
         isMortgageExpert: isMortgageExpertBroker({
           mortgageExpertEnabled: broker.mortgageExpertEnabled,
-          profileBadge: brokerSubscriptionHasFeature(broker.subscription, BROKER_PLAN_FEATURES.PROFILE_BADGE),
+          profileBadge: brokerSubscriptionHasProfileBadge(broker.subscription),
         }),
       })),
     })

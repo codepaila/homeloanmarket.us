@@ -14,6 +14,12 @@ const SETTING_KEYS = [
   'contactEmail',
   'contactPhone',
   'contactAddress',
+  'contactStreet',
+  'contactCity',
+  'contactState',
+  'contactZip',
+  'contactCountry',
+  'contactBusinessHours',
   'defaultCurrency',
   'timezone',
   'seoTitle',
@@ -33,6 +39,7 @@ function categoryFor(key: string) {
   if (key.startsWith('seo')) return 'seo'
   if (key.startsWith('site.')) return 'branding'
   if (key.startsWith('social')) return 'social'
+  if (key.startsWith('contact')) return 'contact'
   return 'general'
 }
 

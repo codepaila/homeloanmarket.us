@@ -53,6 +53,7 @@ export type StripeEventMeta = {
 // Allowlist of Stripe events the application actually handles (the webhook's
 // `handleStripeEvent` switch). Unknown events are never accepted.
 export const SUPPORTED_STRIPE_EVENTS: StripeEventMeta[] = [
+  { type: 'checkout.session.expired', label: 'Checkout Expired', purpose: 'Reconciles an abandoned company checkout back to a neutral expired state.', critical: true },
   { type: 'checkout.session.completed', label: 'Checkout Completed', purpose: 'Activates a paid subscription after checkout.', critical: true },
   { type: 'customer.subscription.updated', label: 'Subscription Updated', purpose: 'Syncs plan/status/price changes to the local subscription.', critical: true },
   { type: 'customer.subscription.deleted', label: 'Subscription Deleted', purpose: 'Marks a subscription canceled/inactive.', critical: true },

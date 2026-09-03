@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any, react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/set-state-in-effect */
 'use client'
 
 import { useState, useEffect, Suspense, useCallback } from 'react'
@@ -11,6 +11,8 @@ import { AuthFormWrapper } from '@/components/design/AuthFormWrapper'
 import { FormInput } from '@/components/design/FormInput'
 import { PremiumButton } from '@/components/design/PremiumButton'
 
+const VALID_PLAN_CODES = ['FREE', 'FEATURED'] as const
+
 function VerifyEmailContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -20,13 +22,17 @@ function VerifyEmailContent() {
   const [verificationStatus, setVerificationStatus] = useState<'pending' | 'success' | 'error'>('pending')
   const [countdown, setCountdown] = useState(0)
 
-  const handleVerifyToken = useCallback(async (token: string, email?: string) => {
+  const handleVerifyToken = useCallback(async (token: string, email?: string, plan?: string | null) => {
     setLoading(true)
     try {
+      const body: Record<string, string> = { token }
+      if (email) body.email = email
+      if (plan && (VALID_PLAN_CODES as readonly string[]).includes(plan)) body.plan = plan
+
       const response = await fetch('/api/auth/verify-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, email }),
+        body: JSON.stringify(body),
       })
 
       const data = await response.json()
@@ -50,13 +56,14 @@ function VerifyEmailContent() {
   useEffect(() => {
     const emailParam = searchParams.get('email')
     const token = searchParams.get('token')
+    const planParam = searchParams.get('plan')
 
     if (emailParam) {
       setEmail(decodeURIComponent(emailParam))
     }
 
     if (token && emailParam) {
-      handleVerifyToken(token, decodeURIComponent(emailParam))
+      handleVerifyToken(token, decodeURIComponent(emailParam), planParam)
     }
   }, [searchParams, handleVerifyToken])
 

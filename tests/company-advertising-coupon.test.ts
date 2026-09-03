@@ -44,10 +44,11 @@ test('promotion codes at Stripe checkout are disabled so the server controls the
 // Coupon validation
 // ---------------------------------------------------------------------------
 
-test('coupon validation is server-side via Stripe and fails closed', () => {
-  assert.match(couponLib, /stripe\.coupons\.retrieve/)
-  assert.match(couponLib, /Coupon validation is unavailable/)
+test('coupon validation is server-side via Stripe promotion codes and fails closed', () => {
+  assert.match(couponLib, /promotionCodes\.list\(\{ code/)
+  assert.match(couponLib, /Coupon validation is unavailable|This promotion code is not valid/)
   assert.doesNotMatch(couponLib, /process\.env\.STRIPE_SECRET_KEY\s*=\s*/)
+  assert.doesNotMatch(couponLib, /stripe\.coupons\.retrieve\(normalized\)/)
 })
 
 test('coupon validate route is same-origin only', () => {
@@ -72,9 +73,9 @@ test('free plans activate without Stripe and without coupon', () => {
 // Paid plan checkout
 // ---------------------------------------------------------------------------
 
-test('paid plans use the DB plan Stripe price ID and a server-validated coupon', () => {
+test('paid plans use the DB plan Stripe price ID and a server-validated promotion code', () => {
   assert.match(checkout, /line_items: \[\{ price: priceId!, quantity: 1 \}\]/)
-  assert.match(checkout, /discounts: \[\{ coupon: coupon\.id \}\]/)
+  assert.match(checkout, /discounts: \[\{ promotion_code: coupon\.promotionCodeId \}\]/)
 })
 
 test('inactive plans are not offered for purchase', () => {

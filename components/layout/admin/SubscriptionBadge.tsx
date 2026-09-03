@@ -52,7 +52,7 @@ export function SubscriptionBadge({ user }: SubscriptionBadgeProps) {
 
         {user.brokerProfile?.featuredListing && (
           <Badge variant="secondary" className="bg-gradient-to-r from-purple-500 to-pink-500">
-            Featured
+            Mortgage Expert
           </Badge>
         )}
       </div>

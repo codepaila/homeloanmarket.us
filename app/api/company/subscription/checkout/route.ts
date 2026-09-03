@@ -47,12 +47,27 @@ export async function POST(request: NextRequest) {
       const existing = await prisma.companySubscription.findUnique({ where: { companyId: current.company.id } })
       if (existing?.isActive && existing.stripeSubId) return { url: null, free: false }
 
+      // Bounded stale-checkout reconciliation (this company only — no full-DB
+      // scan). If a prior checkout session was abandoned and left this row in
+      // CHECKOUT_PENDING with no live Stripe subscription, move it to EXPIRED
+      // so the fresh checkout below is not misrepresented. This is idempotent
+      // and never touches an ACTIVE subscription. The webhook's
+      // checkout.session.expired handler is the authoritative event-driven path;
+      // this is the belt-and-suspenders reconcile for pre-existing stale rows.
+      if (existing?.status === 'CHECKOUT_PENDING') {
+        await SubscriptionService.reconcileStaleCompanyCheckout(current.company.id, existing.stripeCustomerId)
+      }
+
       // Record the chosen plan before any Stripe interaction so a free plan can
-      // be activated without a Stripe customer.
+      // be activated without a Stripe customer. The promotion code is persisted
+      // here from authoritative server-validated data only (the resolved
+      // promotion_code ID); a client-supplied Stripe ID is never trusted, and
+      // promo storage never affects entitlement. FREE plans never store a code.
+      const promotionCodeId = coupon && coupon.valid ? coupon.promotionCodeId : null
       await prisma.companySubscription.upsert({
         where: { companyId: current.company.id },
-        update: { status: 'CHECKOUT_PENDING', plan: plan.name, planId: plan.id },
-        create: { companyId: current.company.id, status: 'CHECKOUT_PENDING', plan: plan.name, planId: plan.id },
+        update: { status: 'CHECKOUT_PENDING', plan: plan.name, planId: plan.id, stripePromotionCodeId: promotionCodeId },
+        create: { companyId: current.company.id, status: 'CHECKOUT_PENDING', plan: plan.name, planId: plan.id, stripePromotionCodeId: promotionCodeId },
       })
 
       // FREE plan: activate immediately with no Stripe dependency. Coupons do
@@ -82,12 +97,17 @@ export async function POST(request: NextRequest) {
       }
       await prisma.companySubscription.upsert({
         where: { companyId: current.company.id },
-        update: { status: 'CHECKOUT_PENDING', stripeCustomerId: customerId, plan: plan.name, planId: plan.id },
-        create: { companyId: current.company.id, status: 'CHECKOUT_PENDING', stripeCustomerId: customerId, plan: plan.name, planId: plan.id },
+        update: { status: 'CHECKOUT_PENDING', stripeCustomerId: customerId, plan: plan.name, planId: plan.id, stripePromotionCodeId: promotionCodeId },
+        create: { companyId: current.company.id, status: 'CHECKOUT_PENDING', stripeCustomerId: customerId, plan: plan.name, planId: plan.id, stripePromotionCodeId: promotionCodeId },
       })
-      // The server fully controls the discount: the validated coupon is applied
-      // directly. Promotion codes entered at the Stripe checkout UI are disabled
-      // so the client cannot inject an arbitrary discount.
+      // The server fully controls the discount. The client supplies only a code
+      // string which is re-validated server-side via Stripe Promotion Codes; the
+      // resolved promotion_code is passed to Checkout through `discounts` so
+      // Stripe remains the authoritative source of truth for validity and the
+      // discount amount (expiration, redemption limits, eligibility, product
+      // restrictions). Promotion codes typed directly into the Stripe checkout
+      // UI are disabled so the client cannot inject an arbitrary code without
+      // server validation.
       //
       // Managed Payments is enabled by default on this account and rejects an
       // explicit `payment_method_types` parameter. The account's products are
@@ -103,7 +123,7 @@ export async function POST(request: NextRequest) {
         mode: 'subscription' as const,
         allow_promotion_codes: false,
         managed_payments: { enabled: false },
-        ...(coupon && coupon.valid ? { discounts: [{ coupon: coupon.id }] } : {}),
+        ...(coupon && coupon.valid ? { discounts: [{ promotion_code: coupon.promotionCodeId }] } : {}),
         success_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/company/dashboard?subscription=success`,
         cancel_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/company/dashboard`,
         metadata: { userId: current.user.id, companyId: current.company.id, plan: plan.name, ownerType: 'COMPANY', planId: plan.id },
@@ -140,7 +160,7 @@ export async function POST(request: NextRequest) {
         mode: 'subscription',
         allowPromotionCodes: false,
         managedPaymentsEnabled: false,
-        couponId: coupon && coupon.valid ? coupon.id : null,
+        couponId: coupon && coupon.valid ? coupon.promotionCodeId : null,
         billingAddressCollection: 'required',
         priorSessionId: priorCheckout ? priorCheckout.id : null,
       })

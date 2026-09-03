@@ -456,7 +456,7 @@ export default function BrokersPage() {
               {selectedLocation && <FilterChip label={`${radius} mile radius`} onRemove={() => setRadius(25)} />}
               {minExperience && <FilterChip label={`${minExperience}+ years`} onRemove={() => setMinExperience('')} />}
               {minRating !== '0' && <FilterChip label={`${minRating}+ rating`} onRemove={() => setMinRating('0')} />}
-              {featuredOnly && <FilterChip label="Featured" onRemove={() => setFeaturedOnly(false)} />}
+              {featuredOnly && <FilterChip label="Mortgage Expert" onRemove={() => setFeaturedOnly(false)} />}
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">No filters applied.</p>

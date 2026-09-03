@@ -27,11 +27,11 @@ type Subscription = {
     createdAt: string
     user: { id: string; name: string | null; email: string | null } | null
   }
-  planRef: { id: string; code: string; name: string; isActive: boolean; features: { code: string; enabled: boolean }[] } | null
+  planRef: { id: string; code: string; name: string; isActive: boolean; features: { id: string; label: string; enabled: boolean; sortOrder: number }[] } | null
 }
 
 type MigrationStatus = 'linked' | 'legacy-eligible' | 'unknown' | 'no-plan' | 'ambiguous'
-type Entitlements = Record<string, boolean>
+type PlannedFeatures = string[]
 
 function maskStripeId(id: string | null) {
   if (!id) return '—'
@@ -43,12 +43,12 @@ export default function BrokerSubscriptionDetailClient({
   subscription,
   migrationStatus,
   matchingPlan,
-  entitlements,
+  features,
 }: {
   subscription: Subscription
   migrationStatus: MigrationStatus
   matchingPlan: { id: string; code: string; name: string; isActive: boolean } | null
-  entitlements: Entitlements
+  features: PlannedFeatures
 }) {
   const router = useRouter()
   const [busy, setBusy] = useState(false)
@@ -150,18 +150,18 @@ export default function BrokerSubscriptionDetailClient({
       </section>
 
       <section className="rounded-xl border bg-card p-5">
-        <h2 className="text-lg font-semibold">Entitlements</h2>
-        {Object.keys(entitlements).length > 0 ? (
+        <h2 className="text-lg font-semibold">Plan Features</h2>
+        {features.length > 0 ? (
           <div className="mt-3 space-y-2">
-            {Object.entries(entitlements).map(([code, enabled]) => (
-              <div key={code} className="flex items-center justify-between rounded-lg border px-4 py-2 text-sm">
-                <span className="font-medium">{code}</span>
-                <span className={enabled ? 'rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600' : 'rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground'}>{enabled ? 'Enabled' : 'Disabled'}</span>
+            {features.map((label) => (
+              <div key={label} className="flex items-center justify-between rounded-lg border px-4 py-2 text-sm">
+                <span className="font-medium">{label}</span>
+                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600">Included</span>
               </div>
             ))}
           </div>
         ) : (
-          <p className="mt-3 text-sm text-muted-foreground">No entitlements available until the subscription is linked to a dynamic plan.</p>
+          <p className="mt-3 text-sm text-muted-foreground">No included features listed for the linked plan.</p>
         )}
       </section>
     </div>

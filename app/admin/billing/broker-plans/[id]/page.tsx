@@ -1,16 +1,18 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
-import { BROKER_FEATURE_DEFS } from '@/lib/broker-plan-features'
+
+type PlanFeature = { id: string; label: string; enabled: boolean; sortOrder: number }
 
 type Plan = {
   id: string
   name: string
+  displayName?: string
   code: string
   description: string | null
   price: number
@@ -20,7 +22,7 @@ type Plan = {
   stripePriceId: string | null
   isActive: boolean
   displayOrder: number
-  features: { code: string; enabled: boolean }[]
+  features: PlanFeature[]
   _count?: { subscriptions: number }
 }
 
@@ -30,6 +32,16 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
   const [loadError, setLoadError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [newFeature, setNewFeature] = useState('')
+  const [featureError, setFeatureError] = useState<string | null>(null)
+
+  async function fetchPlan(planId: string) {
+    const response = await fetch(`/api/admin/broker-plans/${planId}`)
+    const data = await response.json()
+    if (response.ok && data.plan) {
+      setPlan({ ...data.plan, price: data.plan.price / 100 })
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -58,14 +70,13 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
 
   async function save() {
     if (saving || !plan) return
+    const planId = plan.id
     setSaving(true)
     try {
-      const response = await fetch(`/api/admin/broker-plans/${plan.id}`, {
+      const response = await fetch(`/api/admin/broker-plans/${planId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: plan.name,
-          code: plan.code,
           description: plan.description || '',
           price: Math.round(plan.price * 100),
           billingInterval: plan.billingInterval,
@@ -74,13 +85,13 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
           isActive: plan.isActive,
           stripeProductId: plan.stripeProductId || '',
           stripePriceId: plan.stripePriceId || '',
-          feature_PROFILE_BADGE: plan.features?.some((feature) => feature.code === 'PROFILE_BADGE' && feature.enabled) ?? false,
-          feature_SUPPORT_TICKETS: plan.features?.some((feature) => feature.code === 'SUPPORT_TICKETS' && feature.enabled) ?? false,
+          features: plan.features.map((f) => ({ id: f.id, label: f.label, enabled: f.enabled, sortOrder: f.sortOrder })),
         }),
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.message || 'Unable to update plan')
       toast.success('Broker plan updated.')
+      await fetchPlan(planId)
       router.refresh()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Unable to update plan')
@@ -89,20 +100,14 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
     }
   }
 
-  async function toggleFeature(code: string, enabled: boolean) {
+  async function toggleFeature(index: number, enabled: boolean) {
     if (!plan) return
     setPlan({
       ...plan,
-      features: plan.features.some((feature) => feature.code === code)
-        ? plan.features.map((feature) => feature.code === code ? { ...feature, enabled } : feature)
-        : [...plan.features, { code, enabled }],
+      features: plan.features.map((f, i) => (i === index ? { ...f, enabled } : f)),
     })
     await save()
   }
-
-  const isFeatureEnabled = useCallback((code: string) => {
-    return plan?.features?.some((feature) => feature.code === code && feature.enabled) ?? false
-  }, [plan])
 
   async function deactivate() {
     if (saving || !plan) return
@@ -173,12 +178,52 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
 
   const subscriberCount = plan._count?.subscriptions ?? 0
 
+  const features = [...plan.features].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+
+  const updateFeature = (index: number, patch: Partial<Pick<PlanFeature, 'label' | 'enabled' | 'sortOrder'>>) => {
+    if (!plan) return
+    setPlan({
+      ...plan,
+      features: plan.features.map((f, i) => (i === index ? { ...f, ...patch } : f)),
+    })
+  }
+
+  function addFeature() {
+    if (!plan) return
+    const label = newFeature.trim()
+    if (!label) {
+      setFeatureError('Enter a feature label.')
+      return
+    }
+    if (label.length > 120) {
+      setFeatureError('Feature label must be 120 characters or fewer.')
+      return
+    }
+    if (plan.features.some((f) => f.label === label)) {
+      setFeatureError(`A feature with label "${label}" already exists on this plan.`)
+      return
+    }
+    setPlan({
+      ...plan,
+      features: [...plan.features, { id: '', label, enabled: true, sortOrder: Math.max(0, ...plan.features.map((f) => f.sortOrder ?? 0)) + 10 }],
+    })
+    setNewFeature('')
+    setFeatureError(null)
+    void save()
+  }
+
+  function removeFeature(index: number) {
+    if (!plan) return
+    setPlan({ ...plan, features: plan.features.filter((_, i) => i !== index) })
+    void save()
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm font-medium text-muted-foreground">Billing</p>
-          <h1 className="text-3xl font-semibold tracking-tight">{plan.name}</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">{plan.displayName || plan.name}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{plan.code}</p>
         </div>
         <Link href="/admin/billing/broker-plans" className="rounded-lg border px-3 py-2 text-sm font-medium">Back</Link>
@@ -187,8 +232,9 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
       <section className="space-y-4 rounded-xl border bg-card p-6">
         <h2 className="text-lg font-semibold">Plan information</h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block space-y-1"><span className="text-sm font-medium">Name</span><input maxLength={100} value={plan.name} onChange={(e) => setField('name', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2" /></label>
-          <label className="block space-y-1"><span className="text-sm font-medium">Code</span><input maxLength={50} value={plan.code} onChange={(e) => setField('code', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2" /></label>
+          <label className="block space-y-1"><span className="text-sm font-medium">Plan</span><div className="flex h-9 items-center rounded-lg border bg-muted/40 px-3 text-sm text-foreground">{plan.displayName || plan.name}</div></label>
+          <label className="block space-y-1"><span className="text-sm font-medium">Code</span><div className="flex h-9 items-center rounded-lg border bg-muted/40 px-3 text-sm text-muted-foreground">{plan.code}</div></label>
+          <p className="text-xs text-muted-foreground sm:col-span-2">Plan identity and customer-facing name are fixed and cannot be changed.</p>
           <label className="block space-y-1 sm:col-span-2"><span className="text-sm font-medium">Description</span><textarea value={plan.description || ''} onChange={(e) => setField('description', e.target.value)} className="min-h-16 w-full rounded-lg border bg-background px-3 py-2" /></label>
           <label className="block space-y-1"><span className="text-sm font-medium">Price (USD)</span><input type="number" min="0" step="0.01" value={plan.price} onChange={(e) => setField('price', Number(e.target.value))} className="w-full rounded-lg border bg-background px-3 py-2" /><span className="text-xs text-muted-foreground">Amount in US dollars. Saved as cents.</span></label>
           <label className="block space-y-1"><span className="text-sm font-medium">Currency</span><select value={plan.currency} onChange={(e) => setField('currency', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2"><option value="usd">USD</option><option value="eur">EUR</option><option value="gbp">GBP</option></select></label>
@@ -204,24 +250,44 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
 
       <section className="space-y-3 rounded-xl border bg-card p-6">
         <h2 className="text-lg font-semibold">Features</h2>
-        <p className="text-xs text-muted-foreground">Each feature is an entitlement that changes what subscribers receive. Toggling a feature saves immediately.</p>
-        {BROKER_FEATURE_DEFS.map((feature) => {
-          const enabled = isFeatureEnabled(feature.code)
-          return (
-            <div key={feature.code} className="flex items-start justify-between gap-4 rounded-lg border px-4 py-3">
-              <div>
-                <span className="text-sm font-medium">{feature.label}</span>
-                <p className="mt-0.5 text-xs text-muted-foreground">{feature.description}</p>
+        <p className="text-xs text-muted-foreground">Each feature line appears to customers on plan cards. Toggle availability, edit the display label, set the display order, add custom features, or remove features. Changes save when you click &quot;Save plan&quot;.</p>
+
+        <div className="flex flex-wrap items-end gap-2 rounded-lg border p-3">
+          <label className="block min-w-52 flex-1 space-y-1">
+            <span className="text-xs text-muted-foreground">New feature label</span>
+            <input value={newFeature} onChange={(e) => setNewFeature(e.target.value)} placeholder="e.g. Priority Search Visibility" maxLength={120} className="w-full rounded-lg border bg-background px-3 py-2" />
+          </label>
+          <button type="button" onClick={addFeature} disabled={saving} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">Add feature</button>
+        </div>
+        {featureError && <p className="text-xs font-medium text-destructive">{featureError}</p>}
+
+        {features.length === 0 && (
+          <p className="text-xs text-muted-foreground">No features yet. Add a feature above.</p>
+        )}
+        {features.map((feature, index) => (
+          <div key={feature.id || `new-${index}`} className="flex items-start justify-between gap-4 rounded-lg border px-4 py-3">
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium">Feature #{index + 1}</span>
+                <button type="button" onClick={() => removeFeature(index)} disabled={saving} aria-label={`Remove feature ${index + 1}`} className="rounded-md border border-destructive/40 px-2 py-0.5 text-xs font-medium text-destructive hover:bg-destructive/10">Remove</button>
               </div>
-              <Switch
-                checked={enabled}
-                disabled={saving}
-                onCheckedChange={(checked) => void toggleFeature(feature.code, checked)}
-                aria-label={`${feature.label} ${enabled ? 'enabled' : 'disabled'}`}
-              />
+              <label className="block space-y-1">
+                <span className="text-xs text-muted-foreground">Display label</span>
+                <input value={feature.label} onChange={(e) => updateFeature(index, { label: e.target.value })} placeholder="e.g. Appear in Search Results" className="w-full rounded-lg border bg-background px-3 py-2" maxLength={120} />
+              </label>
+              <label className="block space-y-1">
+                <span className="text-xs text-muted-foreground">Display order</span>
+                <input type="number" min="0" value={feature.sortOrder ?? 0} onChange={(e) => updateFeature(index, { sortOrder: Number(e.target.value) })} className="w-full max-w-40 rounded-lg border bg-background px-3 py-2" />
+              </label>
             </div>
-          )
-        })}
+            <Switch
+              checked={feature.enabled}
+              disabled={saving}
+              onCheckedChange={(checked) => void toggleFeature(index, checked)}
+              aria-label={`Feature ${index + 1} ${feature.enabled ? 'enabled' : 'disabled'}`}
+            />
+          </div>
+        ))}
       </section>
 
       <section className="space-y-4 rounded-xl border bg-card p-6">

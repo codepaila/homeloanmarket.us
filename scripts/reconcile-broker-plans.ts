@@ -14,7 +14,7 @@ import prisma from '@/lib/prisma'
 import {
   DEFAULT_BROKER_PLANS,
   DEFAULT_BROKER_PLAN_FEATURES,
-  upsertPlanFeatures,
+  createPlanFeatures,
   reconcileBrokerSubscriptions,
 } from '@/lib/broker-plans'
 
@@ -43,11 +43,11 @@ async function run() {
             displayOrder: planInput.displayOrder,
           },
         })
-        await upsertPlanFeatures(tx as any, plan.id, planInput.features)
+        await createPlanFeatures(tx as any, plan.id, planInput.features)
         return plan
       })
       summary.plans += 1
-      summary.features += Object.keys(planInput.features).length
+      summary.features += planInput.features.length
       console.info('[BROKER-PLANS] created plan', { code: planInput.code, id: created.id })
     } else {
       const updates: Record<string, unknown> = {
@@ -62,9 +62,10 @@ async function run() {
       if (stripePriceId) updates.stripePriceId = stripePriceId
       await prisma.$transaction(async (tx) => {
         await tx.brokerSubscriptionPlan.update({ where: { code: planInput.code }, data: updates })
-        await upsertPlanFeatures(tx as any, existing.id, planInput.features)
+        // Do NOT sync features here: that would delete admin-created custom
+        // features and clobber admin edits to labels/ordering. Reconciliation
+        // only fills in missing default features (handled below).
       })
-      summary.features += Object.keys(planInput.features).length
       console.info('[BROKER-PLANS] reconciled existing plan', { code: planInput.code, id: existing.id })
     }
   }
@@ -74,17 +75,26 @@ async function run() {
   const reconcile = await reconcileBrokerSubscriptions()
   console.info('[BROKER-PLANS] subscription→plan reconciliation', reconcile)
 
-  // Backfill missing feature rows (e.g. a plan created without features).
+  // Backfill missing feature rows (e.g. a plan created without features). Only
+  // INSERT missing display features matched by label — never overwrite existing
+  // rows, so admin edits to enabled/label/sortOrder and admin-removed features
+  // are preserved.
   const featurePlans = await prisma.brokerSubscriptionPlan.findMany({
-    include: { features: { select: { code: true } } },
+    include: { features: { select: { label: true } } },
   })
   for (const plan of featurePlans) {
     const fallback = DEFAULT_BROKER_PLAN_FEATURES[plan.code]
     if (!fallback) continue
-    const missing = Object.keys(fallback).filter((code) => !plan.features.some((feature) => feature.code === code))
+    const existingLabels = new Set(plan.features.map((f) => f.label))
+    const missing = fallback.filter((draft) => !existingLabels.has(draft.label))
     if (missing.length > 0) {
       await prisma.brokerSubscriptionPlanFeature.createMany({
-        data: missing.map((code) => ({ planId: plan.id, code, enabled: fallback[code as keyof typeof fallback] === true })),
+        data: missing.map((draft) => ({
+          planId: plan.id,
+          label: draft.label,
+          enabled: draft.enabled,
+          sortOrder: draft.sortOrder,
+        })),
       })
       summary.features += missing.length
     }

@@ -12,9 +12,10 @@ interface PricingCardProps {
   features: string[]
   limits?: Record<string, boolean | string | number>
   stripePriceId?: string
+  code?: string
   isCurrent?: boolean
   isPopular?: boolean
-  onSelect?: (priceId: string, planName: string) => void
+  onSelect?: (priceId: string, planName: string, planCode?: string) => void
   className?: string
 }
 
@@ -26,6 +27,7 @@ export function PricingCard({
   features,
   limits,
   stripePriceId,
+  code,
   isCurrent,
   isPopular,
   onSelect,
@@ -101,7 +103,7 @@ export function PricingCard({
           </div>
         ) : (
           <motion.button
-            onClick={() => (stripePriceId || price === 0) && onSelect?.(stripePriceId || '', name)}
+            onClick={() => (stripePriceId || price === 0) && onSelect?.(stripePriceId || '', name, code || name)}
             disabled={!stripePriceId && price !== 0}
             className={cn(
               'w-full rounded-xl py-2.5 text-sm font-semibold transition-all',

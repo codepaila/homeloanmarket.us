@@ -115,7 +115,7 @@ export async function sendBrokerClaimInvitationEmail(
             to: recipient,
             subject: template.subject,
             html: template.html,
-            text: `Claim your HomeLoanMarket profile: ${claimLink}\nThis link expires on ${expiresAt.toISOString()}.`,
+            text: `Your Mortgage Professional Profile Is Now Listed on HomeLoanMarket.com\n\nHi ${broker.displayName || 'there'},\n\nYour mortgage professional profile is now listed on HomeLoanMarket.com, helping local homebuyers discover and connect with mortgage professionals in their area.\n\nClaim your profile for FREE to review your information, update your details, add or change your photo, and manage your listing.\n\nClaim Your Profile:\n${claimLink}\n\nHomeLoanMarket is built to give local mortgage professionals greater exposure to a large, hard-to-reach homebuyer community.\n\nThere is no cost to claim or maintain your basic listing.\n\nIf you prefer not to be listed on HomeLoanMarket, you can also remove your profile at any time.\n\nBest,\nHomeLoanMarket Team\nHomeLoanMarket.com`,
             idempotencyKey: `claim_invitation_${invitationId}`,
         })
 

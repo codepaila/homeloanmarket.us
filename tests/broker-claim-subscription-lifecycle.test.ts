@@ -5,7 +5,7 @@ import {
   BROKER_FREE_PLAN_CODE,
   DEFAULT_BROKER_PLAN_FEATURES,
   DEFAULT_BROKER_PLANS,
-  planHasFeature,
+  brokerSubscriptionHasProfileBadge,
 } from '../lib/broker-plans'
 
 const read = (path: string) => fs.readFileSync(path, 'utf8')
@@ -112,9 +112,10 @@ test('claim completion protects against duplicate/unauthorized claim', () => {
 // Dynamic plan single source of truth
 // ---------------------------------------------------------------------------
 
-test('entitlement logic reads from plan features, not hard-coded feature booleans', () => {
-  assert.match(plansLib, /planHasFeature/)
-  assert.match(plansLib, /features\?\.some\(\(feature\) => feature\?\.code === featureCode && feature\.enabled === true\)/)
+test('entitlement logic derives badge from plan tier, not hard-coded feature booleans', () => {
+  // Badge is derived from plan tier (paid vs FREE), not from feature codes.
+  assert.match(plansLib, /brokerSubscriptionHasProfileBadge/)
+  assert.match(plansLib, /subscription\.plan !== 'FREE'/)
 })
 
 test('no runtime entitlement path hard-codes FREE/FEATURED/PREMIUM feature behavior', () => {
@@ -124,7 +125,8 @@ test('no runtime entitlement path hard-codes FREE/FEATURED/PREMIUM feature behav
 
 test('dynamic plan is the single source of truth: BrokerSubscription → planId → plan → features', () => {
   assert.match(schema, /model BrokerSubscriptionPlanFeature \{/)
-  assert.match(schema, /@@unique\(\[planId, code\]\)/)
+  assert.match(schema, /@@index\(\[planId\]\)/)
+  assert.doesNotMatch(schema, /@@unique\(\[planId, code\]\)/)
   assert.match(schema, /planRef\s+BrokerSubscriptionPlan\?/)
 })
 
@@ -138,15 +140,15 @@ test('FREE plan has no price and no Stripe', () => {
   assert.equal(BROKER_FREE_PLAN_CODE, 'FREE')
 })
 
-test('FREE does not grant PROFILE_BADGE or SUPPORT_TICKETS', () => {
-  const freeFeatures = DEFAULT_BROKER_PLAN_FEATURES.FREE!
-  assert.equal(freeFeatures.PROFILE_BADGE, false)
-  assert.equal(freeFeatures.SUPPORT_TICKETS, false)
+test('FREE feature rows do not list the Mortgage Expert badge display', () => {
+  const freeFeatureLabels = DEFAULT_BROKER_PLAN_FEATURES.FREE!.map((f) => f.label)
+  assert.equal(freeFeatureLabels.includes('Mortgage Expert Badge + 5 Green Stars'), false)
 })
 
-test('planHasFeature resolves entitlement from the feature rows', () => {
-  assert.equal(planHasFeature({ features: [{ code: 'PROFILE_BADGE', enabled: true }] }, 'PROFILE_BADGE'), true)
-  assert.equal(planHasFeature({ features: [{ code: 'PROFILE_BADGE', enabled: false }] }, 'PROFILE_BADGE'), false)
+test('the badge is derived from the paid plan tier, not display feature rows', () => {
+  const sub = (plan: string) => ({ plan, isActive: true, endDate: null })
+  assert.equal(brokerSubscriptionHasProfileBadge(sub('FREE')), false)
+  assert.equal(brokerSubscriptionHasProfileBadge(sub('FEATURED')), true)
 })
 
 // ---------------------------------------------------------------------------

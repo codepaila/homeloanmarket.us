@@ -30,6 +30,49 @@ export class BillingUnavailableError extends Error {
   }
 }
 
+// Thrown when a plan-deactivation cascade cannot cancel every active
+// subscription. Carries the set of failed company subscription IDs so the
+// caller can report a partial failure and retry safely; the plan is left
+// active when this is thrown.
+export class PlanDeactivationError extends Error {
+  constructor(
+    message: string,
+    public readonly failedCompanySubscriptionIds: string[],
+  ) {
+    super(message)
+    this.name = 'PlanDeactivationError'
+  }
+}
+
+// Maps a Stripe subscription status to the local CompanySubscriptionStatus.
+// Only 'active'/'trialing' are ACTIVE (isActive=true). Every other state maps
+// to a distinct non-active status so admin/UI can tell unpaid, paused, and
+// incomplete apart from a generic expiry — none of them ever grants access.
+export function mapCompanySubscriptionStatus(stripeStatus: string): {
+  status: 'ACTIVE' | 'PAST_DUE' | 'INCOMPLETE' | 'INCOMPLETE_EXPIRED' | 'UNPAID' | 'PAUSED' | 'CANCELED' | 'EXPIRED'
+  isActive: boolean
+} {
+  switch (stripeStatus) {
+    case 'active':
+    case 'trialing':
+      return { status: 'ACTIVE', isActive: true }
+    case 'past_due':
+      return { status: 'PAST_DUE', isActive: false }
+    case 'incomplete':
+      return { status: 'INCOMPLETE', isActive: false }
+    case 'incomplete_expired':
+      return { status: 'INCOMPLETE_EXPIRED', isActive: false }
+    case 'unpaid':
+      return { status: 'UNPAID', isActive: false }
+    case 'paused':
+      return { status: 'PAUSED', isActive: false }
+    case 'canceled':
+      return { status: 'CANCELED', isActive: false }
+    default:
+      return { status: 'EXPIRED', isActive: false }
+  }
+}
+
 // Resolves the plan code for a Stripe price from the database. Returns the
 // matched plan code, or falls back to 'FREE' for an unmatched/unknown price.
 export async function getPlanForStripePrice(priceId: unknown): Promise<string> {
@@ -370,22 +413,36 @@ export class SubscriptionService {
       include: { broker: true }
     })
 
+    // Ownership resolution for a BROKER-typed or ownerType-less (legacy) event.
+    //
+    // Explicit BROKER: never fall through to another product — the customer
+    // must resolve to a BrokerSubscription or the event is rejected.
+    //
+    // Legacy ownerType-less events (created before ownerType metadata existed):
+    // resolve the owning product strictly instead of silently choosing the
+    // first match. The same Stripe customer must map to at most one product;
+    // if the customer is ambiguous across products, or belongs to no known
+    // product, the event is rejected rather than mutating the wrong row. A
+    // safe diagnostic (no secrets) is logged for post-hoc analysis.
     if (!subscription) {
+      // Explicit BROKER never falls through to another product.
       if (ownerType === 'BROKER') throw new Error('Broker subscription not found')
-      const registrationSubscription = await this.updateRegistrationSubscriptionFromStripe(
-        stripeCustomerId,
-        stripeSubscriptionId,
-        status,
-        planId,
-      )
-      if (registrationSubscription) return registrationSubscription as any
-      const companySubscription = await this.updateCompanySubscriptionFromStripe(
-        stripeCustomerId,
-        stripeSubscriptionId,
-        status,
-        planId,
-      )
-      if (companySubscription) return companySubscription as any
+      const [brokerSubscription, registrationSubscription, companySubscription] = await Promise.all([
+        prisma.brokerSubscription.findFirst({ where: { stripeCustomerId }, select: { id: true } }),
+        prisma.brokerRegistrationSubscription.findFirst({ where: { stripeCustomerId }, select: { id: true } }),
+        prisma.companySubscription.findFirst({ where: { stripeCustomerId }, select: { id: true } }),
+      ])
+      const matches = Number(Boolean(brokerSubscription)) + Number(Boolean(registrationSubscription)) + Number(Boolean(companySubscription))
+      if (matches > 1) {
+        console.warn('Stripe webhook ownerType-less event matched multiple products; refusing ambiguous mutation', { stripeCustomerId })
+        throw new Error('Ambiguous Stripe customer ownership')
+      }
+      if (registrationSubscription) {
+        return this.updateRegistrationSubscriptionFromStripe(stripeCustomerId, stripeSubscriptionId, status, planId) as any
+      }
+      if (companySubscription) {
+        return this.updateCompanySubscriptionFromStripe(stripeCustomerId, stripeSubscriptionId, status, planId) as any
+      }
       throw new Error('Broker subscription not found')
     }
     if (subscription.stripeSubId && subscription.stripeSubId !== stripeSubscriptionId) {
@@ -462,6 +519,159 @@ export class SubscriptionService {
     return updated
   }
 
+  // Reconciles an abandoned (expired) Company Checkout Session. A company
+  // subscription that is still CHECKOUT_PENDING with no live Stripe
+  // subscription is moved to the neutral terminal EXPIRED state so it never
+  // permanently misrepresents an abandoned payment. This is safe by design:
+  //  - only a CHECKOUT_PENDING row is ever touched,
+  //  - a row that already advanced (ACTIVE / PAST_DUE / ...) is never modified,
+  //  - an existing live (non-terminal) Stripe subscription is never cancelled
+  //    merely because a Checkout Session expired — the session is unrelated,
+  //  - a late `checkout.session.completed` / `customer.subscription.*` webhook
+  //    can still establish ACTIVE afterwards because it writes unconditionally.
+  // Is active/must be idempotent; repeated calls converge to the same result.
+  static async reconcileCompanyCheckoutExpired(
+    stripeCustomerId: string,
+    ownerType?: string | null,
+    metadata?: { companyId?: string | null } | null,
+  ) {
+    // Cross-product isolation: only a COMPANY event may reconcile a company row.
+    if (ownerType && ownerType !== 'COMPANY') throw new Error('Stripe event ownerType does not belong to the company product')
+    const existing = await prisma.companySubscription.findFirst({ where: { stripeCustomerId } })
+    if (!existing) return { reconciled: false, reason: 'no-company-subscription' }
+    if (existing.status !== 'CHECKOUT_PENDING') return { reconciled: false, reason: 'already-advanced' }
+    if (metadata?.companyId && existing.companyId !== metadata.companyId) {
+      throw new Error('Stripe checkout session does not belong to this company')
+    }
+
+    // Rule 7: never expire a pending row that already corresponds to a live
+    // Stripe subscription (an unrelated abandoned session must not affect it).
+    let liveSubscription = false
+    if (existing.stripeSubId) {
+      const subs = await (await getStripe()).subscriptions.list({ customer: stripeCustomerId, status: 'all', limit: 20 })
+      liveSubscription = subs.data.some((s) =>
+        ['active', 'trialing', 'incomplete', 'past_due', 'unpaid', 'paused'].includes(s.status),
+      )
+    }
+    if (liveSubscription) return { reconciled: false, reason: 'live-subscription-present' }
+
+    await prisma.companySubscription.update({
+      where: { id: existing.id },
+      data: { status: 'EXPIRED', isActive: false, endDate: existing.endDate ?? new Date(), updatedAt: new Date() },
+    })
+    return { reconciled: true }
+  }
+
+  // Bounded stale-checkout reconciliation invoked at the point of a fresh
+  // checkout for the SAME company (never a full-DB scan). If the company's row
+  // is CHECKOUT_PENDING but no checkout session is actually open and no live
+  // subscription exists, it is reconciled to EXPIRED so a fresh checkout is
+  // not misrepresented. Always idempotent; never touches ACTIVE state.
+  static async reconcileStaleCompanyCheckout(companyId: string, customerId: string | null) {
+    const existing = await prisma.companySubscription.findUnique({ where: { companyId } })
+    if (!existing || existing.status !== 'CHECKOUT_PENDING') return { reconciled: false, reason: 'not-pending' }
+    if (existing.stripeSubId) {
+      const subs = await (await getStripe()).subscriptions.list({ customer: customerId ?? existing.stripeCustomerId ?? '', status: 'all', limit: 20 })
+      const live = subs.data.some((s) =>
+        ['active', 'trialing', 'incomplete', 'past_due', 'unpaid', 'paused'].includes(s.status),
+      )
+      if (live) return { reconciled: false, reason: 'live-subscription-present' }
+    }
+    await prisma.companySubscription.update({
+      where: { id: existing.id },
+      data: { status: 'EXPIRED', isActive: false, endDate: existing.endDate ?? new Date(), updatedAt: new Date() },
+    })
+    return { reconciled: true }
+  }
+
+  // Controlled CompanyAdvertisingPlan deactivation: "Deactivate plan and cancel
+  // active subscriptions".
+  //
+  // Selection of behavior — IMMEDIATE cancellation. The existing company
+  // cancellation path (app/api/company/subscription/cancel) calls
+  // subscriptions.cancel immediately, so plan deactivation uses the same
+  // canonical immediate cancellation semantics for consistency. This means paid
+  // access is removed once the plan is deactivated (reconciled via the cancel
+  // webhook / local reconcile). Plan deactivation never silently leaves access
+  // in place.
+  //
+  // Orchestration (Stripe API calls are external side effects, so this is NOT
+  // wrapped in a single DB transaction):
+  //   1. Lock the plan operation so concurrent deactivations are serialized.
+  //   2. Load the plan and its active CompanySubscriptions (the FK from
+  //      CompanySubscription.advertisingPlan to CompanyAdvertisingPlan
+  //      guarantees every row belongs to the Company Advertising product).
+  //   3. For each subscription, verify ownership against its Stripe customer
+  //      then cancel with a deterministic idempotency key, and reconcile local
+  //      state from the response.
+  //   4. Only after every active subscription is cancelled, deactivate the plan.
+  //   5. If any cancellation fails, the plan is LEFT ACTIVE and errors report
+  //      the failed company subscription IDs, making retry safe and resumable.
+  //   6. Never deletes the plan, the Stripe Product, or the Stripe Price.
+  static async deactivateCompanyAdvertisingPlan(planId: string): Promise<{ deactivated: boolean; cancelledSubscriptions: number }> {
+    return this.withBillingLock(`company-plan:${planId}`, async () => {
+      const plan = await prisma.companyAdvertisingPlan.findUnique({
+        where: { id: planId },
+        include: { subscriptions: { where: { isActive: true } } },
+      })
+      if (!plan) throw new Error('Plan not found')
+      if (!plan.isActive) return { deactivated: false, cancelledSubscriptions: 0 }
+
+      const activeSubscriptions = plan.subscriptions
+      const failedIds: string[] = []
+
+      for (const sub of activeSubscriptions) {
+        if (!sub.stripeSubId || !sub.stripeCustomerId) {
+          // Local-only / not yet on Stripe (e.g. stale CHECKOUT_PENDING) — no
+          // remote cancellation to perform; reconcile locally so the plan can
+          // be deactivated. This row is not active on Stripe, so nothing real
+          // is cancelled.
+          if (sub.status === 'CHECKOUT_PENDING') {
+            await prisma.companySubscription.update({
+              where: { id: sub.id },
+              data: { status: 'EXPIRED', isActive: false, updatedAt: new Date() },
+            })
+          }
+          continue
+        }
+        try {
+          const stripe = await getStripe()
+          const remote = await stripe.subscriptions.retrieve(sub.stripeSubId)
+          // Ownership: the Stripe customer must own the subscription AND belong
+          // to this company. If the customer metadata disagrees, refuse.
+          if (remote.customer !== sub.stripeCustomerId) {
+            failedIds.push(sub.id)
+            continue
+          }
+          const customer = await stripe.customers.retrieve(sub.stripeCustomerId)
+          if ('deleted' in customer && customer.deleted) {
+            failedIds.push(sub.id)
+            continue
+          }
+          if (customer.metadata?.companyId && customer.metadata.companyId !== sub.companyId) {
+            failedIds.push(sub.id)
+            continue
+          }
+          await stripe.subscriptions.cancel(remote.id, {}, { idempotencyKey: `company_plan_deactivate_${planId}_${remote.id}` })
+          await this.updateCompanySubscriptionFromStripe(sub.stripeCustomerId, remote.id, 'canceled')
+        } catch (error) {
+          console.error('Company plan deactivation cancellation failed', { planId, companySubscriptionId: sub.id, error: error instanceof Error ? error.message : 'Unknown error' })
+          failedIds.push(sub.id)
+        }
+      }
+
+      if (failedIds.length > 0) {
+        throw new PlanDeactivationError(
+          'Some active subscriptions could not be cancelled. The plan was not deactivated. Please resolve the failures and retry.',
+          failedIds,
+        )
+      }
+
+      await prisma.companyAdvertisingPlan.update({ where: { id: planId }, data: { isActive: false } })
+      return { deactivated: true, cancelledSubscriptions: activeSubscriptions.length }
+    })
+  }
+
   static async updateCompanySubscriptionFromStripe(
     stripeCustomerId: string,
     stripeSubscriptionId: string,
@@ -471,12 +681,13 @@ export class SubscriptionService {
     const existing = await prisma.companySubscription.findFirst({ where: { stripeCustomerId } })
     if (!existing) return null
     const plan = priceId ? await resolveCompanyPlanByStripePrice(priceId) : null
-    const isActive = status === 'active' || status === 'trialing'
+    const mapped = mapCompanySubscriptionStatus(status)
+    const isActive = mapped.isActive
     return prisma.$transaction(async (tx) => {
       const updated = await tx.companySubscription.update({
         where: { id: existing.id },
         data: {
-          status: isActive ? 'ACTIVE' : status === 'past_due' ? 'PAST_DUE' : status === 'canceled' ? 'CANCELED' : 'EXPIRED',
+          status: mapped.status,
           isActive,
           stripeSubId: stripeSubscriptionId,
           planId: plan ? plan.id : existing.planId,

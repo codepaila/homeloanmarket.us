@@ -4,13 +4,17 @@ import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/currentUser'
 import prisma from '@/lib/prisma'
 import {
-  ALL_BROKER_PLAN_FEATURES,
+  SUPPORTED_BROKER_PLAN_CODES,
+  getBrokerPlanDisplayName,
+  isSupportedBrokerPlanCode,
+  createPlanFeatures,
   normalizePlanCode,
-  upsertPlanFeatures,
+  sanitizeFeatureDrafts,
   validateStripePriceId,
   validateStripeProductId,
-  type BrokerPlanFeatureInput,
 } from '@/lib/broker-plans'
+import { assertStripePriceIsolation } from '@/lib/plan-price-isolation'
+import { Prisma } from '@prisma/client'
 
 async function getAdminUser() {
   const user = await getCurrentUser()
@@ -26,7 +30,16 @@ export async function GET() {
     },
     orderBy: [{ displayOrder: 'asc' }, { createdAt: 'asc' }],
   })
-  return NextResponse.json({ plans })
+  const existingCodes = new Set(plans.map((plan) => plan.code))
+  const supportedPlans = SUPPORTED_BROKER_PLAN_CODES.map((code) => ({
+    code,
+    displayName: getBrokerPlanDisplayName(code) || code,
+    exists: existingCodes.has(code),
+  }))
+  return NextResponse.json({
+    plans: plans.map((plan) => ({ ...plan, displayName: getBrokerPlanDisplayName(plan.code) || plan.name })),
+    supportedPlans,
+  })
 }
 
 export async function POST(request: Request) {
@@ -43,8 +56,19 @@ export async function POST(request: Request) {
   const code = normalizePlanCode(body.code)
   if (!code) return NextResponse.json({ message: 'A stable plan code is required' }, { status: 422 })
   if (code.length > 50) return NextResponse.json({ message: 'Plan code must be 50 characters or fewer' }, { status: 422 })
-  const name = typeof body.name === 'string' && body.name.trim() ? body.name.trim() : code
-  if (name.length > 100) return NextResponse.json({ message: 'Plan name must be 100 characters or fewer' }, { status: 422 })
+
+  // Only the fixed, supported broker plans (FREE/FEATURED) may be created.
+  // Arbitrary plan codes are rejected; the canonical customer-facing name is
+  // derived from the fixed plan identity and never trusted from the client.
+  if (!isSupportedBrokerPlanCode(code)) {
+    return NextResponse.json({ message: 'Unsupported plan. Only FREE and FEATURED plans are supported.' }, { status: 400 })
+  }
+  const name = getBrokerPlanDisplayName(code)
+  if (!name) return NextResponse.json({ message: 'Unsupported plan' }, { status: 400 })
+  // The canonical display name may not be overridden by client input.
+  if (typeof body.name === 'string' && body.name.trim() && body.name.trim() !== name) {
+    return NextResponse.json({ message: 'Plan name is derived from the fixed plan identity and cannot be changed.' }, { status: 400 })
+  }
   const description = typeof body.description === 'string' ? body.description : ''
   const price = Number.isFinite(Number(body.price)) ? Math.max(0, Math.round(Number(body.price))) : 0
   const ALLOWED_BILLING_INTERVALS = ['day', 'week', 'month', 'year']
@@ -79,14 +103,20 @@ export async function POST(request: Request) {
     )
   }
 
+  // Product isolation: this Broker Price must not already be assigned to a
+  // Company advertising plan.
+  const isolation = await assertStripePriceIsolation(stripePriceId, 'BROKER')
+  if (!isolation.ok) return NextResponse.json({ message: isolation.message }, { status: 422 })
+
   const exists = await prisma.brokerSubscriptionPlan.findUnique({ where: { code } })
   if (exists) return NextResponse.json({ message: 'A plan with this code already exists' }, { status: 409 })
 
-  const features: BrokerPlanFeatureInput = {}
-  for (const featureCode of ALL_BROKER_PLAN_FEATURES) {
-    if (typeof body[`feature_${featureCode}`] === 'boolean') {
-      features[featureCode] = body[`feature_${featureCode}`] as boolean
-    }
+  const features = sanitizeFeatureDrafts(body.features)
+  if (features === null) {
+    return NextResponse.json(
+      { message: 'Features must be an array of { label, enabled, sortOrder } with a non-empty label.' },
+      { status: 422 },
+    )
   }
 
   try {
@@ -105,12 +135,17 @@ export async function POST(request: Request) {
           displayOrder,
         },
       })
-      await upsertPlanFeatures(tx as never, created.id, features)
+      await createPlanFeatures(tx as never, created.id, features)
       return created
     })
     console.info('Admin created broker plan', { adminId: admin.id, planId: plan.id })
-    return NextResponse.json({ plan }, { status: 201 })
+    return NextResponse.json({ plan: { ...plan, displayName: getBrokerPlanDisplayName(plan.code) || plan.name } }, { status: 201 })
   } catch (error) {
+    // Concurrent duplicate creation: the unique `code` constraint guarantees
+    // only one create succeeds; map the unique violation to a clean conflict.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return NextResponse.json({ message: 'A plan with this code already exists' }, { status: 409 })
+    }
     console.error('Admin broker plan create failed', error)
     return NextResponse.json({ message: 'Unable to create broker plan' }, { status: 500 })
   }

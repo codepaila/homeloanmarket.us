@@ -85,6 +85,13 @@ enum CompanySubscriptionStatus {
   CHECKOUT_PENDING
   ACTIVE
   PAST_DUE
+  // Non-active, non-canceled payment states distinguished from the generic
+  // EXPIRED so admin/UI can tell them apart. Each of these keeps isActive
+  // false and never grants advertising access. Stripe remains authoritative.
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
+  UNPAID
+  PAUSED
   CANCELED
   EXPIRED
 }
@@ -226,6 +233,8 @@ model User {
   emailVerified                   Boolean                 @default(false)
   emailVerificationToken          String?
   emailVerificationTokenExpiresAt DateTime?
+  agreeToTerms                 Boolean @default(false)
+  agreeToPrivacy                Boolean @default(false)
   resetPasswordToken              String?
   resetPasswordTokenExpiry        DateTime?
   brokerProfile                   Broker[]
@@ -394,17 +403,17 @@ model BrokerSubscriptionPlan {
 }
 
 model BrokerSubscriptionPlanFeature {
-  id      String  @id @default(auto()) @map("_id") @db.ObjectId
-  planId  String  @db.ObjectId
-  code    String
-  enabled Boolean @default(false)
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  planId    String  @db.ObjectId
+  label     String
+  enabled   Boolean @default(false)
+  sortOrder Int     @default(0)
 
   plan BrokerSubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([planId, code])
   @@index([planId])
   @@map("broker_subscription_plan_features")
 }

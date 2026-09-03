@@ -2,13 +2,10 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import test from 'node:test'
 import {
-  ALL_BROKER_PLAN_FEATURES,
-  BROKER_PLAN_FEATURES,
   DEFAULT_BROKER_PLAN_FEATURES,
   DEFAULT_BROKER_PLANS,
-  brokerSubscriptionHasFeature,
+  brokerSubscriptionHasProfileBadge,
   normalizePlanCode,
-  planHasFeature,
 } from '../lib/broker-plans'
 
 const read = (path: string) => fs.readFileSync(path, 'utf8')
@@ -31,10 +28,11 @@ test('FREE, FEATURED, and PREMIUM plans are seeded by the reconcile script', () 
   assert.deepEqual(codes, ['FREE', 'FEATURED', 'PREMIUM'])
 })
 
-test('FREE has no badge and no support tickets; paid plans have both', () => {
-  assert.deepEqual(DEFAULT_BROKER_PLAN_FEATURES.FREE, { PROFILE_BADGE: false, SUPPORT_TICKETS: false })
-  assert.deepEqual(DEFAULT_BROKER_PLAN_FEATURES.FEATURED, { PROFILE_BADGE: true, SUPPORT_TICKETS: true })
-  assert.deepEqual(DEFAULT_BROKER_PLAN_FEATURES.PREMIUM, { PROFILE_BADGE: true, SUPPORT_TICKETS: true })
+test('FREE does not list the Mortgage Expert badge; FEATURED does (display-only)', () => {
+  const labels = (code: string) => DEFAULT_BROKER_PLAN_FEATURES[code].map((f) => f.label)
+  const badgeLabel = 'Mortgage Expert Badge + 5 Green Stars'
+  assert.equal(labels('FREE').includes(badgeLabel), false)
+  assert.equal(labels('FEATURED').includes(badgeLabel), true)
 })
 
 test('FREE plan has no Stripe mapping and zero price', () => {
@@ -42,41 +40,34 @@ test('FREE plan has no Stripe mapping and zero price', () => {
   assert.equal(free.price, 0)
 })
 
-test('feature codes are stable and exactly the initial set', () => {
-  assert.deepEqual(ALL_BROKER_PLAN_FEATURES, ['PROFILE_BADGE', 'SUPPORT_TICKETS'])
-  assert.equal(BROKER_PLAN_FEATURES.PROFILE_BADGE, 'PROFILE_BADGE')
-  assert.equal(BROKER_PLAN_FEATURES.SUPPORT_TICKETS, 'SUPPORT_TICKETS')
+test('feature rows are display-only (label/enabled/sortOrder) and the badge derives from plan tier', () => {
+  for (const plan of DEFAULT_BROKER_PLANS) {
+    for (const feature of plan.features) {
+      assert.ok(typeof feature.label === 'string' && feature.label.length > 0)
+      assert.ok(typeof feature.enabled === 'boolean')
+      assert.ok(typeof feature.sortOrder === 'number')
+    }
+  }
 })
 
 // ---------------------------------------------------------------------------
 // Entitlement
 // ---------------------------------------------------------------------------
 
-test('PROFILE_BADGE entitlement is derived from the plan feature rows', () => {
-  const withBadge = { features: [{ code: 'PROFILE_BADGE', enabled: true }] }
-  const withoutBadge = { features: [{ code: 'PROFILE_BADGE', enabled: false }] }
-  assert.equal(planHasFeature(withBadge, 'PROFILE_BADGE'), true)
-  assert.equal(planHasFeature(withoutBadge, 'PROFILE_BADGE'), false)
+test('badge entitlement is derived from the paid plan tier', () => {
+  const sub = (plan: string, isActive = true, endDate: Date | null = null) => ({ plan, isActive, endDate })
+  assert.equal(brokerSubscriptionHasProfileBadge(sub('FEATURED')), true)
+  assert.equal(brokerSubscriptionHasProfileBadge(sub('PREMIUM')), true)
+  assert.equal(brokerSubscriptionHasProfileBadge(sub('FREE')), false)
 })
 
-test('SUPPORT_TICKETS entitlement works independently', () => {
-  const plan = { features: [{ code: 'SUPPORT_TICKETS', enabled: true }, { code: 'PROFILE_BADGE', enabled: false }] }
-  assert.equal(planHasFeature(plan, 'SUPPORT_TICKETS'), true)
-  assert.equal(planHasFeature(plan, 'PROFILE_BADGE'), false)
-})
-
-test('an admin feature toggle changes entitlement', () => {
-  assert.equal(planHasFeature({ features: [{ code: 'PROFILE_BADGE', enabled: true }] }, 'PROFILE_BADGE'), true)
-  assert.equal(planHasFeature({ features: [{ code: 'PROFILE_BADGE', enabled: false }] }, 'PROFILE_BADGE'), false)
-})
-
-test('inactive or expired subscriptions do not grant features', () => {
-  const active = { plan: 'FEATURED', isActive: true, endDate: null, planRef: { features: [{ code: 'PROFILE_BADGE', enabled: true }] } }
+test('inactive or expired subscriptions do not grant the badge', () => {
+  const active = { plan: 'FEATURED', isActive: true, endDate: null }
   const inactive = { ...active, isActive: false }
   const expired = { ...active, endDate: new Date(Date.now() - 1000) }
-  assert.equal(brokerSubscriptionHasFeature(active, 'PROFILE_BADGE'), true)
-  assert.equal(brokerSubscriptionHasFeature(inactive, 'PROFILE_BADGE'), false)
-  assert.equal(brokerSubscriptionHasFeature(expired, 'PROFILE_BADGE'), false)
+  assert.equal(brokerSubscriptionHasProfileBadge(active), true)
+  assert.equal(brokerSubscriptionHasProfileBadge(inactive), false)
+  assert.equal(brokerSubscriptionHasProfileBadge(expired), false)
 })
 
 // ---------------------------------------------------------------------------
@@ -180,9 +171,10 @@ test('BrokerSubscription links to the DB plan and drops the enum source of truth
   assert.match(schema, /planRef\s+BrokerSubscriptionPlan\?/)
 })
 
-test('plan code is unique and feature rows are normalized', () => {
+test('plan code is unique and feature rows are display-only keyed by planId', () => {
   assert.match(schema, /code\s+String\s+@unique/)
-  assert.match(schema, /@@unique\(\[planId, code\]\)/)
+  assert.match(schema, /@@index\(\[planId\]\)/)
+  assert.doesNotMatch(schema, /@@unique\(\[planId, code\]\)/)
 })
 
 test('normalizePlanCode produces a stable uppercase code', () => {

@@ -4,12 +4,7 @@ import test from 'node:test'
 import {
   isMortgageExpertBroker,
 } from '../lib/broker-policy'
-import {
-  BROKER_PLAN_FEATURES,
-  brokerSubscriptionHasFeature,
-  planHasFeature,
-  DEFAULT_BROKER_PLAN_FEATURES,
-} from '../lib/broker-plans'
+import { brokerSubscriptionHasProfileBadge } from '../lib/broker-plans'
 
 const read = (path: string) => fs.readFileSync(path, 'utf8')
 
@@ -31,40 +26,38 @@ const adminPage = read('app/admin/brokers/[id]/page.tsx')
 const adminControl = read('app/admin/brokers/[id]/MortgageExpertControl.tsx')
 const plansLib = read('lib/broker-plans.ts')
 
-// A FEATURED plan that grants PROFILE_BADGE (default config).
-const badgePlan = { features: [{ code: 'PROFILE_BADGE', enabled: true }] }
-const noBadgePlan = { features: [{ code: 'PROFILE_BADGE', enabled: false }] }
-
-function sub(plan: { features: { code: string; enabled: boolean }[] }, isActive = true, endDate: Date | null = null) {
-  return { plan: 'FEATURED', isActive, endDate, planRef: plan }
+// A paid (non-FREE) plan tier grants the badge (default config).
+function sub(plan: string = 'FEATURED', isActive = true, endDate: Date | null = null) {
+  return { plan, isActive, endDate }
 }
 
 // ---------------------------------------------------------------------------
-// PROFILE_BADGE / feature entitlement
+// Plan-tier badge entitlement
 // ---------------------------------------------------------------------------
 
-test('a plan that grants PROFILE_BADGE qualifies automatically', () => {
-  assert.equal(brokerSubscriptionHasFeature(sub(badgePlan), BROKER_PLAN_FEATURES.PROFILE_BADGE), true)
+test('a paid plan subscription qualifies automatically', () => {
+  assert.equal(brokerSubscriptionHasProfileBadge(sub('FEATURED')), true)
+  assert.equal(brokerSubscriptionHasProfileBadge(sub('PREMIUM')), true)
   assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, profileBadge: true }), true)
 })
 
-test('a plan without PROFILE_BADGE does not auto-qualify', () => {
-  assert.equal(brokerSubscriptionHasFeature(sub(noBadgePlan), BROKER_PLAN_FEATURES.PROFILE_BADGE), false)
+test('a FREE plan subscription does not auto-qualify', () => {
+  assert.equal(brokerSubscriptionHasProfileBadge(sub('FREE')), false)
   assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, profileBadge: false }), false)
 })
 
-test('an inactive subscription does not grant the badge feature', () => {
-  assert.equal(brokerSubscriptionHasFeature(sub(badgePlan, false), BROKER_PLAN_FEATURES.PROFILE_BADGE), false)
+test('an inactive subscription does not grant the badge', () => {
+  assert.equal(brokerSubscriptionHasProfileBadge(sub('FEATURED', false)), false)
 })
 
-test('an expired subscription does not grant the badge feature', () => {
-  assert.equal(brokerSubscriptionHasFeature(sub(badgePlan, true, new Date(Date.now() - 1000)), BROKER_PLAN_FEATURES.PROFILE_BADGE), false)
+test('an expired subscription does not grant the badge', () => {
+  assert.equal(brokerSubscriptionHasProfileBadge(sub('FEATURED', true, new Date(Date.now() - 1000))), false)
 })
 
-test('SUPPORT_TICKETS entitlement works independently', () => {
-  const plan = { features: [{ code: 'SUPPORT_TICKETS', enabled: true }, { code: 'PROFILE_BADGE', enabled: false }] }
-  assert.equal(brokerSubscriptionHasFeature(sub(plan), BROKER_PLAN_FEATURES.SUPPORT_TICKETS), true)
-  assert.equal(brokerSubscriptionHasFeature(sub(plan), BROKER_PLAN_FEATURES.PROFILE_BADGE), false)
+test('display feature rows never gate the badge; only the plan tier does', () => {
+  // Feature rows are display-only and carry no entitlement meaning.
+  assert.equal(brokerSubscriptionHasProfileBadge(sub('FEATURED')), true)
+  assert.equal(brokerSubscriptionHasProfileBadge(sub('FREE')), false)
 })
 
 // ---------------------------------------------------------------------------
@@ -110,7 +103,9 @@ test('schema defines the DB-backed plan and feature models', () => {
   assert.match(schema, /model BrokerSubscriptionPlan \{/)
   assert.match(schema, /model BrokerSubscriptionPlanFeature \{/)
   assert.match(schema, /code\s+String\s+@unique/)
-  assert.match(schema, /@@unique\(\[planId, code\]\)/)
+  // Feature rows are display-only and keyed by planId + id, not a feature code.
+  assert.match(schema, /@@index\(\[planId\]\)/)
+  assert.doesNotMatch(schema, /@@unique\(\[planId, code\]\)/)
 })
 
 test('schema retains FREE/FEATURED/PREMIUM broker plans and no PRO', () => {
@@ -160,7 +155,7 @@ test('admin control renders Enable and Disable with a Saving state', () => {
 test('admin control renders status and qualification source', () => {
   assert.match(adminControl, /Status:/)
   assert.match(adminControl, /Qualification source:/)
-  assert.match(adminControl, /PROFILE_BADGE/)
+  assert.match(adminControl, /Paid plan/)
   assert.match(adminControl, /Not qualified/)
 })
 

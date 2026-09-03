@@ -136,7 +136,7 @@ export default function FeaturedBrokerRowCard({ broker }: FeaturedBrokerRowCardP
                 className="border-0 bg-amber-500 text-white"
               >
                 <Star className="mr-1 h-3 w-3 fill-current" />
-                Featured
+                Mortgage Expert
               </Badge>
             )}
             {isVerified && (

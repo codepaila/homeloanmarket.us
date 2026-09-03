@@ -100,7 +100,7 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
 
   const brokerStatusConfig = {
     FREE: { label: "Free Plan", color: "secondary", icon: Building },
-    FEATURED: { label: "Featured Mortgage Originator", color: "primary", icon: Star },
+    FEATURED: { label: "Mortgage Expert", color: "primary", icon: Star },
     SUSPENDED: { label: "Suspended", color: "destructive", icon: XCircle },
   }
 

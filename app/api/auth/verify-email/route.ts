@@ -7,10 +7,25 @@ import { sendBrokerVerificationEmail } from '@/actions/email.action'
 import { getClaimContext } from '@/lib/claim-context'
 import { signIn } from '@/lib/auth'
 
+const VALID_PLAN_CODES = ['FREE', 'FEATURED'] as const
+
+function sanitizePlan(plan: string | null | undefined): string | null {
+  if (!plan) return null
+  return (VALID_PLAN_CODES as readonly string[]).includes(plan) ? plan : null
+}
+
+function appendPlanToRedirect(baseRedirect: string, plan: string | null): string {
+  if (!plan) return baseRedirect
+  const separator = baseRedirect.includes('?') ? '&' : '?'
+  return `${baseRedirect}${separator}plan=${plan}`
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { token, email } = body
+    const { token, email, plan: rawPlan } = body
+
+    const plan = sanitizePlan(rawPlan)
 
     if (!token) {
       return NextResponse.json(
@@ -174,6 +189,14 @@ export async function POST(request: NextRequest) {
     }
 
     const claimContext = await getClaimContext()
+
+    const baseRedirect = claimContext
+      ? '/claim-broker/continue'
+      : updatedUser.brokerRegistration?.id ? '/broker/subscription/select'
+      : updatedUser.companyMemberships?.length ? '/company/subscription/select'
+      : updatedUser.brokerProfile?.[0]?.id ? '/setup'
+      : '/'
+
     return NextResponse.json({
       success: true,
       message: 'Email verified successfully',
@@ -183,11 +206,7 @@ export async function POST(request: NextRequest) {
         name: updatedUser.name,
         emailVerified: updatedUser.emailVerified,
         authenticated,
-         redirectTo: claimContext
-           ? '/claim-broker/continue'
-           : updatedUser.brokerRegistration?.id ? '/broker/subscription/select'
-           : updatedUser.companyMemberships?.length ? '/company/subscription/select'
-           : updatedUser.brokerProfile?.[0]?.id ? '/setup' : '/'
+        redirectTo: appendPlanToRedirect(baseRedirect, plan),
       }
     })
   } catch (error: any) {

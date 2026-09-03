@@ -81,7 +81,7 @@ export default function FeaturedBrokersSection() {
               Handpicked &amp; Verified
             </span>
             <h2 className="mt-3 text-2xl font-bold tracking-tight text-foreground md:text-3xl lg:text-4xl">
-              Featured Mortgage Originators
+              Mortgage Experts
             </h2>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground md:text-base">
               Our top-rated, verified professionals — reviewed by real
@@ -92,7 +92,7 @@ export default function FeaturedBrokersSection() {
           <div className="flex items-center gap-3">
             <Link href="/brokers">
               <PremiumButton variant="secondary" size="md" className="px-4">
-                  View All Featured Mortgage Originators
+                  View All Mortgage Experts
                 <ArrowUpRight className="h-4 w-4" />
               </PremiumButton>
             </Link>
@@ -119,7 +119,7 @@ export default function FeaturedBrokersSection() {
           </div>
         ) : (
           <EmptyState
-            title="No Featured Mortgage Originators Available"
+            title="No Mortgage Experts Available"
             description="We're curating our next batch of top-rated mortgage professionals. Check back soon or browse the full directory."
             icon={<Building2 className="h-12 w-12" />}
             action={

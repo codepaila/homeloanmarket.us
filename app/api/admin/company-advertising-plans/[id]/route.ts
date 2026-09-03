@@ -7,6 +7,7 @@ import {
   validateCompanyPlanStripe,
   type CompanyBillingInterval,
 } from '@/lib/company-advertising-plan'
+import { assertStripePriceIsolation } from '@/lib/plan-price-isolation'
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser()
@@ -115,6 +116,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     stripePriceId: nextPriceId,
   })
   if (!stripe.ok) return NextResponse.json({ error: stripe.message }, { status: 422 })
+
+  // Product isolation: the resulting Company Price must not already be assigned
+  // to a Broker plan (excluding this very plan).
+  const isolation = await assertStripePriceIsolation(nextPriceId, 'COMPANY', id)
+  if (!isolation.ok) return NextResponse.json({ error: isolation.message }, { status: 422 })
 
   try {
     const updated = await prisma.companyAdvertisingPlan.update({

@@ -6,6 +6,7 @@ import {
   normalizeCompanyPlanInput,
   validateCompanyPlanStripe,
 } from '@/lib/company-advertising-plan'
+import { assertStripePriceIsolation } from '@/lib/plan-price-isolation'
 
 export async function GET() {
   const user = await getCurrentUser()
@@ -47,6 +48,11 @@ export async function POST(request: NextRequest) {
     stripePriceId: input.stripePriceId,
   })
   if (!stripe.ok) return NextResponse.json({ error: stripe.message }, { status: 422 })
+
+  // Product isolation: this Company Price must not already be assigned to a
+  // Broker plan. Server-side only; a clear, non-leaky error is returned.
+  const isolation = await assertStripePriceIsolation(input.stripePriceId, 'COMPANY')
+  if (!isolation.ok) return NextResponse.json({ error: isolation.message }, { status: 422 })
 
   try {
     const plan = await prisma.companyAdvertisingPlan.create({

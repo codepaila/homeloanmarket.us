@@ -1,4 +1,5 @@
-// middleware.ts
+// proxy.ts — Next.js 16+ project routing boundary.
+// (Filename was renamed from middleware.ts; do NOT create both.)
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
@@ -24,6 +25,68 @@ function secureSessionCookies(): boolean {
   return process.env.NODE_ENV === 'production'
 }
 
+// ---------------------------------------------------------------------------
+// PUBLIC PATH / ENDPOINT RULES
+// ---------------------------------------------------------------------------
+//
+// The proxy only enforces a coarse authentication boundary. Each row below
+// declares an exact public page or API path. When a method-aware rule is
+// required (e.g. "GET only"), the matchers below evaluate both the path and
+// the method. The set of public endpoints MUST stay narrow and explicit:
+// server-side route handlers are still the authoritative authorization layer.
+//
+// The following is a structured summary of the current public path map:
+//
+//   PAGE PATHS (always GET)
+//   /                              (home)
+//   /auth/signin, /auth/signup     (auth entry)
+//   /register, /company/register   (registration entry)
+//   /auth/forgot-password, /auth/reset-password, /auth/error, /auth/verify,
+//   /auth/verify-email             (auth helpers)
+//   /brokers, /brokers/[slug]      (public broker directory)
+//   /about, /contact, /faq, /privacy, /terms  (marketing)
+//   /subscription                  (public plan picker)
+//   /guides, /blog, /calculator    (content)
+//   /claim-broker                  (claim-broker public entry)
+//
+//   API PATHS (method-aware)
+//   /api/auth/*                    (Auth.js handler — public by design)
+//   /api/claims/*                  (public claim flow)
+//   /api/brokers/*                 (public broker directory; EXCLUDES /me)
+//   /api/brokers/me/*              (PROTECTED — must never be public)
+//   /api/company/*                 (public company directory + register)
+//   /api/cities, /api/states,
+//   /api/location/*                (public reference data)
+//   /api/contacts/send             (public contact form)
+//   /api/ads/*                     (public advertisement tracking)
+//   /api/stripe/webhook            (Stripe signature IS the auth)
+//   /api/subscription/plans        (GET ONLY — public plan read)
+//
+//   STATIC EXCLUDES (handled by matcher, not here)
+//   /_next/static, /_next/image, /favicon.ico, /public, /assets, /uploads
+//
+// Security risk: the broad '/api/company/*' and '/api/brokers/*' rules rely on
+// individual route handlers to enforce role/membership checks. This is the
+// project's existing architecture; tightening those to per-route proxy rules
+// is a separate audit and intentionally out of scope here. Narrowing the
+// /api/subscription/* surface is in scope for this phase.
+// ---------------------------------------------------------------------------
+
+// Public API endpoints that are method-aware (e.g. GET-only).
+// Each entry: { method: 'GET' | 'POST' | 'ALL', pattern: RegExp }
+const PUBLIC_METHOD_AWARE_API: Array<{ method: 'GET' | 'POST' | 'ALL'; pattern: RegExp }> = [
+  // Public plan read — the broker subscription plan picker /signup must be
+  // able to render plans for completely unauthenticated visitors. The route
+  // handler returns a display-safe DTO (no Stripe secrets, no customer data).
+  { method: 'GET', pattern: /^\/api\/subscription\/plans\/?$/ },
+]
+
+function isPublicMethodAwareApi(method: string, path: string): boolean {
+  return PUBLIC_METHOD_AWARE_API.some(
+    (entry) => (entry.method === 'ALL' || entry.method === method) && entry.pattern.test(path),
+  )
+}
+
 export default async function proxy(request: NextRequest) {
   const token = await getToken({
     req: request,
@@ -31,6 +94,7 @@ export default async function proxy(request: NextRequest) {
     secureCookie: secureSessionCookies(),
   })
   const path = request.nextUrl.pathname
+  const method = request.method
 
   if (path === '/auth/signin' && token) {
     return NextResponse.redirect(new URL(
@@ -39,7 +103,7 @@ export default async function proxy(request: NextRequest) {
     ))
   }
 
-  // Public paths that don't require authentication
+  // ----- Public path matching (page-level + broad API prefixes) -----
   const publicPaths = [
     '/',
     '/auth/signin',
@@ -52,7 +116,6 @@ export default async function proxy(request: NextRequest) {
     '/auth/verify',
     '/auth/verify-email',
     '/brokers',
-    '/brokers/[slug]',
     '/about',
     '/contact',
     '/faq',
@@ -63,45 +126,37 @@ export default async function proxy(request: NextRequest) {
     '/blog',
     '/calculator',
     '/claim-broker',
-    '/api/auth',
-    '/api/claims',
-    '/api/brokers',
-    '/api/cities',
-    '/api/states',
-    '/api/location',
-    '/uploads',
     '/robots.txt',
     '/sitemap.xml',
   ]
 
-  // Check if path is public
-  const isPublicPath = publicPaths.some(publicPath => 
-    path === publicPath || 
-    path.startsWith('/api/auth') ||
-    path.startsWith('/api/claims') ||
-    path.startsWith('/uploads') ||
-    path.startsWith('/brokers/') && !path.includes('/dashboard') ||
-      path.startsWith('/api/brokers/') && !path.includes('/me') ||
-      path.startsWith('/api/company/') ||
-      path.startsWith('/api/location') ||
-      path.startsWith('/api/contacts/send') ||
-      path.startsWith('/api/ads') ||
-      // Stripe webhook delivery is unauthenticated by design; the webhook route
-      // verifies the Stripe signature itself (the signature IS the auth).
-      path.startsWith('/api/stripe/webhook') ||
-      path.startsWith('/about') ||
-    path.startsWith('/contact') ||
-    path.startsWith('/faq') ||
-    path.startsWith('/privacy') ||
-    path.startsWith('/terms') ||
-    path.startsWith('/subscription') ||
-    path.startsWith('/guides') ||
-      path.startsWith('/blog')
-      || path.startsWith('/calculator')
-      || path.startsWith('/claim-broker')
-  )
+  const isExactPublicPath = publicPaths.includes(path)
+  const isPublicPath = isExactPublicPath
+    || path.startsWith('/api/auth')
+    || path.startsWith('/api/claims')
+    || path.startsWith('/uploads')
+    || (path.startsWith('/brokers/') && !path.includes('/dashboard'))
+    || (path.startsWith('/api/brokers/') && !path.includes('/me'))
+    || path.startsWith('/api/company/')
+    || path.startsWith('/api/location')
+    || path.startsWith('/api/contacts/send')
+    || path.startsWith('/api/ads')
+    // Stripe webhook delivery is unauthenticated by design; the webhook route
+    // verifies the Stripe signature itself (the signature IS the auth).
+    || path.startsWith('/api/stripe/webhook')
+    || path.startsWith('/about')
+    || path.startsWith('/contact')
+    || path.startsWith('/faq')
+    || path.startsWith('/privacy')
+    || path.startsWith('/terms')
+    || path.startsWith('/subscription')
+    || path.startsWith('/guides')
+    || path.startsWith('/blog')
+    || path.startsWith('/calculator')
+    || path.startsWith('/claim-broker')
+    // Method-aware public API endpoints (e.g. GET /api/subscription/plans).
+    || isPublicMethodAwareApi(method, path)
 
-  // Allow public paths
   if (isPublicPath) {
     return NextResponse.next()
   }

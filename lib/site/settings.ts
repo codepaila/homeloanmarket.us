@@ -8,6 +8,12 @@ export type SiteSettings = {
   contactEmail: string
   contactPhone: string
   contactAddress: string
+  contactStreet: string
+  contactCity: string
+  contactState: string
+  contactZip: string
+  contactCountry: string
+  contactBusinessHours: string
   defaultCurrency: string
   timezone: string
   seoTitle: string
@@ -30,6 +36,12 @@ const DEFAULTS: SiteSettings = {
   contactEmail: 'support@homeloanmarket.com',
   contactPhone: '+1-800-000-0000',
   contactAddress: 'United States',
+  contactStreet: '',
+  contactCity: '',
+  contactState: '',
+  contactZip: '',
+  contactCountry: '',
+  contactBusinessHours: '',
   defaultCurrency: 'USD',
   timezone: 'America/New_York',
   seoTitle: 'HomeLoanMarket | Find Trusted Mortgage Originators in the US',
@@ -59,6 +71,12 @@ export const getSiteSettings = cache(async function getSiteSettings(): Promise<S
     contactEmail: values.get('contactEmail') || DEFAULTS.contactEmail,
     contactPhone: values.get('contactPhone') || DEFAULTS.contactPhone,
     contactAddress: values.get('contactAddress') || DEFAULTS.contactAddress,
+    contactStreet: values.get('contactStreet') || DEFAULTS.contactStreet,
+    contactCity: values.get('contactCity') || DEFAULTS.contactCity,
+    contactState: values.get('contactState') || DEFAULTS.contactState,
+    contactZip: values.get('contactZip') || DEFAULTS.contactZip,
+    contactCountry: values.get('contactCountry') || DEFAULTS.contactCountry,
+    contactBusinessHours: values.get('contactBusinessHours') || DEFAULTS.contactBusinessHours,
     defaultCurrency: values.get('defaultCurrency') || DEFAULTS.defaultCurrency,
     timezone: values.get('timezone') || DEFAULTS.timezone,
     seoTitle: values.get('seoTitle') || DEFAULTS.seoTitle,

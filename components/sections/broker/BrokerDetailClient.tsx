@@ -176,7 +176,7 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker, initialR
             <div className="absolute -top-2 -right-2 z-10">
               <Badge className="flex items-center gap-1 rounded bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground shadow-md">
                 <Star className="h-3 w-3 fill-current" />
-                Featured
+                Mortgage Expert
               </Badge>
             </div>
           )}

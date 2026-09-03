@@ -1,43 +1,20 @@
 import {
   Home,
   Users,
-  UserCog,
   User as UserIcon,
-  Building,
-  FileText,
   CreditCard,
   Settings,
-  Bell,
   Calculator,
   TrendingUp,
-  BarChart3,
-  Shield,
   HelpCircle,
   FileSpreadsheet,
-  PhoneCall,
-  Star,
-  UserPlus,
   Search,
   MessageSquare,
-  Banknote,
   ChartBar,
-  ShieldCheck,
   Megaphone,
-  FileCheck,
-  FolderOpen,
-  Wallet,
   Building2,
-  MapPin,
-  Tag,
-  MessageCircle,
   Heart,
-  Download,
-  Upload,
-  Zap,
   Crown,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
 } from 'lucide-react'
 import type { SidebarItem, SidebarSection, QuickAction, SidebarData, UserRole } from '@/types/nav'
 
@@ -88,40 +65,6 @@ export const appSidebarData = (user: SidebarUserInput): SidebarData => {
   const isFeaturedBroker = subscription?.isActive === true &&
     subscriptionPlan === "FEATURED"
 
-  // ==================== ADMIN NAVIGATION ====================
-  const adminNavItems: SidebarItem[] = isAdmin ? [
-    { title: "Admin Dashboard", url: "/admin", icon: Home, roles: ["ADMIN"] },
-    {
-      title: "Brokers",
-      url: "/admin/brokers",
-      icon: Users,
-      items: [
-        { title: "All Brokers", url: "/admin/brokers" },
-        { title: "Create Broker", url: "/admin/brokers/create" },
-      ],
-    },
-    { title: "Advertisements", url: "/admin/ads", icon: Megaphone, items: [
-      { title: "Overview", url: "/admin/ads" },
-      { title: "Advertisements", url: "/admin/ads/list" },
-      { title: "Media Library", url: "/admin/media" },
-      { title: "Folders", url: "/admin/folders" },
-    ] },
-    { title: "Companies", url: "/admin/company-ad-requests", icon: Building2, items: [
-      { title: "Advertisement Requests", url: "/admin/company-ad-requests" },
-      { title: "Advertising Plans", url: "/admin/billing/company-advertising-plans" },
-      { title: "Company Subscriptions", url: "/admin/billing/company-subscriptions" },
-    ] },
-    { title: "Billing", url: "/admin/billing/broker-plans", icon: CreditCard, items: [
-      { title: "Broker Plans", url: "/admin/billing/broker-plans" },
-      { title: "Broker Subscriptions", url: "/admin/billing/broker-subscriptions" },
-      { title: "Company Advertising Plans", url: "/admin/billing/company-advertising-plans" },
-      { title: "Company Subscriptions", url: "/admin/billing/company-subscriptions" },
-    ] },
-    { title: "Blogs Content", url: "/admin/content", icon: FileSpreadsheet },
-    { title: "FAQs", url: "/admin/faqs", icon: HelpCircle },
-    { title: "Support Tickets", url: "/admin/support/tickets", icon: HelpCircle },
-    { title: "Settings", url: "/admin/settings", icon: Settings },
-  ] : []
 
   // ==================== BROKER NAVIGATION ====================
   const brokerNavItems: SidebarItem[] = isBroker ? [
@@ -256,7 +199,7 @@ export const appSidebarData = (user: SidebarUserInput): SidebarData => {
       icon: Search,
       items: [
         { title: "Browse Mortgage Originators", url: "/brokers" },
-        { title: "Featured Mortgage Originators", url: "/brokers?featured=true" },
+        { title: "Mortgage Experts", url: "/brokers?featured=true" },
         { title: "Verified Mortgage Originators", url: "/brokers?verified=true" },
         { title: "By City", url: "/brokers/cities" },
       ]
@@ -345,7 +288,6 @@ export const appSidebarData = (user: SidebarUserInput): SidebarData => {
 
   // ==================== COMBINE ALL NAVIGATION ====================
   const allNavItems = [
-    ...adminNavItems,
     ...filteredBrokerNavItems,
     ...userNavItems,
     ...commonNavItems

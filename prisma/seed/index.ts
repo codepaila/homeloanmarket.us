@@ -14,6 +14,8 @@ import {
   SubscriptionPlan,
   VerificationStatus,
 } from '@prisma/client'
+import { DEFAULT_BROKER_PLANS } from '../../lib/broker-plans'
+import { DEFAULT_COMPANY_PLANS } from '../../lib/company-plan-definitions'
 import { isPublicBroker } from '../../lib/broker-policy'
 import { prisma, DEMO_SEED_DATE, ensureAdmin, hashPassword } from './helpers'
 import { comparePassword } from '../../lib/aes'
@@ -481,10 +483,100 @@ async function seedFaqs() {
   }
 }
 
+/**
+ * Idempotently seed broker subscription plans (FREE, FEATURED).
+ * Preserves admin-customized feature labels/enabled/sortOrder on re-runs.
+ * Only adds missing default features; never overwrites existing customizations.
+ */
+async function seedSubscriptionPlans() {
+  for (const planInput of DEFAULT_BROKER_PLANS) {
+    const existing = await prisma.brokerSubscriptionPlan.findUnique({ where: { code: planInput.code } })
+    if (!existing) {
+      const stripePriceId = planInput.code === 'FEATURED' ? (process.env.STRIPE_STANDARD_PRICE_ID || null) : null
+      const created = await prisma.brokerSubscriptionPlan.create({
+        data: {
+          code: planInput.code,
+          name: planInput.name,
+          description: planInput.description,
+          price: planInput.price,
+          billingInterval: planInput.billingInterval,
+          currency: planInput.currency,
+          stripeProductId: null,
+          stripePriceId,
+          isActive: planInput.isActive,
+          displayOrder: planInput.displayOrder,
+        },
+      })
+      // Create default features for new plan
+      if (planInput.features.length > 0) {
+        await prisma.brokerSubscriptionPlanFeature.createMany({
+          data: planInput.features.map((f) => ({
+            planId: created.id,
+            label: f.label,
+            enabled: f.enabled,
+            sortOrder: f.sortOrder,
+          })),
+        })
+      }
+      console.log(`  Seeded broker plan: ${planInput.code} (${planInput.name}) with ${planInput.features.length} features`)
+    } else {
+      // Plan exists - only add missing default features (preserve admin customization)
+      const existingFeatures = await prisma.brokerSubscriptionPlanFeature.findMany({
+        where: { planId: existing.id },
+        select: { label: true },
+      })
+      const existingLabels = new Set(existingFeatures.map((f) => f.label))
+      const missingFeatures = planInput.features.filter((f) => !existingLabels.has(f.label))
+      if (missingFeatures.length > 0) {
+        await prisma.brokerSubscriptionPlanFeature.createMany({
+          data: missingFeatures.map((f) => ({
+            planId: existing.id,
+            label: f.label,
+            enabled: f.enabled,
+            sortOrder: f.sortOrder,
+          })),
+        })
+        console.log(`  Added ${missingFeatures.length} missing default features to existing plan: ${planInput.code}`)
+      }
+    }
+  }
+}
+
+/**
+ * Idempotently seed company advertising plans.
+ * Uses CompanyAdvertisingPlan model - completely separate from broker plans.
+ * Preserves admin-customized plans on re-runs.
+ */
+async function seedCompanyAdvertisingPlans() {
+  for (const planInput of DEFAULT_COMPANY_PLANS) {
+    const existing = await prisma.companyAdvertisingPlan.findUnique({ where: { name: planInput.name } })
+    if (!existing) {
+      await prisma.companyAdvertisingPlan.create({
+        data: {
+          name: planInput.name,
+          description: planInput.description,
+          price: planInput.price,
+          billingInterval: planInput.billingInterval,
+          currency: planInput.currency,
+          isActive: planInput.isActive,
+          displayOrder: planInput.displayOrder,
+          stripeProductId: planInput.stripeProductId || null,
+          stripePriceId: planInput.stripePriceId || null,
+          features: planInput.features,
+        },
+      })
+      console.log(`  Seeded company plan: ${planInput.name} ($${planInput.price/100}/${planInput.billingInterval})`)
+    }
+    // If plan exists, leave it alone (admin may have customized it)
+  }
+}
+
 export async function seedCanonicalData() {
   const admin = await ensureAdmin()
   const users = await seedUsers()
   const brokers = await seedBrokers(users)
+  await seedSubscriptionPlans()
+  await seedCompanyAdvertisingPlans()
   await seedClaims(admin.id, brokers, users)
   const assets = await seedMedia(admin.id)
   const ads = await seedAdvertisements(admin.id, assets)

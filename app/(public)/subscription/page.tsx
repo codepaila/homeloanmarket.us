@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { toast } from 'react-hot-toast'
+import { useSession } from 'next-auth/react'
 import { AnimatedContainer } from '@/components/design/AnimatedContainer'
 import { Section } from '@/components/design/Section'
 import { PricingCard } from '@/components/design/PricingCard'
@@ -22,50 +23,60 @@ type PublicPlan = {
 }
 
 export default function SubscriptionPage() {
+  const { data: session, status } = useSession()
   const [plans, setPlans] = useState<PublicPlan[]>([])
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
     let active = true
     async function load() {
+      setLoading(true)
+      setError('')
       try {
         const response = await fetch('/api/subscription/plans')
         const data = await response.json()
         if (!response.ok) throw new Error(data.error || 'Unable to load plans')
         if (active) setPlans(Array.isArray(data.plans) ? data.plans : [])
+          
       } catch (cause) {
         if (active) setError(cause instanceof Error ? cause.message : 'Unable to load plans')
+      } finally {
+        if (active) setLoading(false)
       }
     }
     void load()
     return () => { active = false }
   }, [])
 
-  const handleSelect = async (priceId: string, planName: string) => {
-    try {
-      const response = await fetch('/api/subscription/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ priceId, plan: planName }),
-      })
+  const handleSelect = (priceId: string, planName: string, planCode?: string) => {
+    // Guard against unknown plans — use the plan code from the card
+    const code = planCode && (planCode === 'FREE' || planCode === 'FEATURED')
+      ? planCode
+      : null
+    const isAuth = status === 'authenticated' && session?.user?.id
 
-      const data = await response.json()
+    if (isAuth && code) {
+      // Authenticated: redirect to the authenticated subscription select page
+      // so the existing paid/free subscription flow runs as intended.
+      window.location.href = `/broker/subscription/select?plan=${code}`
+      return
+    }
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Checkout failed')
-      }
-
-      if (data.url) {
-        window.location.href = data.url
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to start checkout')
+    // Unauthenticated (or edge case without session):
+    // redirect to signup with the plan code preserved through the broker-intent
+    // cookie mechanism. The plan code must be an exact internal identity (FREE /
+    // FEATURED) — never a display name or Stripe price ID.
+    if (code) {
+      window.location.href = `/auth/signup?plan=${code}`
+    } else {
+      toast.error('Unable to determine the selected plan')
     }
   }
 
   return (
     <div className="min-h-screen">
-              <Section className="bg-muted">
+      <Section className="bg-muted">
         <AnimatedContainer>
           <div className="text-center max-w-3xl mx-auto">
             <h1 className="heading-1 text-foreground mb-4">
@@ -73,7 +84,7 @@ export default function SubscriptionPage() {
             </h1>
             <p className="text-xl text-muted-foreground">
               Simple, transparent pricing designed for mortgage originators of all sizes. Start with our free plan
-              or upgrade to get featured placement and advanced tools.
+              or upgrade to get Mortgage Expert placement and advanced tools.
             </p>
           </div>
         </AnimatedContainer>
@@ -81,10 +92,12 @@ export default function SubscriptionPage() {
 
       <Section className="bg-background">
         <AnimatedContainer>
-          {error ? (
+          {loading ? (
+            <p className="text-center text-sm text-muted-foreground">Loading plans…</p>
+          ) : error ? (
             <p className="text-center text-sm text-destructive">{error}</p>
           ) : plans.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground">Loading plans…</p>
+            <p className="text-center text-sm text-muted-foreground">No plans are currently available.</p>
           ) : (
           <div className="grid lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {plans.map((plan) => (
@@ -97,6 +110,7 @@ export default function SubscriptionPage() {
                 features={plan.features}
                 isPopular={plan.code === 'FEATURED'}
                 stripePriceId={plan.stripePriceId || undefined}
+                code={plan.code}
                 onSelect={handleSelect}
                 isCurrent={false}
               />
@@ -153,7 +167,7 @@ export default function SubscriptionPage() {
             </h2>
             <Link
               href="/contact"
-              className="inline-flex items-center gap-2 text-primary hover:text-primary font-medium transition-colors"
+              className="inline-flex items-center gap-2 text-primary hover:text-primary font-medium transition-colors hover:underline"
             >
                Contact our team
             </Link>

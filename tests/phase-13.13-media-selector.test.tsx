@@ -63,7 +63,7 @@ test('SiteSettingsForm exposes reusable logo and favicon setting fields', () => 
   const html = renderToStaticMarkup(
     <SiteSettingsForm
       settings={{
-        siteName: 'HomeLoanMarket', siteDescription: '', siteUrl: 'https://homeloanmarket.com', contactEmail: '', contactPhone: '', contactAddress: '', defaultCurrency: 'USD', timezone: 'America/New_York', seoTitle: '', seoDescription: '', socialFacebook: null, socialTwitter: null, socialLinkedIn: null, socialInstagram: null, socialYouTube: null, footerDescription: '', copyrightText: '', siteLogo: '/uploads/media/logo.webp', siteFavicon: '/uploads/media/favicon.webp',
+        siteName: 'HomeLoanMarket', siteDescription: '', siteUrl: 'https://homeloanmarket.com', contactEmail: '', contactPhone: '', contactAddress: '', contactStreet: '', contactCity: '', contactState: '', contactZip: '', contactCountry: '', contactBusinessHours: '', defaultCurrency: 'USD', timezone: 'America/New_York', seoTitle: '', seoDescription: '', socialFacebook: null, socialTwitter: null, socialLinkedIn: null, socialInstagram: null, socialYouTube: null, footerDescription: '', copyrightText: '', siteLogo: '/uploads/media/logo.webp', siteFavicon: '/uploads/media/favicon.webp',
       }}
     />,
   )

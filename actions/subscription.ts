@@ -1,29 +1,31 @@
-// action 
+// action
 "use server"
+import type Stripe from 'stripe'
 import { SubscriptionPlan } from '@prisma/client'
-import Stripe from 'stripe'
 import { validatePlanPrice } from '@/lib/stripe'
 import { getCurrentUser } from '@/lib/currentUser'
 import prisma from '@/lib/prisma'
+import { stripeClient } from '@/lib/stripe-config'
 import { CheckoutConflictError, SubscriptionService } from '@/lib/subscription'
-// console.log(process.env.STRIPE_SECRET_KEY)
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY is not set in environment variables')
+
+// Single canonical Stripe client resolved from the encrypted DB secret first,
+// then the environment fallback — never read directly here and never logged.
+// This module no longer instantiates a competing Stripe client or reads
+// STRIPE_SECRET_KEY from the environment directly.
+async function getStripe(): Promise<Stripe> {
+  return stripeClient()
 }
 
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-//   apiVersion: '2024-06-20',
-  typescript: true,
-})
 export async function createStripeCustomer() {
   const user = await getCurrentUser()
   if (!user?.email) throw new Error('Unauthorized')
   if (!user.brokerProfile) throw new Error('Broker profile not found')
 
   if (user.stripeCustomerId) {
-    return stripe.customers.retrieve(user.stripeCustomerId)
+    return (await getStripe()).customers.retrieve(user.stripeCustomerId)
   }
 
+  const stripe = await getStripe()
   const customer = await stripe.customers.create({
     email: user.email,
     name: user.name || undefined,
@@ -94,6 +96,7 @@ export async function createCheckoutSession(
       billing_address_collection: 'required' as const,
       managed_payments: { enabled: false },
     }
+    const stripe = await getStripe()
     return stripe.checkout.sessions.create(
       sessionParams as Stripe.Checkout.SessionCreateParams,
       {
@@ -110,6 +113,7 @@ export async function createPortalSession(customerId: string, returnUrl?: string
   if (!user || user.stripeCustomerId !== customerId) {
     throw new Error('Unauthorized subscription customer')
   }
+  const stripe = await getStripe()
   const session = await stripe.billingPortal.sessions.create({
     customer: customerId,
     return_url: returnUrl || `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/dashboard/subscription`,
@@ -124,6 +128,7 @@ export async function getSubscription(subscriptionId: string) {
     throw new Error('Unauthorized subscription')
   }
   await SubscriptionService.assertStripeCustomerOwnership(user.id, user.brokerProfile.id, user.stripeCustomerId)
+  const stripe = await getStripe()
   const subscription = await stripe.subscriptions.retrieve(subscriptionId)
   if (subscription.customer !== user.stripeCustomerId) throw new Error('Unauthorized subscription')
   return subscription
@@ -136,6 +141,7 @@ export async function cancelSubscription(subscriptionId: string) {
   }
   await SubscriptionService.assertStripeCustomerOwnership(user.id, user.brokerProfile.id, user.stripeCustomerId)
   const result = await SubscriptionService.withCheckoutLock(user.brokerProfile.id, async () => {
+    const stripe = await getStripe()
     const subscription = await stripe.subscriptions.retrieve(subscriptionId)
     if (subscription.customer !== user.stripeCustomerId) throw new Error('Unauthorized subscription')
     return await stripe.subscriptions.cancel(subscriptionId, {}, {
@@ -160,6 +166,7 @@ export async function updateSubscription(
   }
   await SubscriptionService.assertStripeCustomerOwnership(user.id, user.brokerProfile.id, user.stripeCustomerId)
   return SubscriptionService.withCheckoutLock(user.brokerProfile.id, async () => {
+    const stripe = await getStripe()
     const subscription = await stripe.subscriptions.retrieve(subscriptionId)
     if (subscription.customer !== user.stripeCustomerId) throw new Error('Unauthorized subscription')
     return await stripe.subscriptions.update(subscriptionId, {
@@ -182,6 +189,7 @@ export async function getCustomerSubscriptions(customerId: string) {
     throw new Error('Unauthorized subscription customer')
   }
   await SubscriptionService.assertStripeCustomerOwnership(user.id, user.brokerProfile.id, customerId)
+  const stripe = await getStripe()
   const subscriptions = await stripe.subscriptions.list({
     customer: customerId,
     status: 'all',
@@ -190,19 +198,3 @@ export async function getCustomerSubscriptions(customerId: string) {
 
   return subscriptions
 }
-// Webhook event type guards
-// export  function isCheckoutSessionCompleted(event: Stripe.Event): event is Stripe.CheckoutSessionCompletedEvent {
-//   return event.type === 'checkout.session.completed'
-// }
-
-// export function isCustomerSubscriptionUpdated(event: Stripe.Event): event is Stripe.CustomerSubscriptionUpdatedEvent {
-//   return event.type === 'customer.subscription.updated'
-// }
-
-// export function isCustomerSubscriptionDeleted(event: Stripe.Event): event is Stripe.CustomerSubscriptionDeletedEvent {
-//   return event.type === 'customer.subscription.deleted'
-// }
-
-// export function isInvoicePaymentFailed(event: Stripe.Event): event is Stripe.InvoicePaymentFailedEvent {
-//   return event.type === 'invoice.payment_failed'
-// }

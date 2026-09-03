@@ -2,32 +2,63 @@ import prisma from '@/lib/prisma'
 import Stripe from 'stripe'
 import type { BrokerSubscriptionPlan, BrokerSubscriptionPlanFeature } from '@prisma/client'
 import { getStripeSecretKey } from '@/lib/stripe-config'
-import { BROKER_FEATURE_DEFS_BY_CODE } from '@/lib/broker-plan-features'
 
-// Feature codes supported by the platform. Keep this list explicit — new
-// features are added here and then surfaced through the admin plan editor.
-export const BROKER_PLAN_FEATURES = {
-  PROFILE_BADGE: 'PROFILE_BADGE',
-  SUPPORT_TICKETS: 'SUPPORT_TICKETS',
-} as const
+// Customer-facing display names for plan codes. Internal codes (FREE,
+// FEATURED) are preserved for compatibility; only the presented name changes.
+export const BROKER_PLAN_DISPLAY_NAME: Record<string, string> = {
+  FREE: 'Free',
+  FEATURED: 'Mortgage Expert',
+}
 
-export type BrokerPlanFeatureCode = (typeof BROKER_PLAN_FEATURES)[keyof typeof BROKER_PLAN_FEATURES]
+// The ONLY supported fixed broker subscription plans. Internal codes are
+// immutable and derived from the canonical mapping. Admins manage these plans;
+// arbitrary plan codes/names are rejected at the API boundary.
+export const SUPPORTED_BROKER_PLAN_CODES = ['FREE', 'FEATURED'] as const
+export type SupportedBrokerPlanCode = (typeof SUPPORTED_BROKER_PLAN_CODES)[number]
 
-export type BrokerPlanFeatureInput = Partial<Record<BrokerPlanFeatureCode, boolean>>
+export function isSupportedBrokerPlanCode(value: string): value is SupportedBrokerPlanCode {
+  return (SUPPORTED_BROKER_PLAN_CODES as readonly string[]).includes(value)
+}
+
+// Canonical customer-facing name for a fixed broker plan code. Returns null
+// for unknown codes so callers can reject arbitrary plans.
+export function getBrokerPlanDisplayName(code: string): string | null {
+  return BROKER_PLAN_DISPLAY_NAME[code] ?? null
+}
 
 export type PlanWithFeatures = BrokerSubscriptionPlan & {
   features: BrokerSubscriptionPlanFeature[]
 }
 
-type PlanFeatureRow = Pick<BrokerSubscriptionPlanFeature, 'code' | 'enabled'> | null
+export type BrokerPlanFeatureDraft = {
+  label: string
+  enabled: boolean
+  sortOrder: number
+}
 
-// Fallback feature map used ONLY until the database-backed plans are seeded
-// (e.g. before the reconcile script runs in a fresh environment). It is never
-// the source of truth; the admin-managed BrokerSubscriptionPlan records are.
-export const DEFAULT_BROKER_PLAN_FEATURES: Record<string, BrokerPlanFeatureInput> = {
-  FREE: { PROFILE_BADGE: false, SUPPORT_TICKETS: false },
-  FEATURED: { PROFILE_BADGE: true, SUPPORT_TICKETS: true },
-  PREMIUM: { PROFILE_BADGE: true, SUPPORT_TICKETS: true },
+// Default customer-facing features used to seed a brand-new plan. These are
+// simple display rows (label/enabled/sortOrder only). They exist solely for
+// initial population and are NEVER used as runtime display overrides — the
+// database BrokerSubscriptionPlanFeature rows are the source of truth.
+export const DEFAULT_BROKER_PLAN_FEATURES: Record<string, BrokerPlanFeatureDraft[]> = {
+  FREE: [
+    { label: 'Local Broker Listing', enabled: true, sortOrder: 10 },
+    { label: 'Appear in Search Results', enabled: true, sortOrder: 20 },
+    { label: 'Profile & Contact Information', enabled: true, sortOrder: 30 },
+    { label: 'Visibility Across Your Metro Area', enabled: true, sortOrder: 40 },
+    { label: 'Greater Exposure to a Large, Hard-to-Reach Homebuyer Community', enabled: true, sortOrder: 50 },
+    { label: 'Free', enabled: true, sortOrder: 60 },
+  ],
+  FEATURED: [
+    { label: 'Local Broker Listing', enabled: true, sortOrder: 10 },
+    { label: 'Appear Above Free Listings', enabled: true, sortOrder: 20 },
+    { label: 'Profile & Contact Information', enabled: true, sortOrder: 30 },
+    { label: 'Visibility Across Your Metro Area', enabled: true, sortOrder: 40 },
+    { label: 'Greater Exposure to a Large, Hard-to-Reach Homebuyer Community', enabled: true, sortOrder: 50 },
+    { label: 'Mortgage Expert Badge + 5 Green Stars', enabled: true, sortOrder: 60 },
+    { label: 'Cancel Anytime', enabled: true, sortOrder: 70 },
+  ],
+  PREMIUM: [],
 }
 
 // Initial plan records created by the idempotent reconcile script. Prices are
@@ -42,7 +73,7 @@ export const DEFAULT_BROKER_PLANS: Array<{
   currency: string
   displayOrder: number
   isActive: boolean
-  features: BrokerPlanFeatureInput
+  features: BrokerPlanFeatureDraft[]
 }> = [
   {
     code: 'FREE',
@@ -53,18 +84,18 @@ export const DEFAULT_BROKER_PLANS: Array<{
     currency: 'usd',
     displayOrder: 10,
     isActive: true,
-    features: { PROFILE_BADGE: false, SUPPORT_TICKETS: false },
+    features: DEFAULT_BROKER_PLAN_FEATURES.FREE,
   },
   {
     code: 'FEATURED',
-    name: 'Featured',
+    name: 'Mortgage Expert',
     description: 'Get featured in listings and direct leads',
     price: 1500,
     billingInterval: 'month',
     currency: 'usd',
     displayOrder: 20,
     isActive: true,
-    features: { PROFILE_BADGE: true, SUPPORT_TICKETS: true },
+    features: DEFAULT_BROKER_PLAN_FEATURES.FEATURED,
   },
   {
     code: 'PREMIUM',
@@ -75,13 +106,8 @@ export const DEFAULT_BROKER_PLANS: Array<{
     currency: 'usd',
     displayOrder: 30,
     isActive: true,
-    features: { PROFILE_BADGE: true, SUPPORT_TICKETS: true },
+    features: DEFAULT_BROKER_PLAN_FEATURES.PREMIUM,
   },
-]
-
-export const ALL_BROKER_PLAN_FEATURES: BrokerPlanFeatureCode[] = [
-  BROKER_PLAN_FEATURES.PROFILE_BADGE,
-  BROKER_PLAN_FEATURES.SUPPORT_TICKETS,
 ]
 
 // ---------------------------------------------------------------------------
@@ -117,14 +143,6 @@ export async function getActiveSubscriberCount(planId: string) {
   return prisma.brokerSubscription.count({ where: { planId, isActive: true } })
 }
 
-// Human-readable feature labels for the enabled plan features shown to
-// customers. This is the ONLY presentation mapping for plan features; it maps
-// a feature code to a friendly label and is never used for entitlement checks.
-export function brokerFeatureLabel(code: string) {
-  return BROKER_FEATURE_DEFS_BY_CODE.get(code)?.label
-    || code.replace(/_/g, ' ').toLowerCase().replace(/^\w/, (c) => c.toUpperCase())
-}
-
 export type BrokerPlanPublic = {
   id: string
   code: string
@@ -136,19 +154,19 @@ export type BrokerPlanPublic = {
   displayOrder: number
   stripePriceId: string | null
   isActive: boolean
-  // Human-readable enabled feature labels for display.
+  // Customer-facing labels of enabled features, ordered for display.
   features: string[]
-  // Feature-code → enabled map for UI that needs it.
-  featureMap: Record<string, boolean>
 }
 
 // Public, display-safe shape of the dynamic plans. The DB is the single source
 // of truth for name, price, currency, billing interval, ordering, and features.
+// Feature rows are simple display content (label/enabled/sortOrder) with no
+// business meaning.
 export function toBrokerPlanPublic(plan: PlanWithFeatures): BrokerPlanPublic {
   return {
     id: plan.id,
     code: plan.code,
-    name: plan.name,
+    name: BROKER_PLAN_DISPLAY_NAME[plan.code] || plan.name,
     description: plan.description,
     price: plan.price,
     currency: plan.currency,
@@ -156,8 +174,10 @@ export function toBrokerPlanPublic(plan: PlanWithFeatures): BrokerPlanPublic {
     displayOrder: plan.displayOrder,
     stripePriceId: plan.stripePriceId,
     isActive: plan.isActive,
-    features: plan.features.filter((feature) => feature.enabled).map((feature) => brokerFeatureLabel(feature.code)),
-    featureMap: Object.fromEntries(plan.features.map((feature) => [feature.code, feature.enabled])),
+    features: plan.features
+      .filter((feature) => feature.enabled)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((feature) => feature.label),
   }
 }
 
@@ -167,92 +187,104 @@ export async function listBrokerPlansPublic() {
 }
 
 // ---------------------------------------------------------------------------
-// Feature entitlement
+// Mortgage Expert badge entitlement
 // ---------------------------------------------------------------------------
+// The Mortgage Expert badge is a business property of the broker's plan, not a
+// display feature. A broker qualifies when their active subscription is on a
+// paid (non-FREE) plan. This is decoupled from the display feature rows, which
+// have no entitlement meaning.
 
-export function planHasFeature(plan: { features: PlanFeatureRow[] } | null, featureCode: BrokerPlanFeatureCode) {
-  return Boolean(plan?.features?.some((feature) => feature?.code === featureCode && feature.enabled === true))
-}
-
-type BrokerSubscriptionFeatureState = {
+type BrokerSubscriptionState = {
   isActive?: boolean
   endDate?: Date | null
   plan?: string | null
-  planRef?: ({ features: PlanFeatureRow[] } & Record<string, unknown>) | null
 }
 
-// Fallback used when the database plan records are not yet seeded. Keeps
-// existing behavior intact during the migration window and for plans whose
-// DB configuration is absent.
-function fallbackPlanHasFeature(planCode: string | null | undefined, featureCode: BrokerPlanFeatureCode) {
-  if (!planCode) return false
-  return DEFAULT_BROKER_PLAN_FEATURES[planCode]?.[featureCode] === true
-}
-
-function subscriptionIsEntitled(subscription: BrokerSubscriptionFeatureState | null | undefined) {
+function subscriptionIsEntitled(subscription: BrokerSubscriptionState | null | undefined) {
   if (!subscription) return false
   if (subscription.isActive !== true) return false
   if (subscription.endDate && subscription.endDate <= new Date()) return false
   return true
 }
 
-// Sync helper for subscription rows that already include `planRef` with its
-// features (avoids an N+1 query in listing/detail routes).
-export function brokerSubscriptionHasFeature(
-  subscription: BrokerSubscriptionFeatureState | null | undefined,
-  featureCode: BrokerPlanFeatureCode,
+// Whether an active subscription is on a paid (non-FREE) broker plan. Used to
+// derive the Mortgage Expert badge entitlement. Decoupled from display feature
+// rows, which carry no business meaning.
+export function brokerSubscriptionHasProfileBadge(
+  subscription: BrokerSubscriptionState | null | undefined,
 ) {
-  if (!subscription || !subscriptionIsEntitled(subscription)) return false
-  const planRef = subscription.planRef
-  if (planRef) {
-    return planHasFeature(planRef as PlanWithFeatures, featureCode)
-  }
-  return fallbackPlanHasFeature(subscription.plan, featureCode)
-}
-
-// Authoritative server-side entitlement check.
-export async function hasBrokerFeature(brokerId: string, featureCode: BrokerPlanFeatureCode) {
-  const subscription = await prisma.brokerSubscription.findUnique({
-    where: { brokerId },
-    include: { planRef: { include: { features: true } } },
-  })
-  return brokerSubscriptionHasFeature(subscription, featureCode)
-}
-
-// Resolves PROFILE_BADGE entitlement for a subscription that may or may not
-// already carry its plan relation. Loads the plan from the database only when
-// it was not included (used by admin/API surfaces that select scalars only).
-export async function resolveBrokerProfileBadge(subscription: BrokerSubscriptionFeatureState | null | undefined) {
-  if (!subscription || !subscriptionIsEntitled(subscription)) return false
-  const planRef = subscription.planRef
-  if (planRef) {
-    return planHasFeature(planRef as PlanWithFeatures, BROKER_PLAN_FEATURES.PROFILE_BADGE)
-  }
-  const planId = (subscription as { planId?: string | null }).planId
-  if (planId) {
-    const plan = await getBrokerPlanById(planId)
-    if (plan) return planHasFeature(plan, BROKER_PLAN_FEATURES.PROFILE_BADGE)
-  }
-  return fallbackPlanHasFeature(subscription.plan, BROKER_PLAN_FEATURES.PROFILE_BADGE)
+  if (!subscriptionIsEntitled(subscription)) return false
+  return Boolean(subscription?.plan && subscription.plan !== 'FREE')
 }
 
 // ---------------------------------------------------------------------------
 // Plan write helpers (admin-authorized)
 // ---------------------------------------------------------------------------
 
-export async function upsertPlanFeatures(
-  tx: { brokerSubscriptionPlanFeature: { deleteMany: (args: unknown) => Promise<unknown>; createMany: (args: unknown) => Promise<unknown> } },
+// A feature row as submitted by the admin form. An existing row carries its
+// DB `id`; a new row omits it. Display-only.
+export type BrokerPlanFeatureDraftInput = {
+  id?: string
+  label: string
+  enabled: boolean
+  sortOrder: number
+}
+
+// Create feature rows for a brand-new plan (no rows exist yet).
+export async function createPlanFeatures(
+  tx: {
+    brokerSubscriptionPlanFeature: { createMany: (args: { data: Array<{ planId: string; label: string; enabled: boolean; sortOrder: number }> }) => Promise<unknown> }
+  },
   planId: string,
-  features: BrokerPlanFeatureInput,
+  features: BrokerPlanFeatureDraftInput[],
 ) {
-  await tx.brokerSubscriptionPlanFeature.deleteMany({ where: { planId } })
-  const rows = ALL_BROKER_PLAN_FEATURES.filter((code) => code in features).map((code) => ({
+  const rows = features.map((f) => ({
     planId,
-    code,
-    enabled: features[code] === true,
+    label: f.label,
+    enabled: f.enabled,
+    sortOrder: Number.isFinite(f.sortOrder) ? Math.round(f.sortOrder) : 0,
   }))
   if (rows.length > 0) {
     await tx.brokerSubscriptionPlanFeature.createMany({ data: rows })
+  }
+}
+
+// Sync a plan's feature rows to match the submitted full list. Preserves
+// existing row IDs: rows carrying an `id` are updated in place, rows without
+// an `id` are created, and existing rows whose `id` is absent are deleted.
+// Never touches the plan, Stripe, or subscriptions.
+export async function syncPlanFeatures(
+  tx: {
+    brokerSubscriptionPlanFeature: {
+      findMany: (args: { where: { planId: string }; select: { id: true } }) => Promise<Array<{ id: string }>>
+      deleteMany: (args: { where: { planId: string; id: { in: string[] } } }) => Promise<unknown>
+      createMany: (args: { data: Array<{ planId: string; label: string; enabled: boolean; sortOrder: number }> }) => Promise<unknown>
+      update: (args: { where: { id: string }; data: { label: string; enabled: boolean; sortOrder: number } }) => Promise<unknown>
+    }
+  },
+  planId: string,
+  features: BrokerPlanFeatureDraftInput[],
+) {
+  const toCreate = features.filter((f) => !f.id)
+  const toUpdate = features.filter((f) => f.id)
+  const submittedIds = new Set(toUpdate.map((f) => f.id as string))
+
+  const existing = await tx.brokerSubscriptionPlanFeature.findMany({ where: { planId }, select: { id: true } })
+  const toDelete = existing.filter((row) => !submittedIds.has(row.id)).map((row) => row.id)
+
+  if (toDelete.length > 0) {
+    await tx.brokerSubscriptionPlanFeature.deleteMany({ where: { planId, id: { in: toDelete } } })
+  }
+  if (toCreate.length > 0) {
+    await tx.brokerSubscriptionPlanFeature.createMany({
+      data: toCreate.map((f) => ({ planId, label: f.label, enabled: f.enabled, sortOrder: Number.isFinite(f.sortOrder) ? Math.round(f.sortOrder) : 0 })),
+    })
+  }
+  for (const f of toUpdate) {
+    await tx.brokerSubscriptionPlanFeature.update({
+      where: { id: f.id as string },
+      data: { label: f.label, enabled: f.enabled, sortOrder: Number.isFinite(f.sortOrder) ? Math.round(f.sortOrder) : 0 },
+    })
   }
 }
 
@@ -260,6 +292,27 @@ export function normalizePlanCode(value: unknown) {
   if (typeof value !== 'string') return null
   const code = value.trim().toUpperCase().replace(/[^A-Z0-9_]/g, '_').replace(/^_+|_+$/g, '')
   return code || null
+}
+
+// Sanitize the feature rows submitted by the admin form. Returns null when the
+// payload is not a valid array of display feature rows, or an array of drafts.
+// Each draft carries an optional existing DB `id`, a non-empty trimmed `label`,
+// an `enabled` flag, and a `sortOrder`.
+export function sanitizeFeatureDrafts(value: unknown): BrokerPlanFeatureDraftInput[] | null {
+  if (!Array.isArray(value)) return null
+  const out: BrokerPlanFeatureDraftInput[] = []
+  for (const item of value) {
+    if (typeof item !== 'object' || item === null) return null
+    const row = item as Record<string, unknown>
+    const label = typeof row.label === 'string' ? row.label.trim() : ''
+    if (!label) return null
+    if (label.length > 120) return null
+    const enabled = row.enabled === true
+    const sortOrder = typeof row.sortOrder === 'number' && Number.isFinite(row.sortOrder) ? Math.round(row.sortOrder) : 0
+    const id = typeof row.id === 'string' && row.id ? row.id : undefined
+    out.push({ id, label, enabled, sortOrder })
+  }
+  return out
 }
 
 // ---------------------------------------------------------------------------

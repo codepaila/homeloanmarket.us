@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 import prisma from '@/lib/prisma'
 import BrokerDetailClient from '@/components/sections/broker/BrokerDetailClient'
 import { isPublicBroker, isMortgageExpertBroker, hasPaidEntitlement } from '@/lib/broker-policy'
-import { BROKER_PLAN_FEATURES, brokerSubscriptionHasFeature } from '@/lib/broker-plans'
+import { brokerSubscriptionHasProfileBadge } from '@/lib/broker-plans'
 import { canonicalUrl, safeJsonLd, brokerLocalBusinessJsonLd, breadcrumbJsonLd } from '@/lib/seo'
 import { locationHasValidCoordinates } from '@/lib/location/broker-location'
 import { toPublicBrokerRecord, toPublicBrokerListRecord } from '@/lib/public-broker'
@@ -154,7 +154,7 @@ export default async function PublicBrokerPage({ params }: PageProps) {
     isFeatured: hasPaidEntitlement(broker.subscription),
     isMortgageExpert: isMortgageExpertBroker({
       mortgageExpertEnabled: broker.mortgageExpertEnabled,
-      profileBadge: brokerSubscriptionHasFeature(broker.subscription, BROKER_PLAN_FEATURES.PROFILE_BADGE),
+      profileBadge: brokerSubscriptionHasProfileBadge(broker.subscription),
     }),
   }
 
@@ -175,7 +175,7 @@ export default async function PublicBrokerPage({ params }: PageProps) {
       isFeatured: hasPaidEntitlement(related.subscription),
       isMortgageExpert: isMortgageExpertBroker({
         mortgageExpertEnabled: related.mortgageExpertEnabled,
-        profileBadge: brokerSubscriptionHasFeature(related.subscription, BROKER_PLAN_FEATURES.PROFILE_BADGE),
+        profileBadge: brokerSubscriptionHasProfileBadge(related.subscription),
       }),
     }),
   )

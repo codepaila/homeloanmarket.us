@@ -5,7 +5,7 @@ import { getCurrentUser } from '@/lib/currentUser'
 import prisma from '@/lib/prisma'
 import { TABLE_ROW_PAGE } from '@/utils'
 import { hasPaidEntitlement, isMortgageExpertBroker } from '@/lib/broker-policy'
-import { BROKER_PLAN_FEATURES, brokerSubscriptionHasFeature } from '@/lib/broker-plans'
+import { brokerSubscriptionHasProfileBadge } from '@/lib/broker-plans'
 import { toPublicBrokerRecord, toPublicBrokerListRecord } from '@/lib/public-broker'
 import { createBrokerForExistingUser } from '@/lib/broker-registration'
 import { validateLicenseStates, normalizeNmls, nmlsValidationError } from '@/lib/broker-licensing'
@@ -227,7 +227,7 @@ export async function GET(request: Request) {
             isFeatured: hasPaidEntitlement(subscription),
             isMortgageExpert: isMortgageExpertBroker({
               mortgageExpertEnabled: broker.mortgageExpertEnabled,
-              profileBadge: brokerSubscriptionHasFeature(subscription, BROKER_PLAN_FEATURES.PROFILE_BADGE),
+              profileBadge: brokerSubscriptionHasProfileBadge(subscription),
             }),
           })
         })
@@ -238,7 +238,7 @@ export async function GET(request: Request) {
         isFeatured: canShowContact && broker.subscription?.plan === 'FEATURED',
         isMortgageExpert: isMortgageExpertBroker({
           mortgageExpertEnabled: broker.mortgageExpertEnabled,
-          profileBadge: brokerSubscriptionHasFeature(broker.subscription, BROKER_PLAN_FEATURES.PROFILE_BADGE),
+          profileBadge: brokerSubscriptionHasProfileBadge(broker.subscription),
         }),
         canShowContact,
       }

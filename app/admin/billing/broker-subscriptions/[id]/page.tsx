@@ -48,9 +48,13 @@ export default async function AdminBrokerSubscriptionDetailPage({ params }: { pa
     } else migrationStatus = 'ambiguous'
   }
 
-  const entitlements = subscription.planRef
-    ? Object.fromEntries(subscription.planRef.features.map((feature) => [feature.code, feature.enabled]))
-    : {}
+  // Planned features come from the linked dynamic plan (display-only).
+  const features = subscription.planRef
+    ? subscription.planRef.features
+        .filter((feature) => feature.enabled)
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .map((feature) => feature.label)
+    : []
 
   return (
     <BrokerSubscriptionDetailClient
@@ -65,7 +69,7 @@ export default async function AdminBrokerSubscriptionDetailPage({ params }: { pa
       }}
       migrationStatus={migrationStatus}
       matchingPlan={matchingPlan ? { id: matchingPlan.id, code: matchingPlan.code, name: matchingPlan.name, isActive: matchingPlan.isActive } : null}
-      entitlements={entitlements}
+      features={features}
     />
   )
 }

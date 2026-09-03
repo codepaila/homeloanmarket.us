@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/currentUser'
-import { brokerFeatureLabel } from '@/lib/broker-plans'
+import { getBrokerPlanDisplayName } from '@/lib/broker-plans'
 
 export const dynamic = 'force-dynamic'
 
@@ -61,11 +61,11 @@ export default async function AdminBrokerPlansPage() {
           </thead>
           <tbody className="divide-y divide-border">
             {plans.map((plan) => {
-              const featureCodes = plan.features.filter((feature) => feature.enabled).map((feature) => feature.code)
+              const featureLabels = plan.features.filter((feature) => feature.enabled).map((feature) => feature.label)
               return (
                 <tr key={plan.id}>
                   <td className="px-4 py-3">
-                    <div className="font-semibold text-foreground">{plan.name}</div>
+                    <div className="font-semibold text-foreground">{getBrokerPlanDisplayName(plan.code) || plan.name}</div>
                     <div className="text-xs text-muted-foreground">{plan.code}</div>
                   </td>
                   <td className="px-4 py-3">{plan.price > 0 ? formatPrice(plan.price, plan.currency) : 'Free'}</td>
@@ -85,8 +85,8 @@ export default async function AdminBrokerPlansPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
-                      {featureCodes.length > 0 ? featureCodes.map((code) => (
-                        <span key={code} className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{brokerFeatureLabel(code)}</span>
+                      {featureLabels.length > 0 ? featureLabels.map((label) => (
+                        <span key={label} className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{label}</span>
                       )) : <span className="text-xs text-muted-foreground">—</span>}
                     </div>
                   </td>

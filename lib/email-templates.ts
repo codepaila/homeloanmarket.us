@@ -51,33 +51,27 @@ export const emailTemplates = {
     }),
   }),
 
-  claimInvitation: (broker: any, claimLink: string, expiresAt: Date) => ({
-    subject: `Claim your HomeLoanMarket profile: ${broker.companyName || broker.displayName}`,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  claimInvitation: (broker: any, claimLink: string, _expiresAt: Date) => ({
+    subject: 'Your Mortgage Professional Profile Is Now Listed on HomeLoanMarket.com',
     html: buildHomeLoanTemplate({
-      title: 'Claim your HomeLoanMarket profile',
-      subtitle: 'Your business profile is ready to be managed',
-      message: `HomeLoanMarket created a mortgage originator profile for ${broker.companyName || broker.displayName}. If you are authorized to represent this business, use the secure link below to begin the claim process.`,
+      title: 'Your Mortgage Professional Profile Is Now Listed on HomeLoanMarket.com',
+      subtitle: '',
+      message: `Hi ${broker.displayName || 'there'},<br/><br/>Your mortgage professional profile is now listed on HomeLoanMarket.com, helping local homebuyers discover and connect with mortgage professionals in their area.<br/><br/>Claim your profile for FREE to review your information, update your details, add or change your photo, and manage your listing.`,
       highlightSection: `
         <div style="text-align: center; margin: 30px 0;">
           <a href="${claimLink}"
              style="background-color: #2563eb; color: white; padding: 14px 28px;
                     text-decoration: none; border-radius: 8px; display: inline-block;
                     font-weight: bold; font-size: 16px;">
-            Review and Claim Profile
+            Claim Your Profile
           </a>
-        </div>
-        <div style="background: #fef2f2; padding: 15px; border-radius: 6px; margin: 20px 0; border: 1px solid #fca5a5;">
-          <p style="color: #991b1b; font-size: 14px; margin: 0;">
-            This secure link expires on ${expiresAt.toLocaleString()}. HomeLoanMarket will never email you a password.
-          </p>
         </div>
       `,
       infoItems: {
-        Business: broker.companyName || broker.displayName,
-        'Profile URL': `${APP_URL}/brokers/${broker.profileSlug}`,
-        'Claim Link': claimLink,
-        'Expires At': expiresAt.toLocaleString(),
-        Support: SUPPORT_EMAIL,
+        'HomeLoanMarket is built to give local mortgage professionals greater exposure to a large, hard-to-reach homebuyer community.': '',
+        'There is no cost to claim or maintain your basic listing.': '',
+        'If you prefer not to be listed on HomeLoanMarket, you can also remove your profile at any time.': '',
       },
     }),
   }),
@@ -170,7 +164,7 @@ export const emailTemplates = {
         City: broker.city || '',
         Experience: `${broker.experienceYears} years`,
         'Verification Status': 'Verified',
-        'Next Steps': 'Consider upgrading to a Featured plan for better visibility',
+        'Next Steps': 'Consider upgrading to a Mortgage Expert plan for better visibility',
       },
     }),
   }),

@@ -37,7 +37,7 @@ export function SiteSettingsForm({ settings }: { settings: SiteSettings }) {
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-semibold">General</CardTitle>
-          <CardDescription>Core site identity and contact information.</CardDescription>
+          <CardDescription>Core site identity.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <Field label="Site Name" name="siteName" defaultValue={settings.siteName} />
@@ -45,13 +45,31 @@ export function SiteSettingsForm({ settings }: { settings: SiteSettings }) {
           <div className="sm:col-span-2">
             <Field label="Site Description" name="siteDescription" defaultValue={settings.siteDescription} />
           </div>
+          <Field label="Default Currency" name="defaultCurrency" defaultValue={settings.defaultCurrency} />
+          <Field label="Timezone" name="timezone" defaultValue={settings.timezone} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base font-semibold">Contact Information</CardTitle>
+          <CardDescription>Contact details shown on the public contact page.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
           <Field label="Contact Email" name="contactEmail" defaultValue={settings.contactEmail} />
           <Field label="Contact Phone" name="contactPhone" defaultValue={settings.contactPhone} />
           <div className="sm:col-span-2">
-            <Field label="Contact Address" name="contactAddress" defaultValue={settings.contactAddress} />
+            <Field label="Street Address" name="contactStreet" defaultValue={settings.contactStreet} hint="e.g. 539 W Commerce St." />
           </div>
-          <Field label="Default Currency" name="defaultCurrency" defaultValue={settings.defaultCurrency} />
-          <Field label="Timezone" name="timezone" defaultValue={settings.timezone} />
+          <Field label="City" name="contactCity" defaultValue={settings.contactCity} />
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="State" name="contactState" defaultValue={settings.contactState} hint="Two-letter code, e.g. TX" />
+            <Field label="ZIP Code" name="contactZip" defaultValue={settings.contactZip} />
+          </div>
+          <Field label="Country" name="contactCountry" defaultValue={settings.contactCountry} />
+          <div className="sm:col-span-2">
+            <Field label="Business Hours" name="contactBusinessHours" defaultValue={settings.contactBusinessHours} hint="e.g. Mon-Fri 9AM-7PM, Sat 10AM-4PM" />
+          </div>
         </CardContent>
       </Card>
 

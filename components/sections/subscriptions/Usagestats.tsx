@@ -226,8 +226,8 @@ export default function UsageStats({ usageData, plan }: UsageStatsProps) {
               <p className="text-sm text-purple-700">
                 Your profile has been viewed {usage?.profileViews || 0} times.
                 {subscription?.isActive && subscription?.plan !== 'FREE'
-                  ? ' Your featured placement helps increase visibility.'
-                  : ' Consider upgrading to get featured and increase visibility.'
+                  ? ' Your Mortgage Expert placement helps increase visibility.'
+                  : ' Consider upgrading to Mortgage Expert and increase visibility.'
                 }
               </p>
             </div>
