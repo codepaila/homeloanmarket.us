@@ -68,7 +68,7 @@ export default function MortgageExpertControl({
   }
 
   return (
-    <section className="rounded-xl border bg-card p-6">
+    <section className="rounded border bg-card p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="text-xl font-semibold">Mortgage Expert</h2>
@@ -92,7 +92,7 @@ export default function MortgageExpertControl({
       </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-2">
-        <div className="rounded-lg border p-4">
+        <div className="rounded border p-4">
           <h3 className="text-sm font-semibold">Subscription qualification</h3>
           <p className="mt-1 text-sm text-muted-foreground">Paid plan (Mortgage Expert)</p>
           {profileBadge ? (
@@ -108,7 +108,7 @@ export default function MortgageExpertControl({
           </p>
         </div>
 
-        <div className="rounded-lg border p-4">
+        <div className="rounded border p-4">
           <h3 className="text-sm font-semibold">Admin badge</h3>
           <p className="mt-1 text-sm text-muted-foreground">Mortgage Expert badge</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -117,7 +117,7 @@ export default function MortgageExpertControl({
               disabled={saving || enabled}
               aria-busy={saving}
               onClick={() => void toggleBadge(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
               {saving ? 'Saving...' : 'Enable badge'}
@@ -127,7 +127,7 @@ export default function MortgageExpertControl({
               disabled={saving || !enabled}
               aria-busy={saving}
               onClick={() => void toggleBadge(false)}
-              className="inline-flex items-center gap-2 rounded-lg border border-destructive px-4 py-2 text-sm font-semibold text-destructive disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded border border-destructive px-4 py-2 text-sm font-semibold text-destructive disabled:opacity-50"
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
               {saving ? 'Saving...' : 'Disable badge'}

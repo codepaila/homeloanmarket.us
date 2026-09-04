@@ -80,7 +80,7 @@ export default function ClaimContinuePage() {
       <main className="flex min-h-screen items-center justify-center bg-background px-4">
         <div className="w-full max-w-md">
           {googleFailed ? (
-            <div className="space-y-5 rounded-2xl border border-border bg-card p-8 text-center shadow-soft">
+            <div className="space-y-5 rounded border border-border bg-card p-8 text-center shadow-soft">
               <h1 className="text-xl font-semibold">Unable to complete your claim</h1>
               {message && <p className="text-sm text-muted-foreground">{message}</p>}
               <div className="space-y-2">
@@ -89,7 +89,7 @@ export default function ClaimContinuePage() {
               </div>
             </div>
           ) : (
-            <div className="space-y-4 rounded-2xl border border-border bg-card p-8 text-center shadow-soft">
+            <div className="space-y-4 rounded border border-border bg-card p-8 text-center shadow-soft">
               <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" aria-hidden="true" />
               <div>
                 <h1 className="text-lg font-semibold">Completing your mortgage originator claim…</h1>
@@ -111,7 +111,7 @@ export default function ClaimContinuePage() {
           {profile && <p className="mt-2 text-sm text-muted-foreground">Verify ownership of {profile.companyName || profile.displayName} with your account.</p>}
         </header>
 
-        <form onSubmit={complete} className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
+        <form onSubmit={complete} className="space-y-4 rounded border border-border bg-card p-6 shadow-soft">
           <FormInput label="Email address" name="email" type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="you@company.com" />
           <FormInput label="Password" name="password" type="password" required value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Password" />
           <PremiumButton type="submit" fullWidth loading={loading} loadingText="Signing in…">Sign in and complete claim</PremiumButton>
@@ -119,7 +119,7 @@ export default function ClaimContinuePage() {
           <GoogleContinueButton callbackUrl="/claim-broker/continue?provider=google" />
         </form>
 
-        {message && <p role="alert" className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">{message}</p>}
+        {message && <p role="alert" className="rounded border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">{message}</p>}
       </div>
     </main>
   )

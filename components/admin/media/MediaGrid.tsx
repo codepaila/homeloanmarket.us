@@ -54,7 +54,7 @@ export function MediaGrid({ selectedIds, onToggleSelect, onSelectAsset, showDele
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {Array.from({ length: 10 }).map((_, i: number) => (
-          <div key={i} className="aspect-square rounded-lg border border-border bg-card animate-pulse" />
+          <div key={i} className="aspect-square rounded border border-border bg-card animate-pulse" />
         ))}
       </div>
     )

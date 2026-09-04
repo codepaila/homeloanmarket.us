@@ -122,27 +122,27 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
         </div>
         <div className="flex flex-wrap gap-2">
           {request.status === 'REQUESTED' && (
-            <button type="button" disabled={busy} onClick={() => transition('UNDER_REVIEW')} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
+            <button type="button" disabled={busy} onClick={() => transition('UNDER_REVIEW')} className="rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
               Review Request
             </button>
           )}
           {request.status === 'UNDER_REVIEW' && (
             <>
-              <button type="button" disabled={busy} onClick={() => transition('APPROVED')} className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+              <button type="button" disabled={busy} onClick={() => transition('APPROVED')} className="rounded bg-emerald-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
                 Approve Request
               </button>
-              <button type="button" disabled={busy} onClick={() => { if (window.confirm('Reject this advertisement request?')) transition('REJECTED') }} className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 disabled:opacity-50">
+              <button type="button" disabled={busy} onClick={() => { if (window.confirm('Reject this advertisement request?')) transition('REJECTED') }} className="rounded border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 disabled:opacity-50">
                 Reject Request
               </button>
             </>
           )}
           {request.status === 'APPROVED' && !request.advertisement && (
-            <Link href={`/admin/company-ad-requests/${request.id}/create-ad`} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+            <Link href={`/admin/company-ad-requests/${request.id}/create-ad`} className="inline-flex items-center gap-2 rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
               Create Advertisement <ArrowRight className="h-4 w-4" />
             </Link>
           )}
           {request.advertisement && (
-            <Link href={`/admin/ads/${request.advertisement.id}/edit`} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+            <Link href={`/admin/ads/${request.advertisement.id}/edit`} className="inline-flex items-center gap-2 rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
               {adActive ? 'View Advertisement' : 'Manage Advertisement'} <ExternalLink className="h-4 w-4" />
             </Link>
           )}
@@ -150,7 +150,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
       </div>
 
       {/* Progress indicator */}
-      <div className="rounded-xl border bg-card p-4">
+      <div className="rounded border bg-card p-4">
         <ol className="flex flex-wrap items-center gap-2 text-xs">
           {STEPS.map((step, index) => {
             const reached = currentStep >= index
@@ -170,7 +170,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
       <div className="grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
         {/* LEFT — main information */}
         <div className="space-y-6">
-          <section className="rounded-xl border bg-card p-5">
+          <section className="rounded border bg-card p-5">
             <h2 className="text-lg font-semibold">Request Details</h2>
             <dl className="mt-3 space-y-3 text-sm">
               <div><dt className="text-muted-foreground">Message</dt><dd className="mt-0.5 text-foreground">{request.requestDetails || '—'}</dd></div>
@@ -178,9 +178,9 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
             </dl>
           </section>
 
-          <section className="rounded-xl border bg-card p-5">
+          <section className="rounded border bg-card p-5">
             <h2 className="text-lg font-semibold">Requested Location</h2>
-            <div className="mt-3 flex items-start gap-3 rounded-lg border bg-muted/40 p-4">
+            <div className="mt-3 flex items-start gap-3 rounded border bg-muted/40 p-4">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
               <div>
                 <p className="font-medium text-foreground">{formatRequestTargetLocation(location)}</p>
@@ -189,7 +189,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </section>
 
-          <section className="rounded-xl border bg-card p-5">
+          <section className="rounded border bg-card p-5">
             <h2 className="text-lg font-semibold">Advertisement</h2>
             {request.advertisement ? (
               <div className="mt-3 space-y-2 text-sm">
@@ -204,7 +204,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
 
         {/* RIGHT — context panel */}
         <div className="space-y-6">
-          <section className="rounded-xl border bg-card p-5">
+          <section className="rounded border bg-card p-5">
             <h2 className="flex items-center gap-2 text-lg font-semibold"><Building2 className="h-4 w-4 text-muted-foreground" /> Company</h2>
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex justify-between"><dt className="text-muted-foreground">Name</dt><dd className="font-medium">{request.company.name}</dd></div>
@@ -213,7 +213,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
             </dl>
           </section>
 
-          <section className="rounded-xl border bg-card p-5">
+          <section className="rounded border bg-card p-5">
             <h2 className="flex items-center gap-2 text-lg font-semibold"><Shield className="h-4 w-4 text-muted-foreground" /> Advertising Plan</h2>
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex justify-between"><dt className="text-muted-foreground">Plan</dt><dd className="font-medium">{subscription?.advertisingPlan?.name || '—'}</dd></div>
@@ -225,7 +225,7 @@ export default function RequestDetailPage({ params }: { params: Promise<{ id: st
             </dl>
           </section>
 
-          <section className="rounded-xl border bg-card p-5">
+          <section className="rounded border bg-card p-5">
             <h2 className="flex items-center gap-2 text-lg font-semibold"><User className="h-4 w-4 text-muted-foreground" /> Requester</h2>
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex justify-between"><dt className="text-muted-foreground">Name</dt><dd className="font-medium">{request.requestedBy.name || '—'}</dd></div>

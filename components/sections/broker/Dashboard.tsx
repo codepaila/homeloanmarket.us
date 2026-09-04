@@ -77,7 +77,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-primary to-primary/80 rounded-xl p-6 text-white">
+      <div className="bg-gradient-to-r from-primary to-primary/80 rounded p-6 text-white">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">
@@ -92,7 +92,7 @@ export default function DashboardPage() {
           </div>
            {user.isPremiumBroker && (
             <div className="hidden md:block">
-              <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-3">
+              <div className="bg-white/20 backdrop-blur-sm rounded px-4 py-3">
                 <div className="flex items-center gap-2">
                   <div className="h-8 w-8 rounded-full bg-gradient-to-r from-yellow-400 to-orange-400 flex items-center justify-center">
                     <span className="text-white font-bold">P</span>
@@ -150,13 +150,13 @@ export default function DashboardPage() {
                   className="group block"
                 >
                   <div className={`
-                    border rounded-lg p-4 transition-all duration-200
+                    border rounded p-4 transition-all duration-200
                     hover:border-${action.color}-500 hover:shadow-md
                     group-hover:scale-[1.02]
                   `}>
                     <div className="flex items-center gap-3">
                       <div className={`
-                        h-10 w-10 rounded-lg bg-${action.color}-100
+                        h-10 w-10 rounded bg-${action.color}-100
                         flex items-center justify-center
                       `}>
                         <Icon className={`h-5 w-5 text-${action.color}-600`} />

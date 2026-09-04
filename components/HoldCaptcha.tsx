@@ -260,7 +260,7 @@ export default function HoldCaptcha({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-blue-500/5">
+          <div className="p-1.5 rounded bg-blue-500/5">
             <Shield className="h-4 w-4 text-blue-500" />
           </div>
           <div className="text-sm font-semibold text-foreground">
@@ -304,7 +304,7 @@ export default function HoldCaptcha({
           onTouchEnd={cancelHold}
           disabled={isVerified || isOnCooldown}
           className={`
-            relative w-full p-3 rounded-2xl border-2 transition-all duration-200
+            relative w-full p-3 rounded border-2 transition-all duration-200
             ${statusColors.border} ${statusColors.bg}
             ${!isVerified && !isOnCooldown ? 'hover:border-blue-500/50 hover:bg-muted' : ''}
             ${!isVerified && !isOnCooldown ? 'active:scale-[0.98]' : ''}
@@ -445,7 +445,7 @@ export default function HoldCaptcha({
           <button
             type="button"
             onClick={resetCaptcha}
-            className="w-full py-2 rounded-lg border border-border hover:bg-muted text-sm text-muted-foreground hover:text-foreground transition-colors animate-fade-in-up"
+            className="w-full py-2 rounded border border-border hover:bg-muted text-sm text-muted-foreground hover:text-foreground transition-colors animate-fade-in-up"
           >
             {isOnCooldown && cooldownTime === 0 ? 'Try again now' : 'Reset verification'}
           </button>
@@ -456,7 +456,7 @@ export default function HoldCaptcha({
           <button
             type="button"
             onClick={resetCaptcha}
-            className="w-full py-2 rounded-lg border border-border hover:bg-muted text-sm text-muted-foreground hover:text-foreground transition-colors animate-fade-in-up"
+            className="w-full py-2 rounded border border-border hover:bg-muted text-sm text-muted-foreground hover:text-foreground transition-colors animate-fade-in-up"
             disabled={cooldownTime > 0}
           >
             Reset now
@@ -466,7 +466,7 @@ export default function HoldCaptcha({
 
       {/* Success Message */}
       {showSuccess && (
-        <div className="rounded-lg border border-green-500/30 bg-green-500/5 p-3 animate-scale-in">
+        <div className="rounded border border-green-500/30 bg-green-500/5 p-3 animate-scale-in">
           <div className="flex items-center gap-2 text-sm text-green-500">
             <CheckCircle className="h-4 w-4" />
             <span>Verification complete! You can now submit the form.</span>

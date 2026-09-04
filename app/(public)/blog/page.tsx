@@ -30,7 +30,7 @@ export default async function BlogPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-6xl px-4 py-4 md:py-12 sm:px-6">
+      <div className="container-custom px-4 py-4 md:py-12 sm:px-6">
         <h1 className="text-3xl font-bold tracking-tight">Articles</h1>
         <p className="mt-2 max-w-2xl text-muted-foreground">
           Practical guides and resources about mortgages, home buying, and refinancing.
@@ -41,7 +41,7 @@ export default async function BlogPage() {
           <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {posts.map((post) => (
               <Link key={post.slug} href={`/blog/${post.slug}`} className="group">
-                <article className="flex h-full flex-col overflow-hidden rounded-2xl border bg-card shadow-soft transition-shadow group-hover:shadow-medium">
+                <article className="flex h-full flex-col overflow-hidden rounded border bg-card shadow-soft transition-shadow group-hover:shadow-medium">
                   {post.coverImage ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={post.coverImage} alt={post.title} className="h-40 w-full object-cover" />

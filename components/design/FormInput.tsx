@@ -74,7 +74,7 @@ export function FormInput({
           name={name}
           type={inputType}
           className={cn(
-            'w-full rounded-xl border border-border bg-background px-3 py-2.5 text-base',
+            'w-full rounded border border-border bg-background px-3 py-2.5 text-base',
             'transition-all duration-200 placeholder:text-muted-foreground/50',
             'focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15',
             icon && 'pl-10',
@@ -165,7 +165,7 @@ export function FormTextarea({
           id={textareaId}
           name={name}
           className={cn(
-            'w-full min-h-[120px] resize-y rounded-xl border border-border bg-background px-3 py-2.5 text-base',
+            'w-full min-h-[120px] resize-y rounded border border-border bg-background px-3 py-2.5 text-base',
             'transition-all duration-200 placeholder:text-muted-foreground/50',
             'focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15',
             icon && 'pl-10',

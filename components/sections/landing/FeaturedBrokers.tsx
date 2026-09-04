@@ -44,9 +44,9 @@ function FeaturedSkeleton() {
       {[0, 1, 2].map((i) => (
         <div
           key={i}
-          className="flex flex-col gap-4 overflow-hidden rounded-2xl border border-border bg-card p-5 md:flex-row md:items-center md:gap-6 md:p-6"
+          className="flex flex-col gap-4 overflow-hidden rounded border border-border bg-card p-5 md:flex-row md:items-center md:gap-6 md:p-6"
         >
-          <div className="h-16 w-16 animate-pulse rounded-xl bg-muted md:h-20 md:w-20" />
+          <div className="h-16 w-16 animate-pulse rounded bg-muted md:h-20 md:w-20" />
           <div className="flex-1 space-y-3">
             <div className="h-5 w-40 animate-pulse rounded-full bg-muted" />
             <div className="h-4 w-32 animate-pulse rounded-full bg-muted" />
@@ -54,8 +54,8 @@ function FeaturedSkeleton() {
             <div className="h-4 w-2/3 animate-pulse rounded-full bg-muted" />
           </div>
           <div className="flex gap-2 md:w-[160px]">
-            <div className="h-9 flex-1 animate-pulse rounded-xl bg-muted" />
-            <div className="h-9 flex-1 animate-pulse rounded-xl bg-muted" />
+            <div className="h-9 flex-1 animate-pulse rounded bg-muted" />
+            <div className="h-9 flex-1 animate-pulse rounded bg-muted" />
           </div>
         </div>
       ))}

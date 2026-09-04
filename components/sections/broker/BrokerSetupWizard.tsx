@@ -359,7 +359,7 @@ export function BrokerSetupWizard({ initialData = {}, initialStep = 1 }: BrokerS
       </div>
 
       {/* Form card */}
-      <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
+      <div className="rounded border bg-card text-card-foreground shadow-sm">
         <div className="p-5 sm:p-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -879,7 +879,7 @@ function Step6Review({ form, onEditStep }: any) {
 
       <div className="space-y-3">
         {sections.map((section, index) => (
-          <div key={index} className="overflow-hidden rounded-lg border">
+          <div key={index} className="overflow-hidden rounded border">
             <div className="flex items-center justify-between border-b bg-muted/50 px-4 py-2.5">
               <div className="flex items-center gap-2">
                 <section.icon className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
@@ -906,7 +906,7 @@ function Step6Review({ form, onEditStep }: any) {
         ))}
       </div>
 
-      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/40">
+      <div className="rounded border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/40">
         <div className="flex items-start gap-2.5">
           <Shield className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" aria-hidden="true" />
           <div className="space-y-1 text-sm text-amber-800 dark:text-amber-200">

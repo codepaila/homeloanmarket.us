@@ -27,7 +27,7 @@ export default function EditAdPage({ params }: EditAdPageProps) {
         />
         <div className="space-y-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-64 rounded-lg border border-border bg-card animate-pulse" />
+            <div key={i} className="h-64 rounded border border-border bg-card animate-pulse" />
           ))}
         </div>
       </div>

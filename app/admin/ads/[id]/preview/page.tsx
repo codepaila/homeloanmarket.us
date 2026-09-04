@@ -105,7 +105,7 @@ export default function PreviewAdPage({ params }: PreviewAdPageProps) {
         <SectionHeader title="Preview Advertisement" description="Loading preview..." backHref="/admin/ads/list" />
         <div className="space-y-4">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-64 rounded-lg border border-border bg-card animate-pulse" />
+            <div key={i} className="h-64 rounded border border-border bg-card animate-pulse" />
           ))}
         </div>
       </div>
@@ -199,7 +199,7 @@ export default function PreviewAdPage({ params }: PreviewAdPageProps) {
             <CardContent>
               <div className="space-y-4">
                 {/* Desktop & Mobile Side-by-Side on Desktop */}
-                <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/30 p-3">
+                <div className="flex flex-wrap items-center gap-2 rounded border border-border bg-muted/30 p-3">
                   <span className="text-xs font-medium text-muted-foreground">Creative format:</span>
                   {availableFormats.map((format) => (
                     <Button key={format} type="button" variant={activePreviewFormat === format ? 'default' : 'outline'} size="sm" onClick={() => setPreviewFormat(format)}>
@@ -217,7 +217,7 @@ export default function PreviewAdPage({ params }: PreviewAdPageProps) {
                       </div>
                       <Badge variant="secondary" className="text-xs">Desktop</Badge>
                     </div>
-                    <div className={cn('border border-border rounded-lg overflow-hidden transition-all', previewBackground.bg)}>
+                    <div className={cn('border border-border rounded overflow-hidden transition-all', previewBackground.bg)}>
                       <div className="p-4" style={{ transform: `scale(${previewZoom / 100})`, transformOrigin: 'top center' }}>
                         <PlacementPreviewRenderer
                           placement={ad.placement}
@@ -241,7 +241,7 @@ export default function PreviewAdPage({ params }: PreviewAdPageProps) {
                       </div>
                       <Badge variant="secondary" className="text-xs">Tablet</Badge>
                     </div>
-                    <div className={cn('border border-border rounded-lg overflow-hidden transition-all', previewBackground.bg)}>
+                    <div className={cn('border border-border rounded overflow-hidden transition-all', previewBackground.bg)}>
                       <div className="p-4 max-w-[420px] mx-auto" style={{ transform: `scale(${previewZoom / 100})`, transformOrigin: 'top center' }}>
                         <PlacementPreviewRenderer
                           placement={ad.placement}
@@ -265,7 +265,7 @@ export default function PreviewAdPage({ params }: PreviewAdPageProps) {
                       </div>
                       <Badge variant="secondary" className="text-xs">Mobile</Badge>
                     </div>
-                    <div className={cn('border border-border rounded-lg overflow-hidden transition-all', previewBackground.bg)}>
+                    <div className={cn('border border-border rounded overflow-hidden transition-all', previewBackground.bg)}>
                       <div className="p-4 max-w-[280px] mx-auto" style={{ transform: `scale(${previewZoom / 100})`, transformOrigin: 'top center' }}>
                         <PlacementPreviewRenderer
                           placement={ad.placement}

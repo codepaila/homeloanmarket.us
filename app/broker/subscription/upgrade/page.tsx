@@ -165,7 +165,7 @@ export default function UpgradePlanPage() {
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <div className="h-12 w-12 rounded bg-blue-100 flex items-center justify-center">
                     <Rocket className="h-6 w-6 text-info" />
                   </div>
                   <div>
@@ -193,7 +193,7 @@ export default function UpgradePlanPage() {
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center">
+                  <div className="h-12 w-12 rounded bg-purple-100 flex items-center justify-center">
                     <Sparkles className="h-6 w-6 text-purple-600" />
                   </div>
                   <div>
@@ -221,7 +221,7 @@ export default function UpgradePlanPage() {
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center">
+                  <div className="h-12 w-12 rounded bg-green-100 flex items-center justify-center">
                     <Target className="h-6 w-6 text-success" />
                   </div>
                   <div>

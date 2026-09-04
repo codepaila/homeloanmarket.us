@@ -35,7 +35,7 @@ export function AdvertisementCard({ ad, className }: AdvertisementCardProps) {
                 <PlacementBadge placement={ad.placement} />
               </div>
             </div>
-            <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <div className="h-10 w-10 rounded bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
               {previewUrl && previewUrl !== '/placeholder.png' ? (
                 <>
                   {/* eslint-disable-next-line @next/next/no-img-element */}

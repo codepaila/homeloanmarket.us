@@ -167,3 +167,44 @@ test('no hard-coded company plan prices in the checkout or coupon path', () => {
   assert.doesNotMatch(checkout, /price: (15|30|1999|4999)\b/)
   assert.doesNotMatch(couponLib, /\$\{?\s*\d{2,}\s*\}?\s*\/\s*month/)
 })
+
+// ---------------------------------------------------------------------------
+// Phase 8.14: Stripe parameter safety regression (allow_promotion_codes vs
+// discounts are MUTUALLY EXCLUSIVE). Stripe rejects a Session that carries
+// both simultaneously. This test fails if the two ever appear together.
+// ---------------------------------------------------------------------------
+
+test('checkout never sends allow_promotion_codes and discounts together (8.14)', () => {
+  // The two params must be produced by a single mutually-exclusive ternary so
+  // both can never appear in the outgoing sessionParams object.
+  assert.match(
+    checkout,
+    /\.\.\.\((coupon && coupon\.valid)\s*\n\s*\? \{\s*discounts: \[\{ promotion_code: coupon\.promotionCodeId \}\] \}\s*\n\s*: \{ allow_promotion_codes: false \}\)/,
+  )
+  // A literal object that would carry both keys at once must not exist.
+  assert.doesNotMatch(checkout, /allow_promotion_codes:\s*[^,\n]+\s*,\s*discounts/)
+  assert.doesNotMatch(checkout, /discounts:\s*\[[^\]]*\]\s*,\s*allow_promotion_codes/)
+})
+
+test('discounts branch carries only discounts; valid-coupon path omits allow_promotion_codes', () => {
+  assert.match(checkout, /discounts: \[\{ promotion_code: coupon\.promotionCodeId \}\]/)
+  // The session params spread is guarded by a single ternary: when a valid
+  // coupon exists it spreads ONLY the discounts object; the
+  // allow_promotion_codes:false branch is the mutually-exclusive else.
+  assert.match(checkout, /\? \{ discounts: \[\{ promotion_code: coupon\.promotionCodeId \}\] \}\s*:\s*\{ allow_promotion_codes: false \}/)
+})
+
+// ---------------------------------------------------------------------------
+// Phase 8.14: discount preview (display-only, never used for pricing)
+// ---------------------------------------------------------------------------
+
+test('coupon UI renders a display-only discount preview without computing a total (8.14)', () => {
+  // Server returns only display-safe fields for optional client rendering.
+  assert.match(couponRoute, /percentOff/)
+  assert.match(couponRoute, /amountOff/)
+  assert.doesNotMatch(couponRoute, /finalPrice|total|discountedPrice|priceAfterCoupon/)
+  // Client shows Save {percent}% / Save ${amount} from server fields.
+  assert.match(selectPage, /setCouponDiscount\(`Save \$\{data\.percentOff\}%`\)/)
+  assert.match(selectPage, /data\.amountOff/)
+  assert.match(selectPage, /\{couponDiscount && \(/)
+})

@@ -10,7 +10,7 @@ interface LoadingSkeletonProps {
 
 export function StatsCardSkeleton({ className }: LoadingSkeletonProps) {
   return (
-    <div className={cn('rounded-2xl border border-border bg-card p-6', className)}>
+    <div className={cn('rounded border border-border bg-card p-6', className)}>
       <Skeleton className="h-4 w-24 mb-3" />
       <Skeleton className="h-8 w-16 mb-2" />
       <Skeleton className="h-3 w-20" />
@@ -63,7 +63,7 @@ export function TableRowSkeleton({ className }: LoadingSkeletonProps) {
 
 export function AdvertisementCardSkeleton({ className }: LoadingSkeletonProps) {
   return (
-    <div className={cn('rounded-2xl border border-border bg-card p-6', className)}>
+    <div className={cn('rounded border border-border bg-card p-6', className)}>
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 space-y-2">
           <Skeleton className="h-5 w-40" />
@@ -72,7 +72,7 @@ export function AdvertisementCardSkeleton({ className }: LoadingSkeletonProps) {
             <Skeleton className="h-5 w-20 rounded-full" />
           </div>
         </div>
-        <Skeleton className="h-10 w-10 rounded-lg" />
+        <Skeleton className="h-10 w-10 rounded" />
       </div>
       <div className="mt-4 space-y-2">
         <Skeleton className="h-3 w-full" />

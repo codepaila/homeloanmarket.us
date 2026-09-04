@@ -207,7 +207,7 @@ function SearchSection() {
             role="combobox"
           />
           {(searching || locationSuggestions.length > 0) && (
-            <div id="broker-search-suggestions" className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-border bg-white shadow-xl" role="listbox" aria-label="Location suggestions">
+            <div id="broker-search-suggestions" className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded border border-border bg-white shadow-xl" role="listbox" aria-label="Location suggestions">
               {searching && locationSuggestions.length === 0 ? (
                 <p className="px-4 py-3 text-sm text-muted-foreground">Searching mortgage originators…</p>
               ) : locationSuggestions.length === 0 ? (
@@ -226,7 +226,7 @@ function SearchSection() {
             type="submit"
             disabled={searching || !query.trim()}
             aria-label="Search brokers"
-            className="shrink-0 rounded-xl bg-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:opacity-50"
+            className="shrink-0 rounded bg-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-primary/90 disabled:opacity-50"
           >
             {searching ? 'Searching…' : 'Search'}
           </button> */}

@@ -63,7 +63,7 @@ export default function BillingHistory() {
     return (
       <div className="space-y-4">
         {[1, 2, 3].map(i => (
-          <div key={i} className="h-20 bg-muted animate-pulse rounded-lg"></div>
+          <div key={i} className="h-20 bg-muted animate-pulse rounded"></div>
         ))}
       </div>
     )
@@ -146,7 +146,7 @@ export default function BillingHistory() {
                 <p className="text-sm text-muted-foreground">Total Invoices</p>
                 <p className="text-2xl font-bold mt-1">{totalInvoices}</p>
               </div>
-              <FileText className="h-10 w-10 text-blue-100 bg-blue-500/20 p-2 rounded-lg" />
+              <FileText className="h-10 w-10 text-blue-100 bg-blue-500/20 p-2 rounded" />
             </div>
           </CardContent>
         </Card>
@@ -160,7 +160,7 @@ export default function BillingHistory() {
                   ${totalAmount.toFixed(2)}
                 </p>
               </div>
-              <DollarSign className="h-10 w-10 text-green-100 bg-green-500/20 p-2 rounded-lg" />
+              <DollarSign className="h-10 w-10 text-green-100 bg-green-500/20 p-2 rounded" />
             </div>
           </CardContent>
         </Card>
@@ -174,7 +174,7 @@ export default function BillingHistory() {
                   ${paidAmount.toFixed(2)}
                 </p>
               </div>
-              <CheckCircle className="h-10 w-10 text-purple-100 bg-purple-500/20 p-2 rounded-lg" />
+              <CheckCircle className="h-10 w-10 text-purple-100 bg-purple-500/20 p-2 rounded" />
             </div>
           </CardContent>
         </Card>
@@ -188,7 +188,7 @@ export default function BillingHistory() {
                   {invoices.filter((i: BillingInvoice) => i.status === 'paid').length}
                 </p>
               </div>
-              <CreditCard className="h-10 w-10 text-yellow-100 bg-yellow-500/20 p-2 rounded-lg" />
+              <CreditCard className="h-10 w-10 text-yellow-100 bg-yellow-500/20 p-2 rounded" />
             </div>
           </CardContent>
         </Card>

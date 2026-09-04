@@ -1003,7 +1003,7 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
                       control={form.control}
                       name="isVisible"
                       render={({ field }) => (
-                        <FormItem className="flex items-center justify-between space-y-0 rounded-lg border p-4">
+                        <FormItem className="flex items-center justify-between space-y-0 rounded border p-4">
                           <div className="space-y-0.5">
                             <FormLabel className="text-base">Profile Visibility</FormLabel>
                             <FormDescription>
@@ -1021,7 +1021,7 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
                     />
 
                     {/* Verification Status */}
-                    <div className="rounded-lg border p-4">
+                    <div className="rounded border p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Shield className="h-5 w-5 text-primary" />
                         <h4 className="font-medium">Verification Status</h4>

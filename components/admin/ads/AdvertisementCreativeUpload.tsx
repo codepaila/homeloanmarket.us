@@ -19,7 +19,7 @@ export function AdvertisementCreativeUpload({
 }) {
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-start justify-between gap-2 rounded-lg border bg-muted/40 p-3">
+      <div className="flex flex-wrap items-start justify-between gap-2 rounded border bg-muted/40 p-3">
         <div>
           <p className="flex items-center gap-1.5 text-sm font-medium">
             <ImageIcon className="h-4 w-4 text-muted-foreground" />

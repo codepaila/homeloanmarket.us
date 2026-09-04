@@ -403,7 +403,7 @@ export default function BrokersPage() {
   const filtersPanel = (
     <div className="space-y-6">
       <div>
-        <div className="space-y-2 rounded-xl border border-border bg-background p-3">
+        <div className="space-y-2 rounded border border-border bg-background p-3">
           <label className="flex items-center justify-between text-xs font-medium uppercase tracking-wide text-muted-foreground">
             <span>Search Radius</span>
             <span className="font-medium normal-case text-foreground">{radius} miles</span>
@@ -475,13 +475,13 @@ export default function BrokersPage() {
     <div className="flex items-center gap-3 border-t border-border p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
       <button type="button"
         onClick={clearAllFilters}
-        className="flex-1 rounded-xl border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+        className="flex-1 rounded border border-border px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
       >
         Clear all
       </button>
       <button type="button"
         onClick={closeFilters}
-        className="flex-1 rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-primary/90"
+        className="flex-1 rounded bg-primary px-4 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-primary/90"
       >
         Apply filters
       </button>
@@ -569,7 +569,7 @@ export default function BrokersPage() {
               className="h-10 w-full rounded border border-border bg-background pl-11 pr-2 text-base text-foreground  placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20 md:text-sm"
             />
             {locationSuggestions.length > 0 && (
-              <div id="broker-location-suggestions" className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-border bg-card shadow-large" role="listbox" aria-label="Location suggestions">
+              <div id="broker-location-suggestions" className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded border border-border bg-card shadow-large" role="listbox" aria-label="Location suggestions">
                 {locationSuggestions.map((suggestion) => (
                   <button
                     type="button"
@@ -587,7 +587,7 @@ export default function BrokersPage() {
                 ))}
               </div>
             )}
-            {locationError && <p role="status" className="absolute inset-x-0 top-full z-50 mt-2 rounded-xl border border-destructive/30 bg-card p-3 text-sm text-destructive">{locationError}</p>}
+            {locationError && <p role="status" className="absolute inset-x-0 top-full z-50 mt-2 rounded border border-destructive/30 bg-card p-3 text-sm text-destructive">{locationError}</p>}
             <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
               {searchInput && (
                 <button type="button"
@@ -624,7 +624,7 @@ export default function BrokersPage() {
               type="button"
               onClick={openFilters}
               className={cn(
-                ' inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted',
+                ' inline-flex items-center gap-1.5 rounded border border-border px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted',
                 filtersOpen && 'bg-muted',
               )}
               aria-expanded={filtersOpen}
@@ -651,7 +651,7 @@ export default function BrokersPage() {
                 type="button"
                 onClick={openFilters}
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted',
+                  'inline-flex items-center gap-1.5 rounded border border-border px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted',
                   filtersOpen && 'bg-muted',
                 )}
                 aria-expanded={filtersOpen}
@@ -666,7 +666,7 @@ export default function BrokersPage() {
                 )}
               </button>
 
-              <div className="hidden items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm text-muted-foreground sm:inline-flex">
+              <div className="hidden items-center gap-1.5 rounded border border-border px-3.5 py-2 text-sm text-muted-foreground sm:inline-flex">
                 <span>Sort:</span>
                 <Select
                   value={sortBy}
@@ -676,7 +676,7 @@ export default function BrokersPage() {
                 />
               </div>
 
-              <div className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3.5 py-2 text-sm">
+              <div className="inline-flex items-center gap-1.5 rounded border border-border px-3.5 py-2 text-sm">
                 <span className="hidden text-muted-foreground sm:inline">View:</span>
                 <button type="button"
                   onClick={() => setViewMode('grid')}
@@ -941,7 +941,7 @@ function FilterChip({
 //           onChange={(e) => onChange(e.target.value)}
 //           disabled={disabled || loading}
 //           className={cn(
-//             'w-full appearance-none rounded-xl border border-border bg-background px-3 py-2.5 text-sm text-foreground',
+//             'w-full appearance-none rounded border border-border bg-background px-3 py-2.5 text-sm text-foreground',
 //             'transition-all focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15',
 //             (loading || disabled) && 'opacity-60',
 //           )}
@@ -1015,7 +1015,7 @@ function Pagination({
       <button type="button"
         onClick={() => onPageChange(page - 1)}
         disabled={page <= 1}
-        className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
       >
         Previous
       </button>
@@ -1029,7 +1029,7 @@ function Pagination({
             onClick={() => onPageChange(item)}
             aria-current={item === page ? 'page' : undefined}
             className={cn(
-              'h-9 min-w-9 rounded-lg border px-2 text-sm font-medium transition-colors',
+              'h-9 min-w-9 rounded border px-2 text-sm font-medium transition-colors',
               item === page
                 ? 'border-primary bg-primary text-primary-foreground'
                 : 'border-border text-foreground hover:bg-muted',
@@ -1043,7 +1043,7 @@ function Pagination({
       <button type="button"
         onClick={() => onPageChange(page + 1)}
         disabled={page >= totalPages}
-        className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
       >
         Next
       </button>

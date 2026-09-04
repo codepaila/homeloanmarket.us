@@ -20,7 +20,7 @@ export function HomeBuyerCard() {
         onClick={() => setShowEmail((current) => !current)}
         aria-expanded={showEmail}
         aria-controls="customer-email-signup"
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+        className="inline-flex w-full items-center justify-center gap-2 rounded border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
       >
         <Mail className="h-4 w-4" aria-hidden="true" />
         {showEmail ? 'Hide email signup' : 'Continue with Email'}

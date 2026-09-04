@@ -68,7 +68,7 @@ export default function ProcessSection() {
                   transition={{ duration: 0.5, delay: idx * 0.12 }}
                 >
                   {/* Step node */}
-                  <div className="relative z-10 mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/15 bg-card shadow-soft transition-all duration-300 group-hover:-translate-y-1 group-hover:border-primary/40 group-hover:shadow-medium">
+                  <div className="relative z-10 mb-5 flex h-14 w-14 items-center justify-center rounded border border-primary/15 bg-card shadow-soft transition-all duration-300 group-hover:-translate-y-1 group-hover:border-primary/40 group-hover:shadow-medium">
                     <Icon className="h-6 w-6 text-primary" />
                     <span className="absolute -right-1.5 -top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-primary text-[11px] font-bold text-white">
                       {step.step}

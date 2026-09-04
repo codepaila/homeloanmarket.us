@@ -105,9 +105,10 @@ export async function POST(request: NextRequest) {
       // resolved promotion_code is passed to Checkout through `discounts` so
       // Stripe remains the authoritative source of truth for validity and the
       // discount amount (expiration, redemption limits, eligibility, product
-      // restrictions). Promotion codes typed directly into the Stripe checkout
-      // UI are disabled so the client cannot inject an arbitrary code without
-      // server validation.
+      // restrictions). When a valid coupon exists, `discounts` is sent and
+      // `allow_promotion_codes` is omitted (Stripe rejects both simultaneously).
+      // When no coupon exists, `allow_promotion_codes: false` is sent so the
+      // client cannot inject an arbitrary code without server validation.
       //
       // Managed Payments is enabled by default on this account and rejects an
       // explicit `payment_method_types` parameter. The account's products are
@@ -121,11 +122,12 @@ export async function POST(request: NextRequest) {
         customer: customerId,
         line_items: [{ price: priceId!, quantity: 1 }],
         mode: 'subscription' as const,
-        allow_promotion_codes: false,
         managed_payments: { enabled: false },
-        ...(coupon && coupon.valid ? { discounts: [{ promotion_code: coupon.promotionCodeId }] } : {}),
+        ...(coupon && coupon.valid
+          ? { discounts: [{ promotion_code: coupon.promotionCodeId }] }
+          : { allow_promotion_codes: false }),
         success_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/company/dashboard?subscription=success`,
-        cancel_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/company/dashboard`,
+        cancel_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/company/subscription/select`,
         metadata: { userId: current.user.id, companyId: current.company.id, plan: plan.name, ownerType: 'COMPANY', planId: plan.id },
         subscription_data: { metadata: { userId: current.user.id, companyId: current.company.id, plan: plan.name, ownerType: 'COMPANY', planId: plan.id } },
         billing_address_collection: 'required' as const,
@@ -158,7 +160,7 @@ export async function POST(request: NextRequest) {
         planId: plan.id,
         planName: plan.name,
         mode: 'subscription',
-        allowPromotionCodes: false,
+        allowPromotionCodes: Boolean(coupon && coupon.valid),
         managedPaymentsEnabled: false,
         couponId: coupon && coupon.valid ? coupon.promotionCodeId : null,
         billingAddressCollection: 'required',

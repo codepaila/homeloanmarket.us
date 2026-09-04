@@ -15,7 +15,7 @@ export function StatsCard({ title, value, cardIcon, trend, trendUp, className }:
   return (
     <div
       className={cn(
-        'group relative overflow-hidden rounded-2xl border border-border bg-card/80 backdrop-blur-sm p-6 transition-all duration-300 hover:shadow-medium hover:-translate-y-0.5',
+        'group relative overflow-hidden rounded border border-border bg-card/80 backdrop-blur-sm p-6 transition-all duration-300 hover:shadow-medium hover:-translate-y-0.5',
         className
       )}
     >
@@ -35,7 +35,7 @@ export function StatsCard({ title, value, cardIcon, trend, trendUp, className }:
         </div>
 
         {cardIcon && (
-          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded bg-primary/10 text-primary">
             {cardIcon}
           </div>
         )}

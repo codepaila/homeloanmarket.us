@@ -370,7 +370,7 @@ export default function LocalExpertSection() {
             </div>
 
             <div className="mx-auto w-full max-w-md lg:col-span-2 lg:max-w-none">
-              <div className="rounded-lg border border-border bg-card p-5 sm:p-8 lg:p-6 xl:p-8">
+              <div className="rounded border border-border bg-card p-5 sm:p-8 lg:p-6 xl:p-8">
                 <ComparisonIllustration />
               </div>
             </div>
@@ -403,7 +403,7 @@ export default function LocalExpertSection() {
 
           <div className="mt-10 grid gap-6 sm:grid-cols-3">
             {options.map((option) => (
-              <div key={option.title} className="group flex h-full flex-col rounded-lg border border-border bg-card p-6 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-medium lg:p-7">
+              <div key={option.title} className="group flex h-full flex-col rounded border border-border bg-card p-6 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-medium lg:p-7">
                 {/* icon zone */}
                 <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-muted text-foreground transition-colors duration-300 group-hover:border-primary/40 group-hover:bg-background">
                   <option.icon className="h-7 w-7" />

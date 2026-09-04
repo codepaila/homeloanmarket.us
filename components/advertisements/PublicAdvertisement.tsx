@@ -31,7 +31,7 @@ function AdvertisementPopup({ ads, layout }: { ads: PublicAdResponse[]; layout: 
   if (!visible || validAds.length === 0) return null
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Advertisement">
-      <div className={cn('relative max-h-[90vh] w-full max-w-[900px] overflow-hidden rounded-xl bg-background p-2 shadow-xl sm:p-4', layout.slotClassName)}>
+      <div className={cn('relative max-h-[90vh] w-full max-w-[900px] overflow-hidden rounded bg-background p-2 shadow-xl sm:p-4', layout.slotClassName)}>
         <Button type="button" variant="ghost" size="icon" className="absolute right-3 top-3 z-10 bg-background/80" onClick={() => setVisible(false)} aria-label="Close advertisement">
           <X className="h-4 w-4" />
         </Button>
@@ -51,7 +51,7 @@ export function PublicAdvertisement({ placement, className, location }: { placem
     if (layout.popup) return null
     if (placement === 'BROKER_LISTING_LOCAL') return null
     if (isLoading && ads.length === 0) {
-      return <div className={cn('w-full overflow-hidden py-2', className)}><div className={cn('mx-auto w-full max-w-[1280px] animate-pulse rounded-lg bg-muted', layout.slotClassName)} role="status" aria-label="Loading advertisement" /></div>
+      return <div className={cn('w-full overflow-hidden py-2', className)}><div className={cn('mx-auto w-full max-w-[1280px] animate-pulse rounded bg-muted', layout.slotClassName)} role="status" aria-label="Loading advertisement" /></div>
     }
     return null
   }
@@ -70,11 +70,11 @@ export function PublicAdvertisement({ placement, className, location }: { placem
           {validAds.map((ad) => {
             const isDisplayBanner = ad.creativeFormat === 'BANNER' || ad.creativeFormat === 'WIDE_RECTANGLE'
             return isDisplayBanner ? (
-              <div key={ad.id} className="min-w-0 overflow-hidden rounded-lg bg-card">
+              <div key={ad.id} className="min-w-0 overflow-hidden rounded bg-card">
                 <DisplayBannerCard ad={ad} />
               </div>
             ) : (
-              <div key={ad.id} className={cn('min-w-0 overflow-hidden rounded-lg bg-card', formatAspectClass(ad.creativeFormat))}>
+              <div key={ad.id} className={cn('min-w-0 overflow-hidden rounded bg-card', formatAspectClass(ad.creativeFormat))}>
                 <AdvertisementCard ad={ad} objectFit="cover" />
               </div>
             )
@@ -86,7 +86,7 @@ export function PublicAdvertisement({ placement, className, location }: { placem
 
   return (
     <section className={cn('w-full overflow-hidden py-2 sm:py-3', className)} aria-label={`${placement.replaceAll('_', ' ').toLowerCase()} advertisement`}>
-      <div className={cn('overflow-hidden rounded-lg', layout.className, layout.slotClassName)}>
+      <div className={cn('overflow-hidden rounded', layout.className, layout.slotClassName)}>
         {validAds.length > 1 ? <AdvertisementCarousel ads={validAds} contentClassName={layout.contentClassName} /> : <div className={cn('h-full w-full', layout.contentClassName)}><AdvertisementCard ad={validAds[0]} /></div>}
       </div>
     </section>

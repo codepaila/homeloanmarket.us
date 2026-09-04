@@ -261,11 +261,11 @@ export default function PaymentMethodsPage() {
                   {paymentMethods.map((method) => (
                     <div
                       key={method.id}
-                      className="border rounded-lg p-4 hover:border-border transition-colors"
+                      className="border rounded p-4 hover:border-border transition-colors"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">
-                          <div className="h-12 w-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                          <div className="h-12 w-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded flex items-center justify-center">
                             <span className="text-white font-bold text-sm">
                               {getCardIcon(method.brand)}
                             </span>
@@ -530,7 +530,7 @@ export default function PaymentMethodsPage() {
                     </Button>
                   </div>
 
-                  <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-start gap-3 p-4 bg-blue-50 rounded border border-blue-200">
                     <Lock className="h-5 w-5 text-info mt-0.5" />
                     <div className="text-sm text-blue-800">
                       <p className="font-medium">Security First</p>
@@ -560,7 +560,7 @@ export default function PaymentMethodsPage() {
               <CardContent>
                 <div className="space-y-4">
                   {transactions.slice(0, 5).map((transaction) => (
-                    <div key={transaction.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div key={transaction.id} className="flex items-center justify-between p-3 border rounded">
                       <div>
                         <p className="font-medium">{transaction.description}</p>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">

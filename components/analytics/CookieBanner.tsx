@@ -17,7 +17,7 @@ export function CookieBanner() {
       className="fixed bottom-0 left-0 right-0 z-50 p-4 sm:p-6"
     >
       <div
-        className="mx-auto max-w-2xl rounded-xl border shadow-lg"
+        className="mx-auto max-w-2xl rounded border shadow-lg"
         style={{
           background: "var(--background)",
           borderColor: "var(--border)",
@@ -84,7 +84,7 @@ export function CookieBanner() {
             </div>
             <button
               onClick={() => setExpanded(!expanded)}
-              className="flex-shrink-0 p-1.5 rounded-lg transition-colors"
+              className="flex-shrink-0 p-1.5 rounded transition-colors"
               style={{
                 color: "var(--muted-foreground)",
                 background: "transparent",

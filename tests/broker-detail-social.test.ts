@@ -83,7 +83,7 @@ test('skeleton contains a Social Profiles placeholder matching the loaded sectio
   assert.match(skeleton, /Social Profiles: heading/)
   assert.match(skeleton, /SkeletonHeading className="h-6 w-32"/)
   assert.match(skeleton, /flex flex-wrap gap-2/)
-  assert.match(skeleton, /h-9 w-24 rounded-lg/)
+  assert.match(skeleton, /h-9 w-24 rounded[^a-zA-Z]/)
 })
 
 test('skeleton social block is a sibling in the same spacing rhythm as the real page', () => {

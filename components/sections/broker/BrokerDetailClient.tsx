@@ -444,7 +444,7 @@ function SocialSection({ socialLinks }: { socialLinks?: Record<string, string | 
             target="_blank"
             rel="noopener noreferrer"
             aria-label={accessibleName}
-            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            className="inline-flex items-center gap-2 rounded border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary/40 hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
             {/* {label} */}
@@ -596,7 +596,7 @@ function ReviewsSection({
         <button
           type="button"
           onClick={onWriteReview}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+          className="inline-flex items-center gap-2 rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
         >
           <Star className="h-4 w-4" />
           Write a Review
@@ -626,7 +626,7 @@ function ReviewsSection({
 
 function ReviewItem({ review }: { review: any }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-6">
+    <div className="rounded border border-border bg-card p-6">
       <div className="flex items-start gap-4">
         <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-muted overflow-hidden">
           {review.user?.image ? (
@@ -683,7 +683,7 @@ function StatBox({
   value: string | number
 }) {
   return (
-    <div className="rounded-xl border border-border bg-muted/30 p-4 text-center">
+    <div className="rounded border border-border bg-muted/30 p-4 text-center">
       <div className="text-2xl font-bold text-primary">{value}</div>
       <div className="text-xs text-muted-foreground">{label}</div>
     </div>

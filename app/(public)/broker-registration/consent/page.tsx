@@ -56,7 +56,7 @@ export default function BrokerRegistrationConsentPage() {
       backLabel="Back to signup"
     >
       <div className="space-y-6">
-        <div className="rounded-2xl border bg-card/60 p-6 space-y-4">
+        <div className="rounded border bg-card/60 p-6 space-y-4">
           <h3 className="font-semibold text-foreground">Required Agreements</h3>
 
           <label className="flex cursor-pointer items-start gap-3 text-sm text-foreground">
@@ -97,17 +97,17 @@ export default function BrokerRegistrationConsentPage() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-4 text-center">
-          <div className="rounded-xl border bg-muted/50 p-4 space-y-2">
+          <div className="rounded border bg-muted/50 p-4 space-y-2">
             <Scale className="h-6 w-6 text-primary mx-auto" />
             <h4 className="font-semibold text-sm">Terms</h4>
             <p className="text-xs text-muted-foreground">Rules governing account use</p>
           </div>
-          <div className="rounded-xl border bg-muted/50 p-4 space-y-2">
+          <div className="rounded border bg-muted/50 p-4 space-y-2">
             <ShieldCheck className="h-6 w-6 text-primary mx-auto" />
             <h4 className="font-semibold text-sm">Privacy</h4>
             <p className="text-xs text-muted-foreground">How your data is protected</p>
           </div>
-          <div className="rounded-xl border bg-muted/50 p-4 space-y-2">
+          <div className="rounded border bg-muted/50 p-4 space-y-2">
             <Lock className="h-6 w-6 text-primary mx-auto" />
             <h4 className="font-semibold text-sm">Secure</h4>
             <p className="text-xs text-muted-foreground">Encrypted and verified</p>

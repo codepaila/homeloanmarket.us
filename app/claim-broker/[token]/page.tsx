@@ -122,7 +122,7 @@ export default function ClaimBrokerPage({ params }: { params: Promise<{ token: s
   if (mode === 'error') {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background px-4">
-        <div className="w-full max-w-md space-y-3 rounded-2xl border border-border bg-card p-8 text-center shadow-soft">
+        <div className="w-full max-w-md space-y-3 rounded border border-border bg-card p-8 text-center shadow-soft">
           <h1 className="text-xl font-semibold">Invitation unavailable</h1>
           <p className="text-sm text-muted-foreground">{message}</p>
         </div>
@@ -140,7 +140,7 @@ export default function ClaimBrokerPage({ params }: { params: Promise<{ token: s
         </header>
 
         {preview && (
-          <section className="rounded-2xl border border-border bg-card p-6 shadow-soft">
+          <section className="rounded border border-border bg-card p-6 shadow-soft">
             <h2 className="text-lg font-semibold">{preview.profile.companyName || preview.profile.displayName}</h2>
             <p className="mt-1 text-sm text-muted-foreground">{[preview.profile.city, preview.profile.state].filter(Boolean).join(', ') || 'United States'}</p>
             {preview.profile.description && <p className="mt-4 text-sm text-muted-foreground">{preview.profile.description}</p>}
@@ -153,7 +153,7 @@ export default function ClaimBrokerPage({ params }: { params: Promise<{ token: s
         )}
 
         {started && mode === 'email' && (
-          <form onSubmit={submitEmail} className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
+          <form onSubmit={submitEmail} className="space-y-4 rounded border border-border bg-card p-6 shadow-soft">
             <div>
               <h2 className="text-lg font-semibold">Verify your email</h2>
               <p className="mt-1 text-sm text-muted-foreground">Enter the email address this invitation was sent to.</p>
@@ -164,7 +164,7 @@ export default function ClaimBrokerPage({ params }: { params: Promise<{ token: s
         )}
 
         {started && mode === 'account' && (
-          <section className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
+          <section className="space-y-4 rounded border border-border bg-card p-6 shadow-soft">
             <div>
               <h2 className="text-lg font-semibold">Continue securely</h2>
               <p className="mt-1 text-sm text-muted-foreground">Choose how you&apos;d like to continue.</p>
@@ -178,7 +178,7 @@ export default function ClaimBrokerPage({ params }: { params: Promise<{ token: s
               <PremiumButton type="submit" fullWidth loading={action === 'create'} loadingText="Creating account…">Create account</PremiumButton>
             </form>
 
-            <button type="button" onClick={signInAndClaim} disabled={busy || !password} className="inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold text-primary transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-60">
+            <button type="button" onClick={signInAndClaim} disabled={busy || !password} className="inline-flex w-full items-center justify-center gap-2 rounded px-4 py-2 text-sm font-semibold text-primary transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-60">
               {action === 'signin' ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
               {action === 'signin' ? 'Signing in…' : 'Already have an account? Sign in and claim'}
             </button>
@@ -186,7 +186,7 @@ export default function ClaimBrokerPage({ params }: { params: Promise<{ token: s
         )}
 
         {mode === 'verify' && (
-          <section className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
+          <section className="space-y-4 rounded border border-border bg-card p-6 shadow-soft">
             <div>
               <h2 className="text-lg font-semibold">Verify your email</h2>
               <p className="mt-1 text-sm text-muted-foreground">Check your email, verify the account, then return here to complete the claim.</p>
@@ -195,7 +195,7 @@ export default function ClaimBrokerPage({ params }: { params: Promise<{ token: s
           </section>
         )}
 
-        {message && <p role="alert" className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">{message}</p>}
+        {message && <p role="alert" className="rounded border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">{message}</p>}
       </div>
     </main>
   )

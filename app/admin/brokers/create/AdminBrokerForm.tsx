@@ -71,25 +71,25 @@ export default function AdminBrokerForm() {
         <p className="text-sm font-medium text-muted-foreground">Broker Management</p>
         <h1 className="text-3xl font-semibold tracking-tight">Create Admin Broker Profile</h1>
         <p className="mt-1 text-sm text-muted-foreground">The profile will be unowned, verified, published, and FREE. No User account is created.</p>
-        <p className="mt-2 inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary">
+        <p className="mt-2 inline-flex items-center gap-2 rounded border border-primary/30 bg-primary/5 px-3 py-1.5 text-sm font-medium text-primary">
           Default Subscription: FREE
           <span className="text-xs text-muted-foreground">Admin-created brokers automatically receive the active FREE plan.</span>
         </p>
       </div>
-      <form onSubmit={submit} className="space-y-6 rounded-xl border bg-card p-6">
+      <form onSubmit={submit} className="space-y-6 rounded border bg-card p-6">
         <div className="grid gap-4 sm:grid-cols-2">
           {fields.map(([name, label, required]) => (
             <label key={name} className={name === 'description' || name === 'officeAddress' ? 'sm:col-span-2 space-y-2' : 'space-y-2'}>
               <span className="text-sm font-medium">{label}{required && <span className="text-destructive"> *</span>}</span>
               {name === 'description' || name === 'officeAddress' ? (
-                <textarea required={required} value={form[name] || ''} onChange={(event) => update(name, event.target.value)} className="min-h-28 w-full rounded-lg border bg-background px-3 py-2" />
+                <textarea required={required} value={form[name] || ''} onChange={(event) => update(name, event.target.value)} className="min-h-28 w-full rounded border bg-background px-3 py-2" />
               ) : (
-                <input required={required} type={name === 'email' ? 'email' : name === 'experienceYears' ? 'number' : 'text'} value={form[name] || ''} onChange={(event) => update(name, event.target.value)} className="w-full rounded-lg border bg-background px-3 py-2" />
+                <input required={required} type={name === 'email' ? 'email' : name === 'experienceYears' ? 'number' : 'text'} value={form[name] || ''} onChange={(event) => update(name, event.target.value)} className="w-full rounded border bg-background px-3 py-2" />
               )}
             </label>
           ))}
         </div>
-        <div className="space-y-3 rounded-lg border bg-muted/20 p-4">
+        <div className="space-y-3 rounded border bg-muted/20 p-4">
           <div>
             <p className="text-sm font-medium">License States</p>
             <p className="text-sm text-muted-foreground">US states where this broker is licensed to originate mortgages. At least one is required.</p>
@@ -111,10 +111,10 @@ export default function AdminBrokerForm() {
             })}
           </div>
         </div>
-        {error && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+        {error && <p className="rounded bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
         <div className="flex justify-end gap-3">
-          <button type="button" onClick={() => router.push('/admin/brokers')} className="rounded-lg border px-4 py-2 text-sm">Cancel</button>
-          <button disabled={loading} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{loading ? 'Creating...' : 'Create Unowned Broker'}</button>
+          <button type="button" onClick={() => router.push('/admin/brokers')} className="rounded border px-4 py-2 text-sm">Cancel</button>
+          <button disabled={loading} className="rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{loading ? 'Creating...' : 'Create Unowned Broker'}</button>
         </div>
       </form>
     </div>

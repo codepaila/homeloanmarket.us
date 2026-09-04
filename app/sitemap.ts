@@ -1,11 +1,12 @@
 import type { MetadataRoute } from 'next'
 import prisma from '@/lib/prisma'
 import { canonicalUrl, isIndexablePublicBroker } from '@/lib/seo'
+import { ABOUT_PAGE_ID } from '@/lib/about/about'
 
-const staticPublicPaths = ['/', '/brokers', '/about', '/contact', '/faq', '/guides', '/blog', '/calculator', '/privacy-policy', '/terms-of-service']
+const corePublicPaths = ['/', '/brokers', '/contact', '/faq', '/guides', '/blog', '/calculator', '/privacy-policy', '/terms-of-service']
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [brokers, posts] = await Promise.all([
+  const [brokers, posts, aboutPage] = await Promise.all([
     prisma.broker.findMany({
       where: {
         isVisible: true,
@@ -31,9 +32,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       select: { slug: true, updatedAt: true },
       orderBy: { updatedAt: 'desc' },
     }),
+    prisma.aboutPage.findUnique({
+      where: { id: ABOUT_PAGE_ID },
+      select: { isActive: true },
+    }),
   ])
 
-  const entries: MetadataRoute.Sitemap = staticPublicPaths.map((path) => ({
+  const publicPaths = aboutPage?.isActive
+    ? [...corePublicPaths, '/about']
+    : corePublicPaths
+
+  const entries: MetadataRoute.Sitemap = publicPaths.map((path) => ({
     url: canonicalUrl(path),
     changeFrequency: path === '/' ? 'daily' : 'weekly',
     priority: path === '/' ? 1 : 0.6,

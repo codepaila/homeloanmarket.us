@@ -29,7 +29,7 @@ export function DisplayBannerCard({ ad }: { ad: PublicAdResponse | null | undefi
 
   return (
     <AdvertisementWrapper ad={ad} className="h-full w-full">
-      <div className="relative h-full w-full overflow-hidden rounded-lg bg-card">
+      <div className="relative h-full w-full overflow-hidden rounded bg-card">
         {/* Responsive aspect-ratio slot enforced with the padding-top box
             technique. Independent of any Tailwind utility so the ratio is
             always present and the unit never overflows or distorts. */}

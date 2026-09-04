@@ -204,7 +204,7 @@ export function MediaPickerDialog({
             <div className={viewMode === 'grid' ? 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4' : 'space-y-2'}>
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="space-y-2">
-                  <Skeleton className="aspect-video rounded-lg" />
+                  <Skeleton className="aspect-video rounded" />
                   <Skeleton className="h-4 w-3/4" />
                   <Skeleton className="h-3 w-1/2" />
                 </div>
@@ -236,7 +236,7 @@ export function MediaPickerDialog({
                         type="button"
                         onClick={() => handleSelect(asset)}
                         className={cn(
-                          'group relative aspect-video rounded-lg border-2 overflow-hidden bg-muted transition-all',
+                          'group relative aspect-video rounded border-2 overflow-hidden bg-muted transition-all',
                           isSelected ? 'border-primary ring-2 ring-primary/20' : 'border-border hover:border-primary/50'
                         )}
                         whileHover={{ scale: 1.02 }}
@@ -300,7 +300,7 @@ export function MediaPickerDialog({
                       type="button"
                       onClick={() => handleSelect(asset)}
                       className={cn(
-                        'w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left',
+                        'w-full flex items-center gap-3 p-3 rounded border transition-all text-left',
                         isSelected ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
                       )}
                       whileHover={{ scale: 1.01 }}

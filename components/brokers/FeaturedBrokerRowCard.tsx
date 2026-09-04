@@ -92,7 +92,7 @@ export default function FeaturedBrokerRowCard({ broker }: FeaturedBrokerRowCardP
   return (
     <article
       className={cn(
-        'group relative flex flex-col overflow-hidden rounded-2xl',
+        'group relative flex flex-col overflow-hidden rounded',
         'border border-border bg-card shadow-soft transition-all duration-300',
         'hover:-translate-y-1 hover:shadow-large',
         'md:flex-row md:items-stretch',
@@ -195,7 +195,7 @@ export default function FeaturedBrokerRowCard({ broker }: FeaturedBrokerRowCardP
               isFavorite ? 'Remove from favorites' : 'Save to favorites'
             }
             className={cn(
-              'flex h-9 items-center justify-center gap-1.5 rounded-xl border text-sm font-medium transition-all duration-200',
+              'flex h-9 items-center justify-center gap-1.5 rounded border text-sm font-medium transition-all duration-200',
               isFavorite
                 ? 'border-red-200 bg-red-50 text-red-500 dark:border-red-500/30 dark:bg-red-500/10'
                 : 'border-border bg-background text-muted-foreground hover:border-red-300 hover:text-red-500',

@@ -31,7 +31,7 @@ export default async function BrokerSupportFaqPage() {
         </p>
       </div>
       {faqs.length === 0 ? (
-        <p className="rounded-lg border border-dashed py-12 text-center text-sm text-muted-foreground">
+        <p className="rounded border border-dashed py-12 text-center text-sm text-muted-foreground">
           No FAQs are available right now.
         </p>
       ) : (

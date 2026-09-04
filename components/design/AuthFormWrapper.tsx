@@ -44,7 +44,7 @@ export function AuthFormWrapper({
           <Link
             href="/"
             aria-label="HomeLoanMarket home"
-            className="inline-flex items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
+            className="inline-flex items-center rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
           >
             <Image
               src="/assets/logo.png"
@@ -76,7 +76,7 @@ export function AuthFormWrapper({
 
         <motion.div
           {...fade}
-          className="rounded-2xl border border-border bg-card p-6 shadow-soft sm:p-8"
+          className="rounded border border-border bg-card p-6 shadow-soft sm:p-8"
         >
           <div className="mb-8 text-center">
             <motion.h1

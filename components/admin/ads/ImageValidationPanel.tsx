@@ -35,14 +35,14 @@ export function ImageValidationPanel({ asset, placement, className }: ImageValid
 
   if (!asset) {
     return (
-      <div className={cn('rounded-lg border border-border bg-card p-4', className)}>
+      <div className={cn('rounded border border-border bg-card p-4', className)}>
         <p className="text-sm text-muted-foreground">No media selected</p>
       </div>
     )
   }
 
   return (
-    <div className={cn('rounded-lg border border-border bg-card p-4 space-y-3', className)}>
+    <div className={cn('rounded border border-border bg-card p-4 space-y-3', className)}>
       <div className="flex items-center justify-between">
         <h4 className="text-sm font-semibold">Image Validation</h4>
         <div className="flex items-center gap-2">

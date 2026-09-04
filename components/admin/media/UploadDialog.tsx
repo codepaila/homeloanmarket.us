@@ -179,7 +179,7 @@ export function UploadDialog({ open, onOpenChange, folderId, onUploaded }: Uploa
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-background border border-border rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col"
+          className="bg-background border border-border rounded shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col"
         >
           <div className="flex items-center justify-between p-6 border-b border-border">
             <div>
@@ -194,7 +194,7 @@ export function UploadDialog({ open, onOpenChange, folderId, onUploaded }: Uploa
           <div className="p-6 space-y-4 overflow-y-auto flex-1">
             <div
               className={cn(
-                'border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer',
+                'border-2 border-dashed rounded p-8 text-center transition-colors cursor-pointer',
                 isDragOver ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
               )}
               onDragOver={(e) => { e.preventDefault(); setIsDragOver(true) }}
@@ -249,7 +249,7 @@ export function UploadDialog({ open, onOpenChange, folderId, onUploaded }: Uploa
             {files.length > 0 && (
               <div className="space-y-2 max-h-64 overflow-y-auto">
                 {files.map((file) => (
-                  <div key={file.id} className="flex items-center gap-3 p-3 rounded-lg border border-border">
+                  <div key={file.id} className="flex items-center gap-3 p-3 rounded border border-border">
                     <div className="h-10 w-10 rounded-md bg-muted overflow-hidden shrink-0 flex items-center justify-center">
                       {file.status === 'success' && file.asset ? (
                         <img src={file.asset.thumbnailUrl || file.asset.fileUrl} alt="" className="h-full w-full object-cover" />

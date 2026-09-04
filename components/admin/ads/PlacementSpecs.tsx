@@ -56,7 +56,7 @@ export function PlacementSpecs({ placement, className }: PlacementSpecsProps) {
         </div>
 
         {isFullWidthTop && (
-          <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-1.5">
+          <div className="rounded border border-border bg-muted/30 p-3 space-y-1.5">
             <p className="flex items-center gap-1.5 text-xs font-semibold text-foreground">
               <Lightbulb className="h-3.5 w-3.5 text-primary" />
               Tips for a full-width banner

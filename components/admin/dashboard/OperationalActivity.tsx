@@ -4,7 +4,7 @@ import { DashboardEmptyState } from './DashboardEmptyState'
 
 function Row({ primary, detail, meta }: { primary: string; detail: string; meta: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2">
+    <div className="flex items-center justify-between gap-3 rounded border px-3 py-2">
       <div className="min-w-0">
         <p className="truncate text-sm font-medium">{primary}</p>
         <p className="truncate text-xs text-muted-foreground">{detail}</p>

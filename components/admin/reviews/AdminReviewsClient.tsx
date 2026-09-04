@@ -80,7 +80,7 @@ export function AdminReviewsClient() {
             key={t.key}
             type="button"
             onClick={() => switchTab(t.key)}
-            className={cn('rounded-lg px-3 py-1.5 text-sm font-medium transition-colors', tab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}
+            className={cn('rounded px-3 py-1.5 text-sm font-medium transition-colors', tab === t.key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground')}
           >
             {t.label}
           </button>
@@ -94,7 +94,7 @@ export function AdminReviewsClient() {
       ) : reviews.length === 0 ? (
         <p className="py-8 text-sm text-muted-foreground">No reviews in this view.</p>
       ) : (
-        <div className="divide-y divide-border rounded-xl border border-border">
+        <div className="divide-y divide-border rounded border border-border">
           {reviews.map((review) => (
             <div key={review.id} className="space-y-3 p-4">
               <div className="flex flex-wrap items-start justify-between gap-2">
@@ -113,11 +113,11 @@ export function AdminReviewsClient() {
               {review.comment && <p className="whitespace-pre-line text-sm text-muted-foreground">{review.comment}</p>}
               {review.status !== 'APPROVED' && (
                 <div className="flex flex-wrap gap-2">
-                  <button type="button" disabled={busyId === review.id} onClick={() => moderate(review.id, 'approve')} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50">
+                  <button type="button" disabled={busyId === review.id} onClick={() => moderate(review.id, 'approve')} className="inline-flex items-center gap-1.5 rounded bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50">
                     {busyId === review.id && <Loader2 className="h-3 w-3 animate-spin" />}Approve
                   </button>
                   {review.status !== 'REJECTED' && (
-                    <button type="button" disabled={busyId === review.id} onClick={() => moderate(review.id, 'reject')} className="rounded-lg border border-destructive px-3 py-1.5 text-xs font-semibold text-destructive disabled:opacity-50">Reject</button>
+                    <button type="button" disabled={busyId === review.id} onClick={() => moderate(review.id, 'reject')} className="rounded border border-destructive px-3 py-1.5 text-xs font-semibold text-destructive disabled:opacity-50">Reject</button>
                   )}
                 </div>
               )}

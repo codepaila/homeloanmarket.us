@@ -102,14 +102,14 @@ export default function BrokerSubscriptionsClient({ subscriptions, summary, admi
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-6">
         {summaryCards.map((card) => (
-          <div key={card.label} className="rounded-xl border bg-card p-4">
+          <div key={card.label} className="rounded border bg-card p-4">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">{card.label}</p>
             <p className="mt-2 text-2xl font-semibold">{card.value}</p>
           </div>
         ))}
       </div>
 
-      <section className="rounded-xl border bg-card p-5">
+      <section className="rounded border bg-card p-5">
         <h2 className="font-semibold">Admin-created / imported brokers</h2>
         <p className="mt-1 text-sm text-muted-foreground">Admin-created brokers should each have a linked FREE subscription. This metric should normally be 0.</p>
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
@@ -120,11 +120,11 @@ export default function BrokerSubscriptionsClient({ subscriptions, summary, admi
           <AuditStat label="Unknown creation source" value={adminAudit.unknownCreationSource} />
         </div>
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <button type="button" onClick={reconcile} disabled={busy} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
+          <button type="button" onClick={reconcile} disabled={busy} className="inline-flex items-center gap-2 rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
             {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
             Reconcile Legacy Subscriptions
           </button>
-          <button type="button" onClick={backfillFree} disabled={busy} className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold disabled:opacity-50">
+          <button type="button" onClick={backfillFree} disabled={busy} className="inline-flex items-center gap-2 rounded border px-4 py-2 text-sm font-semibold disabled:opacity-50">
             {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
             Create missing FREE subscriptions (admin-created brokers)
           </button>
@@ -132,7 +132,7 @@ export default function BrokerSubscriptionsClient({ subscriptions, summary, admi
         {report && <ReconcileReport report={report} />}
       </section>
 
-      <div className="overflow-x-auto rounded-xl border bg-card">
+      <div className="overflow-x-auto rounded border bg-card">
         {subscriptions.length === 0 ? (
           <div className="p-10 text-center">
             <p className="text-sm font-medium text-foreground">No broker subscriptions found</p>
@@ -176,7 +176,7 @@ export default function BrokerSubscriptionsClient({ subscriptions, summary, admi
                 <td className="px-4 py-3 text-xs text-muted-foreground">{subscription.endDate ? new Date(subscription.endDate).toLocaleDateString() : '—'}</td>
                 <td className="px-4 py-3"><MigrationBadge status={subscription.migrationStatus} /></td>
                 <td className="px-4 py-3">
-                  <Link href={`/admin/billing/broker-subscriptions/${subscription.id}`} className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-foreground">View</Link>
+                  <Link href={`/admin/billing/broker-subscriptions/${subscription.id}`} className="rounded border px-3 py-1.5 text-xs font-semibold text-foreground">View</Link>
                 </td>
               </tr>
             ))}
@@ -190,7 +190,7 @@ export default function BrokerSubscriptionsClient({ subscriptions, summary, admi
 
 function AuditStat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border p-3">
+    <div className="rounded border p-3">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 text-xl font-semibold">{value}</p>
     </div>
@@ -214,7 +214,7 @@ function MigrationBadge({ status }: { status: SubscriptionRow['migrationStatus']
 function ReconcileReport({ report }: { report: Record<string, unknown> }) {
   const kind = report.kind === 'reconcile' ? 'Reconciliation' : 'FREE backfill'
   return (
-    <div className="mt-4 rounded-lg border p-4 text-sm">
+    <div className="mt-4 rounded border p-4 text-sm">
       <p className="font-semibold">{kind} report</p>
       <pre className="mt-2 whitespace-pre-wrap rounded bg-muted/40 p-3 text-xs">{JSON.stringify(report, null, 2)}</pre>
     </div>

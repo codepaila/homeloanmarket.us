@@ -369,8 +369,8 @@ export default function ContactForm({
               <div
                 className={
                   errors.country
-                    ? 'rounded-xl border border-destructive/60 p-1'
-                    : 'rounded-xl border border-border p-1'
+                    ? 'rounded border border-destructive/60 p-1'
+                    : 'rounded border border-border p-1'
                 }
               >
                 <CountrySelectField
@@ -393,8 +393,8 @@ export default function ContactForm({
               <div
                 className={
                   errors.state
-                    ? 'rounded-xl border border-destructive/60 p-1'
-                    : 'rounded-xl border border-border p-1'
+                    ? 'rounded border border-destructive/60 p-1'
+                    : 'rounded border border-border p-1'
                 }
               >
                 <StateSelectField
@@ -419,8 +419,8 @@ export default function ContactForm({
             <div
               className={
                 errors.city
-                  ? 'rounded-xl border border-destructive/60 p-1'
-                  : 'rounded-xl border border-border p-1'
+                  ? 'rounded border border-destructive/60 p-1'
+                  : 'rounded border border-border p-1'
               }
             >
               <CitySelect

@@ -64,7 +64,7 @@ export function ArchiveDialog({ open, onOpenChange, adId, adTitle, onSuccess }: 
           animate={{ opacity: 1, y: 0 }}
           className="space-y-4"
         >
-          <div className="rounded-lg border border-border bg-muted/50 p-4 space-y-3">
+          <div className="rounded border border-border bg-muted/50 p-4 space-y-3">
             <p className="text-sm font-medium">What happens when you archive?</p>
             <ul className="space-y-2">
               <li className="flex items-start gap-2 text-sm text-muted-foreground">

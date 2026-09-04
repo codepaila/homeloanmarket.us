@@ -9,7 +9,7 @@ export default function ResourceCard({resource}: {resource: any}) {
             <div className="flex items-center flex-col  text-center ">
               <div 
               className='mb-2'
-              // className="flex-shrink-0 bg-primary/10 p-3 rounded-lg"
+              // className="flex-shrink-0 bg-primary/10 p-3 rounded"
               >
                 {resource?.icon}
               </div>

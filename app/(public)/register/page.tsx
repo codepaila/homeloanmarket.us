@@ -38,8 +38,8 @@ export default async function RegisterPage() {
       size="lg"
     >
       <div className="grid gap-5 sm:grid-cols-2">
-        <div className="flex flex-col rounded-2xl border border-border bg-background/40 p-5 shadow-soft transition-all duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-medium sm:p-6">
-          <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <div className="flex flex-col rounded border border-border bg-background/40 p-5 shadow-soft transition-all duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-medium sm:p-6">
+          <div className="mb-4 flex h-11 w-11 items-center justify-center rounded bg-primary/10 text-primary">
             <Home className="h-5 w-5" aria-hidden="true" />
           </div>
           <h2 className="text-lg font-semibold text-foreground">I&apos;m a Home Buyer</h2>
@@ -62,9 +62,9 @@ export default async function RegisterPage() {
           </div>
         </div>
 
-        <div className={cn('flex flex-col rounded-2xl border bg-background/40 p-5 shadow-soft transition-all duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-medium sm:p-6', 'border-primary/20')}>
+        <div className={cn('flex flex-col rounded border bg-background/40 p-5 shadow-soft transition-all duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-medium sm:p-6', 'border-primary/20')}>
           <div className="mb-4 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <div className="flex h-11 w-11 items-center justify-center rounded bg-primary/10 text-primary">
               <Briefcase className="h-5 w-5" aria-hidden="true" />
             </div>
             <span className="inline-flex w-fit items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
@@ -91,7 +91,7 @@ export default async function RegisterPage() {
             <AuthDivider label="or" />
             <Link
               href="/auth/signup"
-              className="inline-flex w-full items-center justify-center rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+              className="inline-flex w-full items-center justify-center rounded border border-border bg-card px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
             >
               Register with Email
             </Link>

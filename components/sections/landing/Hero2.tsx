@@ -291,10 +291,10 @@ export default function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={motionTransition(0.25)}
-              className="mt-8 rounded-2xl border border-white/10 bg-white/95 p-3 shadow-2xl backdrop-blur-xl"
+              className="mt-8 rounded border border-white/10 bg-white/95 p-3 shadow-2xl backdrop-blur-xl"
             >
               {/* Main Search Bar */}
-              <div className="relative flex items-center gap-3 rounded-xl bg-white px-4 py-2.5 shadow-sm ring-1 ring-black/5 transition-all focus-within:ring-2 focus-within:ring-primary/50">
+              <div className="relative flex items-center gap-3 rounded bg-white px-4 py-2.5 shadow-sm ring-1 ring-black/5 transition-all focus-within:ring-2 focus-within:ring-primary/50">
                 <Search className="h-5 w-5 flex-shrink-0 text-primary" />
                 <input
                   type="search"
@@ -311,7 +311,7 @@ export default function HeroSection() {
                   role="combobox"
                 />
                 {(searching || locationSuggestions.length > 0) && (
-                  <div id="broker-search-suggestions" className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded-xl border border-border bg-white shadow-xl" role="listbox" aria-label="Location suggestions">
+                  <div id="broker-search-suggestions" className="absolute inset-x-0 top-full z-50 mt-2 overflow-hidden rounded border border-border bg-white shadow-xl" role="listbox" aria-label="Location suggestions">
                     {searching && locationSuggestions.length === 0 ? (
                       <p className="px-4 py-3 text-sm text-muted-foreground">Searching mortgage originators…</p>
                     ) : locationSuggestions.length === 0 ? (
@@ -345,7 +345,7 @@ export default function HeroSection() {
                     name="loanType"
                     value={loanType}
                     onChange={(event) => setLoanType(event.target.value)}
-                    className="w-full appearance-none rounded-lg bg-muted/40 py-2 pl-8 pr-7 text-xs font-medium text-secondary transition-all hover:bg-muted/60 focus:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full appearance-none rounded bg-muted/40 py-2 pl-8 pr-7 text-xs font-medium text-secondary transition-all hover:bg-muted/60 focus:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30"
                     aria-label="Loan type"
                   >
                     {loanTypes.map((type) => (
@@ -374,7 +374,7 @@ export default function HeroSection() {
                       setCitiesLoading(Boolean(value))
                       setState(value)
                     }}
-                    className="w-full appearance-none rounded-lg bg-muted/40 py-2 pl-8 pr-7 text-xs font-medium text-secondary transition-all hover:bg-muted/60 focus:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full appearance-none rounded bg-muted/40 py-2 pl-8 pr-7 text-xs font-medium text-secondary transition-all hover:bg-muted/60 focus:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30"
                     aria-label="State"
                   >
                     <option value="">All states</option>
@@ -399,7 +399,7 @@ export default function HeroSection() {
                     value={city}
                     onChange={(event) => setCity(event.target.value)}
                     disabled={!state || citiesLoading}
-                    className="w-full appearance-none rounded-lg bg-muted/40 py-2 pl-8 pr-7 text-xs font-medium text-secondary transition-all hover:bg-muted/60 focus:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-full appearance-none rounded bg-muted/40 py-2 pl-8 pr-7 text-xs font-medium text-secondary transition-all hover:bg-muted/60 focus:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:opacity-50"
                     aria-label="City"
                   >
                     <option value="">
@@ -425,7 +425,7 @@ export default function HeroSection() {
                     name="loanAmount"
                     value={amount}
                     onChange={(event) => setAmount(event.target.value)}
-                    className="w-full appearance-none rounded-lg bg-muted/40 py-2 pl-8 pr-7 text-xs font-medium text-secondary transition-all hover:bg-muted/60 focus:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    className="w-full appearance-none rounded bg-muted/40 py-2 pl-8 pr-7 text-xs font-medium text-secondary transition-all hover:bg-muted/60 focus:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/30"
                     aria-label="Loan amount"
                   >
                     {loanAmounts.map((item) => (

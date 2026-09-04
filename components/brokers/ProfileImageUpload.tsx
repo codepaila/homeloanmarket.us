@@ -73,7 +73,7 @@ export function ProfileImageUpload({
 
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-      <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-xl border border-border bg-muted">
+      <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded border border-border bg-muted">
         {preview ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={preview} alt={label} className="h-full w-full object-cover" />
@@ -106,7 +106,7 @@ export function ProfileImageUpload({
             type="button"
             onClick={() => inputRef.current?.click()}
             disabled={busy}
-            className="inline-flex h-9 items-center rounded-lg border border-border bg-background px-3.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex h-9 items-center rounded border border-border bg-background px-3.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
           >
             {uploading ? 'Uploading…' : preview ? 'Change image' : 'Upload image'}
           </button>
@@ -115,7 +115,7 @@ export function ProfileImageUpload({
               type="button"
               onClick={handleRemove}
               disabled={busy}
-              className="inline-flex h-9 items-center rounded-lg border border-border px-3.5 text-sm font-medium text-destructive transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex h-9 items-center rounded border border-border px-3.5 text-sm font-medium text-destructive transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
             >
               {removing ? 'Removing…' : 'Remove'}
             </button>
@@ -125,7 +125,7 @@ export function ProfileImageUpload({
         <p className="text-xs text-muted-foreground">JPG, PNG or WebP up to 5 MB</p>
 
         {error && (
-          <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          <p role="alert" className="rounded border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
             {error}
           </p>
         )}

@@ -51,7 +51,7 @@ export default function SetupSuccessPage() {
               </h2>
 
               <div className="space-y-4">
-                <div className="flex items-start gap-4 p-4 border rounded-lg">
+                <div className="flex items-start gap-4 p-4 border rounded">
                   <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
                     <Mail className="h-5 w-5 text-info" />
                   </div>
@@ -63,7 +63,7 @@ export default function SetupSuccessPage() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-4 border rounded-lg">
+                <div className="flex items-start gap-4 p-4 border rounded">
                   <div className="h-10 w-10 rounded-full bg-yellow-100 flex items-center justify-center flex-shrink-0">
                     <Clock className="h-5 w-5 text-warning" />
                   </div>
@@ -75,7 +75,7 @@ export default function SetupSuccessPage() {
                   </div>
                 </div>
 
-                <div className="flex items-start gap-4 p-4 border rounded-lg">
+                <div className="flex items-start gap-4 p-4 border rounded">
                   <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
                     <Shield className="h-5 w-5 text-success" />
                   </div>

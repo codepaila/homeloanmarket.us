@@ -115,7 +115,7 @@ export function MediaSelector({
         <p className="text-xs text-muted-foreground">{description}</p>
       </div>
 
-      <div className={cn('overflow-hidden rounded-lg border bg-muted/30', hasSelection ? 'p-3' : 'p-6')}>
+      <div className={cn('overflow-hidden rounded border bg-muted/30', hasSelection ? 'p-3' : 'p-6')}>
         {hasSelection && previewUrl ? (
           <div className="flex items-center gap-3">
             <div className="h-20 w-28 shrink-0 overflow-hidden rounded-md border bg-muted">

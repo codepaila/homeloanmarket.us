@@ -123,7 +123,7 @@ export function BrokerReviewDialog({
               rows={4}
               maxLength={2000}
               placeholder="What was your experience like?"
-              className="w-full rounded-lg border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full rounded border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
 

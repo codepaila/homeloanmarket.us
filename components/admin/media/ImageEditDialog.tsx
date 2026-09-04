@@ -61,7 +61,7 @@ export function ImageEditDialog({ asset, open, onOpenChange, onUpdated }: ImageE
           animate={{ opacity: 1, y: 0 }}
           className="space-y-4"
         >
-          <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+          <div className="aspect-video rounded overflow-hidden bg-muted">
             <img src={asset.thumbnailUrl || asset.fileUrl} alt={asset.fileName} className="w-full h-full object-contain" />
           </div>
 

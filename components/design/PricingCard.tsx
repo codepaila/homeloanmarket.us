@@ -36,7 +36,7 @@ export function PricingCard({
   return (
     <motion.div
       className={cn(
-        'relative flex flex-col rounded-2xl border bg-card/80 p-8',
+        'relative flex flex-col rounded border bg-card/80 p-8',
         'backdrop-blur-sm transition-all duration-300',
         'hover:border-primary/30 hover:shadow-medium',
         isCurrent &&
@@ -98,7 +98,7 @@ export function PricingCard({
 
       <div className="mt-auto">
         {isCurrent ? (
-          <div className="inline-flex h-11 w-full items-center justify-center rounded-xl border border-border bg-muted/50 text-sm font-medium text-muted-foreground">
+          <div className="inline-flex h-11 w-full items-center justify-center rounded border border-border bg-muted/50 text-sm font-medium text-muted-foreground">
             Current Plan
           </div>
         ) : (
@@ -106,7 +106,7 @@ export function PricingCard({
             onClick={() => (stripePriceId || price === 0) && onSelect?.(stripePriceId || '', name, code || name)}
             disabled={!stripePriceId && price !== 0}
             className={cn(
-              'w-full rounded-xl py-2.5 text-sm font-semibold transition-all',
+              'w-full rounded py-2.5 text-sm font-semibold transition-all',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30',
               'disabled:opacity-50',
               name === 'FEATURED'

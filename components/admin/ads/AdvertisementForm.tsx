@@ -546,19 +546,19 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                   <CardHeader><CardTitle>Status</CardTitle><CardDescription>Control whether this advertisement is active</CardDescription></CardHeader>
                   <CardContent className="space-y-3">
                     <FormField control={form.control} name="isEnabled" render={({ field }) => (
-                      <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                      <FormItem className="flex items-center justify-between rounded border p-4">
                         <div className="space-y-0.5"><FormLabel>Enabled</FormLabel><FormDescription>When enabled, this advertisement is active and visible</FormDescription></div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="isArchived" render={({ field }) => (
-                      <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                      <FormItem className="flex items-center justify-between rounded border p-4">
                         <div className="space-y-0.5"><FormLabel>Archived</FormLabel><FormDescription>Archived advertisements are hidden from all placements</FormDescription></div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="isDismissible" render={({ field }) => (
-                      <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                      <FormItem className="flex items-center justify-between rounded border p-4">
                         <div className="space-y-0.5"><FormLabel>Dismissible</FormLabel><FormDescription>Allow users to close this advertisement</FormDescription></div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                       </FormItem>
@@ -617,7 +617,7 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                       <FormItem>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                           {getValidTypesForPlacement(watchPlacement || '').map((type) => (
-                            <button key={type} type="button" aria-pressed={field.value === type} onClick={() => field.onChange(type)} className={cn('flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all', field.value === type ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50')}>
+                            <button key={type} type="button" aria-pressed={field.value === type} onClick={() => field.onChange(type)} className={cn('flex flex-col items-center gap-2 p-4 rounded border-2 transition-all', field.value === type ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50')}>
                               <span className="text-sm font-medium text-center">{AD_TYPE_LABELS[type]}</span>
                             </button>
                           ))}
@@ -635,7 +635,7 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                       <FormItem>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                           {ACTION_OPTIONS.map((option) => (
-                            <button key={option.value} type="button" onClick={() => field.onChange(option.value)} className={cn('flex flex-col items-start gap-1 p-4 rounded-lg border-2 transition-all text-left', field.value === option.value ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50')}>
+                            <button key={option.value} type="button" onClick={() => field.onChange(option.value)} className={cn('flex flex-col items-start gap-1 p-4 rounded border-2 transition-all text-left', field.value === option.value ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50')}>
                               <span className="font-medium">{option.label}</span>
                               <span className="text-xs text-muted-foreground">{option.needsButton && option.needsUrl ? 'Shows button with link' : option.needsUrl ? 'Banner is clickable' : 'Display only, no interaction'}</span>
                             </button>
@@ -668,7 +668,7 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="openInNewTab" render={({ field }) => (
-                        <FormItem className="flex items-center justify-between rounded-lg border p-4">
+                        <FormItem className="flex items-center justify-between rounded border p-4">
                           <div className="space-y-0.5"><FormLabel>Open in New Tab</FormLabel><FormDescription>Open the button link in a new browser tab</FormDescription></div>
                           <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                         </FormItem>
@@ -699,19 +699,19 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                   <CardContent>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <FormField control={form.control} name="showDesktop" render={({ field }) => (
-                        <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                        <FormItem className="flex items-center justify-between rounded border p-3">
                           <div className="flex items-center gap-2"><Monitor className="h-4 w-4" /><FormLabel className="mb-0">Desktop</FormLabel></div>
                           <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="showTablet" render={({ field }) => (
-                        <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                        <FormItem className="flex items-center justify-between rounded border p-3">
                           <div className="flex items-center gap-2"><Smartphone className="h-4 w-4" /><FormLabel className="mb-0">Tablet</FormLabel></div>
                           <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                         </FormItem>
                       )} />
                       <FormField control={form.control} name="showMobile" render={({ field }) => (
-                        <FormItem className="flex items-center justify-between rounded-lg border p-3">
+                        <FormItem className="flex items-center justify-between rounded border p-3">
                           <div className="flex items-center gap-2"><Smartphone className="h-4 w-4" /><FormLabel className="mb-0">Mobile</FormLabel></div>
                           <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                         </FormItem>
@@ -755,14 +755,14 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                           </div>
                         ) : null}
 
-                        <div className="rounded-lg border border-border bg-muted/30 p-4">
+                        <div className="rounded border border-border bg-muted/30 p-4">
                           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                             Responsive Display Height
                             {isFullWidthTop && maxDisplayHeight ? <span className="ml-2 text-primary">· Max {maxDisplayHeight}px on desktop</span> : null}
                           </p>
                           <div className="grid grid-cols-3 gap-3">
                             {displayHeights.map(({ device, value }) => (
-                              <div key={device} className="rounded-lg bg-card p-3 text-center">
+                              <div key={device} className="rounded bg-card p-3 text-center">
                                 <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{device}</p>
                                 <p className="mt-1 text-lg font-bold text-foreground">{value}px</p>
                               </div>
@@ -774,14 +774,14 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                           </p>
                         </div>
 
-                        <div className="rounded-lg border border-border bg-muted/30 p-4">
+                        <div className="rounded border border-border bg-muted/30 p-4">
                           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Creative Sizes by Format</p>
                           <ul className="space-y-2">
                             {spec.formats.map((format) => {
                               const desktop = getRequiredDimensions(watchPlacement, format, 'desktop')
                               const mobileDim = getRequiredDimensions(watchPlacement, format, 'mobile')
                               return (
-                                <li key={format} className="rounded-lg bg-card px-3 py-2">
+                                <li key={format} className="rounded bg-card px-3 py-2">
                                   <div className="flex flex-wrap items-center justify-between gap-2">
                                     <span className="text-sm font-medium text-foreground">{format}</span>
                                     <span className="text-xs text-muted-foreground">
@@ -798,7 +798,7 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                         </div>
 
                         {isFullWidthTop && (
-                          <div className="rounded-lg border border-border bg-muted/30 p-4">
+                          <div className="rounded border border-border bg-muted/30 p-4">
                             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Tips for a full-width banner</p>
                             <ul className="mt-2 list-disc space-y-1 pl-4 text-sm text-foreground">
                               <li>Use a wide horizontal creative for the best fit</li>
@@ -827,7 +827,7 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                         const asset = assignment.asset || mediaAssets.find((candidate: MediaAsset) => candidate.id === assignment.mediaAssetId)
                         const matches = asset?.width && asset?.height ? asset.width === required.width && asset.height === required.height : null
                         return (
-                          <div key={assignment.format} className="flex flex-wrap items-center gap-3 rounded-lg border border-border p-3">
+                          <div key={assignment.format} className="flex flex-wrap items-center gap-3 rounded border border-border p-3">
                             <div className="min-w-0 flex-1">
                               <p className="text-sm font-medium">
                                 {assignment.format}
@@ -884,7 +884,7 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                                     type="button"
                                     aria-pressed={isSelected}
                                     onClick={() => setSelectedCreativeFormat(format)}
-                                    className={cn('rounded-xl border p-4 text-left transition-colors', isSelected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:border-primary/50')}
+                                    className={cn('rounded border p-4 text-left transition-colors', isSelected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:border-primary/50')}
                                   >
                                     <span className="font-medium">{req.label}</span>
                                     <span className="mt-1 block text-xs text-muted-foreground">{req.width} × {req.height} px</span>
@@ -902,7 +902,7 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                             {formatReq.label} is the only supported format for this placement and is selected automatically.
                           </p>
                         )}
-                        <div className="rounded-lg border border-border p-4">
+                        <div className="rounded border border-border p-4">
                           <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
                             <div>
                               <p className="text-sm font-semibold">{formatReq.label} Creative</p>
@@ -977,7 +977,7 @@ export function AdvertisementForm({ mode, ad, onSuccess, onCancel, companyId, re
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className={cn('border border-border rounded-lg overflow-hidden transition-all', previewBackground.bg)}>
+                  <div className={cn('border border-border rounded overflow-hidden transition-all', previewBackground.bg)}>
                     <div className={cn('p-4 space-y-3 transition-all', previewDevice === 'mobile' ? 'max-w-[280px] mx-auto' : 'w-full')} style={{ transform: `scale(${previewZoom / 100})`, transformOrigin: 'top center' }}>
                       <PlacementPreview
                         placement={watchPlacement}

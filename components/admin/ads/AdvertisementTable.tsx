@@ -88,7 +88,7 @@ export function AdvertisementTable({
 
   if (error) {
     return (
-      <div className="rounded-lg border">
+      <div className="rounded border">
         <EmptyState
           title="Failed to load advertisements"
           description={error.message || 'An error occurred while fetching data. Please try again.'}
@@ -106,7 +106,7 @@ export function AdvertisementTable({
   if (!isLoading && ads.length === 0) {
     if (search) {
       return (
-        <div className="rounded-lg border">
+        <div className="rounded border">
           <NoSearchResults
             searchTerm={search}
             onClear={() => onSelectionChange?.([])}
@@ -116,7 +116,7 @@ export function AdvertisementTable({
     }
 
     return (
-      <div className="rounded-lg border">
+      <div className="rounded border">
         <EmptyState
           title="No advertisements yet"
           description="Get started by creating your first advertisement campaign."
@@ -127,7 +127,7 @@ export function AdvertisementTable({
   }
 
   return (
-    <div className="rounded-lg border bg-card">
+    <div className="rounded border bg-card">
       {/* Table */}
       <div className="overflow-x-auto">
         <Table>

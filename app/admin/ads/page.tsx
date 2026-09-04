@@ -122,7 +122,7 @@ export default function AdminAdsOverviewPage() {
                   <Link
                     key={ad.id}
                     href={`/admin/ads/list`}
-                    className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                    className="flex items-center gap-4 p-3 rounded hover:bg-muted/50 transition-colors"
                   >
                      <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center overflow-hidden shrink-0">
                        {ad.desktopMedia?.thumbnailUrl || ad.desktopMedia?.fileUrl ? (
@@ -191,7 +191,7 @@ export default function AdminAdsOverviewPage() {
                 {stats.recentUploads.slice(0, 5).map((asset: MediaAsset) => (
                   <div
                     key={asset.id}
-                    className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                    className="flex items-center gap-4 p-3 rounded hover:bg-muted/50 transition-colors"
                   >
                     <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center overflow-hidden shrink-0">
                       {asset.thumbnailUrl || asset.fileUrl ? (

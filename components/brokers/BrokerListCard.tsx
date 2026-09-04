@@ -91,7 +91,7 @@ export default function BrokerListCard({
   return (
     <article
       className={cn(
-        'group relative flex h-full flex-col overflow-hidden rounded-2xl',
+        'group relative flex h-full flex-col overflow-hidden rounded',
         'border border-border bg-card shadow-soft transition-all duration-300',
         'hover:-translate-y-1 hover:shadow-large',
         className,
@@ -173,7 +173,7 @@ export default function BrokerListCard({
             </button>
             <Link
               href={`/brokers/${slug}`}
-              className="hidden items-center gap-0.5 rounded-lg px-1.5 py-1 text-xs font-semibold text-primary transition-colors hover:text-primary hover:underline sm:inline-flex"
+              className="hidden items-center gap-0.5 rounded px-1.5 py-1 text-xs font-semibold text-primary transition-colors hover:text-primary hover:underline sm:inline-flex"
             >
               View
               <ArrowUpRight className="h-3.5 w-3.5" />

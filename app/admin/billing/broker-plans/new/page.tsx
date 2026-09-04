@@ -128,29 +128,29 @@ export default function NewBrokerPlanPage() {
           <p className="text-sm font-medium text-muted-foreground">Billing</p>
           <h1 className="text-3xl font-semibold tracking-tight">Create Broker Plan</h1>
         </div>
-        <Link href="/admin/billing/broker-plans" className="rounded-lg border px-3 py-2 text-sm font-medium">Back</Link>
+        <Link href="/admin/billing/broker-plans" className="rounded border px-3 py-2 text-sm font-medium">Back</Link>
       </div>
 
       {loadingPlans ? (
-        <div className="flex items-center gap-2 rounded-xl border bg-card p-6 text-sm text-muted-foreground">
+        <div className="flex items-center gap-2 rounded border bg-card p-6 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Loading available plans…
         </div>
       ) : plansError ? (
-        <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-6 text-sm">
+        <div className="rounded border border-destructive/20 bg-destructive/5 p-6 text-sm">
           <p className="font-medium text-destructive">Unable to load plan options</p>
           <p className="mt-1 text-xs text-muted-foreground">{plansError}</p>
         </div>
       ) : availableChoices.length === 0 ? (
-        <div className="space-y-4 rounded-xl border bg-card p-6">
+        <div className="space-y-4 rounded border bg-card p-6">
           <p className="text-sm text-muted-foreground">
             All supported broker plans are already configured. You can manage them from the plans list.
           </p>
-          <Link href="/admin/billing/broker-plans" className="inline-block rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+          <Link href="/admin/billing/broker-plans" className="inline-block rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
             Manage plans
           </Link>
         </div>
       ) : (
-        <form onSubmit={submit} className="space-y-6 rounded-xl border bg-card p-6">
+        <form onSubmit={submit} className="space-y-6 rounded border bg-card p-6">
           <section className="space-y-4">
             <h2 className="text-lg font-semibold">Plan information</h2>
             <div className="space-y-3">
@@ -159,7 +159,7 @@ export default function NewBrokerPlanPage() {
                 <select
                   value={planCode}
                   onChange={(e) => setPlanCode(e.target.value)}
-                  className="w-full rounded-lg border bg-background px-3 py-2"
+                  className="w-full rounded border bg-background px-3 py-2"
                   aria-label="Select a fixed plan to create"
                 >
                   {availableChoices.map((choice) => (
@@ -171,7 +171,7 @@ export default function NewBrokerPlanPage() {
             </div>
 
             {createdChoices.length > 0 && (
-              <div className="space-y-1.5 rounded-lg border bg-muted/40 p-3">
+              <div className="space-y-1.5 rounded border bg-muted/40 p-3">
                 <p className="text-xs font-medium text-muted-foreground">Already configured</p>
                 {createdChoices.map((choice) => (
                   <div key={choice.code} className="flex items-center justify-between text-sm">
@@ -182,14 +182,14 @@ export default function NewBrokerPlanPage() {
               </div>
             )}
 
-            <label className="block space-y-1"><span className="text-sm font-medium">Description</span><textarea value={form.description} onChange={(e) => set('description', e.target.value)} className="min-h-20 w-full rounded-lg border bg-background px-3 py-2" /></label>
+            <label className="block space-y-1"><span className="text-sm font-medium">Description</span><textarea value={form.description} onChange={(e) => set('description', e.target.value)} className="min-h-20 w-full rounded border bg-background px-3 py-2" /></label>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Price (USD)" value={form.price} onChange={(v) => set('price', v)} type="number" min="0" step="0.01" hint="Amount in US dollars. Saved as cents." />
               <Field label="Display order" value={form.displayOrder} onChange={(v) => set('displayOrder', v)} type="number" min="0" />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block space-y-1"><span className="text-sm font-medium">Billing interval</span><select value={form.billingInterval} onChange={(e) => set('billingInterval', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2"><option value="month">month</option><option value="year">year</option><option value="week">week</option><option value="day">day</option></select></label>
-              <label className="block space-y-1"><span className="text-sm font-medium">Currency</span><select value={form.currency} onChange={(e) => set('currency', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2"><option value="usd">USD</option><option value="eur">EUR</option><option value="gbp">GBP</option></select></label>
+              <label className="block space-y-1"><span className="text-sm font-medium">Billing interval</span><select value={form.billingInterval} onChange={(e) => set('billingInterval', e.target.value)} className="w-full rounded border bg-background px-3 py-2"><option value="month">month</option><option value="year">year</option><option value="week">week</option><option value="day">day</option></select></label>
+              <label className="block space-y-1"><span className="text-sm font-medium">Currency</span><select value={form.currency} onChange={(e) => set('currency', e.target.value)} className="w-full rounded border bg-background px-3 py-2"><option value="usd">USD</option><option value="eur">EUR</option><option value="gbp">GBP</option></select></label>
             </div>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.isActive} onChange={(e) => set('isActive', e.target.checked)} /> Active</label>
           </section>
@@ -198,17 +198,17 @@ export default function NewBrokerPlanPage() {
             <h2 className="text-lg font-semibold">Features</h2>
             <p className="text-xs text-muted-foreground">Each feature line appears to customers on plan cards. Toggle availability, edit the display label, set the display order, add custom features, or remove features.</p>
 
-            <div className="flex flex-wrap items-end gap-2 rounded-lg border p-3">
+            <div className="flex flex-wrap items-end gap-2 rounded border p-3">
               <label className="block min-w-52 flex-1 space-y-1">
                 <span className="text-xs text-muted-foreground">New feature label</span>
-                <input value={newFeature} onChange={(e) => setNewFeature(e.target.value)} placeholder="e.g. Priority Search Visibility" maxLength={120} className="w-full rounded-lg border bg-background px-3 py-2" />
+                <input value={newFeature} onChange={(e) => setNewFeature(e.target.value)} placeholder="e.g. Priority Search Visibility" maxLength={120} className="w-full rounded border bg-background px-3 py-2" />
               </label>
-              <button type="button" onClick={addFeature} disabled={saving} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">Add feature</button>
+              <button type="button" onClick={addFeature} disabled={saving} className="rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">Add feature</button>
             </div>
             {featureError && <p className="text-xs font-medium text-destructive">{featureError}</p>}
 
             {features.map((feature, index) => (
-              <div key={index} className="flex items-start justify-between gap-4 rounded-lg border px-4 py-3">
+              <div key={index} className="flex items-start justify-between gap-4 rounded border px-4 py-3">
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-sm font-medium">Feature #{index + 1}</span>
@@ -216,11 +216,11 @@ export default function NewBrokerPlanPage() {
                   </div>
                   <label className="block space-y-1">
                     <span className="text-xs text-muted-foreground">Display label</span>
-                    <input value={feature.label} onChange={(e) => updateFeature(index, { label: e.target.value })} placeholder="e.g. Appear in Search Results" className="w-full rounded-lg border bg-background px-3 py-2" maxLength={120} />
+                    <input value={feature.label} onChange={(e) => updateFeature(index, { label: e.target.value })} placeholder="e.g. Appear in Search Results" className="w-full rounded border bg-background px-3 py-2" maxLength={120} />
                   </label>
                   <label className="block space-y-1">
                     <span className="text-xs text-muted-foreground">Display order</span>
-                    <input type="number" min="0" value={feature.sortOrder} onChange={(e) => updateFeature(index, { sortOrder: Number(e.target.value) })} className="w-full max-w-40 rounded-lg border bg-background px-3 py-2" />
+                    <input type="number" min="0" value={feature.sortOrder} onChange={(e) => updateFeature(index, { sortOrder: Number(e.target.value) })} className="w-full max-w-40 rounded border bg-background px-3 py-2" />
                   </label>
                 </div>
                 <Switch
@@ -239,7 +239,7 @@ export default function NewBrokerPlanPage() {
             <Field label="Stripe Price ID" value={form.stripePriceId} onChange={(v) => set('stripePriceId', v)} placeholder="price_..." />
           </section>
 
-          <button disabled={saving || !planCode || !selected || selected.exists} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
+          <button disabled={saving || !planCode || !selected || selected.exists} className="inline-flex items-center gap-2 rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
             {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
             {saving ? 'Saving...' : 'Create plan'}
           </button>
@@ -253,7 +253,7 @@ function Field({ label, value, onChange, placeholder, type = 'text', min, step, 
   return (
     <label className="block space-y-1">
       <span className="text-sm font-medium">{label}</span>
-      <input type={type} min={min} step={step} maxLength={maxLength} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full rounded-lg border bg-background px-3 py-2" />
+      <input type={type} min={min} step={step} maxLength={maxLength} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="w-full rounded border bg-background px-3 py-2" />
       {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
     </label>
   )

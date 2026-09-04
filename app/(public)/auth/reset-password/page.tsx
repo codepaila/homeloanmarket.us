@@ -89,7 +89,7 @@ function ResetPasswordContent() {
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <div role="alert" className="flex items-center gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <div role="alert" className="flex items-center gap-2 rounded border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{error}</span>
           </div>

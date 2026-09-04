@@ -254,7 +254,7 @@ export default function BillingHistoryClient() {
     return (
       <div className="space-y-4">
         {[1, 2, 3].map(i => (
-          <div key={i} className="h-20 bg-muted animate-pulse rounded-lg"></div>
+          <div key={i} className="h-20 bg-muted animate-pulse rounded"></div>
         ))}
       </div>
     )
@@ -295,7 +295,7 @@ export default function BillingHistoryClient() {
                   <p className="text-sm text-muted-foreground">Total Invoices</p>
                   <p className="text-2xl font-bold mt-1">{billingData?.totalInvoices || 0}</p>
                 </div>
-                <FileText className="h-10 w-10 text-primary/20 p-2 rounded-lg" />
+                <FileText className="h-10 w-10 text-primary/20 p-2 rounded" />
               </div>
             </CardContent>
           </Card>
@@ -309,7 +309,7 @@ export default function BillingHistoryClient() {
                     ${billingData?.totalAmount.toFixed(2) || '0.00'}
                   </p>
                 </div>
-                <DollarSign className="h-10 w-10 text-green-500/20 p-2 rounded-lg" />
+                <DollarSign className="h-10 w-10 text-green-500/20 p-2 rounded" />
               </div>
             </CardContent>
           </Card>
@@ -323,7 +323,7 @@ export default function BillingHistoryClient() {
                     ${billingData?.paidAmount.toFixed(2) || '0.00'}
                   </p>
                 </div>
-                <CheckCircle className="h-10 w-10 text-blue-500/20 p-2 rounded-lg" />
+                <CheckCircle className="h-10 w-10 text-blue-500/20 p-2 rounded" />
               </div>
             </CardContent>
           </Card>
@@ -337,7 +337,7 @@ export default function BillingHistoryClient() {
                     {billingData?.subscriptions.filter(s => s.status === 'active').length || 0}
                   </p>
                 </div>
-                <Zap className="h-10 w-10 text-yellow-500/20 p-2 rounded-lg" />
+                <Zap className="h-10 w-10 text-yellow-500/20 p-2 rounded" />
               </div>
             </CardContent>
           </Card>
@@ -534,7 +534,7 @@ export default function BillingHistoryClient() {
                   <CardContent className="p-6">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex items-start gap-4">
-                        <div className="h-12 w-12 rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
+                        <div className="h-12 w-12 rounded bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
                           <TrendingUp className="h-6 w-6 text-white" />
                         </div>
                         <div>
@@ -600,7 +600,7 @@ export default function BillingHistoryClient() {
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="h-12 w-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                        <div className="h-12 w-16 bg-gradient-to-r from-blue-500 to-blue-600 rounded flex items-center justify-center">
                           <span className="text-white font-bold text-sm">
                             {getCardIcon(method.brand)}
                           </span>

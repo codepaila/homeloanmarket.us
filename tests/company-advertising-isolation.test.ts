@@ -17,6 +17,7 @@ const schema = read('prisma/schema.prisma')
 const onboardingPage = read('app/company/onboarding/page.tsx')
 const onboardingRoute = read('app/api/company/onboarding/route.ts')
 const dashboardPage = read('app/company/dashboard/page.tsx')
+const dashboardClient = read('app/company/dashboard/CompanyDashboardClient.tsx')
 const couponLib = read('lib/company-coupon.ts')
 
 test('company registration form is account-only (Full name, email, password, confirm)', () => {
@@ -103,9 +104,11 @@ test('company onboarding completes the company and marks it active', () => {
   assert.doesNotMatch(onboardingRoute, /brokerSubscription/)
 })
 
-test('company dashboard redirects to onboarding until the company is onboarded', () => {
-  assert.match(dashboardPage, /onboardedAt/)
-  assert.match(dashboardPage, /redirect\('\/company\/onboarding'\)/)
+test('company dashboard shows an onboarding prompt instead of blocking access', () => {
+  assert.match(dashboardPage, /onboarded/)
+  assert.match(dashboardClient, /Complete your company profile/)
+  assert.match(dashboardClient, /\/company\/onboarding/)
+  assert.match(dashboardClient, /Skip for now/)
 })
 
 test('company coupon validation is server-side via Stripe promotion codes and fails closed', () => {

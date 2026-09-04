@@ -205,7 +205,7 @@ function BrokerSignupForm() {
         </AuthSection>
 
         <AuthSection title="Security and terms">
-          <p className="flex items-center gap-2 rounded-xl border border-primary/10 bg-primary/5 px-4 py-3 text-sm font-medium text-foreground">
+          <p className="flex items-center gap-2 rounded border border-primary/10 bg-primary/5 px-4 py-3 text-sm font-medium text-foreground">
             <ShieldCheck className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
             What is {captcha.question}?
           </p>

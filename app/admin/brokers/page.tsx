@@ -120,30 +120,30 @@ export default async function AdminBrokersPage({ searchParams }: { searchParams:
           <p className="mt-1 text-sm text-muted-foreground">Manage broker profiles, ownership, invitations, verification, and bulk operations.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href="/admin/brokers/create" className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Create Broker</Link>
-          <Link href="/admin/brokers/import" className="rounded-lg border px-4 py-2 text-sm font-semibold">Import Brokers</Link>
-          <Link href="/api/admin/brokers/export?format=csv" className="rounded-lg border px-4 py-2 text-sm font-semibold">Export CSV</Link>
-          <Link href="/api/admin/brokers/export?format=xlsx" className="rounded-lg border px-4 py-2 text-sm font-semibold">Export XLSX</Link>
+          <Link href="/admin/brokers/create" className="rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Create Broker</Link>
+          <Link href="/admin/brokers/import" className="rounded border px-4 py-2 text-sm font-semibold">Import Brokers</Link>
+          <Link href="/api/admin/brokers/export?format=csv" className="rounded border px-4 py-2 text-sm font-semibold">Export CSV</Link>
+          <Link href="/api/admin/brokers/export?format=xlsx" className="rounded border px-4 py-2 text-sm font-semibold">Export XLSX</Link>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {metrics.map((metric) => (
-          <div key={metric.label} className="rounded-xl border bg-card p-4">
+          <div key={metric.label} className="rounded border bg-card p-4">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">{metric.label}</p>
             <p className="mt-2 text-2xl font-semibold">{metric.value}</p>
           </div>
         ))}
       </div>
 
-      <form className="grid gap-3 rounded-xl border bg-card p-4 sm:grid-cols-3 lg:grid-cols-4" method="get">
-        <input name="search" defaultValue={filters.search || ''} placeholder="Search name, company, NMLS, email, phone, slug" className="rounded-lg border bg-background px-3 py-2 text-sm sm:col-span-2" />
-        <select name="ownership" defaultValue={filters.ownership || ''} className="rounded-lg border bg-background px-3 py-2 text-sm">
+      <form className="grid gap-3 rounded border bg-card p-4 sm:grid-cols-3 lg:grid-cols-4" method="get">
+        <input name="search" defaultValue={filters.search || ''} placeholder="Search name, company, NMLS, email, phone, slug" className="rounded border bg-background px-3 py-2 text-sm sm:col-span-2" />
+        <select name="ownership" defaultValue={filters.ownership || ''} className="rounded border bg-background px-3 py-2 text-sm">
           <option value="">All ownership</option>
           <option value="UNOWNED">Unowned</option>
           <option value="OWNED">Owned</option>
         </select>
-        <select name="invitation" defaultValue={filters.invitation || ''} className="rounded-lg border bg-background px-3 py-2 text-sm">
+        <select name="invitation" defaultValue={filters.invitation || ''} className="rounded border bg-background px-3 py-2 text-sm">
           <option value="">All invitations</option>
           <option value="NOT_INVITED">Not invited</option>
           <option value="INVITED">Invitation sent</option>
@@ -153,26 +153,26 @@ export default async function AdminBrokersPage({ searchParams }: { searchParams:
           <option value="REVOKED">Revoked</option>
           <option value="FAILED">Failed</option>
         </select>
-        <select name="verification" defaultValue={filters.verification || ''} className="rounded-lg border bg-background px-3 py-2 text-sm">
+        <select name="verification" defaultValue={filters.verification || ''} className="rounded border bg-background px-3 py-2 text-sm">
           <option value="">All verification</option>
           <option value="VERIFIED">Verified</option>
           <option value="UNVERIFIED">Pending</option>
         </select>
-        <select name="status" defaultValue={filters.status || ''} className="rounded-lg border bg-background px-3 py-2 text-sm">
+        <select name="status" defaultValue={filters.status || ''} className="rounded border bg-background px-3 py-2 text-sm">
           <option value="">All broker status</option>
           <option value="FREE">Active</option>
           <option value="FEATURED">Mortgage Expert</option>
           <option value="SUSPENDED">Suspended</option>
         </select>
-        <select name="source" defaultValue={filters.source || ''} className="rounded-lg border bg-background px-3 py-2 text-sm">
+        <select name="source" defaultValue={filters.source || ''} className="rounded border bg-background px-3 py-2 text-sm">
           <option value="">All sources</option>
           <option value="ADMIN_CREATED">Admin created</option>
           <option value="SELF_REGISTERED">Registration</option>
         </select>
-        <input name="state" defaultValue={filters.state || ''} placeholder="State" className="rounded-lg border bg-background px-3 py-2 text-sm" />
-        <input name="city" defaultValue={filters.city || ''} placeholder="City" className="rounded-lg border bg-background px-3 py-2 text-sm" />
-        <button className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Apply Filters</button>
-        <Link href="/admin/brokers" className="inline-flex items-center justify-center rounded-lg border px-4 py-2 text-sm font-medium">Reset</Link>
+        <input name="state" defaultValue={filters.state || ''} placeholder="State" className="rounded border bg-background px-3 py-2 text-sm" />
+        <input name="city" defaultValue={filters.city || ''} placeholder="City" className="rounded border bg-background px-3 py-2 text-sm" />
+        <button className="rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Apply Filters</button>
+        <Link href="/admin/brokers" className="inline-flex items-center justify-center rounded border px-4 py-2 text-sm font-medium">Reset</Link>
       </form>
 
       <AdminBulkInvitations brokers={brokerRows} />
@@ -181,8 +181,8 @@ export default async function AdminBrokersPage({ searchParams }: { searchParams:
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted-foreground">Page {page} of {totalPages} · {total} brokers</p>
           <div className="flex gap-2">
-            {page > 1 && <Link href={`/admin/brokers?${pageQuery(filters, page - 1)}`} className="rounded-lg border px-3 py-2 text-sm font-medium">Previous</Link>}
-            {page < totalPages && <Link href={`/admin/brokers?${pageQuery(filters, page + 1)}`} className="rounded-lg border px-3 py-2 text-sm font-medium">Next</Link>}
+            {page > 1 && <Link href={`/admin/brokers?${pageQuery(filters, page - 1)}`} className="rounded border px-3 py-2 text-sm font-medium">Previous</Link>}
+            {page < totalPages && <Link href={`/admin/brokers?${pageQuery(filters, page + 1)}`} className="rounded border px-3 py-2 text-sm font-medium">Next</Link>}
           </div>
         </div>
       )}

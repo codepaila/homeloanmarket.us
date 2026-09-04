@@ -36,7 +36,7 @@ export function FaqAccordion({ faqs }: { faqs: PublicFaq[] }) {
           placeholder="Search for questions..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full rounded-xl border border-border bg-background/50 pl-12 pr-4 py-3 text-base transition-all duration-200 placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+          className="w-full rounded border border-border bg-background/50 pl-12 pr-4 py-3 text-base transition-all duration-200 placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
         />
       </div>
 

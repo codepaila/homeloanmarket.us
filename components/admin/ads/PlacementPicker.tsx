@@ -49,7 +49,7 @@ export function PlacementPicker({ value, onChange, className }: PlacementPickerP
                   onClick={() => onChange(placement)}
                   aria-pressed={selected}
                   className={cn(
-                    'group relative rounded-xl border p-4 text-left transition-all',
+                    'group relative rounded border p-4 text-left transition-all',
                     selected ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-border hover:border-primary/40 hover:bg-muted/40',
                   )}
                 >

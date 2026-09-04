@@ -65,6 +65,7 @@ export const adminNavigation: AdminNavGroup[] = [
     label: 'Content Management',
     items: [
       { label: 'Blog Content', href: '/admin/content', icon: FileText },
+      { label: 'About Page', href: '/admin/content/about', icon: FileText },
       { label: 'Media Library', href: '/admin/media', icon: ImageIcon },
       { label: 'Folders', href: '/admin/folders', icon: FolderOpen },
     ],

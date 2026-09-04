@@ -149,14 +149,14 @@ export function StripeConfigClient({ status }: { status: StripeStatus }) {
           <h1 className="text-3xl font-semibold tracking-tight">Stripe Configuration</h1>
           <p className="mt-1 text-sm text-muted-foreground">Inspect and manage the platform&apos;s Stripe operational configuration and webhook events.</p>
         </div>
-        <button type="button" onClick={() => router.refresh()} className="rounded-lg border px-3 py-2 text-sm font-medium">
+        <button type="button" onClick={() => router.refresh()} className="rounded border px-3 py-2 text-sm font-medium">
           <RefreshCw className="mr-1.5 inline h-3.5 w-3.5" /> Refresh
         </button>
       </div>
 
       {/* A. Stripe Connection + B. Mode */}
       <section className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border bg-card p-5">
+        <div className="rounded border bg-card p-5">
           <h2 className="text-lg font-semibold">Stripe Connection</h2>
           <div className="mt-3 flex items-center gap-2">
             <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${connected ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-700'}`}>
@@ -172,7 +172,7 @@ export function StripeConfigClient({ status }: { status: StripeStatus }) {
           </p>
         </div>
 
-        <div className="rounded-xl border bg-card p-5">
+        <div className="rounded border bg-card p-5">
           <h2 className="text-lg font-semibold">Account</h2>
           {status.connection.ok ? (
             <dl className="mt-3 space-y-2 text-sm">
@@ -190,7 +190,7 @@ export function StripeConfigClient({ status }: { status: StripeStatus }) {
       </section>
 
       {/* C. API Configuration */}
-      <section className="rounded-xl border bg-card p-5">
+      <section className="rounded border bg-card p-5">
         <h2 className="text-lg font-semibold">API Configuration</h2>
         <div className="mt-3 grid gap-4 lg:grid-cols-2">
           <SecretEditor
@@ -222,14 +222,14 @@ export function StripeConfigClient({ status }: { status: StripeStatus }) {
       </section>
 
       {/* D. Webhook Configuration */}
-      <section className="rounded-xl border bg-card p-5">
+      <section className="rounded border bg-card p-5">
         <h2 className="text-lg font-semibold">Webhook Configuration</h2>
         <dl className="mt-3 space-y-2 text-sm">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <dt className="text-muted-foreground">Endpoint</dt>
             <dd className="flex items-center gap-2">
               <code className="rounded bg-muted px-2 py-1 text-xs">{status.webhook.endpoint}</code>
-              <button type="button" onClick={copyEndpoint} className="rounded-lg border px-2 py-1 text-xs font-medium">
+              <button type="button" onClick={copyEndpoint} className="rounded border px-2 py-1 text-xs font-medium">
                 {copied ? 'Copied' : <Copy className="inline h-3 w-3" aria-hidden="true" />}
               </button>
             </dd>
@@ -246,14 +246,14 @@ export function StripeConfigClient({ status }: { status: StripeStatus }) {
       </section>
 
       {/* E. Required Events */}
-      <section className="rounded-xl border bg-card p-5">
+      <section className="rounded border bg-card p-5">
         <h2 className="text-lg font-semibold">Required Stripe Events</h2>
         <p className="mt-1 text-xs text-muted-foreground">
           These billing-critical events must always remain enabled and cannot be disabled. They drive subscription activation and synchronization.
         </p>
         <div className="mt-3 space-y-2">
           {events.filter((event) => event.critical).map((event) => (
-            <div key={event.type} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3">
+            <div key={event.type} className="flex flex-wrap items-center justify-between gap-3 rounded border px-4 py-3">
               <div className="min-w-0">
                 <p className="text-sm font-medium">
                   <code>{event.type}</code>
@@ -270,14 +270,14 @@ export function StripeConfigClient({ status }: { status: StripeStatus }) {
       </section>
 
       {/* F. Optional Events */}
-      <section className="rounded-xl border bg-card p-5">
+      <section className="rounded border bg-card p-5">
         <h2 className="text-lg font-semibold">Optional Stripe Events</h2>
         <p className="mt-1 text-xs text-muted-foreground">
           These events may be enabled or disabled by an administrator. Disabling an optional event only skips its processing in the webhook; idempotency is preserved.
         </p>
         <div className="mt-3 space-y-2">
           {events.filter((event) => !event.critical).map((event) => (
-            <div key={event.type} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3">
+            <div key={event.type} className="flex flex-wrap items-center justify-between gap-3 rounded border px-4 py-3">
               <div className="min-w-0">
                 <p className="text-sm font-medium"><code>{event.type}</code></p>
                 <p className="text-xs text-muted-foreground">{event.purpose}</p>
@@ -290,7 +290,7 @@ export function StripeConfigClient({ status }: { status: StripeStatus }) {
                   type="button"
                   disabled={savingEvents}
                   onClick={() => toggleEvent(event.type)}
-                  className="rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                  className="rounded border px-3 py-1.5 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {event.enabled ? 'Disable' : 'Enable'}
                 </button>
@@ -301,19 +301,19 @@ export function StripeConfigClient({ status }: { status: StripeStatus }) {
       </section>
 
       {/* G. Stripe Dashboard Setup Instructions */}
-      <section className="rounded-xl border bg-card p-5">
+      <section className="rounded border bg-card p-5">
         <h2 className="text-lg font-semibold">Stripe Dashboard Webhook Setup</h2>
         <p className="mt-2 text-sm text-muted-foreground">
           To configure this platform&apos;s webhook in the Stripe Dashboard, create a webhook endpoint pointing at the canonical endpoint below and subscribe it to the events listed here. Use the platform&apos;s <em>live</em> endpoint for production and the <em>test</em> endpoint when using test mode keys.
         </p>
-        <div className="mt-3 rounded-lg border bg-muted/40 p-4">
+        <div className="mt-3 rounded border bg-muted/40 p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Webhook Endpoint</p>
           <code className="mt-1 block break-all rounded bg-muted px-2 py-1 text-sm">{status.webhook.endpoint}</code>
         </div>
         <div className="mt-3 space-y-2">
           <p className="text-sm font-medium">Events to subscribe</p>
           {events.map((event) => (
-            <div key={event.type} className="flex items-start justify-between gap-3 rounded-lg border px-4 py-2">
+            <div key={event.type} className="flex items-start justify-between gap-3 rounded border px-4 py-2">
               <div>
                 <p className="text-sm font-medium"><code>{event.type}</code>{event.critical && <span className="ml-2 rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] font-medium text-destructive">Critical</span>}</p>
                 <p className="text-xs text-muted-foreground">{event.purpose}</p>
@@ -324,7 +324,7 @@ export function StripeConfigClient({ status }: { status: StripeStatus }) {
             </div>
           ))}
         </div>
-        <div className="mt-4 rounded-lg border p-4 text-sm">
+        <div className="mt-4 rounded border p-4 text-sm">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Obtaining the signing secret</p>
           <p className="mt-2 text-muted-foreground">
             After creating the webhook endpoint in the Stripe Dashboard, copy the webhook signing secret (a string beginning with the letters <code>wh</code> followed by <code>sec</code> and an underscore) from the endpoint&apos;s details (Reveal signing secret). Paste it into the <strong>Stripe Webhook Signing Secret</strong> field under API Configuration above and save it. The same secret must match the one Stripe uses to sign webhook payloads so signature verification succeeds.
@@ -333,11 +333,11 @@ export function StripeConfigClient({ status }: { status: StripeStatus }) {
       </section>
 
       {/* H. Connection / Webhook Test */}
-      <section className="rounded-xl border bg-card p-5">
+      <section className="rounded border bg-card p-5">
         <h2 className="text-lg font-semibold">Connection &amp; Webhook Test</h2>
         <p className="mt-1 text-xs text-muted-foreground">Runs a safe, server-side Stripe API request to verify connectivity. No secrets are returned.</p>
         <div className="mt-3 flex flex-wrap items-center gap-3">
-          <button type="button" onClick={testConnection} disabled={testing} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
+          <button type="button" onClick={testConnection} disabled={testing} className="inline-flex items-center gap-2 rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
             {testing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Plug className="h-4 w-4" aria-hidden="true" />}
             {testing ? 'Testing…' : 'Test Stripe Connection'}
           </button>
@@ -352,7 +352,7 @@ export function StripeConfigClient({ status }: { status: StripeStatus }) {
       </section>
 
       {/* I. Configuration Status / Security */}
-      <section className="rounded-xl border bg-card p-5">
+      <section className="rounded border bg-card p-5">
         <h2 className="text-lg font-semibold">Configuration Status</h2>
         <div className="mt-3 space-y-2 text-sm">
           <div className="flex items-center justify-between">
@@ -374,7 +374,7 @@ export function StripeConfigClient({ status }: { status: StripeStatus }) {
       </section>
 
       {/* J. Configuration Audit */}
-      <section className="rounded-xl border bg-card p-5">
+      <section className="rounded border bg-card p-5">
         <h2 className="text-lg font-semibold">Configuration Audit</h2>
         <p className="mt-1 text-xs text-muted-foreground">Records of when Stripe secrets were set or replaced. Values are never recorded — only the action and time.</p>
         <div className="mt-3 space-y-4">
@@ -384,7 +384,7 @@ export function StripeConfigClient({ status }: { status: StripeStatus }) {
       </section>
 
       {/* K. Webhook Event Log */}
-      <section className="rounded-xl border bg-card p-5">
+      <section className="rounded border bg-card p-5">
         <h2 className="text-lg font-semibold">Recent Stripe Events</h2>
         {status.recentEvents.length === 0 ? (
           <p className="mt-3 text-sm text-muted-foreground">No Stripe webhook events recorded yet.</p>
@@ -450,7 +450,7 @@ function SecretEditor({ label, configured, note, value, onChange, onSave, saving
   placeholder: string
 }) {
   return (
-    <div className="rounded-lg border p-3">
+    <div className="rounded border p-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-medium">{label}</p>
         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${configured ? 'bg-emerald-500/10 text-emerald-600' : 'bg-muted text-muted-foreground'}`}>
@@ -469,13 +469,13 @@ function SecretEditor({ label, configured, note, value, onChange, onSave, saving
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
           autoComplete="off"
-          className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+          className="w-full rounded border bg-background px-3 py-2 text-sm"
         />
         <button
           type="button"
           onClick={onSave}
           disabled={saving || !value.trim()}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}
           {saving ? 'Saving…' : buttonLabel}

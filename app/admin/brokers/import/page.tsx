@@ -172,7 +172,7 @@ export default function BrokerImportPage() {
     <main className="mx-auto max-w-6xl space-y-6">
       {importErrors.length > 0 && (
         <section
-          className="space-y-2 rounded-xl border border-red-200 bg-red-50 p-5"
+          className="space-y-2 rounded border border-red-200 bg-red-50 p-5"
           role="alert"
         >
           <h2 className="font-semibold text-red-900">Import row errors</h2>
@@ -210,13 +210,13 @@ export default function BrokerImportPage() {
         </div>
         <Link
           href="/admin/brokers"
-          className="rounded-lg border border-[#E3E7ED] bg-white px-4 py-2 text-sm font-medium text-[#17213C] hover:bg-[#F7F9FC]"
+          className="rounded border border-[#E3E7ED] bg-white px-4 py-2 text-sm font-medium text-[#17213C] hover:bg-[#F7F9FC]"
         >
           Back to brokers
         </Link>
       </div>
 
-      <section className="space-y-6 rounded-xl border border-[#E3E7ED] bg-white p-5 shadow-sm sm:p-6">
+      <section className="space-y-6 rounded border border-[#E3E7ED] bg-white p-5 shadow-sm sm:p-6">
         <div>
           <h2 className="text-lg font-semibold text-[#17213C]">Upload file</h2>
           <p className="mt-1 text-sm text-[#596579]">
@@ -258,7 +258,7 @@ export default function BrokerImportPage() {
               setDragActive(false);
             }}
             onDrop={handleDrop}
-            className={`flex min-h-56 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed px-6 py-10 text-center outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#4AA256] ${dragActive ? "border-[#4AA256] bg-[#EAF5EC]" : "border-[#CDD4DE] bg-[#F7F9FC] hover:border-[#4AA256] hover:bg-[#EAF5EC]/60"}`}
+            className={`flex min-h-56 cursor-pointer flex-col items-center justify-center rounded border border-dashed px-6 py-10 text-center outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[#4AA256] ${dragActive ? "border-[#4AA256] bg-[#EAF5EC]" : "border-[#CDD4DE] bg-[#F7F9FC] hover:border-[#4AA256] hover:bg-[#EAF5EC]/60"}`}
           >
             <UploadCloud
               className="h-10 w-10 text-[#4AA256]"
@@ -278,8 +278,8 @@ export default function BrokerImportPage() {
             </p>
           </div>
         ) : (
-          <div className="flex flex-wrap items-center gap-4 rounded-xl border border-[#B9DDBF] bg-[#EAF5EC] p-4">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-white text-[#4AA256]">
+          <div className="flex flex-wrap items-center gap-4 rounded border border-[#B9DDBF] bg-[#EAF5EC] p-4">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded bg-white text-[#4AA256]">
               <FileSpreadsheet className="h-6 w-6" aria-hidden="true" />
             </div>
             <div className="min-w-0 flex-1">
@@ -295,7 +295,7 @@ export default function BrokerImportPage() {
             <button
               type="button"
               onClick={browse}
-              className="rounded-lg border border-[#B9DDBF] bg-white px-3 py-2 text-sm font-semibold text-[#4AA256] hover:bg-[#F7F9FC]"
+              className="rounded border border-[#B9DDBF] bg-white px-3 py-2 text-sm font-semibold text-[#4AA256] hover:bg-[#F7F9FC]"
             >
               Change file
             </button>
@@ -307,7 +307,7 @@ export default function BrokerImportPage() {
                 setFileError("");
                 if (inputRef.current) inputRef.current.value = "";
               }}
-              className="rounded-lg p-2 text-[#596579] hover:bg-white hover:text-[#17213C]"
+              className="rounded p-2 text-[#596579] hover:bg-white hover:text-[#17213C]"
               aria-label="Remove selected file"
             >
               <X className="h-4 w-4" />
@@ -331,7 +331,7 @@ export default function BrokerImportPage() {
               value={defaultCity}
               onChange={(event) => setDefaultCity(event.target.value)}
               placeholder="Houston"
-              className="w-full rounded-lg border border-[#E3E7ED] bg-[#F7F9FC] px-3 py-2.5 font-normal outline-none focus:border-[#4AA256] focus:ring-2 focus:ring-[#4AA256]/20"
+              className="w-full rounded border border-[#E3E7ED] bg-[#F7F9FC] px-3 py-2.5 font-normal outline-none focus:border-[#4AA256] focus:ring-2 focus:ring-[#4AA256]/20"
             />
           </label>
           <label className="space-y-1 text-sm font-medium text-[#17213C]">
@@ -339,7 +339,7 @@ export default function BrokerImportPage() {
             <input
               value={defaultDescription}
               onChange={(event) => setDefaultDescription(event.target.value)}
-              className="w-full rounded-lg border border-[#E3E7ED] bg-[#F7F9FC] px-3 py-2.5 font-normal outline-none focus:border-[#4AA256] focus:ring-2 focus:ring-[#4AA256]/20"
+              className="w-full rounded border border-[#E3E7ED] bg-[#F7F9FC] px-3 py-2.5 font-normal outline-none focus:border-[#4AA256] focus:ring-2 focus:ring-[#4AA256]/20"
             />
           </label>
         </div>
@@ -357,7 +357,7 @@ export default function BrokerImportPage() {
               value={mapping}
               onChange={(event) => setMapping(event.target.value)}
               aria-describedby="mapping-help"
-              className="min-h-28 w-full rounded-lg border border-[#E3E7ED] bg-[#F7F9FC] p-3 font-mono text-xs outline-none focus:border-[#4AA256] focus:ring-2 focus:ring-[#4AA256]/20"
+              className="min-h-28 w-full rounded border border-[#E3E7ED] bg-[#F7F9FC] p-3 font-mono text-xs outline-none focus:border-[#4AA256] focus:ring-2 focus:ring-[#4AA256]/20"
             />
           </label>
           <p id="mapping-help" className="mt-1 text-xs text-[#7B8798]">
@@ -370,7 +370,7 @@ export default function BrokerImportPage() {
             type="button"
             onClick={previewImport}
             disabled={loading || !file}
-            className="inline-flex min-w-44 items-center justify-center gap-2 rounded-lg bg-[#4AA256] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#3E8C4A] disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex min-w-44 items-center justify-center gap-2 rounded bg-[#4AA256] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#3E8C4A] disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -388,10 +388,10 @@ export default function BrokerImportPage() {
       </section>
 
       {preview && (
-        <section className="space-y-4 rounded-xl border border-[#E3E7ED] bg-white p-5 shadow-sm sm:p-6">
+        <section className="space-y-4 rounded border border-[#E3E7ED] bg-white p-5 shadow-sm sm:p-6">
           <div className="grid gap-3 sm:grid-cols-5">
             {Object.entries(preview.summary).map(([key, value]) => (
-              <div key={key} className="rounded-lg bg-[#F7F9FC] p-3">
+              <div key={key} className="rounded bg-[#F7F9FC] p-3">
                 <p className="text-xs uppercase tracking-wide text-[#7B8798]">
                   {key}
                 </p>
@@ -408,7 +408,7 @@ export default function BrokerImportPage() {
                   setSheetName(event.target.value);
                   setPreview(null);
                 }}
-                className="w-full rounded-lg border border-[#E3E7ED] bg-[#F7F9FC] px-3 py-2"
+                className="w-full rounded border border-[#E3E7ED] bg-[#F7F9FC] px-3 py-2"
               >
                 <option value="">Select sheet</option>
                 {preview.sheetNames.map((sheet) => (
@@ -421,7 +421,7 @@ export default function BrokerImportPage() {
             <select
               value={mode}
               onChange={(event) => setMode(event.target.value as typeof mode)}
-              className="rounded-lg border border-[#E3E7ED] bg-white px-3 py-2 text-sm text-[#17213C]"
+              className="rounded border border-[#E3E7ED] bg-white px-3 py-2 text-sm text-[#17213C]"
             >
               <option value="CREATE_ONLY">Create only</option>
               <option value="UPDATE_ONLY">Update only</option>
@@ -431,7 +431,7 @@ export default function BrokerImportPage() {
               type="button"
               onClick={importRows}
               disabled={loading}
-              className="rounded-lg border border-[#4AA256] px-4 py-2 text-sm font-semibold text-[#4AA256] hover:bg-[#EAF5EC] disabled:opacity-50"
+              className="rounded border border-[#4AA256] px-4 py-2 text-sm font-semibold text-[#4AA256] hover:bg-[#EAF5EC] disabled:opacity-50"
             >
               Confirm import
             </button>

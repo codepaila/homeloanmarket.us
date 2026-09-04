@@ -277,7 +277,7 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
                   key={item.name}
                   href={item.href}
                   className={cn(
-                    'relative rounded-lg px-1.5 py-2 text-sm font-medium transition-colors',
+                    'relative rounded px-1.5 py-2 text-sm font-medium transition-colors',
                     isActive(item.href)
                       ? 'text-foreground'
                       : 'text-muted-foreground hover:text-foreground',
@@ -355,7 +355,7 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
               {/* Mobile Menu Button */}
               <button
                 ref={toggleButtonRef}
-                className="rounded-xl p-2  text-foreground transition-colors hover:bg-muted lg:hidden"
+                className="rounded p-2  text-foreground transition-colors hover:bg-muted lg:hidden"
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
                 aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
                 aria-expanded={isMenuOpen}
@@ -426,7 +426,7 @@ function UserDropdown({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -10, scale: 0.95 }}
       transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-      className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-lg border border-border bg-card shadow-large"
+      className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded border border-border bg-card shadow-large"
     >
       {/* User Info */}
       <div className="border-b border-border px-4 py-3">
@@ -445,7 +445,7 @@ function UserDropdown({
             key={item.label}
             href={item.href}
             className={cn(
-              'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
+              'flex items-center gap-3 rounded px-3 py-2.5 text-sm transition-colors',
               isActive(item.href)
                 ? 'bg-muted text-foreground font-medium'
                 : 'text-foreground hover:bg-muted'
@@ -466,7 +466,7 @@ function UserDropdown({
         {/* Sign Out */}
         <button
           onClick={onSignOut}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-destructive transition-colors hover:bg-destructive/5"
+          className="flex w-full items-center gap-3 rounded px-3 py-2.5 text-sm text-destructive transition-colors hover:bg-destructive/5"
         >
           <LogOut className="h-4 w-4" />
           Sign Out
@@ -522,7 +522,7 @@ function MobileMenu({
             <div key={item.name}>
               <Link
                 href={item.href}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                className="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
                 onClick={onClose}
               >
                 <item.icon className="h-5 w-5 text-muted-foreground" />
@@ -534,7 +534,7 @@ function MobileMenu({
                     <Link
                       key={child.name}
                       href={child.href}
-                      className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      className="flex items-center gap-2 rounded px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                       onClick={onClose}
                     >
                       <child.icon className="h-4 w-4" />
@@ -554,7 +554,7 @@ function MobileMenu({
                     onSignOut()
                     onClose()
                   }}
-                  className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-destructive transition-colors hover:bg-destructive/5"
+                  className="flex w-full items-center gap-3 rounded px-3 py-2.5 text-left text-sm font-medium text-destructive transition-colors hover:bg-destructive/5"
                 >
                   <LogOut className="h-5 w-5" />
                   Sign Out

@@ -40,7 +40,7 @@ export default function ChooseHomeSection() {
 
           <motion.div
             className={cn(
-              'relative aspect-video rounded-2xl border border-border overflow-hidden',
+              'relative aspect-video rounded border border-border overflow-hidden',
               'shadow-large',
             )}
             initial={{ opacity: 0, x: 40 }}

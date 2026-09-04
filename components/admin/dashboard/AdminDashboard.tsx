@@ -103,7 +103,7 @@ export function AdminDashboard({ data }: { data: AdminDashboardData }) {
                   <DashboardEmptyState message="No profile view data is available." />
                 ) : (
                   data.profileViews.top.slice(0, 5).map((broker, index) => (
-                    <div key={broker.slug} className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2">
+                    <div key={broker.slug} className="flex items-center justify-between gap-3 rounded border px-3 py-2">
                       <div className="flex min-w-0 items-center gap-3">
                         <span className="w-5 shrink-0 text-sm font-semibold text-muted-foreground">{index + 1}</span>
                         <span className="truncate text-sm font-medium">{broker.displayName}</span>

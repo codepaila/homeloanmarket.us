@@ -74,7 +74,7 @@ export default async function BlogSlugPage({ params }: BlogSlugPageProps) {
         {post.author} · {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString() : ''}
       </p>
       {post.coverImage ? (
-        <div className="mt-6 overflow-hidden rounded-2xl">
+        <div className="mt-6 overflow-hidden rounded">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={post.coverImage} alt={post.title} className="h-72 w-full object-cover" />
         </div>

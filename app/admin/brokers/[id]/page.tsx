@@ -98,7 +98,7 @@ export default async function AdminBrokerDetailPage({ params }: { params: Promis
           ['Verification', broker.verificationStatus],
           ['Subscription', `${broker.subscription?.plan || 'FREE'}${broker.subscription?.isActive ? '' : ' / INACTIVE'}`],
           ['Visibility', broker.isVisible ? 'PUBLISHED' : 'UNPUBLISHED'],
-        ].map(([label, value]) => <div key={label} className="rounded-xl border bg-card p-4"><p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-2 font-semibold">{value}</p></div>)}
+        ].map(([label, value]) => <div key={label} className="rounded border bg-card p-4"><p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p><p className="mt-2 font-semibold">{value}</p></div>)}
       </div>
       <AdminBrokerActions broker={brokerDto} />
 
@@ -110,7 +110,7 @@ export default async function AdminBrokerDetailPage({ params }: { params: Promis
       />
 
       {broker.claim?.events && broker.claim.events.length > 0 && (
-        <section className="rounded-xl border bg-card p-6">
+        <section className="rounded border bg-card p-6">
           <h2 className="text-xl font-semibold">Claim Timeline</h2>
           <ol className="mt-4 space-y-3">
             {broker.claim.events.map((event) => (

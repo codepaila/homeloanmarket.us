@@ -31,7 +31,7 @@ export function MediaGallery({ assets, selectedIds, onToggleSelect, onSelectAsse
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.03 }}
           className={cn(
-            'break-inside-avoid rounded-lg overflow-hidden border border-border bg-card cursor-pointer transition-all hover:shadow-md',
+            'break-inside-avoid rounded overflow-hidden border border-border bg-card cursor-pointer transition-all hover:shadow-md',
             selectedIds.has(asset.id) && 'ring-2 ring-primary'
           )}
           onDoubleClick={() => onSelectAsset(asset)}

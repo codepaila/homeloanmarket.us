@@ -485,7 +485,7 @@ const user = useCurrentUser();
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+              <div className="h-10 w-10 rounded bg-blue-100 flex items-center justify-center">
                 <MessageSquare className="h-5 w-5 text-info" />
               </div>
               <div>
@@ -502,7 +502,7 @@ const user = useCurrentUser();
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
+              <div className="h-10 w-10 rounded bg-green-100 flex items-center justify-center">
                 <CheckCircle className="h-5 w-5 text-success" />
               </div>
               <div>
@@ -519,7 +519,7 @@ const user = useCurrentUser();
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
+              <div className="h-10 w-10 rounded bg-purple-100 flex items-center justify-center">
                 <Star className="h-5 w-5 text-purple-600" />
               </div>
               <div>

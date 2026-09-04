@@ -26,8 +26,8 @@ export function OwnerSelector({
       <section className="space-y-4">
         <h2 className="text-lg font-bold text-foreground">Advertisement Owner</h2>
         <div className="space-y-3">
-          <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-4">
-            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary" aria-hidden="true">
+          <div className="flex items-start gap-3 rounded border border-border bg-muted/30 p-4">
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded bg-primary/10 text-primary" aria-hidden="true">
               <Building2 className="h-4 w-4" />
             </span>
             <div className="min-w-0">
@@ -53,11 +53,11 @@ export function OwnerSelector({
           disabled={disabled}
           onClick={() => onChange({ type: 'PLATFORM', companyId: null })}
           className={cn(
-            'flex items-start gap-3 rounded-xl border p-4 text-left transition-colors disabled:opacity-60',
+            'flex items-start gap-3 rounded border p-4 text-left transition-colors disabled:opacity-60',
             value.type === 'PLATFORM' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:border-primary/50',
           )}
         >
-          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary" aria-hidden="true">
+          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded bg-primary/10 text-primary" aria-hidden="true">
             <Globe className="h-4 w-4" />
           </span>
           <span>
@@ -73,11 +73,11 @@ export function OwnerSelector({
           disabled={disabled}
           onClick={() => onChange(value.type === 'COMPANY' ? value : { type: 'COMPANY', companyId: '' })}
           className={cn(
-            'flex items-start gap-3 rounded-xl border p-4 text-left transition-colors disabled:opacity-60',
+            'flex items-start gap-3 rounded border p-4 text-left transition-colors disabled:opacity-60',
             value.type === 'COMPANY' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:border-primary/50',
           )}
         >
-          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary" aria-hidden="true">
+          <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded bg-primary/10 text-primary" aria-hidden="true">
             <Building2 className="h-4 w-4" />
           </span>
           <span>
@@ -100,7 +100,7 @@ export function OwnerSelector({
               value={value.companyId}
               disabled={disabled}
               onChange={(event) => onChange({ type: 'COMPANY', companyId: event.target.value })}
-              className="w-full rounded-lg border bg-background px-3 py-2 text-sm"
+              className="w-full rounded border bg-background px-3 py-2 text-sm"
             >
               <option value="" disabled>
                 Select an active company

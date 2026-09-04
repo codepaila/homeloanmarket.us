@@ -79,11 +79,11 @@ export default function BrokerSubscriptionDetailClient({
           <h1 className="text-3xl font-semibold tracking-tight">{subscription.broker.displayName || subscription.broker.companyName || 'Broker'}</h1>
           <p className="mt-1 text-sm text-muted-foreground">/{subscription.broker.profileSlug}</p>
         </div>
-        <Link href="/admin/billing/broker-subscriptions" className="rounded-lg border px-3 py-2 text-sm font-medium">Back</Link>
+        <Link href="/admin/billing/broker-subscriptions" className="rounded border px-3 py-2 text-sm font-medium">Back</Link>
       </div>
 
       <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border bg-card p-5">
+        <div className="rounded border bg-card p-5">
           <h2 className="text-lg font-semibold">Broker</h2>
           <dl className="mt-3 space-y-2 text-sm">
             <Row label="Name" value={subscription.broker.displayName || '—'} />
@@ -95,7 +95,7 @@ export default function BrokerSubscriptionDetailClient({
           </dl>
         </div>
 
-        <div className="rounded-xl border bg-card p-5">
+        <div className="rounded border bg-card p-5">
           <h2 className="text-lg font-semibold">Subscription</h2>
           <dl className="mt-3 space-y-2 text-sm">
             <Row label="Active" value={subscription.isActive ? 'Yes' : 'No'} />
@@ -107,14 +107,14 @@ export default function BrokerSubscriptionDetailClient({
         </div>
       </section>
 
-      <section className="rounded-xl border bg-card p-5">
+      <section className="rounded border bg-card p-5">
         <h2 className="text-lg font-semibold">Plan &amp; Migration</h2>
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
-          <div className="rounded-lg border p-4">
+          <div className="rounded border p-4">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Current stored plan code</p>
             <p className="mt-1 text-xl font-semibold font-mono">{subscription.plan}</p>
           </div>
-          <div className="rounded-lg border p-4">
+          <div className="rounded border p-4">
             <p className="text-xs uppercase tracking-wide text-muted-foreground">Dynamic database plan</p>
             {subscription.planRef ? (
               <p className="mt-1 text-xl font-semibold">{subscription.planRef.name} <span className="text-sm text-muted-foreground">({subscription.planRef.code})</span></p>
@@ -139,7 +139,7 @@ export default function BrokerSubscriptionDetailClient({
           )}
         </div>
         {!linked && migrationStatus === 'legacy-eligible' && matchingPlan && (
-          <button type="button" onClick={migrate} disabled={busy} className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
+          <button type="button" onClick={migrate} disabled={busy} className="mt-4 inline-flex items-center gap-2 rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
             {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
             {busy ? 'Linking...' : 'Link to Dynamic Plan'}
           </button>
@@ -149,12 +149,12 @@ export default function BrokerSubscriptionDetailClient({
         )}
       </section>
 
-      <section className="rounded-xl border bg-card p-5">
+      <section className="rounded border bg-card p-5">
         <h2 className="text-lg font-semibold">Plan Features</h2>
         {features.length > 0 ? (
           <div className="mt-3 space-y-2">
             {features.map((label) => (
-              <div key={label} className="flex items-center justify-between rounded-lg border px-4 py-2 text-sm">
+              <div key={label} className="flex items-center justify-between rounded border px-4 py-2 text-sm">
                 <span className="font-medium">{label}</span>
                 <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600">Included</span>
               </div>

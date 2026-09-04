@@ -83,7 +83,7 @@ export default function UsageStats({ usageData, plan }: UsageStatsProps) {
                   {usage?.bankPartners || 0}
                 </p>
               </div>
-              <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
+              <div className="h-12 w-12 rounded bg-blue-100 flex items-center justify-center">
                 <Banknote className="h-6 w-6 text-info" />
               </div>
             </div>
@@ -102,7 +102,7 @@ export default function UsageStats({ usageData, plan }: UsageStatsProps) {
                   +{Math.round((usage?.profileViews || 0) / 30)} daily views
                 </div>
               </div>
-              <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center">
+              <div className="h-12 w-12 rounded bg-purple-100 flex items-center justify-center">
                 <Eye className="h-6 w-6 text-purple-600" />
               </div>
             </div>
@@ -121,7 +121,7 @@ export default function UsageStats({ usageData, plan }: UsageStatsProps) {
                   {subscription?.plan || 'FREE'} Plan
                 </div>
               </div>
-              <div className="h-12 w-12 rounded-lg bg-yellow-100 flex items-center justify-center">
+              <div className="h-12 w-12 rounded bg-yellow-100 flex items-center justify-center">
                 <BarChart3 className="h-6 w-6 text-warning" />
               </div>
             </div>
@@ -143,7 +143,7 @@ export default function UsageStats({ usageData, plan }: UsageStatsProps) {
               <div key={index}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-3">
-                    <div className={`h-10 w-10 rounded-lg ${
+                    <div className={`h-10 w-10 rounded ${
                       item.color === 'blue' ? 'bg-blue-100' :
                       item.color === 'green' ? 'bg-green-100' :
                       item.color === 'purple' ? 'bg-purple-100' :
@@ -185,7 +185,7 @@ export default function UsageStats({ usageData, plan }: UsageStatsProps) {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {planFeatures.length > 0 ? planFeatures.map((feature, index) => (
-              <div key={index} className="p-4 border rounded-lg">
+              <div key={index} className="p-4 border rounded">
                 <div className="flex items-center gap-3 mb-2">
                   <CheckCircle className="h-5 w-5 text-success" />
                   <div>
@@ -196,7 +196,7 @@ export default function UsageStats({ usageData, plan }: UsageStatsProps) {
                 <div className="text-sm font-medium text-success">Enabled</div>
               </div>
             )) : (
-              <div className="p-4 border rounded-lg">
+              <div className="p-4 border rounded">
                 <div className="flex items-center gap-3 mb-2">
                   <Zap className="h-5 w-5 text-muted-foreground" />
                   <div>
@@ -221,7 +221,7 @@ export default function UsageStats({ usageData, plan }: UsageStatsProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="p-4 bg-purple-50 rounded-lg">
+            <div className="p-4 bg-purple-50 rounded">
               <h4 className="font-medium text-purple-900 mb-2">Profile Visibility</h4>
               <p className="text-sm text-purple-700">
                 Your profile has been viewed {usage?.profileViews || 0} times.

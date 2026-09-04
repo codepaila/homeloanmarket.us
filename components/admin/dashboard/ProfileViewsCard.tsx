@@ -16,7 +16,7 @@ export function ProfileViewsCard({ data }: { data: AdminDashboardData['profileVi
         ) : (
           <ol className="space-y-2">
             {data.top.map((broker, index) => (
-              <li key={broker.slug} className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2">
+              <li key={broker.slug} className="flex items-center justify-between gap-3 rounded border px-3 py-2">
                 <div className="flex min-w-0 items-center gap-3">
                   <span className="w-5 shrink-0 text-sm font-semibold text-muted-foreground">{index + 1}</span>
                   <div className="min-w-0">

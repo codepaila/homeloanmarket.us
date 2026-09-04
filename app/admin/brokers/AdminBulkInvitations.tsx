@@ -138,16 +138,16 @@ export default function AdminBulkInvitations({ brokers }: { brokers: BrokerRow[]
   return (
     <div className="space-y-4">
       {selectedBrokers.length > 0 && (
-        <div className="sticky bottom-4 z-20 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-3 shadow-lg">
+        <div className="sticky bottom-4 z-20 flex flex-wrap items-center justify-between gap-3 rounded border bg-card p-3 shadow-lg">
           <p className="text-sm font-medium">{selectedBrokers.length} broker{selectedBrokers.length === 1 ? '' : 's'} selected</p>
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={openDialog} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"><Send className="h-4 w-4" />Send Invitations</button>
-            <button type="button" onClick={clearSelection} className="rounded-lg border px-4 py-2 text-sm font-semibold">Clear</button>
+            <button type="button" onClick={openDialog} className="inline-flex items-center gap-2 rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"><Send className="h-4 w-4" />Send Invitations</button>
+            <button type="button" onClick={clearSelection} className="rounded border px-4 py-2 text-sm font-semibold">Clear</button>
           </div>
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-xl border bg-card">
+      <div className="overflow-x-auto rounded border bg-card">
         <table className="w-full min-w-[1000px] text-left text-sm">
           <thead className="border-b bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
@@ -213,7 +213,7 @@ export default function AdminBulkInvitations({ brokers }: { brokers: BrokerRow[]
       {dialogOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40" onClick={() => !sending && setDialogOpen(false)} aria-hidden="true" />
-          <div role="dialog" aria-modal="true" aria-label="Send broker invitations" className="relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border bg-card p-6 shadow-xl">
+          <div role="dialog" aria-modal="true" aria-label="Send broker invitations" className="relative z-10 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded border bg-card p-6 shadow-xl">
             {step === 'review' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
@@ -228,13 +228,13 @@ export default function AdminBulkInvitations({ brokers }: { brokers: BrokerRow[]
                     const value = emails[broker.id] || ''
                     const invalid = !EMAIL_PATTERN.test(value.trim())
                     return (
-                      <div key={broker.id} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-[1fr_1fr]">
+                      <div key={broker.id} className="grid gap-2 rounded border p-3 sm:grid-cols-[1fr_1fr]">
                         <div>
                           <p className="text-sm font-medium">{broker.companyName || broker.displayName}</p>
                           {broker.nmls && <p className="text-xs text-muted-foreground">NMLS {broker.nmls}</p>}
                         </div>
                         <div>
-                          <input type="email" placeholder="recipient@example.com" value={value} onChange={(event) => setEmails({ ...emails, [broker.id]: event.target.value })} aria-label={`Recipient email for ${broker.companyName || broker.displayName}`} className={`w-full rounded-lg border bg-background px-3 py-2 text-sm ${invalid ? 'border-destructive' : ''}`} />
+                          <input type="email" placeholder="recipient@example.com" value={value} onChange={(event) => setEmails({ ...emails, [broker.id]: event.target.value })} aria-label={`Recipient email for ${broker.companyName || broker.displayName}`} className={`w-full rounded border bg-background px-3 py-2 text-sm ${invalid ? 'border-destructive' : ''}`} />
                           {invalid && <p className="mt-1 text-xs text-destructive">Recipient email required</p>}
                         </div>
                       </div>
@@ -242,8 +242,8 @@ export default function AdminBulkInvitations({ brokers }: { brokers: BrokerRow[]
                   })}
                 </div>
                 <div className="flex justify-end gap-2 border-t pt-4">
-                  <button type="button" onClick={() => setDialogOpen(false)} className="rounded-lg border px-4 py-2 text-sm font-semibold">Cancel</button>
-                  <button type="button" disabled={validCount === 0} onClick={() => setStep('confirm')} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">Review {validCount} invitation{validCount === 1 ? '' : 's'}</button>
+                  <button type="button" onClick={() => setDialogOpen(false)} className="rounded border px-4 py-2 text-sm font-semibold">Cancel</button>
+                  <button type="button" disabled={validCount === 0} onClick={() => setStep('confirm')} className="rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">Review {validCount} invitation{validCount === 1 ? '' : 's'}</button>
                 </div>
               </div>
             )}
@@ -255,13 +255,13 @@ export default function AdminBulkInvitations({ brokers }: { brokers: BrokerRow[]
                   <button type="button" onClick={() => setStep('review')} className="rounded-full p-2 hover:bg-muted" aria-label="Back"><X className="h-5 w-5" /></button>
                 </div>
                 <p className="text-sm text-muted-foreground">You are about to send {validCount} invitation email{validCount === 1 ? '' : 's'}. Each recipient will receive a secure broker-claim link.</p>
-                <div className="rounded-lg bg-muted p-3 text-sm">
+                <div className="rounded bg-muted p-3 text-sm">
                   <p>{validCount} valid</p>
                   {invalidCount > 0 && <p className="text-destructive">{invalidCount} invalid email{invalidCount === 1 ? '' : 's'}</p>}
                 </div>
                 <div className="flex justify-end gap-2 border-t pt-4">
-                  <button type="button" onClick={() => setStep('review')} className="rounded-lg border px-4 py-2 text-sm font-semibold">Back</button>
-                  <button type="button" disabled={sending} onClick={() => send(false)} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{sending ? 'Sending…' : `Send ${validCount} Invitation${validCount === 1 ? '' : 's'}`}</button>
+                  <button type="button" onClick={() => setStep('review')} className="rounded border px-4 py-2 text-sm font-semibold">Back</button>
+                  <button type="button" disabled={sending} onClick={() => send(false)} className="inline-flex items-center gap-2 rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">{sending ? 'Sending…' : `Send ${validCount} Invitation${validCount === 1 ? '' : 's'}`}</button>
                 </div>
               </div>
             )}
@@ -274,9 +274,9 @@ export default function AdminBulkInvitations({ brokers }: { brokers: BrokerRow[]
                 </div>
                 <p className="text-sm text-muted-foreground">{summary.sent} of {summary.total} invitation{summary.total === 1 ? '' : 's'} were accepted by the email provider.</p>
                 <div className="grid grid-cols-3 gap-3">
-                  <div className="rounded-lg bg-emerald-50 p-3 text-center"><p className="text-2xl font-semibold text-emerald-700">{summary.sent}</p><p className="text-xs text-emerald-700">Accepted</p></div>
-                  <div className="rounded-lg bg-amber-50 p-3 text-center"><p className="text-2xl font-semibold text-amber-700">{summary.skipped}</p><p className="text-xs text-amber-700">Skipped</p></div>
-                  <div className="rounded-lg bg-red-50 p-3 text-center"><p className="text-2xl font-semibold text-red-700">{summary.failed}</p><p className="text-xs text-red-700">Failed</p></div>
+                  <div className="rounded bg-emerald-50 p-3 text-center"><p className="text-2xl font-semibold text-emerald-700">{summary.sent}</p><p className="text-xs text-emerald-700">Accepted</p></div>
+                  <div className="rounded bg-amber-50 p-3 text-center"><p className="text-2xl font-semibold text-amber-700">{summary.skipped}</p><p className="text-xs text-amber-700">Skipped</p></div>
+                  <div className="rounded bg-red-50 p-3 text-center"><p className="text-2xl font-semibold text-red-700">{summary.failed}</p><p className="text-xs text-red-700">Failed</p></div>
                 </div>
                 <div className="max-h-64 space-y-1 overflow-y-auto border-t pt-3 text-sm">
                   {results.map((result) => (
@@ -294,8 +294,8 @@ export default function AdminBulkInvitations({ brokers }: { brokers: BrokerRow[]
                   ))}
                 </div>
                 <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
-                  {failedResults.length > 0 && <button type="button" disabled={sending} onClick={() => send(true)} className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold"><RotateCcw className="h-4 w-4" />Retry failed ({failedResults.length})</button>}
-                  <button type="button" onClick={() => setDialogOpen(false)} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Done</button>
+                  {failedResults.length > 0 && <button type="button" disabled={sending} onClick={() => send(true)} className="inline-flex items-center gap-2 rounded border px-4 py-2 text-sm font-semibold"><RotateCcw className="h-4 w-4" />Retry failed ({failedResults.length})</button>}
+                  <button type="button" onClick={() => setDialogOpen(false)} className="rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">Done</button>
                 </div>
               </div>
             )}

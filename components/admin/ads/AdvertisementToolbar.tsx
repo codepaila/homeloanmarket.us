@@ -151,7 +151,7 @@ export function AdvertisementToolbar({
 
       {/* Filters */}
       {showFilters && (
-        <div className="flex flex-col sm:flex-row gap-3 p-4 rounded-lg border bg-card">
+        <div className="flex flex-col sm:flex-row gap-3 p-4 rounded border bg-card">
           <Select value={placement} onValueChange={onPlacementChange}>
             <SelectTrigger className="w-full sm:w-[200px]">
               <SelectValue placeholder="Placement" />
@@ -215,7 +215,7 @@ export function AdvertisementToolbar({
 
       {/* Bulk Actions */}
       {selectedCount > 0 && onBulkAction && (
-        <div className="flex items-center gap-3 p-3 rounded-lg border bg-accent/50">
+        <div className="flex items-center gap-3 p-3 rounded border bg-accent/50">
           <span className="text-sm font-medium">
             {selectedCount} advertisement{selectedCount !== 1 ? 's' : ''} selected
           </span>

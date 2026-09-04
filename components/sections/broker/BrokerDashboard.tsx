@@ -237,7 +237,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
   if (isLoadingBroker) {
     return (
       <div className="space-y-6">
-        <div className="h-32 bg-gradient-to-r from-primary/20 to-primary/10 rounded-xl animate-pulse" />
+        <div className="h-32 bg-gradient-to-r from-primary/20 to-primary/10 rounded animate-pulse" />
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
             <Card key={i}>
@@ -303,7 +303,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-primary to-primary/80 rounded-xl p-6 text-white">
+      <div className="bg-gradient-to-r from-primary to-primary/80 rounded p-6 text-white">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div className="flex-1">
             <div className="flex items-start gap-4">
@@ -311,10 +311,10 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
                 <img
                   src={currentBroker.logo}
                   alt={currentBroker.displayName}
-                  className="h-20 w-20 rounded-xl border-4 border-white/20 object-cover"
+                  className="h-20 w-20 rounded border-4 border-white/20 object-cover"
                 />
               ) : (
-                <div className="h-20 w-20 rounded-xl bg-white/20 flex items-center justify-center border-4 border-white/20">
+                <div className="h-20 w-20 rounded bg-white/20 flex items-center justify-center border-4 border-white/20">
                   <Building className="h-10 w-10" />
                 </div>
               )}
@@ -422,7 +422,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
                   <Card className="hover:border-primary transition-colors cursor-pointer hover:shadow-md">
                     <CardContent className="p-6">
                       <div className="flex items-center gap-4">
-                        <div className={`h-12 w-12 rounded-lg bg-${action.color}-100 flex items-center justify-center flex-shrink-0`}>
+                        <div className={`h-12 w-12 rounded bg-${action.color}-100 flex items-center justify-center flex-shrink-0`}>
                           <Icon className={`h-6 w-6 text-${action.color}-600`} />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -516,14 +516,14 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-3 p-3 border rounded-lg">
+                <div className="flex items-center gap-3 p-3 border rounded">
                   <Phone className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <p className="text-sm text-muted-foreground">Phone</p>
                     <p className="font-medium">{currentBroker.phone || 'Not provided'}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 border rounded-lg">
+                <div className="flex items-center gap-3 p-3 border rounded">
                   <Mail className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <p className="text-sm text-muted-foreground">Email</p>
@@ -531,7 +531,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
                   </div>
                 </div>
                 {currentBroker.whatsapp && (
-                  <div className="flex items-center gap-3 p-3 border rounded-lg">
+                  <div className="flex items-center gap-3 p-3 border rounded">
                     <MessageSquare className="h-5 w-5 text-muted-foreground" />
                     <div>
                       <p className="text-sm text-muted-foreground">WhatsApp</p>
@@ -540,7 +540,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
                   </div>
                 )}
                 {currentBroker.website && (
-                  <div className="flex items-center gap-3 p-3 border rounded-lg">
+                  <div className="flex items-center gap-3 p-3 border rounded">
                     <Globe className="h-5 w-5 text-muted-foreground" />
                     <div>
                       <p className="text-sm text-muted-foreground">Website</p>
@@ -586,7 +586,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
               ) : (
                 <div className="space-y-3">
                   {contacts?.slice(0, 5).map((message: DashboardContact) => (
-                    <div key={message.id} className="flex items-start justify-between p-3 border rounded-lg hover:bg-muted">
+                    <div key={message.id} className="flex items-start justify-between p-3 border rounded hover:bg-muted">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <p className="font-medium truncate">{message.name}</p>
@@ -641,7 +641,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
               ) : (
                 <div className="space-y-3">
                   {currentBroker.reviews.slice(0, 5).map((review: DashboardReview) => (
-                    <div key={review.id || String(review.createdAt ?? '')} className="rounded-lg border p-4">
+                    <div key={review.id || String(review.createdAt ?? '')} className="rounded border p-4">
                       <div className="flex items-center justify-between gap-3">
                         <span className="font-medium">{review.user?.name || 'Client review'}</span>
                         <span aria-label={`${review.rating} out of 5 stars`}>{review.rating}/5</span>
@@ -720,7 +720,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
                             <p className="text-sm text-muted-foreground">Total Messages</p>
                             <p className="text-2xl font-bold">{currentAnalytics.analytics.summary.totalContacts}</p>
                           </div>
-                          <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                          <div className="h-10 w-10 rounded bg-blue-100 flex items-center justify-center">
                             <MessageSquare className="h-5 w-5 text-info" />
                           </div>
                         </div>
@@ -737,7 +737,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
                             <p className="text-sm text-muted-foreground">Response Rate</p>
                             <p className="text-2xl font-bold">{currentAnalytics.analytics.summary.responseRate}%</p>
                           </div>
-                          <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
+                          <div className="h-10 w-10 rounded bg-green-100 flex items-center justify-center">
                             <CheckCircle className="h-5 w-5 text-success" />
                           </div>
                         </div>
@@ -754,7 +754,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
                             <p className="text-sm text-muted-foreground">Avg. Response Time</p>
                             <p className="text-2xl font-bold">{currentAnalytics.analytics.performance.avgResponseTime}</p>
                           </div>
-                          <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                          <div className="h-10 w-10 rounded bg-purple-100 flex items-center justify-center">
                             <Clock className="h-5 w-5 text-purple-600" />
                           </div>
                         </div>
@@ -771,7 +771,7 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
                             <p className="text-sm text-muted-foreground">Client Satisfaction</p>
                             <p className="text-2xl font-bold">{(currentAnalytics.analytics.performance.satisfactionScore ?? 0).toFixed(1)}</p>
                           </div>
-                          <div className="h-10 w-10 rounded-lg bg-yellow-100 flex items-center justify-center">
+                          <div className="h-10 w-10 rounded bg-yellow-100 flex items-center justify-center">
                             <Star className="h-5 w-5 text-warning" />
                           </div>
                         </div>

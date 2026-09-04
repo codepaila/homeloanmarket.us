@@ -145,7 +145,7 @@ export function DashboardSidebar({ data, permissions, className }: DashboardSide
         {/* System Status (for admins) */}
         {(data.user.role === 'ADMIN' || data.user.role === 'SUPER_ADMIN') && (
           <div className="mt-8 px-4">
-            <div className="rounded-lg border p-3 bg-muted">
+            <div className="rounded border p-3 bg-muted">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium text-foreground">System Status</span>
                 <div className="flex items-center gap-1">

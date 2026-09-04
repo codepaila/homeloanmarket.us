@@ -238,7 +238,7 @@ export function ContactPageClient({ settings }: { settings: SiteSettings }) {
                     placeholder="Tell us about your inquiry..."
                     rows={5}
                     className={cn(
-                      'w-full rounded-xl border border-border bg-background/50 px-3 py-2.5 text-base transition-all duration-200 placeholder:text-muted-foreground/50 resize-y focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15',
+                      'w-full rounded border border-border bg-background/50 px-3 py-2.5 text-base transition-all duration-200 placeholder:text-muted-foreground/50 resize-y focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15',
                       errors.message && 'border-destructive focus:border-destructive focus:ring-destructive/15'
                     )}
                     required

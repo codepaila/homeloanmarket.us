@@ -91,7 +91,7 @@ export default function SubscriptionPlans({
         ? String((error as { message: unknown }).message)
         : 'Unable to load subscription plans.'
     return (
-      <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-6 text-center">
+      <div className="rounded border border-destructive/20 bg-destructive/5 p-6 text-center">
         <AlertCircle className="mx-auto h-6 w-6 text-destructive" />
         <p className="mt-2 text-sm font-medium text-foreground">
           We couldn&apos;t load subscription plans.
@@ -109,7 +109,7 @@ export default function SubscriptionPlans({
 
   if (!plans || plans.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-border bg-muted/30 p-8 text-center">
+      <div className="rounded border border-dashed border-border bg-muted/30 p-8 text-center">
         <p className="text-sm text-muted-foreground">
           No mortgage originator subscription plans are currently available. Please check back later or contact
           support.

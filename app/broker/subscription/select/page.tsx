@@ -97,7 +97,7 @@ function SubscriptionSelectContent() {
           <h1 className="text-3xl font-bold text-foreground">Choose your broker plan</h1>
           <p className="mt-3 text-muted-foreground">Select a plan before completing your broker profile.</p>
         </div>
-        {error && <p className="mx-auto mt-6 max-w-2xl rounded-lg bg-destructive/10 p-3 text-center text-sm text-destructive">{error}</p>}
+        {error && <p className="mx-auto mt-6 max-w-2xl rounded bg-destructive/10 p-3 text-center text-sm text-destructive">{error}</p>}
         {plans.length === 0 && !error ? (
           <p className="mt-10 text-center text-sm text-muted-foreground">Loading plans…</p>
         ) : (
@@ -106,7 +106,7 @@ function SubscriptionSelectContent() {
             <div
               key={plan.id}
               className={cn(
-                'rounded-2xl transition-all duration-200',
+                'rounded transition-all duration-200',
                 selectedPlanCode === plan.code && 'ring-2 ring-primary/40',
               )}
             >

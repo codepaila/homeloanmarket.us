@@ -44,7 +44,7 @@ export default async function AdminCompaniesPage() {
         </p>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border bg-card">
+      <div className="overflow-x-auto rounded border bg-card">
         <table className="w-full min-w-[820px] text-left text-sm">
           <thead className="border-b bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>

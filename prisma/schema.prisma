@@ -1207,6 +1207,111 @@ model Testimonial {
 }
 
 // ============================================================
+// About Page CMS
+// ============================================================
+// Structured, database-backed content for the public /about page. A single
+// AboutPage row holds the fixed section content + SEO; repeatable entities
+// (stats and benefit cards) live in dedicated relational models so admins can
+// CRUD and reorder them. Image references point at the canonical MediaAsset
+// library (never raw binaries / About-specific storage).
+//
+// These models are About-page marketing content ONLY. They are intentionally
+// separate from broker subscription features, company advertising features, and
+// any entitlement/business logic.
+//
+// Image fields store the canonical Media Library URL (fileUrl) as plain strings
+// — the same convention as global SiteSettings branding. The About page never
+// holds binaries or its own upload store; admins pick/upload from the shared
+// Media Library and the URL is validated against a MediaAsset on save.
+
+enum AboutStatType {
+  DYNAMIC_ORIGINATORS
+  DYNAMIC_STATES
+  DYNAMIC_CITIES
+  STATIC
+}
+
+model AboutPage {
+  id           String @id @default(auto()) @map("_id") @db.ObjectId
+  isActive     Boolean @default(true)
+
+  // HERO
+  heroEnabled      Boolean @default(true)
+  heroEyebrow      String?
+  heroTitle        String?
+  heroDescription  String?
+  heroImageUrl     String?
+  heroImageAlt     String?
+
+  // STATS
+  statsEnabled Boolean @default(true)
+
+  // MISSION
+  missionEnabled    Boolean @default(true)
+  missionTitle      String?
+  missionContent    String?
+  missionContent2   String?
+  missionChecklist  String[] @default([])
+  missionImageUrl   String?
+  missionImageAlt   String?
+
+  // BENEFITS (feature cards shown alongside the mission)
+  benefitsEnabled Boolean @default(true)
+
+  // CONTACT
+  contactEnabled Boolean @default(true)
+  contactTitle   String?
+  contactEmail   String?
+
+  // SEO
+  seoTitle        String?
+  seoDescription  String?
+  seoOgImageUrl   String?
+
+  stats    AboutStat[]
+  benefits AboutBenefit[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("about_page")
+}
+
+model AboutStat {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  aboutPageId  String        @db.ObjectId
+  aboutPage    AboutPage     @relation(fields: [aboutPageId], references: [id], onDelete: Cascade)
+  label        String
+  statType     AboutStatType
+  staticValue  String?
+  enabled      Boolean       @default(true)
+  displayOrder Int           @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([aboutPageId, displayOrder])
+  @@map("about_stats")
+}
+
+model AboutBenefit {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  aboutPageId String    @db.ObjectId
+  aboutPage   AboutPage @relation(fields: [aboutPageId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  iconKey     String
+  enabled     Boolean   @default(true)
+  displayOrder Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([aboutPageId, displayOrder])
+  @@map("about_benefits")
+}
+
+// ============================================================
 // Settings
 // ============================================================
 

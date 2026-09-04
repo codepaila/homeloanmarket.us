@@ -38,7 +38,7 @@ export default async function AdminCompanySubscriptionsPage() {
         <p className="mt-1 text-sm text-muted-foreground">Inspect company advertising subscription and billing status.</p>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border bg-card">
+      <div className="overflow-x-auto rounded border bg-card">
         <table className="w-full min-w-[900px] text-sm">
           <thead>
             <tr className="border-b text-left text-xs uppercase tracking-wide text-muted-foreground">

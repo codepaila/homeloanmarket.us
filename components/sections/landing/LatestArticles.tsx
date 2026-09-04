@@ -26,7 +26,7 @@ export async function LatestArticles() {
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
         {posts.map((post) => (
           <Link key={post.slug} href={`/blog/${post.slug}`} className="group">
-            <article className="flex h-full flex-col overflow-hidden rounded-2xl border bg-card shadow-soft transition-shadow group-hover:shadow-medium">
+            <article className="flex h-full flex-col overflow-hidden rounded border bg-card shadow-soft transition-shadow group-hover:shadow-medium">
               {post.coverImage ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={post.coverImage} alt={post.title} className="h-40 w-full object-cover" />

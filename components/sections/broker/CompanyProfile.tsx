@@ -331,7 +331,7 @@ export function CompanyProfile({ user, broker }: CompanyProfileProps) {
               {/* Cover Image */}
               <div className="space-y-4">
                 <FormLabel>Cover Image</FormLabel>
-                <div className="relative h-48 w-full rounded-lg border-2 border-dashed border-border overflow-hidden">
+                <div className="relative h-48 w-full rounded border-2 border-dashed border-border overflow-hidden">
                   {coverPreview ? (
                     <img 
                       src={coverPreview} 
@@ -366,7 +366,7 @@ export function CompanyProfile({ user, broker }: CompanyProfileProps) {
                 <FormLabel>Company Logo</FormLabel>
                 <div className="flex items-center gap-6">
                   <div className="relative">
-                    <div className="h-24 w-24 rounded-lg border-2 border-dashed border-border overflow-hidden">
+                    <div className="h-24 w-24 rounded border-2 border-dashed border-border overflow-hidden">
                       {logoPreview ? (
                         <img 
                           src={logoPreview} 
@@ -850,7 +850,7 @@ export function CompanyProfile({ user, broker }: CompanyProfileProps) {
                 control={form.control}
                 name="isVisible"
                 render={({ field }) => (
-                  <FormItem className="flex items-center justify-between space-y-0 rounded-lg border p-4">
+                  <FormItem className="flex items-center justify-between space-y-0 rounded border p-4">
                     <div className="space-y-0.5">
                       <FormLabel className="text-base">Profile Visibility</FormLabel>
                       <FormDescription>
@@ -868,7 +868,7 @@ export function CompanyProfile({ user, broker }: CompanyProfileProps) {
               />
 
               {/* Verification Status */}
-              <div className="rounded-lg border p-4">
+              <div className="rounded border p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Shield className="h-5 w-5 text-primary" />
                   <h4 className="font-medium">Verification Status</h4>

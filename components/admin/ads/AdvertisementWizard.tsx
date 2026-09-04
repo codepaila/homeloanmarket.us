@@ -263,16 +263,16 @@ export function AdvertisementWizard({
 
       {/* Step content */}
       {current.key === 'basic' && (
-        <section className="space-y-4 rounded-xl border bg-card p-5">
+        <section className="space-y-4 rounded border bg-card p-5">
           <h2 className="text-lg font-semibold">Basic Details</h2>
-          <label className="block space-y-1"><span className="text-sm font-medium">Advertisement title</span><input value={state.title} onChange={(e) => set('title', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" /></label>
-          <label className="block space-y-1"><span className="text-sm font-medium">Description</span><textarea value={state.description} onChange={(e) => set('description', e.target.value)} rows={3} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" /></label>
-          <label className="block space-y-1"><span className="text-sm font-medium">Internal notes</span><textarea value={state.internalNotes} onChange={(e) => set('internalNotes', e.target.value)} rows={2} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" /></label>
+          <label className="block space-y-1"><span className="text-sm font-medium">Advertisement title</span><input value={state.title} onChange={(e) => set('title', e.target.value)} className="w-full rounded border bg-background px-3 py-2 text-sm" /></label>
+          <label className="block space-y-1"><span className="text-sm font-medium">Description</span><textarea value={state.description} onChange={(e) => set('description', e.target.value)} rows={3} className="w-full rounded border bg-background px-3 py-2 text-sm" /></label>
+          <label className="block space-y-1"><span className="text-sm font-medium">Internal notes</span><textarea value={state.internalNotes} onChange={(e) => set('internalNotes', e.target.value)} rows={2} className="w-full rounded border bg-background px-3 py-2 text-sm" /></label>
         </section>
       )}
 
       {current.key === 'owner' && (
-        <section className="rounded-xl border bg-card p-5">
+        <section className="rounded border bg-card p-5">
           <OwnerSelector
             value={state.owner}
             onChange={(owner) => set('owner', owner)}
@@ -281,7 +281,7 @@ export function AdvertisementWizard({
       )}
 
       {current.key === 'placement' && (
-        <section className="space-y-4 rounded-xl border bg-card p-5">
+        <section className="space-y-4 rounded border bg-card p-5">
           <h2 className="text-lg font-semibold">Placement</h2>
           <p className="text-sm text-muted-foreground">Where should this advertisement appear?</p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -289,7 +289,7 @@ export function AdvertisementWizard({
               const meta = getPlacementMeta(placement)
               const selected = state.placement === placement
               return (
-                <button key={placement} type="button" onClick={() => selectPlacement(placement)} className={cn('rounded-xl border p-4 text-left transition-colors', selected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:border-primary/50')}>
+                <button key={placement} type="button" onClick={() => selectPlacement(placement)} className={cn('rounded border p-4 text-left transition-colors', selected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:border-primary/50')}>
                   <p className="font-semibold">{meta?.label || placement}</p>
                   <p className="mt-1 text-xs text-muted-foreground">{meta?.description}</p>
                 </button>
@@ -300,11 +300,11 @@ export function AdvertisementWizard({
       )}
 
       {current.key === 'type' && (
-        <section className="space-y-4 rounded-xl border bg-card p-5">
+        <section className="space-y-4 rounded border bg-card p-5">
           <h2 className="text-lg font-semibold">Advertisement Type</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {validTypes.map((type) => (
-              <button key={type} type="button" onClick={() => set('type', type)} className={cn('rounded-xl border p-4 text-left', state.type === type ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:border-primary/50')}>
+              <button key={type} type="button" onClick={() => set('type', type)} className={cn('rounded border p-4 text-left', state.type === type ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:border-primary/50')}>
                 <span className="font-medium">{AD_TYPE_LABELS[type]}</span>
               </button>
             ))}
@@ -313,11 +313,11 @@ export function AdvertisementWizard({
       )}
 
       {current.key === 'action' && (
-        <section className="space-y-4 rounded-xl border bg-card p-5">
+        <section className="space-y-4 rounded border bg-card p-5">
           <h2 className="text-lg font-semibold">Action / Display Behavior</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             {(Object.keys(ACTION_META) as AdvertisementAction[]).map((action) => (
-              <button key={action} type="button" onClick={() => set('action', action)} className={cn('rounded-xl border p-4 text-left', state.action === action ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:border-primary/50')}>
+              <button key={action} type="button" onClick={() => set('action', action)} className={cn('rounded border p-4 text-left', state.action === action ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:border-primary/50')}>
                 <span className="font-medium">{ACTION_META[action].label}</span>
                 <span className="mt-1 block text-xs text-muted-foreground">{ACTION_META[action].description}</span>
               </button>
@@ -325,9 +325,9 @@ export function AdvertisementWizard({
           </div>
           {needsUrl && (
             <div className="space-y-3 border-t pt-4">
-              <label className="block space-y-1"><span className="text-sm font-medium">Destination URL *</span><input value={state.buttonUrl} onChange={(e) => set('buttonUrl', e.target.value)} placeholder="https://example.com" className="w-full rounded-lg border bg-background px-3 py-2 text-sm" /></label>
+              <label className="block space-y-1"><span className="text-sm font-medium">Destination URL *</span><input value={state.buttonUrl} onChange={(e) => set('buttonUrl', e.target.value)} placeholder="https://example.com" className="w-full rounded border bg-background px-3 py-2 text-sm" /></label>
               {needsButton && (
-                <label className="block space-y-1"><span className="text-sm font-medium">Button label</span><input value={state.buttonLabel} onChange={(e) => set('buttonLabel', e.target.value)} placeholder="Learn more" className="w-full rounded-lg border bg-background px-3 py-2 text-sm" /></label>
+                <label className="block space-y-1"><span className="text-sm font-medium">Button label</span><input value={state.buttonLabel} onChange={(e) => set('buttonLabel', e.target.value)} placeholder="Learn more" className="w-full rounded border bg-background px-3 py-2 text-sm" /></label>
               )}
             </div>
           )}
@@ -335,7 +335,7 @@ export function AdvertisementWizard({
       )}
 
       {current.key === 'format' && requirements && (
-        <section className="space-y-4 rounded-xl border bg-card p-5">
+        <section className="space-y-4 rounded border bg-card p-5">
           <h2 className="text-lg font-semibold">Creative Format</h2>
           <p className="text-sm text-muted-foreground">The {requirements.label} placement supports multiple creative sizes. Pick the size you want to provide.</p>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -343,7 +343,7 @@ export function AdvertisementWizard({
               const formatReq = getCreativeRequirementForFormat(state.placement!, format)
               const selected = state.creativeFormat === format
               return (
-                <button key={format} type="button" onClick={() => set('creativeFormat', format)} className={cn('rounded-xl border p-4 text-left transition-colors', selected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:border-primary/50')}>
+                <button key={format} type="button" onClick={() => set('creativeFormat', format)} className={cn('rounded border p-4 text-left transition-colors', selected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border hover:border-primary/50')}>
                   <span className="font-medium">{formatReq.label}</span>
                   <span className="mt-1 block text-xs text-muted-foreground">{formatReq.width} × {formatReq.height}</span>
                   <span className="block text-xs text-muted-foreground">Aspect ratio: {formatReq.aspectRatio}</span>
@@ -359,7 +359,7 @@ export function AdvertisementWizard({
         const format = state.creativeFormat
         const formatReq = getCreativeRequirementForFormat(state.placement, format)
         return (
-          <section className="space-y-5 rounded-xl border bg-card p-5">
+          <section className="space-y-5 rounded border bg-card p-5">
             <h2 className="text-lg font-semibold">Creative</h2>
             <p className="text-sm text-muted-foreground">Provide the image required by the {requirements.label} placement.</p>
             <AdvertisementCreativeUpload
@@ -373,7 +373,7 @@ export function AdvertisementWizard({
       })()}
 
       {current.key === 'targeting' && requirements?.supportsLocation && (
-        <section className="space-y-4 rounded-xl border bg-card p-5">
+        <section className="space-y-4 rounded border bg-card p-5">
           <h2 className="text-lg font-semibold">Location Targeting</h2>
           <p className="text-sm text-muted-foreground">Where should this advertisement appear?</p>
           <USLocationPicker value={state.location || undefined} onChange={(location) => set('location', location || null)} />
@@ -386,7 +386,7 @@ export function AdvertisementWizard({
       )}
 
       {current.key === 'schedule' && (
-        <section className="space-y-4 rounded-xl border bg-card p-5">
+        <section className="space-y-4 rounded border bg-card p-5">
           <h2 className="text-lg font-semibold">Display &amp; Schedule</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={state.isEnabled} onChange={(e) => set('isEnabled', e.target.checked)} /> Enabled</label>
@@ -398,14 +398,14 @@ export function AdvertisementWizard({
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={state.showMobile} onChange={(e) => set('showMobile', e.target.checked)} /> Show on mobile</label>
           )}
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block space-y-1"><span className="text-sm font-medium">Start date</span><input type="date" value={state.startDate} onChange={(e) => set('startDate', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" /></label>
-            <label className="block space-y-1"><span className="text-sm font-medium">End date</span><input type="date" value={state.endDate} onChange={(e) => set('endDate', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2 text-sm" /></label>
+            <label className="block space-y-1"><span className="text-sm font-medium">Start date</span><input type="date" value={state.startDate} onChange={(e) => set('startDate', e.target.value)} className="w-full rounded border bg-background px-3 py-2 text-sm" /></label>
+            <label className="block space-y-1"><span className="text-sm font-medium">End date</span><input type="date" value={state.endDate} onChange={(e) => set('endDate', e.target.value)} className="w-full rounded border bg-background px-3 py-2 text-sm" /></label>
           </div>
         </section>
       )}
 
       {current.key === 'review' && (
-        <section className="space-y-4 rounded-xl border bg-card p-5">
+        <section className="space-y-4 rounded border bg-card p-5">
           <h2 className="text-lg font-semibold">Review Advertisement</h2>
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
             <div><dt className="text-muted-foreground">Title</dt><dd className="font-medium">{state.title.trim() || 'Not provided'}</dd></div>
@@ -430,7 +430,7 @@ export function AdvertisementWizard({
                   <div><dt className="text-muted-foreground">Uploaded resolution</dt><dd>{asset?.width && asset?.height ? `${asset.width} × ${asset.height} px` : '—'}</dd></div>
                   <div><dt className="text-muted-foreground">Media file</dt><dd className="break-all">{asset?.fileName || '—'}</dd></div>
                 </div>
-                <div className="flex items-center gap-3 rounded-lg border bg-muted/40 p-3">
+                <div className="flex items-center gap-3 rounded border bg-muted/40 p-3">
                   {asset?.fileUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={asset.fileUrl} alt={formatReq.label} className="h-16 w-24 shrink-0 rounded object-cover" />
@@ -465,15 +465,15 @@ export function AdvertisementWizard({
 
       {/* Navigation */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
-        <button type="button" onClick={() => step > 0 && setStep(step - 1)} disabled={step === 0} className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold disabled:opacity-50">
+        <button type="button" onClick={() => step > 0 && setStep(step - 1)} disabled={step === 0} className="inline-flex items-center gap-2 rounded border px-4 py-2 text-sm font-semibold disabled:opacity-50">
           <ArrowLeft className="h-4 w-4" /> Back
         </button>
         {current.key === 'review' ? (
-          <button type="button" onClick={submit} disabled={submitting} className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
+          <button type="button" onClick={submit} disabled={submitting} className="inline-flex items-center gap-2 rounded bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
             {submitting ? 'Creating…' : 'Create Advertisement'}
           </button>
         ) : (
-          <button type="button" onClick={() => canContinue() && setStep(step + 1)} disabled={!canContinue()} className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
+          <button type="button" onClick={() => canContinue() && setStep(step + 1)} disabled={!canContinue()} className="inline-flex items-center gap-2 rounded bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
             {current.key === 'placement' ? 'Continue to Configuration' : 'Continue'} <ArrowRight className="h-4 w-4" />
           </button>
         )}

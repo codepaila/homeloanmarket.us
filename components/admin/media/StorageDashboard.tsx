@@ -29,7 +29,7 @@ export function StorageDashboard({ className }: StorageDashboardProps) {
       {stats.map((stat, index) => (
         <Card key={index}>
           <CardContent className="p-4 flex items-center gap-3">
-            <div className={cn('p-2 rounded-lg bg-muted', stat.color)}>
+            <div className={cn('p-2 rounded bg-muted', stat.color)}>
               <stat.icon className="h-5 w-5" />
             </div>
             <div>

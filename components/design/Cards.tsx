@@ -31,7 +31,7 @@ export function BankCard({
   return (
     <motion.div
       className={cn(
-        'flex items-center justify-between rounded-xl border border-border',
+        'flex items-center justify-between rounded border border-border',
         'bg-card/80 p-4 transition-all duration-200',
         'hover:shadow-soft hover:border-primary/30',
         className,
@@ -39,7 +39,7 @@ export function BankCard({
       whileHover={{ y: -2 }}
     >
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-muted">
+        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded bg-muted">
           {logo ? (
             <Image
               src={logo}
@@ -90,7 +90,7 @@ export function TestimonialCard({
   return (
     <motion.div
       className={cn(
-        'relative rounded-2xl border border-border bg-card/80 p-6',
+        'relative rounded border border-border bg-card/80 p-6',
         'backdrop-blur-sm transition-all duration-300',
         'hover:shadow-medium',
         className,
@@ -175,7 +175,7 @@ export function ProcessCard({
   return (
     <motion.div
       className={cn(
-        'relative rounded-2xl border border-border bg-card/80 p-6',
+        'relative rounded border border-border bg-card/80 p-6',
         'backdrop-blur-sm transition-all duration-300',
         'hover:shadow-medium',
         className,
@@ -183,7 +183,7 @@ export function ProcessCard({
       whileHover={{ y: -3 }}
     >
       <div className="flex items-start gap-4">
-        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded bg-primary/10 text-primary">
           {icon || (
             <span className="text-lg font-bold">{step}</span>
           )}
@@ -215,12 +215,12 @@ export function FeatureCard({
   const content = (
     <div
       className={cn(
-        'group flex flex-col rounded-2xl border border-border bg-card/80 p-6',
+        'group flex flex-col rounded border border-border bg-card/80 p-6',
         'transition-all duration-300 hover:shadow-medium hover:-translate-y-0.5',
         className,
       )}
     >
-      <div className="mb-4 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+      <div className="mb-4 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded bg-primary/10 text-primary">
         {icon}
       </div>
       <h3 className="text-lg font-semibold text-foreground">{title}</h3>

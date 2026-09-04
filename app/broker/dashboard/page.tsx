@@ -66,7 +66,7 @@ if (!hasPaidPlan) {
   return (
     <div className="space-y-6">
       <BrokerDashboard initialData={initialData} />
-      <section className="rounded-xl border border-destructive/40 bg-card p-6">
+      <section className="rounded border border-destructive/40 bg-card p-6">
         <h2 className="text-lg font-semibold">Delete mortgage originator account</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           This permanently removes your mortgage originator profile, claim history, messages, reviews, uploaded
@@ -114,7 +114,7 @@ const initialData = {
   return (
     <div className="space-y-6">
       <BrokerDashboard initialData={initialData} />
-      <section className="rounded-xl border border-destructive/40 bg-card p-6">
+      <section className="rounded border border-destructive/40 bg-card p-6">
         <h2 className="text-lg font-semibold">Delete mortgage originator account</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           This permanently removes your mortgage originator profile, claim history, messages, reviews, uploaded

@@ -132,7 +132,7 @@ export function AdminSupportTicketDetail({
         </CardHeader>
         <CardContent className="space-y-6">
           {broker && (
-            <div className="rounded-lg border bg-muted/40 p-4">
+            <div className="rounded border bg-muted/40 p-4">
               <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Broker</p>
               <p className="text-sm font-medium">{broker.name || '—'}</p>
               {broker.email && <p className="text-sm text-muted-foreground">{broker.email}</p>}
@@ -154,7 +154,7 @@ export function AdminSupportTicketDetail({
                 {messages.map((message) => {
                   const fromBroker = message.senderType === 'user'
                   return (
-                    <div key={message.id} className={`rounded-lg border p-4 ${fromBroker ? 'bg-muted/40' : 'bg-primary/5'}`}>
+                    <div key={message.id} className={`rounded border p-4 ${fromBroker ? 'bg-muted/40' : 'bg-primary/5'}`}>
                       <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium">{message.senderName || (fromBroker ? 'Broker' : 'Support')}</span>
@@ -170,7 +170,7 @@ export function AdminSupportTicketDetail({
             )}
           </div>
 
-          <div className="rounded-lg border p-4">
+          <div className="rounded border p-4">
             <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">Manage ticket</p>
             <div className="grid gap-3 sm:grid-cols-3">
               <div>

@@ -65,7 +65,7 @@ export default async function CreateAdFromRequestPage({ params }: { params: Prom
         <p className="mt-1 text-sm text-muted-foreground">The request context is pre-loaded. Configure the advertisement content, placement, and targeting.</p>
       </div>
 
-      <section className="grid gap-4 rounded-xl border bg-card p-5 md:grid-cols-3">
+      <section className="grid gap-4 rounded border bg-card p-5 md:grid-cols-3">
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Company</p>
           <p className="mt-1 font-semibold">{company.name}</p>

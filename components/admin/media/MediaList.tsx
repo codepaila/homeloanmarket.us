@@ -28,7 +28,7 @@ export function MediaList({ assets, selectedIds, onToggleSelect, onSelectAsset, 
   }
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden">
+    <div className="border border-border rounded overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead className="bg-muted/50 border-b border-border">

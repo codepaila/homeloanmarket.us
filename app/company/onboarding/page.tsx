@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { toast } from 'react-hot-toast'
 import { FormInput } from '@/components/design/FormInput'
 import { PremiumButton } from '@/components/design/PremiumButton'
@@ -98,7 +99,7 @@ export default function CompanyOnboardingPage() {
           {step === 0 && (
             <>
               <FormInput label="Company name" name="name" type="text" required value={data.name || ''} onChange={(e) => set('name', e.target.value)} />
-              <label className="block text-sm font-medium">Company type<select value={data.type} onChange={(e) => set('type', e.target.value)} className="mt-1 w-full rounded-xl border border-border bg-background px-3 py-2.5">{types.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+              <label className="block text-sm font-medium">Company type<select value={data.type} onChange={(e) => set('type', e.target.value)} className="mt-1 w-full rounded border border-border bg-background px-3 py-2.5">{types.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
             </>
           )}
           {step === 1 && (
@@ -116,7 +117,7 @@ export default function CompanyOnboardingPage() {
             </>
           )}
           {step === 3 && (
-            <div className="space-y-2 rounded-xl border bg-card p-5">
+            <div className="space-y-2 rounded border bg-card p-5">
               {review.map(([label, value]) => (
                 <div key={label} className="flex justify-between gap-4 text-sm">
                   <span className="text-muted-foreground">{label}</span>
@@ -127,12 +128,15 @@ export default function CompanyOnboardingPage() {
           )}
 
           <div className="flex gap-3 pt-4">
-            {step > 0 && <button type="button" onClick={() => setStep(step - 1)} className="inline-flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-semibold"><ArrowLeft className="h-4 w-4" />Back</button>}
+            {step > 0 && <button type="button" onClick={() => setStep(step - 1)} className="inline-flex items-center gap-2 rounded border px-4 py-2.5 text-sm font-semibold"><ArrowLeft className="h-4 w-4" />Back</button>}
             {step < steps.length - 1
               ? <PremiumButton type="submit" fullWidth leftIcon={<ArrowRight className="h-4 w-4" />}>Continue</PremiumButton>
               : <PremiumButton type="submit" fullWidth loading={loading} loadingText="Completing setup...">Complete Company Setup</PremiumButton>}
           </div>
         </form>
+        <p className="mt-6 text-center text-sm text-muted-foreground">
+          <Link href="/company/dashboard" className="font-medium text-primary hover:underline">Skip for now</Link>
+        </p>
       </div>
     </main>
   )

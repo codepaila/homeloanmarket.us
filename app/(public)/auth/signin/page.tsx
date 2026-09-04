@@ -54,7 +54,7 @@ function SignInContent() {
         {loginState?.error && (
           <div
             role="alert"
-            className="flex items-start gap-2 rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive animate-fade-in motion-reduce:animate-none"
+            className="flex items-start gap-2 rounded border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive animate-fade-in motion-reduce:animate-none"
           >
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <span>{loginState.error}</span>

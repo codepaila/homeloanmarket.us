@@ -77,7 +77,7 @@ export function BrokerDetailSkeleton({ className }: { className?: string }) {
               <SkeletonHeading className="h-6 w-32" />
               <div className="flex flex-wrap gap-2">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <SkeletonSubtle key={i} className="h-9 w-24 rounded-lg" />
+                  <SkeletonSubtle key={i} className="h-9 w-24 rounded" />
                 ))}
               </div>
             </section>
@@ -90,7 +90,7 @@ export function BrokerDetailSkeleton({ className }: { className?: string }) {
             <SkeletonHeading className="mx-auto h-7 w-72 max-w-full md:h-9" />
             <SkeletonSubtle className="mx-auto mt-3 h-4 w-80 max-w-full" />
             <div className="mt-8 flex justify-center">
-              <SkeletonSubtle className="h-12 w-56 max-w-full rounded-xl" />
+              <SkeletonSubtle className="h-12 w-56 max-w-full rounded" />
             </div>
           </div>
         </section>

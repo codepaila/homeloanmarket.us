@@ -71,7 +71,7 @@ export function ImageDetailsDrawer({ asset, open, onOpenChange, onUpdated }: Ima
           </TabsList>
 
           <TabsContent value="details" className="space-y-4 mt-4">
-            <div className="aspect-video rounded-lg overflow-hidden bg-muted">
+            <div className="aspect-video rounded overflow-hidden bg-muted">
               <img src={asset.thumbnailUrl || asset.fileUrl} alt={asset.altText || asset.fileName} className="w-full h-full object-contain" />
             </div>
 
@@ -112,14 +112,14 @@ export function ImageDetailsDrawer({ asset, open, onOpenChange, onUpdated }: Ima
 
           <TabsContent value="usage" className="space-y-4 mt-4">
             <div className="space-y-3">
-              <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+              <div className="flex items-center justify-between p-4 rounded border border-border">
                 <div>
                   <p className="text-sm font-medium">Desktop Advertisements</p>
                   <p className="text-xs text-muted-foreground">Used as desktop media</p>
                 </div>
                 <Badge variant="secondary">0</Badge>
               </div>
-              <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+              <div className="flex items-center justify-between p-4 rounded border border-border">
                 <div>
                   <p className="text-sm font-medium">Mobile Advertisements</p>
                   <p className="text-xs text-muted-foreground">Used as mobile media</p>

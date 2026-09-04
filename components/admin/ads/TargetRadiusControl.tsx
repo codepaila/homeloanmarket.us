@@ -32,7 +32,7 @@ export function TargetRadiusControl({
             onChange={(e) => onChange(e.target.value === '' ? AD_RADIUS_MIN : clampAdRadius(Number(e.target.value)))}
             onBlur={() => onChange(clampAdRadius(clamped))}
             aria-label="Target radius in miles"
-            className="w-24 rounded-lg border bg-background px-3 py-2 text-sm"
+            className="w-24 rounded border bg-background px-3 py-2 text-sm"
           />
           <span className="text-sm text-muted-foreground">miles</span>
         </div>

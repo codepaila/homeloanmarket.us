@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils'
 function useAnimatedNumber(target: number, duration = 400) {
   const [value, setValue] = useState(target)
   const fromRef = useRef(target)
-  const frameRef = useRef<number>()
+  const frameRef = useRef<number | null>(null)
 
   useEffect(() => {
     const from = fromRef.current
@@ -230,7 +230,7 @@ export default function CalculatorPage() {
                         Loan amount
                       </label>
                       <p className="text-[11px] leading-tight text-muted-foreground">
-                        Total you're borrowing, before interest.
+                        Total you&apos;re borrowing, before interest.
                       </p>
                     </div>
                     <div className="relative shrink-0">

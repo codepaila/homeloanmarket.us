@@ -329,7 +329,7 @@ export default function EditPersonalProfile({user}:{user: ProfileUser}) {
                                 </div>
 
                                 {showPasswordFields && (
-                                    <div className="space-y-4 p-4 border rounded-lg bg-muted">
+                                    <div className="space-y-4 p-4 border rounded bg-muted">
                                         <FormField
                                             control={form.control}
                                             name="currentPassword"
@@ -397,7 +397,7 @@ export default function EditPersonalProfile({user}:{user: ProfileUser}) {
                                 <h3 className="text-lg font-medium">Account Details</h3>
 
                                 <div className="space-y-2">
-                                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                                    <div className="flex items-center justify-between p-3 border rounded">
                                         <div className="flex items-center gap-2">
                                             <Shield className="h-4 w-4 text-muted-foreground" />
                                             <span className="text-sm font-medium">User Role</span>
@@ -407,7 +407,7 @@ export default function EditPersonalProfile({user}:{user: ProfileUser}) {
                                         </Badge>
                                     </div>
 
-                                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                                    <div className="flex items-center justify-between p-3 border rounded">
                                         <span className="text-sm font-medium">Member Since</span>
                                         <span className="text-sm text-muted-foreground">
                                              {user?.createdAt ? new Date(user.createdAt).toLocaleDateString('en-US', {
@@ -418,7 +418,7 @@ export default function EditPersonalProfile({user}:{user: ProfileUser}) {
                                         </span>
                                     </div>
 
-                                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                                    <div className="flex items-center justify-between p-3 border rounded">
                                         <span className="text-sm font-medium">Email Status</span>
                                         <div className="flex items-center gap-2">
                                             {user?.emailVerified ? (
@@ -444,7 +444,7 @@ export default function EditPersonalProfile({user}:{user: ProfileUser}) {
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between p-3 border rounded-lg">
+                                    <div className="flex items-center justify-between p-3 border rounded">
                                         <span className="text-sm font-medium">Profile Status</span>
                                         <Badge variant={user?.isActive ? "outline" : "destructive"} className={user?.isActive ? "bg-green-50 text-green-700 border-green-200" : ""}>
                                             {user?.isActive ? 'Active' : 'Inactive'}

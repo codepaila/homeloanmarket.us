@@ -198,14 +198,14 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
             <p className="text-sm font-medium text-muted-foreground">Billing</p>
             <h1 className="text-3xl font-semibold tracking-tight">Broker Plan</h1>
           </div>
-          <Link href="/admin/billing/broker-plans" className="rounded-lg border px-3 py-2 text-sm font-medium">Back</Link>
+          <Link href="/admin/billing/broker-plans" className="rounded border px-3 py-2 text-sm font-medium">Back</Link>
         </div>
-        <div className="rounded-xl border bg-card p-6">
+        <div className="rounded border bg-card p-6">
           <p className="text-sm text-destructive">{loadError}</p>
           <button
             type="button"
             onClick={() => { setLoadError(null); setPlan(null); window.location.reload() }}
-            className="mt-4 rounded-lg border px-3 py-2 text-sm font-semibold"
+            className="mt-4 rounded border px-3 py-2 text-sm font-semibold"
           >
             Retry
           </button>
@@ -267,38 +267,38 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
           <h1 className="text-3xl font-semibold tracking-tight">{plan.displayName || plan.name}</h1>
           <p className="mt-1 text-sm text-muted-foreground">{plan.code}</p>
         </div>
-        <Link href="/admin/billing/broker-plans" className="rounded-lg border px-3 py-2 text-sm font-medium">Back</Link>
+        <Link href="/admin/billing/broker-plans" className="rounded border px-3 py-2 text-sm font-medium">Back</Link>
       </div>
 
-      <section className="space-y-4 rounded-xl border bg-card p-6">
+      <section className="space-y-4 rounded border bg-card p-6">
         <h2 className="text-lg font-semibold">Plan information</h2>
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block space-y-1"><span className="text-sm font-medium">Plan</span><div className="flex h-9 items-center rounded-lg border bg-muted/40 px-3 text-sm text-foreground">{plan.displayName || plan.name}</div></label>
-          <label className="block space-y-1"><span className="text-sm font-medium">Code</span><div className="flex h-9 items-center rounded-lg border bg-muted/40 px-3 text-sm text-muted-foreground">{plan.code}</div></label>
+          <label className="block space-y-1"><span className="text-sm font-medium">Plan</span><div className="flex h-9 items-center rounded border bg-muted/40 px-3 text-sm text-foreground">{plan.displayName || plan.name}</div></label>
+          <label className="block space-y-1"><span className="text-sm font-medium">Code</span><div className="flex h-9 items-center rounded border bg-muted/40 px-3 text-sm text-muted-foreground">{plan.code}</div></label>
           <p className="text-xs text-muted-foreground sm:col-span-2">Plan identity and customer-facing name are fixed and cannot be changed.</p>
-          <label className="block space-y-1 sm:col-span-2"><span className="text-sm font-medium">Description</span><textarea value={plan.description || ''} onChange={(e) => setField('description', e.target.value)} className="min-h-16 w-full rounded-lg border bg-background px-3 py-2" /></label>
-          <label className="block space-y-1"><span className="text-sm font-medium">Price (USD)</span><input type="number" min="0" step="0.01" value={plan.price} onChange={(e) => setField('price', Number(e.target.value))} className="w-full rounded-lg border bg-background px-3 py-2" /><span className="text-xs text-muted-foreground">Amount in US dollars. Saved as cents.</span></label>
-          <label className="block space-y-1"><span className="text-sm font-medium">Currency</span><select value={plan.currency} onChange={(e) => setField('currency', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2"><option value="usd">USD</option><option value="eur">EUR</option><option value="gbp">GBP</option></select></label>
-          <label className="block space-y-1"><span className="text-sm font-medium">Billing interval</span><select value={plan.billingInterval} onChange={(e) => setField('billingInterval', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2"><option value="month">month</option><option value="year">year</option><option value="week">week</option><option value="day">day</option></select></label>
-          <label className="block space-y-1"><span className="text-sm font-medium">Display order</span><input type="number" min="0" value={plan.displayOrder} onChange={(e) => setField('displayOrder', Number(e.target.value))} className="w-full rounded-lg border bg-background px-3 py-2" /></label>
+          <label className="block space-y-1 sm:col-span-2"><span className="text-sm font-medium">Description</span><textarea value={plan.description || ''} onChange={(e) => setField('description', e.target.value)} className="min-h-16 w-full rounded border bg-background px-3 py-2" /></label>
+          <label className="block space-y-1"><span className="text-sm font-medium">Price (USD)</span><input type="number" min="0" step="0.01" value={plan.price} onChange={(e) => setField('price', Number(e.target.value))} className="w-full rounded border bg-background px-3 py-2" /><span className="text-xs text-muted-foreground">Amount in US dollars. Saved as cents.</span></label>
+          <label className="block space-y-1"><span className="text-sm font-medium">Currency</span><select value={plan.currency} onChange={(e) => setField('currency', e.target.value)} className="w-full rounded border bg-background px-3 py-2"><option value="usd">USD</option><option value="eur">EUR</option><option value="gbp">GBP</option></select></label>
+          <label className="block space-y-1"><span className="text-sm font-medium">Billing interval</span><select value={plan.billingInterval} onChange={(e) => setField('billingInterval', e.target.value)} className="w-full rounded border bg-background px-3 py-2"><option value="month">month</option><option value="year">year</option><option value="week">week</option><option value="day">day</option></select></label>
+          <label className="block space-y-1"><span className="text-sm font-medium">Display order</span><input type="number" min="0" value={plan.displayOrder} onChange={(e) => setField('displayOrder', Number(e.target.value))} className="w-full rounded border bg-background px-3 py-2" /></label>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium">Status</span>
           <span className={plan.isActive ? 'rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-600' : 'rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground'}>{plan.isActive ? 'Active' : 'Inactive'}</span>
-          <button type="button" onClick={deactivate} className="ml-auto rounded-lg border px-3 py-1.5 text-xs font-semibold">{plan.isActive ? 'Deactivate' : 'Activate'}</button>
+          <button type="button" onClick={deactivate} className="ml-auto rounded border px-3 py-1.5 text-xs font-semibold">{plan.isActive ? 'Deactivate' : 'Activate'}</button>
         </div>
       </section>
 
-      <section className="space-y-3 rounded-xl border bg-card p-6">
+      <section className="space-y-3 rounded border bg-card p-6">
         <h2 className="text-lg font-semibold">Features</h2>
         <p className="text-xs text-muted-foreground">Each feature line appears to customers on plan cards. Toggle availability, edit the display label, set the display order, add custom features, or remove features. Changes save when you click &quot;Save plan&quot;.</p>
 
-        <div className="flex flex-wrap items-end gap-2 rounded-lg border p-3">
+        <div className="flex flex-wrap items-end gap-2 rounded border p-3">
           <label className="block min-w-52 flex-1 space-y-1">
             <span className="text-xs text-muted-foreground">New feature label</span>
-            <input value={newFeature} onChange={(e) => setNewFeature(e.target.value)} placeholder="e.g. Priority Search Visibility" maxLength={120} className="w-full rounded-lg border bg-background px-3 py-2" />
+            <input value={newFeature} onChange={(e) => setNewFeature(e.target.value)} placeholder="e.g. Priority Search Visibility" maxLength={120} className="w-full rounded border bg-background px-3 py-2" />
           </label>
-          <button type="button" onClick={addFeature} disabled={saving} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">Add feature</button>
+          <button type="button" onClick={addFeature} disabled={saving} className="rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">Add feature</button>
         </div>
         {featureError && <p className="text-xs font-medium text-destructive">{featureError}</p>}
 
@@ -306,7 +306,7 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
           <p className="text-xs text-muted-foreground">No features yet. Add a feature above.</p>
         )}
         {features.map((feature, index) => (
-          <div key={feature.id} className="flex items-start justify-between gap-4 rounded-lg border px-4 py-3">
+          <div key={feature.id} className="flex items-start justify-between gap-4 rounded border px-4 py-3">
             <div className="flex-1 space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-sm font-medium">Feature #{index + 1}</span>
@@ -314,11 +314,11 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
               </div>
               <label className="block space-y-1">
                 <span className="text-xs text-muted-foreground">Display label</span>
-                <input value={feature.label} onChange={(e) => updateFeature(feature.id, { label: e.target.value })} placeholder="e.g. Appear in Search Results" className="w-full rounded-lg border bg-background px-3 py-2" maxLength={120} />
+                <input value={feature.label} onChange={(e) => updateFeature(feature.id, { label: e.target.value })} placeholder="e.g. Appear in Search Results" className="w-full rounded border bg-background px-3 py-2" maxLength={120} />
               </label>
               <label className="block space-y-1">
                 <span className="text-xs text-muted-foreground">Display order</span>
-                <input type="number" min="0" value={feature.sortOrder ?? 0} onChange={(e) => updateFeature(feature.id, { sortOrder: Number(e.target.value) })} className="w-full max-w-40 rounded-lg border bg-background px-3 py-2" />
+                <input type="number" min="0" value={feature.sortOrder ?? 0} onChange={(e) => updateFeature(feature.id, { sortOrder: Number(e.target.value) })} className="w-full max-w-40 rounded border bg-background px-3 py-2" />
               </label>
             </div>
             <Switch
@@ -331,19 +331,19 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
         ))}
       </section>
 
-      <section className="space-y-4 rounded-xl border bg-card p-6">
+      <section className="space-y-4 rounded border bg-card p-6">
         <h2 className="text-lg font-semibold">Stripe</h2>
-        <label className="block space-y-1"><span className="text-sm font-medium">Product ID</span><input value={plan.stripeProductId || ''} onChange={(e) => setField('stripeProductId', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2" placeholder="prod_..." /></label>
-        <label className="block space-y-1"><span className="text-sm font-medium">Price ID</span><input value={plan.stripePriceId || ''} onChange={(e) => setField('stripePriceId', e.target.value)} className="w-full rounded-lg border bg-background px-3 py-2" placeholder="price_..." /></label>
+        <label className="block space-y-1"><span className="text-sm font-medium">Product ID</span><input value={plan.stripeProductId || ''} onChange={(e) => setField('stripeProductId', e.target.value)} className="w-full rounded border bg-background px-3 py-2" placeholder="prod_..." /></label>
+        <label className="block space-y-1"><span className="text-sm font-medium">Price ID</span><input value={plan.stripePriceId || ''} onChange={(e) => setField('stripePriceId', e.target.value)} className="w-full rounded border bg-background px-3 py-2" placeholder="price_..." /></label>
         <p className="text-xs text-muted-foreground">Stripe identifiers are validated against the Stripe API when saved. Secret keys are never exposed.</p>
       </section>
 
       <div className="flex items-center gap-2">
-        <button onClick={save} disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
+        <button onClick={save} disabled={saving} className="inline-flex items-center gap-2 rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
           {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
           {saving ? 'Saving...' : 'Save plan'}
         </button>
-        <button onClick={remove} disabled={deleting || subscriberCount > 0} className="ml-auto inline-flex items-center gap-2 rounded-lg border border-destructive px-4 py-2 text-sm font-semibold text-destructive disabled:opacity-50">
+        <button onClick={remove} disabled={deleting || subscriberCount > 0} className="ml-auto inline-flex items-center gap-2 rounded border border-destructive px-4 py-2 text-sm font-semibold text-destructive disabled:opacity-50">
           {deleting ? 'Deleting…' : 'Delete'}
         </button>
       </div>

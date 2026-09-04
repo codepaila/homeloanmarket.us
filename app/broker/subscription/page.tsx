@@ -259,7 +259,7 @@ export default function SubscriptionPage() {
                 <h4 className="font-medium mb-4">Included Features</h4>
                 <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
                   {planConfig.features.length > 0 ? planConfig.features.map((feature: string, idx: number) => (
-                    <div key={idx} className="flex items-center gap-2 p-3 border rounded-lg">
+                    <div key={idx} className="flex items-center gap-2 p-3 border rounded">
                       <CheckCircle className="h-5 w-5 text-green-500" />
                       <div>
                         <div className="font-medium">{feature}</div>
@@ -267,7 +267,7 @@ export default function SubscriptionPage() {
                       </div>
                     </div>
                   )) : (
-                    <div className="flex items-center gap-2 p-3 border rounded-lg">
+                    <div className="flex items-center gap-2 p-3 border rounded">
                       <CheckCircle className="h-5 w-5 text-green-500" />
                       <div>
                         <div className="font-medium">Standard listing</div>
@@ -326,7 +326,7 @@ export default function SubscriptionPage() {
                         {usageData.usage?.profileViews || 0}
                       </p>
                     </div>
-                    <Eye className="h-10 w-10 text-purple-100 bg-purple-500/20 p-2 rounded-lg" />
+                    <Eye className="h-10 w-10 text-purple-100 bg-purple-500/20 p-2 rounded" />
                   </div>
                   <div className="mt-4 text-sm text-muted-foreground">
                     +{(usageData.usage?.profileViews || 0) > 100 ? 'High' : 'Growing'} visibility
@@ -351,7 +351,7 @@ export default function SubscriptionPage() {
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-3">
                   {planConfig.features.map((feature: string, idx: number) => (
-                    <div key={idx} className="p-4 border rounded-lg">
+                    <div key={idx} className="p-4 border rounded">
                       <div className="flex items-center gap-3 mb-3">
                         <Zap className="h-8 w-8 text-yellow-500" />
                         <div>
@@ -365,7 +365,7 @@ export default function SubscriptionPage() {
                     </div>
                   ))}
                   {planConfig.features.length === 0 && (
-                    <div className="p-4 border rounded-lg">
+                    <div className="p-4 border rounded">
                       <div className="flex items-center gap-3 mb-3">
                         <CheckCircle className="h-8 w-8 text-green-500" />
                         <div>

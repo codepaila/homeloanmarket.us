@@ -129,7 +129,7 @@ export default function AdminBrokerActions({ broker }: { broker: AdminBroker }) 
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
-      <form onSubmit={updateProfile} className="space-y-4 rounded-xl border bg-card p-6">
+      <form onSubmit={updateProfile} className="space-y-4 rounded border bg-card p-6">
         <h2 className="text-xl font-semibold">Profile details</h2>
         <div className="flex flex-col sm:flex-row items-start gap-4">
           <ProfileImageUpload
@@ -151,10 +151,10 @@ export default function AdminBrokerActions({ broker }: { broker: AdminBroker }) 
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          {(['displayName', 'companyName', 'phone', 'email', 'officeAddress', 'city', 'state', 'pinCode'] as const).map((field) => <label key={field} className="space-y-1"><span className="text-sm font-medium">{field}</span><input value={form[field] || ''} onChange={(event) => setForm({ ...form, [field]: event.target.value })} className="w-full rounded-lg border bg-background px-3 py-2" /></label>)}
-          <label className="space-y-1"><span className="text-sm font-medium">NMLS ID</span><input value={form.nmls || ''} onChange={(event) => setForm({ ...form, nmls: event.target.value })} className="w-full rounded-lg border bg-background px-3 py-2" placeholder="12345678" /></label>
+          {(['displayName', 'companyName', 'phone', 'email', 'officeAddress', 'city', 'state', 'pinCode'] as const).map((field) => <label key={field} className="space-y-1"><span className="text-sm font-medium">{field}</span><input value={form[field] || ''} onChange={(event) => setForm({ ...form, [field]: event.target.value })} className="w-full rounded border bg-background px-3 py-2" /></label>)}
+          <label className="space-y-1"><span className="text-sm font-medium">NMLS ID</span><input value={form.nmls || ''} onChange={(event) => setForm({ ...form, nmls: event.target.value })} className="w-full rounded border bg-background px-3 py-2" placeholder="12345678" /></label>
         </div>
-        <div className="space-y-3 rounded-lg border bg-muted/20 p-4">
+        <div className="space-y-3 rounded border bg-muted/20 p-4">
           <div>
             <p className="text-sm font-medium">License States</p>
             <p className="text-sm text-muted-foreground">US states where this broker is licensed to originate mortgages.</p>
@@ -176,27 +176,27 @@ export default function AdminBrokerActions({ broker }: { broker: AdminBroker }) 
             })}
           </div>
         </div>
-        <label className="block space-y-1"><span className="text-sm font-medium">Description</span><textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className="min-h-28 w-full rounded-lg border bg-background px-3 py-2" /></label>
+        <label className="block space-y-1"><span className="text-sm font-medium">Description</span><textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} className="min-h-28 w-full rounded border bg-background px-3 py-2" /></label>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.verificationStatus === 'VERIFIED'} onChange={(event) => setForm({ ...form, verificationStatus: event.target.checked ? 'VERIFIED' : 'UNVERIFIED' })} /> Mark profile verified after review</label>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.isVisible} onChange={(event) => setForm({ ...form, isVisible: event.target.checked })} /> Publish profile after review</label>
-        <button disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
+        <button disabled={saving} className="inline-flex items-center gap-2 rounded bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
           {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
           {saving ? 'Saving…' : 'Save profile'}
         </button>
       </form>
-      <div className="space-y-4 rounded-xl border bg-card p-6">
-        <div className="border-b pb-4"><h2 className="text-xl font-semibold">Location</h2><p className="mt-1 text-sm text-muted-foreground">Resolve the stored office address before enabling radius search.</p><button type="button" disabled={saving} onClick={resolveLocation} className="inline-flex items-center gap-2 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-primary disabled:opacity-50">{saving && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />}Resolve Location</button></div>
+      <div className="space-y-4 rounded border bg-card p-6">
+        <div className="border-b pb-4"><h2 className="text-xl font-semibold">Location</h2><p className="mt-1 text-sm text-muted-foreground">Resolve the stored office address before enabling radius search.</p><button type="button" disabled={saving} onClick={resolveLocation} className="inline-flex items-center gap-2 rounded border border-primary px-3 py-2 text-sm font-semibold text-primary disabled:opacity-50">{saving && <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />}Resolve Location</button></div>
         <h2 className="text-xl font-semibold">Claim readiness</h2>
         <p className="text-sm text-muted-foreground">The profile remains unowned. Sending an invitation does not complete ownership.</p>
-        <label className="block space-y-1"><span className="text-sm font-medium">Invitation recipient</span><input type="email" value={deliveryEmail} onChange={(event) => setDeliveryEmail(event.target.value)} placeholder="Company delivery email" className="w-full rounded-lg border bg-background px-3 py-2" /></label>
+        <label className="block space-y-1"><span className="text-sm font-medium">Invitation recipient</span><input type="email" value={deliveryEmail} onChange={(event) => setDeliveryEmail(event.target.value)} placeholder="Company delivery email" className="w-full rounded border bg-background px-3 py-2" /></label>
         <div className="flex flex-wrap gap-2">
-          <button disabled={isSending || !deliveryEmail} aria-busy={isSending} onClick={() => issueInvitation(activeInvitation ? `/api/admin/claim-invitations/${activeInvitation.id}/resend` : `/api/admin/brokers/${broker.id}/claim-invitations`)} className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
+          <button disabled={isSending || !deliveryEmail} aria-busy={isSending} onClick={() => issueInvitation(activeInvitation ? `/api/admin/claim-invitations/${activeInvitation.id}/resend` : `/api/admin/brokers/${broker.id}/claim-invitations`)} className="inline-flex items-center gap-2 rounded bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
             {isSending ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
             {isSending ? 'Sending…' : activeInvitation ? 'Resend invitation' : 'Send invitation'}
           </button>
-          {activeInvitation && <button disabled={isSending} onClick={() => revokeInvitation(activeInvitation.id)} className="rounded-lg border border-destructive px-3 py-2 text-sm text-destructive disabled:opacity-50">Revoke active</button>}
+          {activeInvitation && <button disabled={isSending} onClick={() => revokeInvitation(activeInvitation.id)} className="rounded border border-destructive px-3 py-2 text-sm text-destructive disabled:opacity-50">Revoke active</button>}
         </div>
-        {claimLink && <button type="button" onClick={() => navigator.clipboard.writeText(claimLink).then(() => toast.success('Claim link copied.'))} className="rounded-lg border px-3 py-2 text-sm">Copy Claim Link</button>}
+        {claimLink && <button type="button" onClick={() => navigator.clipboard.writeText(claimLink).then(() => toast.success('Claim link copied.'))} className="rounded border px-3 py-2 text-sm">Copy Claim Link</button>}
         {broker.claim?.invitations && broker.claim.invitations.length > 0 && <div className="space-y-2 border-t pt-4"><p className="text-sm font-medium">Invitation history</p>{broker.claim.invitations.map((item) => <div key={item.id} className="grid grid-cols-[1fr_auto] gap-2 text-xs text-muted-foreground"><span>{item.recipientEmail} · {item.status}</span><span>{new Date(item.createdAt).toLocaleString()}</span></div>)}</div>}
         <div className="mt-6 border-t border-destructive/30 pt-4">
           <p className="text-sm font-medium text-destructive">Danger zone</p>

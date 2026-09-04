@@ -38,7 +38,7 @@ const footerColumns = [
       { name: 'About Us', href: '/about' },
       { name: 'Contact', href: '/contact' },
       { name: 'Subscription Plans', href: '/subscription' },
-      { name: 'Become a Mortgage Originator', href: '/register' },
+      { name: 'Become a Mortgage Originator', href: '/auth/signup' },
     ],
   },
   {
@@ -78,7 +78,7 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
           key === 'linkedin' ? 'socialLinkedIn' :
             key === 'instagram' ? 'socialInstagram' : 'socialYouTube'
     return { name: key, href: settings?.[settingKey] || '', icon: SOCIAL_ICONS[key] }
-  }).filter((social) => social.href)
+  }).filter((social) => social.href && social.href.trim() !== '');
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -126,7 +126,7 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
           <div className="w-full lg:max-w-md">
             <form
               onSubmit={handleSubscribe}
-              className="flex w-full items-center gap-2 rounded-lg border border-border bg-background p-1.5 shadow-soft"
+              className="flex w-full items-center gap-2 rounded border border-border bg-background p-1.5 shadow-soft"
             >
               <input
                 type="email"
@@ -166,7 +166,7 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
               <Logo
                 src={settings?.siteLogo}
                 alt={settings?.siteName || 'HomeLoanMarket'}
-                className="h-9 max-w-40"
+                className="h-12 max-w-56"
               />
             </Link>
             <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
@@ -177,10 +177,13 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
                 <motion.a
                   key={social.name}
                   href={social.href}
+
+                  target='_blank'
+                  rel={"noopener noreferrer"}
                   aria-label={social.name}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+                  className="flex h-9 w-9 items-center justify-center rounded border border-border bg-background text-muted-foreground transition-colors hover:border-primary hover:text-primary"
                 >
                   <social.icon className="h-4 w-4" />
                 </motion.a>
@@ -220,7 +223,7 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
           <ul className="mt-5 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:gap-x-10">
             {contactInfo.map((item) => (
               <li key={item.label} className="flex items-center gap-2.5">
-                <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded bg-primary/10">
                   <item.icon className="h-3.5 w-3.5 text-primary" />
                 </span>
                 <span>

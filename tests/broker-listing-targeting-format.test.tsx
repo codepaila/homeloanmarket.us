@@ -99,6 +99,7 @@ test('admin preview derives BROKER_LISTING_LOCAL card aspect from the format', (
   assert.match(preview, /format={activePreviewFormat}/)
   assert.match(preview, /formatAspectRatio\(format\)/)
   assert.doesNotMatch(preview, /aspect-square overflow-hidden rounded-md bg-muted/)
+  assert.doesNotMatch(preview, /aspect-square overflow-hidden rounded bg-muted/)
 })
 
 // ---------------------------------------------------------------------------
@@ -110,7 +111,7 @@ test('public renderer uses format-derived aspect and DisplayBannerCard for BANNE
   assert.match(renderer, /formatAspectClass\(ad\.creativeFormat\)/)
   assert.match(renderer, /isDisplayBanner = ad\.creativeFormat === 'BANNER' \|\| ad\.creativeFormat === 'WIDE_RECTANGLE'/)
   assert.match(renderer, /DisplayBannerCard ad=\{ad\} \/>/)
-  assert.doesNotMatch(renderer, /aspect-square min-w-0 overflow-hidden rounded-lg bg-card/)
+  assert.doesNotMatch(renderer, /aspect-square min-w-0 overflow-hidden rounded bg-card/)
 })
 
 function bannerAd(id: string, format: 'SQUARE' | 'BANNER' | 'WIDE_RECTANGLE' = 'SQUARE'): PublicAdResponse {

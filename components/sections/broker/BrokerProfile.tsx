@@ -115,17 +115,17 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
   return (
     <div className="space-y-6">
       {/* Profile Header */}
-      <div className="bg-gradient-to-r from-primary to-primary/80 rounded-xl p-6 text-white">
+      <div className="bg-gradient-to-r from-primary to-primary/80 rounded p-6 text-white">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
           <div className="flex items-start gap-4">
             {broker?.logo ? (
               <img
                 src={broker.logo}
                 alt={broker.companyName ?? undefined}
-                className="h-20 w-20 rounded-xl border-4 border-white/20"
+                className="h-20 w-20 rounded border-4 border-white/20"
               />
             ) : (
-              <div className="h-20 w-20 rounded-xl bg-white/20 flex items-center justify-center">
+              <div className="h-20 w-20 rounded bg-white/20 flex items-center justify-center">
                 <Building className="h-10 w-10" />
               </div>
             )}
@@ -332,7 +332,7 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
               <div className="space-y-4">
                 <div>
                   <h4 className="font-medium mb-2">Verification Status</h4>
-                  <div className={`p-4 rounded-lg border ${verificationStatus.color === 'success' ? 'bg-green-50 border-green-200' :
+                  <div className={`p-4 rounded border ${verificationStatus.color === 'success' ? 'bg-green-50 border-green-200' :
                     verificationStatus.color === 'warning' ? 'bg-yellow-50 border-yellow-200' :
                     'bg-muted border-border'}`}>
                     <div className="flex items-center gap-2 mb-2">
@@ -404,7 +404,7 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 border rounded-lg">
+                <div className="text-center py-8 border rounded">
                   <Banknote className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                   <p className="text-muted-foreground">No bank partnerships added</p>
                   <Button className="mt-4" variant="outline" asChild>
@@ -487,11 +487,11 @@ export function BrokerProfile({ user }: BrokerProfileProps) {
                 <div className="space-y-4">
                   <h3 className="font-medium">Key Metrics</h3>
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center p-3 border rounded-lg">
+                    <div className="flex justify-between items-center p-3 border rounded">
                       <span className="text-muted-foreground">Total Profile Views</span>
                       <span className="font-bold text-lg">{broker?.profileViews || 0}</span>
                     </div>
-                    <div className="flex justify-between items-center p-3 border rounded-lg">
+                    <div className="flex justify-between items-center p-3 border rounded">
                       <span className="text-muted-foreground">Total Reviews</span>
                       <span className="font-bold text-lg">{broker?.totalReviews || 0}</span>
                     </div>

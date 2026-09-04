@@ -116,7 +116,7 @@ export function CoverImageUpload({
         <p className="text-xs text-muted-foreground">Wide banner shown at the top of the public mortgage originator profile. Recommended: 1600 × 500 px (16:5).</p>
       </div>
 
-      <div className="relative aspect-[16/5] w-full max-w-md overflow-hidden rounded-xl border border-border bg-muted">
+      <div className="relative aspect-[16/5] w-full max-w-md overflow-hidden rounded border border-border bg-muted">
         {preview ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={preview} alt={label} className="h-full w-full object-cover" />
@@ -139,7 +139,7 @@ export function CoverImageUpload({
           type="button"
           disabled={busy}
           onClick={() => inputRef.current?.click()}
-          className="inline-flex items-center gap-2 rounded-lg border border-primary px-3 py-2 text-sm font-semibold text-primary disabled:opacity-50"
+          className="inline-flex items-center gap-2 rounded border border-primary px-3 py-2 text-sm font-semibold text-primary disabled:opacity-50"
         >
           {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Upload className="h-3.5 w-3.5" aria-hidden="true" />}
           {uploading ? 'Uploading…' : preview ? 'Replace cover' : 'Upload from device'}
@@ -150,7 +150,7 @@ export function CoverImageUpload({
             type="button"
             disabled={busy}
             onClick={() => { setError(null); setPickerOpen(true) }}
-            className="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded border px-3 py-2 text-sm font-semibold disabled:opacity-50"
           >
             {applyingMedia ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <ImageIcon className="h-3.5 w-3.5" aria-hidden="true" />}
             {applyingMedia ? 'Applying…' : 'Choose from Media'}
@@ -162,7 +162,7 @@ export function CoverImageUpload({
             type="button"
             disabled={busy}
             onClick={handleRemove}
-            className="rounded-lg border border-destructive px-3 py-2 text-sm font-semibold text-destructive disabled:opacity-50"
+            className="rounded border border-destructive px-3 py-2 text-sm font-semibold text-destructive disabled:opacity-50"
           >
             {removing ? 'Removing…' : 'Remove'}
           </button>

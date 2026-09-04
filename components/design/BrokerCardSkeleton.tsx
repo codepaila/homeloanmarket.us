@@ -103,13 +103,13 @@ export function BrokerListingSkeleton({ count = 9 }: { count?: number }) {
       <section aria-hidden="true" className="sticky top-16 z-30 border-b border-border bg-card/80 backdrop-blur-lg md:top-[72px]">
         <div className="container-custom grid grid-cols-5 items-center gap-3 py-4 md:gap-5 md:py-5">
           <div className="col-span-4 sm:col-span-3">
-            <SkeletonSubtle className="h-10 w-full rounded-xl" />
+            <SkeletonSubtle className="h-10 w-full rounded" />
           </div>
           <div className="col-span-1 hidden sm:block">
             <SkeletonSubtle className="h-4 w-16" />
           </div>
           <div className="col-span-1 flex justify-end">
-            <SkeletonSubtle className="h-9 w-12 rounded-lg sm:w-24" />
+            <SkeletonSubtle className="h-9 w-12 rounded sm:w-24" />
           </div>
         </div>
       </section>

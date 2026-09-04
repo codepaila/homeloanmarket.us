@@ -85,8 +85,8 @@ export default function BrokerDetailClientMainForLater({ brokerSlug, initialBrok
         <div className="mx-auto max-w-7xl px-4">
           <Skeleton className="h-64 w-full rounded-b-3xl mb-8" />
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-            <Skeleton className="h-[520px] w-full rounded-2xl lg:col-span-1" />
-            <Skeleton className="h-[520px] w-full rounded-2xl lg:col-span-2" />
+            <Skeleton className="h-[520px] w-full rounded lg:col-span-1" />
+            <Skeleton className="h-[520px] w-full rounded lg:col-span-2" />
           </div>
         </div>
       </div>
@@ -157,7 +157,7 @@ export default function BrokerDetailClientMainForLater({ brokerSlug, initialBrok
 
         {/* Profile overlap */}
         <div className="absolute left-1/2 -bottom-16 -translate-x-1/2 md:left-8 md:translate-x-0">
-          <div className="relative flex h-32 w-32 items-center justify-center rounded-2xl border-4 border-background bg-card shadow-large overflow-hidden">
+          <div className="relative flex h-32 w-32 items-center justify-center rounded border-4 border-background bg-card shadow-large overflow-hidden">
             <BrokerAvatar src={profileImage || logo} alt={displayName || companyName} name={displayName || companyName} className="h-full w-full" />
           </div>
 
@@ -252,11 +252,11 @@ export default function BrokerDetailClientMainForLater({ brokerSlug, initialBrok
         </header>
 
         {/* <div className="mt-5 flex flex-col items-center gap-2 sm:flex-row sm:justify-center md:justify-start">
-          <button type="button" onClick={() => setActiveTab('contact')} className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-primary/90 sm:w-auto">
+          <button type="button" onClick={() => setActiveTab('contact')} className="inline-flex w-full items-center justify-center gap-2 rounded bg-primary px-5 py-3 text-sm font-semibold text-white shadow-soft transition hover:bg-primary/90 sm:w-auto">
             <MessageCircle className="h-4 w-4" />
             Request Information
           </button>
-          <button type="button" onClick={() => setActiveTab('reviews')} className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-5 py-3 text-sm font-semibold text-foreground transition hover:border-primary hover:text-primary sm:w-auto">
+          <button type="button" onClick={() => setActiveTab('reviews')} className="inline-flex w-full items-center justify-center gap-2 rounded border border-border bg-card px-5 py-3 text-sm font-semibold text-foreground transition hover:border-primary hover:text-primary sm:w-auto">
             <Star className="h-4 w-4" />
             Read Reviews
           </button>
@@ -688,7 +688,7 @@ function ReviewsSection({
         <button
           type="button"
           onClick={onWriteReview}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90"
+          className="inline-flex items-center gap-2 rounded bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary/90"
         >
           <Star className="h-4 w-4" />
           Write a Review
@@ -718,7 +718,7 @@ function ReviewsSection({
 
 function ReviewItem({ review }: { review: any }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-6">
+    <div className="rounded border border-border bg-card p-6">
       <div className="flex items-start gap-4">
         <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-muted overflow-hidden">
           {review.user?.image ? (
@@ -775,7 +775,7 @@ function StatBox({
   value: string | number
 }) {
   return (
-    <div className="rounded-xl border border-border bg-muted/30 p-4 text-center">
+    <div className="rounded border border-border bg-muted/30 p-4 text-center">
       <div className="text-2xl font-bold text-primary">{value}</div>
       <div className="text-xs text-muted-foreground">{label}</div>
     </div>

@@ -74,14 +74,14 @@ export default async function AdminAdvertisementRequestsPage() {
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {summary.map((card) => (
-          <div key={card.label} className="rounded-xl border bg-card p-4">
+          <div key={card.label} className="rounded border bg-card p-4">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{card.label}</p>
             <p className={`mt-2 inline-flex rounded-full px-2.5 py-0.5 text-xl font-bold ${card.className}`}>{card.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="overflow-x-auto rounded-xl border bg-card">
+      <div className="overflow-x-auto rounded border bg-card">
         <table className="w-full min-w-[860px] text-left text-sm">
           <thead className="border-b bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>

@@ -94,7 +94,7 @@ const ImageUpload = ({ onChange, value, type = 'logo', className = '', aspectRat
           }
         }}
         className={cn(
-          'cursor-pointer border-2 border-dashed border-border rounded-lg overflow-hidden hover:border-primary transition-colors',
+          'cursor-pointer border-2 border-dashed border-border rounded overflow-hidden hover:border-primary transition-colors',
           getDimensions(),
           getAspectRatioClass(),
           className,

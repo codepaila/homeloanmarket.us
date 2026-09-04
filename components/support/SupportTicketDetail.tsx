@@ -103,7 +103,7 @@ export function SupportTicketDetail({
                 {messages.map((message) => {
                   const fromBroker = message.senderType === 'user'
                   return (
-                    <div key={message.id} className={`rounded-lg border p-4 ${fromBroker ? 'bg-muted/40' : 'bg-primary/5'}`}>
+                    <div key={message.id} className={`rounded border p-4 ${fromBroker ? 'bg-muted/40' : 'bg-primary/5'}`}>
                       <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-medium">{message.senderName || (fromBroker ? 'You' : 'Support')}</span>
