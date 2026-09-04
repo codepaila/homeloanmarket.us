@@ -7,6 +7,18 @@ import Link from 'next/link'
 import { Loader2 } from 'lucide-react'
 import { Switch } from '@/components/ui/switch'
 
+// Stable client-only identity for features that have not been persisted yet.
+// It is never sent to the server as a database id (the API treats a row without
+// a DB id as a new feature). Prefixing makes it unambiguous and collision-free.
+let clientFeatureSeq = 0
+function newClientFeatureId(): string {
+  clientFeatureSeq += 1
+  const rand = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID().slice(0, 8)
+    : Math.random().toString(36).slice(2, 10)
+  return `new-${clientFeatureSeq}-${rand}`
+}
+
 type PlanFeature = { id: string; label: string; enabled: boolean; sortOrder: number }
 
 type Plan = {
@@ -37,32 +49,26 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
 
   async function fetchPlan(planId: string) {
     const response = await fetch(`/api/admin/broker-plans/${planId}`)
-    const data = await response.json()
-    if (response.ok && data.plan) {
-      setPlan({ ...data.plan, price: data.plan.price / 100 })
+    const data = await response.json().catch(() => null)
+    if (!response.ok) {
+      throw new Error(data?.message || `Unable to load plan (${response.status})`)
     }
+    if (!data?.plan) {
+      throw new Error('Unable to load plan: unexpected response')
+    }
+    setPlan({ ...data.plan, price: data.plan.price / 100 })
   }
 
   useEffect(() => {
     let cancelled = false
     void params.then(({ id: planId }) => {
-      void fetch(`/api/admin/broker-plans/${planId}`).then(async (response) => {
-        const data = await response.json()
+      fetchPlan(planId).catch((error) => {
         if (cancelled) return
-        if (!response.ok || !data.plan) {
-          setLoadError(data.message || 'Unable to load plan')
-          return
-        }
-        // Price is stored in cents by the API; the UI edits it in USD so it
-        // matches the create form and the price an admin actually sees.
-        setPlan({ ...data.plan, price: data.plan.price / 100 })
-      }).catch(() => {
-        if (!cancelled) setLoadError('Unable to load plan')
+        setLoadError(error instanceof Error ? error.message : 'Unable to load plan')
       })
     })
     return () => { cancelled = true }
   }, [params])
-
   const setField = (key: keyof Plan, value: string | boolean | number) => {
     if (!plan) return
     setPlan({ ...plan, [key]: value as never })
@@ -71,6 +77,32 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
   async function save() {
     if (saving || !plan) return
     const planId = plan.id
+    // Validate every feature label before persisting. Both persisted and newly
+    // added rows must have a trimmed, non-empty label of 120 chars or fewer.
+    // Duplicate labels on the same plan are rejected (matches the add-feature
+    // policy). Invalid input is surfaced and save is aborted — no silent loss.
+    const trimmedFeatures = plan.features.map((f) => ({ ...f, label: f.label.trim() }))
+    for (const f of trimmedFeatures) {
+      if (!f.label) {
+        setSaving(false)
+        toast.error('Every feature needs a non-empty display label.')
+        return
+      }
+      if (f.label.length > 120) {
+        setSaving(false)
+        toast.error(`Feature label must be 120 characters or fewer: "${f.label}".`)
+        return
+      }
+    }
+    const seenLabels = new Set<string>()
+    for (const f of trimmedFeatures) {
+      if (seenLabels.has(f.label)) {
+        setSaving(false)
+        toast.error(`Duplicate feature label on this plan: "${f.label}".`)
+        return
+      }
+      seenLabels.add(f.label)
+    }
     setSaving(true)
     try {
       const response = await fetch(`/api/admin/broker-plans/${planId}`, {
@@ -85,7 +117,18 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
           isActive: plan.isActive,
           stripeProductId: plan.stripeProductId || '',
           stripePriceId: plan.stripePriceId || '',
-          features: plan.features.map((f) => ({ id: f.id, label: f.label, enabled: f.enabled, sortOrder: f.sortOrder })),
+          // Persisted features carry their DB id; newly added features carry a
+          // client-only temporary id (starts with "new-") which must be omitted
+          // so the API treats them as rows to create rather than foreign ones.
+          features: trimmedFeatures.map((f) => {
+            const isPersisted = f.id && !f.id.startsWith('new-')
+            return {
+              ...(isPersisted ? { id: f.id } : {}),
+              label: f.label,
+              enabled: f.enabled,
+              sortOrder: f.sortOrder,
+            }
+          }),
         }),
       })
       const data = await response.json()
@@ -100,13 +143,12 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
     }
   }
 
-  async function toggleFeature(index: number, enabled: boolean) {
+  function toggleFeature(featureId: string, enabled: boolean) {
     if (!plan) return
     setPlan({
       ...plan,
-      features: plan.features.map((f, i) => (i === index ? { ...f, enabled } : f)),
+      features: plan.features.map((f) => (f.id === featureId ? { ...f, enabled } : f)),
     })
-    await save()
   }
 
   async function deactivate() {
@@ -180,11 +222,11 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
 
   const features = [...plan.features].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
 
-  const updateFeature = (index: number, patch: Partial<Pick<PlanFeature, 'label' | 'enabled' | 'sortOrder'>>) => {
+  const updateFeature = (featureId: string, patch: Partial<Pick<PlanFeature, 'label' | 'enabled' | 'sortOrder'>>) => {
     if (!plan) return
     setPlan({
       ...plan,
-      features: plan.features.map((f, i) => (i === index ? { ...f, ...patch } : f)),
+      features: plan.features.map((f) => (f.id === featureId ? { ...f, ...patch } : f)),
     })
   }
 
@@ -205,18 +247,17 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
     }
     setPlan({
       ...plan,
-      features: [...plan.features, { id: '', label, enabled: true, sortOrder: Math.max(0, ...plan.features.map((f) => f.sortOrder ?? 0)) + 10 }],
+      features: [...plan.features, { id: newClientFeatureId(), label, enabled: true, sortOrder: Math.max(0, ...plan.features.map((f) => f.sortOrder ?? 0)) + 10 }],
     })
     setNewFeature('')
     setFeatureError(null)
-    void save()
   }
 
-  function removeFeature(index: number) {
+  function removeFeature(featureId: string) {
     if (!plan) return
-    setPlan({ ...plan, features: plan.features.filter((_, i) => i !== index) })
-    void save()
+    setPlan({ ...plan, features: plan.features.filter((f) => f.id !== featureId) })
   }
+
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -265,25 +306,25 @@ export default function BrokerPlanDetailPage({ params }: { params: Promise<{ id:
           <p className="text-xs text-muted-foreground">No features yet. Add a feature above.</p>
         )}
         {features.map((feature, index) => (
-          <div key={feature.id || `new-${index}`} className="flex items-start justify-between gap-4 rounded-lg border px-4 py-3">
+          <div key={feature.id} className="flex items-start justify-between gap-4 rounded-lg border px-4 py-3">
             <div className="flex-1 space-y-2">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-sm font-medium">Feature #{index + 1}</span>
-                <button type="button" onClick={() => removeFeature(index)} disabled={saving} aria-label={`Remove feature ${index + 1}`} className="rounded-md border border-destructive/40 px-2 py-0.5 text-xs font-medium text-destructive hover:bg-destructive/10">Remove</button>
+                <button type="button" onClick={() => removeFeature(feature.id)} disabled={saving} aria-label={`Remove feature ${index + 1}`} className="rounded-md border border-destructive/40 px-2 py-0.5 text-xs font-medium text-destructive hover:bg-destructive/10">Remove</button>
               </div>
               <label className="block space-y-1">
                 <span className="text-xs text-muted-foreground">Display label</span>
-                <input value={feature.label} onChange={(e) => updateFeature(index, { label: e.target.value })} placeholder="e.g. Appear in Search Results" className="w-full rounded-lg border bg-background px-3 py-2" maxLength={120} />
+                <input value={feature.label} onChange={(e) => updateFeature(feature.id, { label: e.target.value })} placeholder="e.g. Appear in Search Results" className="w-full rounded-lg border bg-background px-3 py-2" maxLength={120} />
               </label>
               <label className="block space-y-1">
                 <span className="text-xs text-muted-foreground">Display order</span>
-                <input type="number" min="0" value={feature.sortOrder ?? 0} onChange={(e) => updateFeature(index, { sortOrder: Number(e.target.value) })} className="w-full max-w-40 rounded-lg border bg-background px-3 py-2" />
+                <input type="number" min="0" value={feature.sortOrder ?? 0} onChange={(e) => updateFeature(feature.id, { sortOrder: Number(e.target.value) })} className="w-full max-w-40 rounded-lg border bg-background px-3 py-2" />
               </label>
             </div>
             <Switch
               checked={feature.enabled}
               disabled={saving}
-              onCheckedChange={(checked) => void toggleFeature(index, checked)}
+              onCheckedChange={(checked) => toggleFeature(feature.id, checked)}
               aria-label={`Feature ${index + 1} ${feature.enabled ? 'enabled' : 'disabled'}`}
             />
           </div>

@@ -38,12 +38,12 @@ const navigation = [
     icon: Home,
   },
   {
-    name: 'Find Mortgage Originators',
+    name: 'Find a Mortgage Originator',
     href: '/brokers',
     icon: Briefcase,
   },
   {
-    name: 'Mortgage Calculator',
+    name: ' Calculator',
     href: '/calculator',
     icon: Calculator,
   },

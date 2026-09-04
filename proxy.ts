@@ -52,7 +52,7 @@ function secureSessionCookies(): boolean {
 //   API PATHS (method-aware)
 //   /api/auth/*                    (Auth.js handler — public by design)
 //   /api/claims/*                  (public claim flow)
-//   /api/brokers/*                 (public broker directory; EXCLUDES /me)
+//   /api/brokers, /api/brokers/*  (public broker directory; EXCLUDES /me)
 //   /api/brokers/me/*              (PROTECTED — must never be public)
 //   /api/company/*                 (public company directory + register)
 //   /api/cities, /api/states,
@@ -136,6 +136,7 @@ export default async function proxy(request: NextRequest) {
     || path.startsWith('/api/claims')
     || path.startsWith('/uploads')
     || (path.startsWith('/brokers/') && !path.includes('/dashboard'))
+    || (path === '/api/brokers')
     || (path.startsWith('/api/brokers/') && !path.includes('/me'))
     || path.startsWith('/api/company/')
     || path.startsWith('/api/location')

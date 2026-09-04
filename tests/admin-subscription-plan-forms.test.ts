@@ -123,9 +123,14 @@ test('broker edit form loads price in USD and saves back in cents (create/edit p
   assert.match(brokerDetailPage, /Price \(USD\)/)
 })
 
-test('broker edit form toggles and updates feature array rows by index', () => {
-  assert.match(brokerDetailPage, /updateFeature/)
+test('broker edit form updates feature rows by stable feature id, not display index', () => {
+  assert.match(brokerDetailPage, /updateFeature\(feature\.id/)
+  assert.match(brokerDetailPage, /toggleFeature\(feature\.id/)
+  assert.match(brokerDetailPage, /removeFeature\(feature\.id/)
   assert.match(brokerDetailPage, /const features = \[\.\.\.plan\.features\]/)
+  // Mutation handlers must never target the sorted display index against the
+  // unsorted plan.features source array.
+  assert.doesNotMatch(brokerDetailPage, /plan\.features\.map\(\(f, i\) => i === index/)
 })
 
 test('broker edit form surfaces a load-error state instead of hanging on loading', () => {

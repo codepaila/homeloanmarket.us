@@ -61,7 +61,10 @@ export default async function AdminBrokerPlansPage() {
           </thead>
           <tbody className="divide-y divide-border">
             {plans.map((plan) => {
-              const featureLabels = plan.features.filter((feature) => feature.enabled).map((feature) => feature.label)
+              const featureLabels = plan.features
+      .filter((feature) => feature.enabled)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((feature) => feature.label)
               return (
                 <tr key={plan.id}>
                   <td className="px-4 py-3">

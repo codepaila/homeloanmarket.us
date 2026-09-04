@@ -33,11 +33,6 @@ const RELATED_SELECT = {
       plan: true,
       isActive: true,
       endDate: true,
-      planRef: {
-        select: {
-          features: { select: { code: true, enabled: true } },
-        },
-      },
     },
   },
 } as const
