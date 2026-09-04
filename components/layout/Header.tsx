@@ -42,12 +42,12 @@ const navigation = [
     href: '/brokers',
     icon: Briefcase,
   },
+  { name: 'Blogs', href: '/blog', icon: BookOpen },
   {
     name: ' Calculator',
     href: '/calculator',
     icon: Calculator,
   },
-  { name: 'Blogs', href: '/blog', icon: BookOpen },
   { name: 'About', href: '/about', icon: Info },
   { name: 'Contact', href: '/contact', icon: Phone },
 ]
@@ -157,10 +157,10 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
     navigation[0],
     navigation[1],
     navigation[2],
-    ...(dashboardNavItem ? [dashboardNavItem] : []),
     navigation[3],
     navigation[4],
     navigation[5],
+    ...(dashboardNavItem ? [dashboardNavItem] : []),
   ]
 
   // Get user initials for avatar

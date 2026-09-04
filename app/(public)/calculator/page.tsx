@@ -1,18 +1,148 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { motion } from 'motion/react'
-import { Calculator, Home, DollarSign, Percent, Calendar, TrendingUp } from 'lucide-react'
+import { Calculator, Home, Percent, Calendar, TrendingUp } from 'lucide-react'
 import { AnimatedContainer } from '@/components/design/AnimatedContainer'
 import { Section } from '@/components/design/Section'
-import { StatCard } from '@/components/design/StatCard'
 import { cn } from '@/lib/utils'
+
+/**
+ * Smoothly tweens a number toward `target` whenever it changes, so the
+ * summary panel visibly responds to slider movement instead of jumping.
+ */
+function useAnimatedNumber(target: number, duration = 400) {
+  const [value, setValue] = useState(target)
+  const fromRef = useRef(target)
+  const frameRef = useRef<number>()
+
+  useEffect(() => {
+    const from = fromRef.current
+    const to = target
+    if (from === to) return
+
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    if (prefersReducedMotion) {
+      fromRef.current = to
+      setValue(to)
+      return
+    }
+
+    const start = performance.now()
+    if (frameRef.current) cancelAnimationFrame(frameRef.current)
+
+    const tick = (now: number) => {
+      const elapsed = now - start
+      const t = Math.min(elapsed / duration, 1)
+      const eased = 1 - Math.pow(1 - t, 3)
+      setValue(from + (to - from) * eased)
+      if (t < 1) {
+        frameRef.current = requestAnimationFrame(tick)
+      } else {
+        fromRef.current = to
+      }
+    }
+    frameRef.current = requestAnimationFrame(tick)
+    return () => {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current)
+    }
+  }, [target, duration])
+
+  return value
+}
+
+/**
+ * Backs a numeric slider with a free-typing text field. The field keeps
+ * its own text state that only re-syncs from the numeric value while the
+ * field is NOT focused — so clearing the box and retyping never gets
+ * fought by a re-render that snaps it back to a clamped default.
+ * Clamping only happens once, on blur.
+ */
+function useEditableNumber({
+  value,
+  setValue,
+  min,
+  max,
+  decimals = 0,
+}: {
+  value: number
+  setValue: (n: number) => void
+  min: number
+  max: number
+  decimals?: number
+}) {
+  const format = (v: number) =>
+    decimals > 0 ? v.toFixed(decimals) : Math.round(v).toLocaleString('en-US')
+
+  const [text, setText] = useState(() => format(value))
+  const [isEditing, setIsEditing] = useState(false)
+
+  useEffect(() => {
+    if (!isEditing) setText(format(value))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value, isEditing])
+
+  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const allowed = decimals > 0 ? /[^0-9.]/g : /[^0-9]/g
+    let cleaned = e.target.value.replace(allowed, '')
+    if (decimals > 0) {
+      const parts = cleaned.split('.')
+      if (parts.length > 2) cleaned = parts[0] + '.' + parts.slice(1).join('')
+    }
+    setText(cleaned)
+    if (cleaned !== '' && cleaned !== '.') {
+      const parsed = parseFloat(cleaned)
+      if (Number.isFinite(parsed)) setValue(parsed)
+    }
+  }
+
+  const onFocus = () => {
+    setIsEditing(true)
+    setText(value ? String(value) : '')
+  }
+
+  const onBlur = () => {
+    const parsed = parseFloat(text)
+    const clamped = Math.min(max, Math.max(min, Number.isFinite(parsed) ? parsed : min))
+    setValue(clamped)
+    setText(format(clamped))
+    setIsEditing(false)
+  }
+
+  return { text, onChange, onFocus, onBlur }
+}
+
+const MIN_LOAN = 50000
+const MAX_LOAN = 500000
 
 export default function CalculatorPage() {
   const [loanAmount, setLoanAmount] = useState(300000)
   const [interestRate, setInterestRate] = useState(6.5)
-  const [loanTerm, setLoanTerm] = useState(30)
+  const [loanTerm, setLoanTerm] = useState(7)
   const [downPayment, setDownPayment] = useState(20)
+
+  const loanAmountField = useEditableNumber({
+    value: loanAmount,
+    setValue: setLoanAmount,
+    min: MIN_LOAN,
+    max: MAX_LOAN,
+  })
+  const downPaymentField = useEditableNumber({
+    value: downPayment,
+    setValue: setDownPayment,
+    min: 0,
+    max: 50,
+  })
+  const interestRateField = useEditableNumber({
+    value: interestRate,
+    setValue: setInterestRate,
+    min: 1,
+    max: 15,
+    decimals: 1,
+  })
 
   const results = useMemo(() => {
     const principal = loanAmount * (1 - downPayment / 100)
@@ -28,12 +158,17 @@ export default function CalculatorPage() {
     const totalInterest = totalPayment - principal
     const downPaymentAmount = loanAmount * (downPayment / 100)
 
+    const interestShare = totalPayment > 0 ? (totalInterest / totalPayment) * 100 : 0
+    const principalShare = 100 - interestShare
+
     return {
       principal,
       monthlyPayment,
       totalPayment,
       totalInterest,
       downPaymentAmount,
+      interestShare,
+      principalShare,
     }
   }, [loanAmount, interestRate, loanTerm, downPayment])
 
@@ -43,23 +178,32 @@ export default function CalculatorPage() {
       currency: 'USD',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(value)
+    }).format(Number.isFinite(value) ? value : 0)
   }
 
-  const inputClass = 'border-border bg-background/50 focus:border-primary focus:ring-primary/15'
+  const formatCompact = (value: number) => `$${Math.round(value / 1000)}K`
+
+  const animatedMonthly = useAnimatedNumber(results.monthlyPayment)
+  const animatedPrincipal = useAnimatedNumber(results.principal)
+  const animatedDownPayment = useAnimatedNumber(results.downPaymentAmount)
+  const animatedInterest = useAnimatedNumber(results.totalInterest)
+  const animatedTotal = useAnimatedNumber(results.totalPayment)
+  const animatedPrincipalShare = useAnimatedNumber(results.principalShare)
+  const animatedInterestShare = useAnimatedNumber(results.interestShare)
+
+  const sliderStyle = { accentColor: 'var(--foreground)' } as const
+  const fieldInputClass =
+    'rounded-md border border-border bg-background/50 py-1.5 text-right text-sm font-semibold text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20'
 
   return (
     <div className="min-h-screen">
-        <Section className="bg-muted">
+      <Section className="bg-muted">
         <AnimatedContainer>
-          <div className="text-center max-w-3xl mx-auto">
-            <Calculator className="h-12 w-12 text-primary mx-auto mb-4" />
-            <h1 className="heading-1 text-foreground mb-4">
-              Mortgage Calculator
-            </h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Calculate your potential mortgage repayments and understand your borrowing power
-              with our easy-to-use calculator.
+          <div className="text-center max-w-2xl mx-auto">
+            <Calculator className="h-9 w-9 text-primary mx-auto mb-3" />
+            <h1 className="heading-2 text-foreground mb-2">Mortgage calculator</h1>
+            <p className="text-base text-muted-foreground max-w-xl mx-auto">
+              See your monthly payment and how much goes to interest.
             </p>
           </div>
         </AnimatedContainer>
@@ -67,187 +211,272 @@ export default function CalculatorPage() {
 
       <Section className="bg-background">
         <AnimatedContainer>
-          <div className="grid lg:grid-cols-2 gap-8">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="card card-hover"
-            >
-              <div className="p-8">
-                <h2 className="text-2xl font-bold text-foreground mb-6">Calculate Your Payment</h2>
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="max-w-3xl mx-auto rounded-sm border border-border bg-card overflow-hidden shadow-soft"
+          >
+            <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
+              {/* Inputs */}
+              <div className="p-5 sm:p-6 space-y-5">
+                <h2 className="text-base font-semibold text-foreground">Loan details</h2>
 
-                <div className="space-y-8">
-                  <div className="space-y-4">
-                    <label className="flex items-center justify-between text-sm font-medium text-foreground">
-                      <span>Loan Amount</span>
-                      <span className="text-primary">{formatCurrency(loanAmount)}</span>
-                    </label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                {/* Loan amount */}
+                <div className="space-y-1.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <label htmlFor="loanAmount" className="text-sm font-medium text-foreground">
+                        Loan amount
+                      </label>
+                      <p className="text-[11px] leading-tight text-muted-foreground">
+                        Total you're borrowing, before interest.
+                      </p>
+                    </div>
+                    <div className="relative shrink-0">
+                      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                        $
+                      </span>
                       <input
-                        type="range"
-                        min="50000"
-                        max="2000000"
-                        step="10000"
-                        value={loanAmount}
-                        onChange={(e) => setLoanAmount(parseInt(e.target.value))}
-                        className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
+                        id="loanAmount"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={loanAmountField.text}
+                        onChange={loanAmountField.onChange}
+                        onFocus={loanAmountField.onFocus}
+                        onBlur={loanAmountField.onBlur}
+                        className={cn(fieldInputClass, 'w-28 pl-5 pr-2')}
                       />
                     </div>
-                    <input
-                      type="number"
-                      value={loanAmount}
-                      onChange={(e) => {
-                        const value = parseInt(e.target.value, 10)
-                        setLoanAmount(Number.isFinite(value) ? Math.min(2000000, Math.max(50000, value)) : 50000)
-                      }}
-                      min="50000"
-                      max="2000000"
-                      className={cn('input', inputClass, 'pl-10')}
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>$50K</span>
-                      <span>$500K</span>
-                      <span>$1M</span>
-                      <span>$2M</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={MIN_LOAN}
+                    max={MAX_LOAN}
+                    step="5000"
+                    value={Math.min(MAX_LOAN, Math.max(MIN_LOAN, loanAmount || MIN_LOAN))}
+                    onChange={(e) => setLoanAmount(parseInt(e.target.value))}
+                    style={sliderStyle}
+                    className="w-full h-1.5 bg-muted rounded-full cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[11px] text-muted-foreground">
+                    <span>{formatCompact(MIN_LOAN)}</span>
+                    <span>{formatCompact(MAX_LOAN)}</span>
+                  </div>
+                </div>
+
+                {/* Down payment */}
+                <div className="space-y-1.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <label htmlFor="downPayment" className="text-sm font-medium text-foreground">
+                        Down payment
+                      </label>
+                      <p className="text-[11px] leading-tight text-muted-foreground">
+                        Paid upfront — lowers what you finance.
+                      </p>
+                    </div>
+                    <div className="relative shrink-0">
+                      <input
+                        id="downPayment"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={downPaymentField.text}
+                        onChange={downPaymentField.onChange}
+                        onFocus={downPaymentField.onFocus}
+                        onBlur={downPaymentField.onBlur}
+                        className={cn(fieldInputClass, 'w-16 pl-2 pr-5')}
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                        %
+                      </span>
                     </div>
                   </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="50"
+                    step="1"
+                    value={downPayment}
+                    onChange={(e) => setDownPayment(parseInt(e.target.value))}
+                    style={sliderStyle}
+                    className="w-full h-1.5 bg-muted rounded-full cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[11px] text-muted-foreground">
+                    <span>0%</span>
+                    <span>{formatCurrency(results.downPaymentAmount)}</span>
+                    <span>50%</span>
+                  </div>
+                </div>
 
-                  <div className="space-y-4">
-                    <label className="flex items-center justify-between text-sm font-medium text-foreground">
-                      <span>Down Payment</span>
-                      <span className="text-secondary">{downPayment}%</span>
-                    </label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="50"
-                      step="1"
-                      value={downPayment}
-                      onChange={(e) => setDownPayment(parseInt(e.target.value))}
-                      className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>0%</span>
-                      <span>10%</span>
-                      <span>20%</span>
-                      <span>30%</span>
-                      <span>40%</span>
-                      <span>50%</span>
+                {/* Interest rate */}
+                <div className="space-y-1.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <label htmlFor="interestRate" className="text-sm font-medium text-foreground">
+                        Interest rate
+                      </label>
+                      <p className="text-[11px] leading-tight text-muted-foreground">
+                        Annual rate charged by your lender.
+                      </p>
+                    </div>
+                    <div className="relative shrink-0">
+                      <input
+                        id="interestRate"
+                        type="text"
+                        inputMode="decimal"
+                        value={interestRateField.text}
+                        onChange={interestRateField.onChange}
+                        onFocus={interestRateField.onFocus}
+                        onBlur={interestRateField.onBlur}
+                        className={cn(fieldInputClass, 'w-16 pl-2 pr-5')}
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                        %
+                      </span>
                     </div>
                   </div>
-
-                  <div className="space-y-4">
-                    <label className="flex items-center justify-between text-sm font-medium text-foreground">
-                      <span>Interest Rate</span>
-                      <span className="text-primary">{interestRate}%</span>
-                    </label>
-                    <input
-                      type="range"
-                      min="1"
-                      max="15"
-                      step="0.1"
-                      value={interestRate}
-                      onChange={(e) => setInterestRate(parseFloat(e.target.value))}
-                      className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer"
-                    />
-                    <div className="flex justify-between text-xs text-muted-foreground">
-                      <span>1%</span>
-                      <span>5%</span>
-                      <span>10%</span>
-                      <span>15%</span>
-                    </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="15"
+                    step="0.1"
+                    value={interestRate}
+                    onChange={(e) => setInterestRate(parseFloat(e.target.value))}
+                    style={sliderStyle}
+                    className="w-full h-1.5 bg-muted rounded-full cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[11px] text-muted-foreground">
+                    <span>1%</span>
+                    <span>15%</span>
                   </div>
+                </div>
 
-                  <div className="space-y-4">
-                    <label className="text-sm font-medium text-foreground">Loan Term</label>
-                    <div className="grid grid-cols-4 gap-2">
-                      {[10, 15, 20, 30].map((term) => (
-                        <button
-                          key={term}
-                          type="button"
-                          onClick={() => setLoanTerm(term)}
+                {/* Loan term */}
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-foreground">Loan term</label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[3, 5, 7, 10].map((term) => (
+                      <button
+                        key={term}
+                        type="button"
+                        onClick={() => setLoanTerm(term)}
+                        aria-pressed={loanTerm === term}
+                        className={cn(
+                          'relative py-1.5 rounded-md text-xs font-medium transition-colors duration-150',
+                          loanTerm === term ? '' : 'bg-muted text-foreground hover:bg-border/60'
+                        )}
+                      >
+                        {loanTerm === term && (
+                          <motion.span
+                            layoutId="activeTerm"
+                            className="absolute inset-0 rounded-md bg-primary"
+                            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                          />
+                        )}
+                        <span
                           className={cn(
-                            'py-2 rounded-xl text-sm font-medium transition-all duration-200',
-                            loanTerm === term
-                              ? 'bg-primary text-white shadow-medium'
-                              : 'bg-muted text-foreground hover:bg-primary/10 hover:text-primary'
+                            'relative z-10',
+                            loanTerm === term ? 'text-primary-foreground' : ''
                           )}
                         >
-                          {term} years
-                        </button>
-                      ))}
-                    </div>
+                          {term} yr
+                        </span>
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
-            </motion.div>
 
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="card bg-muted"
-            >
-              <div className="p-8">
-                <h2 className="text-2xl font-bold text-foreground mb-8">Payment Summary</h2>
+              {/* Summary */}
+              <div className="p-5 sm:p-6 bg-muted space-y-5">
+                <h2 className="text-base font-semibold text-foreground">Payment summary</h2>
 
-                <div className="text-center mb-8">
-                  <div className="text-4xl md:text-5xl font-bold text-foreground mb-2">
-                    {formatCurrency(results.monthlyPayment)}
+                <div className="text-center">
+                  <div className="text-3xl sm:text-4xl font-bold text-foreground tabular-nums">
+                    {formatCurrency(animatedMonthly)}
                   </div>
-                  <p className="text-muted-foreground">Monthly Payment</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">per month</p>
                 </div>
 
-                <div className="space-y-4 mb-8">
-                  <div className="flex justify-between items-center p-4 bg-muted/30 rounded-xl">
-                    <span className="text-muted-foreground flex items-center gap-2">
-                      <Home className="h-4 w-4" />
-                      Loan Amount
-                    </span>
-                    <span className="text-xl font-bold text-primary">
-                      {formatCurrency(results.principal)}
-                    </span>
+                {/* Composition bar */}
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1.5">
+                    Where payments go over {loanTerm} years
+                  </p>
+                  <div className="flex h-2.5 w-full overflow-hidden rounded-full border border-border">
+                    <div
+                      className="h-full bg-foreground transition-[width] duration-500 ease-out"
+                      style={{ width: `${animatedPrincipalShare}%` }}
+                      aria-label={`Principal ${results.principalShare.toFixed(0)}%`}
+                    />
+                    <div
+                      className="h-full bg-foreground/20 transition-[width] duration-500 ease-out"
+                      style={{ width: `${animatedInterestShare}%` }}
+                      aria-label={`Interest ${results.interestShare.toFixed(0)}%`}
+                    />
                   </div>
-                  <div className="flex justify-between items-center p-4 bg-muted/30 rounded-xl">
-                    <span className="text-muted-foreground flex items-center gap-2">
-                      <Percent className="h-4 w-4" />
-                      Down Payment ({downPayment}%)
+                  <div className="flex justify-between mt-1.5 text-[11px]">
+                    <span className="flex items-center gap-1 text-foreground">
+                      <span className="h-1.5 w-1.5 rounded-sm bg-foreground" />
+                      Principal {results.principalShare.toFixed(0)}%
                     </span>
-                    <span className="text-xl font-bold text-secondary">
-                      {formatCurrency(results.downPaymentAmount)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-4 bg-muted/30 rounded-xl">
-                    <span className="text-muted-foreground flex items-center gap-2">
-                      <TrendingUp className="h-4 w-4" />
-                      Total Interest Paid
-                    </span>
-                    <span className="text-xl font-bold text-accent">
-                      {formatCurrency(results.totalInterest)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-4 bg-muted/50 rounded-xl border border-primary/20">
-                    <span className="text-foreground font-medium flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
-                      Total Payment
-                    </span>
-                    <span className="text-xl font-bold text-primary">
-                      {formatCurrency(results.totalPayment)}
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      <span className="h-1.5 w-1.5 rounded-sm bg-foreground/20" />
+                      Interest {results.interestShare.toFixed(0)}%
                     </span>
                   </div>
                 </div>
 
-                <p className="text-xs text-muted-foreground text-center">
-                  Results are estimates. Actual terms may vary based on credit score,
-                  location, and other factors.
+                {/* Breakdown */}
+                <dl className="text-sm">
+                  <div className="flex justify-between items-center py-2 border-b border-border">
+                    <dt className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                      <Home className="h-3.5 w-3.5" />
+                      Principal
+                    </dt>
+                    <dd className="font-semibold text-foreground tabular-nums text-sm">
+                      {formatCurrency(animatedPrincipal)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-border">
+                    <dt className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                      <Percent className="h-3.5 w-3.5" />
+                      Down payment
+                    </dt>
+                    <dd className="font-semibold text-foreground tabular-nums text-sm">
+                      {formatCurrency(animatedDownPayment)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-b border-border">
+                    <dt className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                      <TrendingUp className="h-3.5 w-3.5" />
+                      Total interest
+                    </dt>
+                    <dd className="font-semibold text-foreground tabular-nums text-sm">
+                      {formatCurrency(animatedInterest)}
+                    </dd>
+                  </div>
+                  <div className="flex justify-between items-center pt-2">
+                    <dt className="text-foreground font-medium flex items-center gap-1.5 text-xs">
+                      <Calendar className="h-3.5 w-3.5" />
+                      Total of all payments
+                    </dt>
+                    <dd className="text-sm font-bold text-foreground tabular-nums">
+                      {formatCurrency(animatedTotal)}
+                    </dd>
+                  </div>
+                </dl>
+
+                <p className="text-[11px] text-muted-foreground text-center">
+                  Estimate only. Actual terms vary by credit, location, and lender.
                 </p>
               </div>
-            </motion.div>
-          </div>
+            </div>
+          </motion.div>
         </AnimatedContainer>
-
       </Section>
     </div>
   )
