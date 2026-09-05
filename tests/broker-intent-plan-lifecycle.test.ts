@@ -269,3 +269,35 @@ test('broker onboarding state machine is unchanged', () => {
   assert.match(src, /COMPLETED/)
   assert.match(src, /\/broker\/dashboard/)
 })
+
+// ---------------------------------------------------------------------------
+// PLAN-SELECTION CTA TERMINOLOGY (Phase 8.20.4)
+// ---------------------------------------------------------------------------
+
+test('PricingCard uses "Choose {name}" for the plan-selection CTA', () => {
+  const src = read('components/design/PricingCard.tsx')
+  // The CTA is derived from the plan display name — Free / Mortgage Expert.
+  assert.match(src, /`Choose \$\{name\}`/)
+  // No misleading generic CTA labels in the shared broker plan card.
+  assert.doesNotMatch(src, /'Create Account'/)
+  assert.doesNotMatch(src, /'Upgrade'/)
+  assert.doesNotMatch(src, /'Buy Now'/)
+  assert.doesNotMatch(src, /'Subscribe'/)
+})
+
+test('broker plan-selection page keeps Free CTA wired to FREE endpoint', () => {
+  const src = read('app/broker/subscription/select/page.tsx')
+  assert.match(src, /plan\.code === 'FREE'/)
+  assert.match(src, /\/api\/broker-registration\/subscription\/free/)
+  assert.doesNotMatch(src, /'Create Account'/)
+})
+
+test('broker plan-selection page keeps FEATURED CTA sending plan.code', () => {
+  const src = read('app/broker/subscription/select/page.tsx')
+  // The paid handler receives the canonical internal code (FEATURED),
+  // never the customer-facing display name.
+  assert.match(src, /selectPaid\(plan\.code, priceId\)/)
+  assert.match(src, /\/api\/broker-registration\/subscription\/checkout/)
+  assert.doesNotMatch(src, /'Upgrade'/)
+  assert.doesNotMatch(src, /selectPaid\(plan\.name/)
+})

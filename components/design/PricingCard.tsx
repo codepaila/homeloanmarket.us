@@ -115,7 +115,7 @@ export function PricingCard({
             )}
             whileTap={{ scale: 0.98 }}
           >
-            {price === 0 ? 'Create Account' : 'Upgrade'}
+            {`Choose ${name}`}
           </motion.button>
         )}
       </div>
