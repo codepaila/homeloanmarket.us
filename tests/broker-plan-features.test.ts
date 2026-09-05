@@ -223,11 +223,9 @@ test('broker plans lib does not import company-ad-access', () => {
   assert.doesNotMatch(plansLib, /company-ad-access/)
 })
 
-test('DEFAULT_BROKER_PLANS contains only broker plan codes', () => {
+test('DEFAULT_BROKER_PLANS contains exactly the supported broker plan codes', () => {
   const codes = DEFAULT_BROKER_PLANS.map((p) => p.code)
-  assert.ok(codes.includes('FREE'))
-  assert.ok(codes.includes('FEATURED'))
-  assert.ok(codes.includes('PREMIUM'))
+  assert.deepEqual(codes, ['FREE', 'FEATURED'])
   // No company plan codes
   assert.ok(!codes.includes('COMPANY'))
   assert.ok(!codes.includes('ADVERTISING'))

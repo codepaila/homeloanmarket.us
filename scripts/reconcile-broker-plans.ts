@@ -3,8 +3,9 @@
 //
 // SAFE: creates/updates only the BrokerSubscriptionPlan and
 // BrokerSubscriptionPlanFeature collections and links existing
-// BrokerSubscription.planId rows. It never deletes plans, never cancels
-// subscriptions, and never modifies subscription billing data.
+// BrokerSubscription.planId rows. It removes obsolete plan definitions only
+// when no BrokerSubscription / BrokerRegistrationSubscription references them
+// (never FREE/FEATURED, never subscription billing data).
 //
 // The subscription→plan linking logic is shared with the admin Broker
 // Subscriptions UI (lib/broker-plans.ts) so both produce identical behavior.
@@ -14,6 +15,7 @@ import prisma from '@/lib/prisma'
 import {
   DEFAULT_BROKER_PLANS,
   DEFAULT_BROKER_PLAN_FEATURES,
+  SUPPORTED_BROKER_PLAN_CODES,
   createPlanFeatures,
   reconcileBrokerSubscriptions,
 } from '@/lib/broker-plans'
@@ -68,6 +70,33 @@ async function run() {
       })
       console.info('[BROKER-PLANS] reconciled existing plan', { code: planInput.code, id: existing.id })
     }
+  }
+
+  // Remove obsolete broker plan definitions (codes no longer in the supported
+  // catalog). SAFE: a plan is only deleted when it has zero dependent
+  // BrokerSubscription rows and zero BrokerRegistrationSubscription rows using
+  // that plan code; the plan's display feature rows are removed first. Never
+  // touches FREE/FEATURED or any subscription record.
+  const supportedCodes = new Set<string>(SUPPORTED_BROKER_PLAN_CODES)
+  const obsoletePlans = await prisma.brokerSubscriptionPlan.findMany({
+    where: { code: { notIn: Array.from(supportedCodes) } },
+    select: { id: true, code: true },
+  })
+  for (const obsolete of obsoletePlans) {
+    const [brokerUses, registrationUses] = await Promise.all([
+      prisma.brokerSubscription.count({ where: { planId: obsolete.id } }),
+      prisma.brokerRegistrationSubscription.count({ where: { plan: obsolete.code as never } }),
+    ])
+    if (brokerUses > 0 || registrationUses > 0) {
+      console.warn('[BROKER-PLANS] obsolete plan retained (has dependent subscriptions)', { code: obsolete.code, brokerUses, registrationUses })
+      continue
+    }
+    await prisma.$transaction(async (tx) => {
+      await tx.brokerSubscriptionPlanFeature.deleteMany({ where: { planId: obsolete.id } })
+      await tx.brokerSubscriptionPlan.delete({ where: { id: obsolete.id } })
+    })
+    summary.plans -= 1
+    console.info('[BROKER-PLANS] removed obsolete plan', { code: obsolete.code })
   }
 
   // Link existing subscriptions to the plan records by their stored plan code.

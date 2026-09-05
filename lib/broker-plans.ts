@@ -58,12 +58,11 @@ export const DEFAULT_BROKER_PLAN_FEATURES: Record<string, BrokerPlanFeatureDraft
     { label: 'Mortgage Expert Badge + 5 Green Stars', enabled: true, sortOrder: 60 },
     { label: 'Cancel Anytime', enabled: true, sortOrder: 70 },
   ],
-  PREMIUM: [],
 }
 
 // Initial plan records created by the idempotent reconcile script. Prices are
 // in cents. Stripe identifiers for FREE are intentionally null; FEATURED picks
-// up the existing environment price; PREMIUM requires an admin to connect.
+// up the existing environment price.
 export const DEFAULT_BROKER_PLANS: Array<{
   code: string
   name: string
@@ -96,17 +95,6 @@ export const DEFAULT_BROKER_PLANS: Array<{
     displayOrder: 20,
     isActive: true,
     features: DEFAULT_BROKER_PLAN_FEATURES.FEATURED,
-  },
-  {
-    code: 'PREMIUM',
-    name: 'Premium',
-    description: 'Premium listing with full platform features',
-    price: 3000,
-    billingInterval: 'month',
-    currency: 'usd',
-    displayOrder: 30,
-    isActive: true,
-    features: DEFAULT_BROKER_PLAN_FEATURES.PREMIUM,
   },
 ]
 

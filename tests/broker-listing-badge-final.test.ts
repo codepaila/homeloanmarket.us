@@ -38,7 +38,6 @@ const sub = (plan: string = 'FEATURED', isActive = true, endDate: Date | null = 
 
 test('paid plan subscription alone grants the badge', () => {
   assert.equal(brokerSubscriptionHasProfileBadge(sub('FEATURED')), true)
-  assert.equal(brokerSubscriptionHasProfileBadge(sub('PREMIUM')), true)
   assert.equal(isMortgageExpertBroker({ mortgageExpertEnabled: false, profileBadge: true }), true)
 })
 

@@ -119,9 +119,9 @@ function SubscriptionSelectContent() {
                 stripePriceId={plan.stripePriceId || undefined}
                 isPopular={plan.code === 'FEATURED'}
                 isCurrent={false}
-                onSelect={(priceId, planName) => {
+                onSelect={(priceId) => {
                   if (plan.code === 'FREE') void selectFree()
-                  else void selectPaid(planName || plan.code, priceId)
+                  else void selectPaid(plan.code, priceId)
                 }}
                 className={loading === plan.code ? 'pointer-events-none opacity-60' : undefined}
               />

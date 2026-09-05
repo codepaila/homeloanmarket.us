@@ -23,9 +23,9 @@ const clientHook = read('hooks/useClient.ts')
 // Initial plans exist
 // ---------------------------------------------------------------------------
 
-test('FREE, FEATURED, and PREMIUM plans are seeded by the reconcile script', () => {
+test('FREE and FEATURED are the only plans seeded by the reconcile script', () => {
   const codes = DEFAULT_BROKER_PLANS.map((plan) => plan.code)
-  assert.deepEqual(codes, ['FREE', 'FEATURED', 'PREMIUM'])
+  assert.deepEqual(codes, ['FREE', 'FEATURED'])
 })
 
 test('FREE does not list the Mortgage Expert badge; FEATURED does (display-only)', () => {
@@ -57,7 +57,6 @@ test('feature rows are display-only (label/enabled/sortOrder) and the badge deri
 test('badge entitlement is derived from the paid plan tier', () => {
   const sub = (plan: string, isActive = true, endDate: Date | null = null) => ({ plan, isActive, endDate })
   assert.equal(brokerSubscriptionHasProfileBadge(sub('FEATURED')), true)
-  assert.equal(brokerSubscriptionHasProfileBadge(sub('PREMIUM')), true)
   assert.equal(brokerSubscriptionHasProfileBadge(sub('FREE')), false)
 })
 
@@ -155,13 +154,15 @@ test('checkout never consults CompanyAdvertisingPlan', () => {
 // Data reconciliation
 // ---------------------------------------------------------------------------
 
-test('reconcile script is idempotent and links existing subscriptions', () => {
+test('reconcile script is idempotent and links existing subscriptions, and removes obsolete unused plans', () => {
   assert.match(reconcile, /findUnique\(\{ where: \{ code: planInput\.code \} \}\)/)
   assert.match(reconcile, /planId/)
-  assert.doesNotMatch(reconcile, /\.delete/)
+  // Obsolete plans are removed only when no subscription references them; FREE/FEATURED are never touched.
+  assert.match(reconcile, /notIn/)
+  assert.match(reconcile, /brokerSubscriptionPlanFeature\.deleteMany/)
+  assert.match(reconcile, /brokerSubscriptionPlan\.delete/)
 })
 
-// ---------------------------------------------------------------------------
 // Schema
 // ---------------------------------------------------------------------------
 

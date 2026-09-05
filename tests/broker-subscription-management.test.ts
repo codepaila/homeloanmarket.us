@@ -210,9 +210,9 @@ test('FREE plan is configured without Stripe identifiers', () => {
   assert.equal(BROKER_FREE_PLAN_CODE, 'FREE')
 })
 
-test('initial plans are FREE, FEATURED, PREMIUM and no PRO', () => {
+test('initial plans are FREE and FEATURED only, and no PRO', () => {
   const codes = DEFAULT_BROKER_PLANS.map((plan) => plan.code)
-  assert.deepEqual(codes, ['FREE', 'FEATURED', 'PREMIUM'])
+  assert.deepEqual(codes, ['FREE', 'FEATURED'])
   assert.doesNotMatch(codes.join(' '), /PRO/)
 })
 

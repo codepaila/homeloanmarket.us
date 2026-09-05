@@ -172,14 +172,14 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker, initialR
             <BrokerAvatar src={profileImage || logo} alt={displayName || companyName} name={displayName || companyName} className="h-full w-full" />
           </div>
 
-          {isFeaturedBroker && (
+          {/* {isFeaturedBroker && (
             <div className="absolute -top-2 -right-2 z-10">
               <Badge className="flex items-center gap-1 rounded bg-primary px-2.5 py-1 text-xs font-semibold text-primary-foreground shadow-md">
                 <Star className="h-3 w-3 fill-current" />
                 Mortgage Expert
               </Badge>
             </div>
-          )}
+          )} */}
         </div>
       </section>
 

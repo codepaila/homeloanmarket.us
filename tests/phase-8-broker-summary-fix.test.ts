@@ -56,7 +56,6 @@ test('brokerSubscriptionHasProfileBadge works with subscription plan/isActive', 
   assert.equal(brokerSubscriptionHasProfileBadge(sub('FEATURED')), true)
   assert.equal(brokerSubscriptionHasProfileBadge(sub('FREE')), false)
   assert.equal(brokerSubscriptionHasProfileBadge(sub('FEATURED', false)), false)
-  assert.equal(brokerSubscriptionHasProfileBadge(sub('PREMIUM')), true)
 })
 
 // ---------------------------------------------------------------------------
