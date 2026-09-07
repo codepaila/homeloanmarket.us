@@ -256,7 +256,8 @@ test('listing ranks active FEATURED first via the live subscription tier', () =>
 test('listing ranks admin-enabled Mortgage Expert brokers before image brokers', () => {
   // Tier precedence is computed in the aggregation $addFields: paid tier 1,
   // admin-enabled Mortgage Expert tier 2, image tier 3, no signal tier 4. The
-  // ranked listing sorts by tier ascending and drops tier 4 for the public.
+  // ranked listing sorts by tier ascending; tier 4 (no image/ME/paid) remains
+  // publicly listed (Phase 8.30 — image affects order, never eligibility).
   const tierCond = listingModule.slice(listingModule.indexOf('tier: {'), listingModule.indexOf('$facet'))
   const paidIdx = tierCond.indexOf("$eq: ['$featured', 1]")
   const adminIdx = tierCond.indexOf("$eq: ['$mortgageExpertEnabled', true]")
@@ -265,7 +266,8 @@ test('listing ranks admin-enabled Mortgage Expert brokers before image brokers',
   assert.ok(adminIdx > paidIdx, 'admin-enabled tier follows the paid tier')
   assert.ok(imageIdx > adminIdx, 'image tier follows the admin-enabled tier')
   assert.match(listingModule, /\$sort: \{ tier: 1/)
-  assert.match(listingModule, /tier: \{ \$lte: 3 \}/)
+  assert.doesNotMatch(listingModule, /tier: \{ \$lte: 3 \}/)
+  assert.doesNotMatch(listingModule, /\$match: \{ tier/)
 })
 
 test('listing ordering is applied server-side before pagination', () => {
@@ -286,7 +288,8 @@ test('radius search preserves the same FEATURED -> admin -> image priority', () 
   assert.ok(adminIdx > paidIdx, 'admin-enabled tier after FEATURED tier in radius ranking')
   assert.ok(imageIdx > adminIdx, 'image tier after admin-enabled tier in radius ranking')
   assert.match(geo, /\$sort: \{ tier: 1/)
-  assert.match(geo, /tier: \{ \$lte: 3 \}/)
+  assert.doesNotMatch(geo, /tier: \{ \$lte: 3 \}/)
+  assert.doesNotMatch(geo, /\$match: \{ tier/)
 })
 
 test('ranking never uses rating, reviews, or the badge itself', () => {

@@ -165,12 +165,12 @@ export async function findBrokerIdsWithinRadius(input: BrokerGeoSearchInput): Pr
     },
   )
 
-  // Radius search is a ranked listing surface: exclude brokers with no
-  // qualifying signal (admins always see everything).
-  if (!input.admin) {
-    pipeline.push({ $match: { tier: { $lte: 3 } } })
-  }
-
+  // Tier is a RANKING signal, never a visibility gate. All four tiers are
+  // publicly eligible within the radius: a broker without an image, Mortgage
+  // Expert badge, or paid subscription is still returned (it sorts after
+  // higher-ranked brokers). A broker is excluded from a radius search only by
+  // legitimate location/eligibility conditions (no valid coordinates, hidden,
+  // suspended, incomplete, invalid ownership) — never by image presence.
   pipeline.push({
     $facet: {
       metadata: [{ $count: 'total' }],

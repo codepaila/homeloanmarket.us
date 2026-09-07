@@ -17,8 +17,9 @@
 //                the listing card actually renders via `profileImage || logo`)
 //   tier      -> 1 = paid active subscription, 2 = admin-enabled Mortgage
 //                Expert (no paid plan), 3 = profile image, 4 = no qualifying
-//                signal. The ranked listing excludes tier 4 (eligibility is
-//                separate: completeness/visibility still gate the detail page).
+//                signal. Tier is RANK-ONLY: every tier is publicly eligible.
+//                A no-image broker (tier 4) is still listed; image presence
+//                affects ORDER, never eligibility.
 //
 // Sort (before skip/take so pagination stays server-side and correct):
 //   tier asc, featuredRank desc, experienceYears desc, _id asc
@@ -211,14 +212,11 @@ export async function getPublicListingPage(
     },
   )
 
-  // The ranked listing only surfaces brokers with at least one qualifying
-  // business signal (paid plan / admin Mortgage Expert / profile image).
-  // Eligibility (isVisible, status, completeness, ownership) is separate and
-  // still governs the public detail page and sitemap.
-  if (!opts.admin) {
-    pipeline.push({ $match: { tier: { $lte: 3 } } })
-  }
-
+  // Tier is a RANKING signal, never a visibility gate. All four tiers are
+  // publicly eligible: a broker without an image, Mortgage Expert badge, or
+  // paid subscription is still listed (it simply sorts after higher-ranked
+  // brokers). Eligibility is entirely determined by the $match stages above
+  // (isVisible, suspension, completeness, ownership). No $match on `tier`.
   pipeline.push({
     $facet: {
       metadata: [{ $count: 'total' }],

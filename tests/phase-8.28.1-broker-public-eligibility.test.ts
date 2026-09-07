@@ -147,7 +147,7 @@ test('brokerProfileIsComplete rejects empty/missing fields', () => {
 })
 
 test('public DTO (toPublicBrokerRecord) leaks no internal or CRM fields', () => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
   const { toPublicBrokerRecord } = require('../lib/public-broker') as typeof import('../lib/public-broker')
   const projected = toPublicBrokerRecord({
     id: 'internal-id',
@@ -204,7 +204,7 @@ test('public DTO (toPublicBrokerRecord) leaks no internal or CRM fields', () => 
 })
 
 test('public DTO contact fields appear only with includeContact=true', () => {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
   const { toPublicBrokerRecord } = require('../lib/public-broker') as typeof import('../lib/public-broker')
   const withContact = toPublicBrokerRecord({
     displayName: 'Broker',
@@ -242,16 +242,19 @@ test('publicBrokerWhere enforces completeness, not verification/source', () => {
   assert.doesNotMatch(serialized, /"isPublicBroker"/)
 })
 
-test('listing and geo pipelines use tier ranking and exclude tier 4 from public results', () => {
+test('listing and geo pipelines use tier for RANKING ONLY; all four tiers are publicly eligible', () => {
   const listing = fs.readFileSync('lib/broker-listing.ts', 'utf8')
   const geo = fs.readFileSync('lib/location/broker-geo.ts', 'utf8')
   // Both files define tier
   assert.match(listing, /tier: \{/)
   assert.match(geo, /tier: \{/)
-  // Both exclude tier 4 for non-admin
-  assert.match(listing, /tier: \{ \$lte: 3 \}/)
-  assert.match(geo, /tier: \{ \$lte: 3 \}/)
-  // Both sort by tier first
+  // Tier must NOT be used as a public-visibility filter (Phase 8.30): a
+  // no-image broker (tier 4) is still listed; image affects order, not eligibility.
+  assert.doesNotMatch(listing, /tier: \{ \$lte: 3 \}/)
+  assert.doesNotMatch(geo, /tier: \{ \$lte: 3 \}/)
+  assert.doesNotMatch(listing, /\$match: \{ tier/)
+  assert.doesNotMatch(geo, /\$match: \{ tier/)
+  // Both sort by tier first so paid > ME > image > no-image
   assert.match(listing, /tier: 1/)
   assert.match(geo, /tier: 1/)
 })

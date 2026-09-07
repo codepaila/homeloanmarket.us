@@ -79,7 +79,7 @@ test('live public listing includes every active FEATURED-subscription broker (ti
   }
 })
 
-test('live public listing total equals the eligible tier 1-3 broker count (no unexplained disappearance)', async () => {
+test('live public listing total equals the eligible broker count across ALL four tiers (no unexplained disappearance)', async () => {
   try {
     const brokers = await prisma.broker.findMany({
       where: publicBrokerWhere(),
@@ -102,18 +102,20 @@ test('live public listing total equals the eligible tier 1-3 broker count (no un
       else if (hasImage(broker)) tier3 += 1
       else tier4 += 1
     }
-    const expectedTotal = tier1 + tier2 + tier3
+    // Phase 8.30: EVERY eligible broker is public, including tier 4 (no-image,
+    // no Mortgage Expert, no paid subscription). Image affects ranking only.
+    const expectedTotal = tier1 + tier2 + tier3 + tier4
 
     const page = await getPublicListingPage({}, { page: 1, take: 1000, admin: false })
     assert.equal(page.total, expectedTotal,
-      `listing total (${page.total}) must equal eligible tier1+2+3 count (${expectedTotal} = ${tier1}+${tier2}+${tier3}), tier-4 excluded (${tier4})`)
+      `listing total (${page.total}) must equal the eligible broker count (${expectedTotal} = ${tier1}+${tier2}+${tier3}+${tier4}); no tier may be excluded`)
   } catch (error) {
     if ((error as { code?: string }).code === 'P1001' || (error as Error).message?.includes('ECONNREFUSED')) return
     throw error
   }
 })
 
-test('live public listing returns all eligible self-registered and admin-created brokers', async () => {
+test('live public listing returns ALL eligible self-registered and admin-created brokers (image or not)', async () => {
   try {
     const page = await getPublicListingPage({}, { page: 1, take: 1000, admin: false })
     const listed = await prisma.broker.findMany({
@@ -127,22 +129,13 @@ test('live public listing returns all eligible self-registered and admin-created
         ...publicBrokerWhere(),
         creationSource: { in: ['SELF_REGISTERED', 'ADMIN_CREATED'] },
       },
-      select: {
-        profileSlug: true,
-        creationSource: true,
-        mortgageExpertEnabled: true,
-        profileImage: true,
-        logo: true,
-        subscription: { select: { plan: true, isActive: true, endDate: true } },
-      },
+      select: { profileSlug: true, creationSource: true },
     })
     if (candidates.length === 0) return
 
     for (const broker of candidates) {
-      const hasSignal = hasActiveFeaturedSubscription(broker) || broker.mortgageExpertEnabled || hasImage(broker)
-      if (hasSignal) {
-        assert.ok(listedSlugs.has(broker.profileSlug), `eligible ${broker.creationSource} broker ${broker.profileSlug} with a signal must be publicly listed`)
-      }
+      assert.ok(listedSlugs.has(broker.profileSlug),
+        `eligible ${broker.creationSource} broker ${broker.profileSlug} must be publicly listed even without image/ME/paid signals`)
     }
   } catch (error) {
     if ((error as { code?: string }).code === 'P1001' || (error as Error).message?.includes('ECONNREFUSED')) return

@@ -59,7 +59,11 @@ export async function GET() {
           is: {
             isActive: true,
             plan: 'FEATURED',
-            endDate: { gt: new Date() },
+            // An ACTIVE FEATURED subscription stores endDate=null (cleared when
+            // it becomes active); a null endDate must count as active, mirroring
+            // the listing's tier-1 rule. Requiring endDate > now alone would
+            // hide every active FEATURED subscriber from the home section.
+            OR: [{ endDate: null }, { endDate: { gt: new Date() } }],
           },
         },
       },

@@ -30,10 +30,14 @@ test('radius search filters to public eligibility for non-admin', () => {
   assert.doesNotMatch(geo, /verificationStatus: 'VERIFIED'/)
 })
 
-test('radius ranking surfaces paying, enabled, and imaged brokers first and excludes tier 4', () => {
+test('radius ranking surfaces paying, enabled, and imaged brokers first; tier 4 brokers remain listed', () => {
   assert.match(geo, /tier: \{\n/)
   assert.match(geo, /\$eq: \['\$featured', 1\]/)
-  assert.match(geo, /tier: \{ \$lte: 3 \}/)
+  // Tier is a ranking signal only — the radius pipeline must NOT filter it out.
+  assert.doesNotMatch(geo, /tier: \{ \$lte: 3 \}/)
+  assert.doesNotMatch(geo, /tier: \{ \$lte: 3/)
+  // Tier 4 (no image/ME/paid) is sorted last but never removed.
+  assert.match(geo, /\$sort: \{ tier: 1, featuredRank: -1, experienceYears: -1, _id: 1 \}/)
 })
 
 test('radius search supports both unowned and active-owner brokers', () => {
