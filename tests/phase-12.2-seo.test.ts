@@ -54,15 +54,56 @@ test('public Broker projection strips internal identifiers and relations', () =>
      user: { id: 'user-internal', name: 'Public Owner', image: null, isActive: true },
      bankPartners: [{ id: 'bank-internal', brokerId: 'broker-internal', bankName: 'Public Bank', bankType: 'PRIVATE' }],
     reviews: [{ id: 'review-internal', brokerId: 'broker-internal', userId: 'reviewer-internal', rating: 5, comment: 'Good', user: { id: 'reviewer-internal', name: 'Reviewer', image: null } }],
+    totalLeads: 99,
+    profileViews: 1234,
+    brokerStatus: 'FREE',
+    createdAt: new Date('2024-01-01T00:00:00Z'),
   }) as Record<string, unknown>
 
   assert.equal('id' in projected, false)
   assert.equal('userId' in projected, false)
   assert.equal('subscription' in projected, false)
   assert.equal('registrationNumber' in projected, false)
+  assert.equal('totalLeads' in projected, false)
+  assert.equal('profileViews' in projected, false)
+  assert.equal('brokerStatus' in projected, false)
+  assert.equal('createdAt' in projected, false)
+  assert.equal('bankPartners' in projected, false)
+  assert.equal('reviews' in projected, false)
+  assert.equal('_count' in projected, false)
+  assert.equal(projected.email, undefined)
   assert.deepEqual(projected.user, { name: 'Public Owner', image: null })
-  assert.deepEqual(projected.bankPartners, [{ bankName: 'Public Bank', bankType: 'PRIVATE', since: undefined }])
-  assert.deepEqual(projected.reviews, [{ rating: 5, comment: 'Good', createdAt: undefined, user: { name: 'Reviewer', image: null } }])
+  assert.equal(projected.displayName, 'Public Broker')
+})
+
+test('public Broker projection keeps identity, marketing, and professional signals', () => {
+  const projected = toPublicBrokerRecord({
+    profileSlug: 'public-broker',
+    displayName: 'Public Broker',
+    companyName: 'Public Loans',
+    description: 'Mortgage originator',
+    nmls: '123456',
+    licenseStates: ['CA', 'TX'],
+    city: 'Austin',
+    state: 'Texas',
+    logo: '/logo.png',
+    profileImage: '/profile.png',
+    coverImage: '/cover.png',
+    experienceYears: 12,
+    avgRating: 4.5,
+    totalReviews: 8,
+    socialLinks: { facebook: 'https://fb.test' },
+    phone: '555-0100',
+    email: 'public@example.test',
+  }) as Record<string, unknown>
+
+  assert.equal(projected.profileSlug, 'public-broker')
+  assert.equal(projected.nmls, '123456')
+  assert.deepEqual(projected.licenseStates, ['CA', 'TX'])
+  assert.equal(projected.avgRating, 4.5)
+  assert.equal(projected.experienceYears, 12)
+  assert.equal(projected.phone, undefined)
+  assert.equal(projected.email, undefined)
 })
 
 test('suspended and inactive-owner Brokers remain excluded from indexability', () => {

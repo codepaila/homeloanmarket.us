@@ -2,7 +2,8 @@
 // components/layout/SubscriptionBadge.tsx
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/utils'
-import { CheckCircle, XCircle, Clock, Crown } from 'lucide-react'
+import { CheckCircle, XCircle, Crown } from 'lucide-react'
+import { brokerPlanDisplayName, isPaidBrokerPlan } from '@/lib/broker-plan-display'
 
 interface SubscriptionBadgeProps {
   user: any
@@ -15,8 +16,13 @@ export function SubscriptionBadge({ user }: SubscriptionBadgeProps) {
 
   if (user.role === 'BROKER') {
     const isActive = user.hasActiveSubscription
-    const isPremium = user.isPremiumBroker
     const isVerified = user.isVerifiedBroker
+    // Single plan source: the authoritative broker subscription plan derived
+    // from the effective subscription resolver (getCurrentUser). No separate
+    // code/display mapping is maintained here.
+    const planCode = user.subscriptionPlan
+    const isPremium = isPaidBrokerPlan(planCode)
+    const planLabel = brokerPlanDisplayName(planCode)
 
     return (
       <div className="flex flex-wrap gap-2">
@@ -29,7 +35,7 @@ export function SubscriptionBadge({ user }: SubscriptionBadgeProps) {
             )}
           >
             {isPremium && <Crown className="h-3 w-3" />}
-            {user.subscriptionPlan}
+            {planLabel}
           </Badge>
         ) : (
           <Badge variant="destructive" className="gap-1">
@@ -38,23 +44,12 @@ export function SubscriptionBadge({ user }: SubscriptionBadgeProps) {
           </Badge>
         )}
 
-        {isVerified ? (
+        {isVerified && (
           <Badge variant="default" className="gap-1">
             <CheckCircle className="h-3 w-3" />
             Verified
           </Badge>
-        ) : (
-          <Badge variant="secondary" className="gap-1">
-            <Clock className="h-3 w-3" />
-            Pending
-          </Badge>
-        )}
-
-        {user.brokerProfile?.featuredListing && (
-          <Badge variant="secondary" className="bg-gradient-to-r from-purple-500 to-pink-500">
-            Mortgage Expert
-          </Badge>
-        )}
+        ) }
       </div>
     )
   }

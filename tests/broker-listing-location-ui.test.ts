@@ -6,6 +6,7 @@ const listing = fs.readFileSync('app/(public)/brokers/page.tsx', 'utf8')
 const adminActions = fs.readFileSync('app/admin/brokers/[id]/AdminBrokerActions.tsx', 'utf8')
 const locationRoute = fs.readFileSync('app/api/admin/brokers/[id]/location/route.ts', 'utf8')
 const publicApi = fs.readFileSync('app/api/brokers/route.ts', 'utf8')
+const listingLib = fs.readFileSync('lib/broker-listing.ts', 'utf8')
 
 test('selected location is not counted or rendered as a duplicate filter chip', () => {
   assert.match(listing, /const hasActiveFilters = Boolean\(search \|\| radius > 0/)
@@ -29,8 +30,11 @@ test('admin review exposes explicit verification, publication, and location reso
   assert.match(locationRoute, /type: 'Point'/)
 })
 
-test('public listing preserves verification and visibility gates', () => {
-  assert.match(publicApi, /isVisible: true/)
-  assert.match(publicApi, /verificationStatus: 'VERIFIED'/)
-  assert.match(publicApi, /brokerStatus: \{ not: 'SUSPENDED' \}/)
+test('public listing preserves visibility, status, and completeness gates and drops the verification gate', () => {
+  assert.match(publicApi, /getPublicListingPage/)
+  assert.match(listingLib, /isVisible: true/)
+  assert.match(listingLib, /\$ne: 'SUSPENDED'/)
+  assert.match(listingLib, /profileSlug: \{ \$nin: \[null, ''\] \}/)
+  assert.doesNotMatch(listingLib, /verificationStatus: 'VERIFIED'/)
+  assert.doesNotMatch(listingLib, /creationSource: 'ADMIN_CREATED'/)
 })

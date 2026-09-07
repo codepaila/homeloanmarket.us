@@ -24,9 +24,14 @@ function baseMatch(input: BrokerGeoSearchInput) {
   if (!input.admin) {
     conditions.push({ isVisible: true })
     conditions.push({ brokerStatus: { $ne: 'SUSPENDED' } })
-    // Mirrors publicBrokerWhere(): ADMIN_CREATED brokers are public regardless
-    // of verificationStatus; all other sources must be VERIFIED.
-    conditions.push({ $or: [{ creationSource: 'ADMIN_CREATED' }, { verificationStatus: 'VERIFIED' }] })
+    // Canonical public eligibility (mirrors publicBrokerWhere()):
+    // profile completeness, not verification/creationSource. A self-registered
+    // broker with a valid, complete, published profile is public.
+    conditions.push({ displayName: { $nin: [null, ''] } })
+    conditions.push({ description: { $nin: [null, ''] } })
+    conditions.push({ phone: { $nin: [null, ''] } })
+    conditions.push({ officeAddress: { $nin: [null, ''] } })
+    conditions.push({ profileSlug: { $nin: [null, ''] } })
   }
   if (input.search) {
     const value = regex(input.search)
@@ -118,13 +123,15 @@ export async function findBrokerIdsWithinRadius(input: BrokerGeoSearchInput): Pr
         },
         // Same "has usable profile/company image" rule as the plain listing
         // (profileImage || logo), so paid/Mortgage-Export/free brokers with a
-        // company logo are ranked consistently everywhere.
+        // company logo are ranked consistently everywhere. $type 'string'
+        // excludes null AND missing fields (a `$ne` alone would let a missing
+        // field through as "has image").
         hasImage: {
           $cond: [
             {
               $or: [
-                { $and: [{ $ne: ['$profileImage', null] }, { $ne: ['$profileImage', ''] }] },
-                { $and: [{ $ne: ['$logo', null] }, { $ne: ['$logo', ''] }] },
+                { $and: [{ $ne: ['$profileImage', ''] }, { $eq: [{ $type: '$profileImage' }, 'string'] }] },
+                { $and: [{ $ne: ['$logo', ''] }, { $eq: [{ $type: '$logo' }, 'string'] }] },
               ],
             },
             1,
@@ -133,13 +140,42 @@ export async function findBrokerIdsWithinRadius(input: BrokerGeoSearchInput): Pr
         },
       },
     },
+    {
+      // Business-priority tier (same as the plain listing):
+      //   1 = paid active subscription, 2 = admin-enabled Mortgage Expert
+      //   (no paid plan), 3 = profile image, 4 = no qualifying signal.
+      // A SECOND aggregation stage: MongoDB resolves same-stage field
+      // references against the input document, so `$featured`/`$hasImage`
+      // must be materialized in a prior stage before `tier` reads them.
+      $addFields: {
+        tier: {
+          $cond: [
+            { $eq: ['$featured', 1] },
+            1,
+            {
+              $cond: [
+                { $eq: ['$mortgageExpertEnabled', true] },
+                2,
+                { $cond: [{ $eq: ['$hasImage', 1] }, 3, 4] },
+              ],
+            },
+          ],
+        },
+      },
+    },
   )
+
+  // Radius search is a ranked listing surface: exclude brokers with no
+  // qualifying signal (admins always see everything).
+  if (!input.admin) {
+    pipeline.push({ $match: { tier: { $lte: 3 } } })
+  }
 
   pipeline.push({
     $facet: {
       metadata: [{ $count: 'total' }],
       data: [
-        { $sort: { featured: -1, featuredRank: -1, mortgageExpertEnabled: -1, hasImage: -1, experienceYears: -1, _id: 1 } },
+        { $sort: { tier: 1, featuredRank: -1, experienceYears: -1, _id: 1 } },
         { $skip: input.take * (input.page - 1) },
         { $limit: input.take },
         { $project: { _id: 1, distanceMeters: 1 } },

@@ -55,7 +55,7 @@ test('FREE broker plan bypasses Stripe entirely', () => {
   const free = read('app/api/broker-registration/subscription/free/route.ts')
   assert.doesNotMatch(free, /stripe\.checkout|new Stripe|checkout\.sessions/, 'FREE plan never calls Stripe')
   assert.match(free, /status: 'ACTIVE'/, 'FREE activates the registration subscription locally')
-  assert.match(free, /redirectTo: '\/setup'/, 'FREE continues to onboarding')
+  assert.match(free, /redirectTo: result\.redirectTo|redirectTo:\s*'\/(setup|broker\/dashboard)'/, 'FREE continues to onboarding or dashboard')
 })
 
 test('broker/company isolation in checkout paths', () => {

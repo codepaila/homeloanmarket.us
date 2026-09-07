@@ -14,6 +14,11 @@ export type BrokerPublicState = {
   // broker discovery surface. Mirrors the ownership eligibility enforced by
   // lib/claim-completion.ts (company members cannot attach to a broker).
   hasActiveCompanyMembership?: boolean
+  // Canonical profile completeness. A broker must carry the identity + contact
+  // fields a public profile actually renders. Absent (undefined) is treated as
+  // complete so callers without the full record (e.g. atomic filter helpers
+  // that enforce completeness in the query itself) do not over-exclude.
+  profileComplete?: boolean
 }
 
 export type BrokerEntitlement = {
@@ -40,23 +45,48 @@ export function isBrokerOwner(brokerUserId: string | null, userId: string) {
   return brokerUserId !== null && brokerUserId === userId
 }
 
+// Canonical profile-completeness rule: the public profile must be able to
+// render identity, professional summary, and reachable office info. All five
+// fields are guaranteed non-null, non-empty for both admin-created and
+// self-registered records at creation; this guard only rejects corrupt or
+// leftover stub records.
+export function brokerProfileIsComplete(broker: {
+  displayName?: string | null
+  description?: string | null
+  phone?: string | null
+  officeAddress?: string | null
+  profileSlug?: string | null
+}) {
+  return [broker.displayName, broker.description, broker.phone, broker.officeAddress, broker.profileSlug]
+    .every((value) => typeof value === 'string' && value.trim().length > 0)
+}
+
 export function isPublicBroker(state: BrokerPublicState) {
-  const sourceEligible = state.creationSource === 'ADMIN_CREATED' || state.verificationStatus === 'VERIFIED'
   const ownerEligible =
     state.userId === null ||
     (state.userIsActive === true && state.hasActiveCompanyMembership !== true)
   return state.isVisible &&
     state.brokerStatus !== 'SUSPENDED' &&
-    ownerEligible &&
-    sourceEligible
+    state.profileComplete !== false &&
+    ownerEligible
 }
 
 // Canonical public marketplace eligibility shared by the broker listing,
-// radius search, and sitemap. ADMIN_CREATED brokers are platform-published
-// marketplace profiles that may be unowned and do not go through the
-// self-registration verification lifecycle, so they are public unless they are
-// suspended or hard-hidden via `isVisible`. SELF_REGISTERED brokers must still
-// be VERIFIED and visible. Both branches share the suspension and ownership
+// radius search, sitemap, and public detail pages.
+//
+// Verification is NOT a public eligibility requirement. It is a marker for
+// platform-reviewed/admin-published listings (admin-created brokers start
+// VERIFIED) and display metadata for the verified badge elsewhere. SELF
+// REGISTERED brokers complete a strict onboarding gate (account/email +
+// identity, NMLS, licensed states, validated US office) before a Broker record
+// is created, with `isVisible` set and the chosen subscription attached — so a
+// self-registered broker qualifies for publication exactly like an
+// admin-created one: visible, not suspended, profile complete, and owned by an
+// active, non-company user (or unowned). Making UNVERIFIED self-registered
+// brokers non-public would hide every paid subscriber with no practical path
+// to flip the flag (no broker-side or admin workflow exists for them).
+//
+// Both sources share the visibility, completeness, suspension and ownership
 // protections. An owned broker is additionally excluded when its owner is an
 // active Company member (an advertising/company account is not a genuine
 // mortgage broker owner).
@@ -64,6 +94,12 @@ export function publicBrokerWhere(): Prisma.BrokerWhereInput {
   return {
     isVisible: true,
     brokerStatus: { not: 'SUSPENDED' },
+    // Canonical profile completeness (mirrors brokerProfileIsComplete).
+    displayName: { not: '' },
+    description: { not: '' },
+    phone: { not: '' },
+    officeAddress: { not: '' },
+    profileSlug: { not: '' },
     AND: [
       {
         OR: [
@@ -71,7 +107,6 @@ export function publicBrokerWhere(): Prisma.BrokerWhereInput {
           { user: { isActive: true, companyMemberships: { none: { isActive: true } } } },
         ],
       },
-      { OR: [{ creationSource: 'ADMIN_CREATED' }, { verificationStatus: 'VERIFIED' }] },
     ],
   }
 }
@@ -108,7 +143,6 @@ export const BROKER_EDITABLE_FIELDS = [
   'displayName',
   'companyName',
   'description',
-  'profileSlug',
   'phone',
   'whatsapp',
   'email',

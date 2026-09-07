@@ -2,7 +2,8 @@
 
 import { cn } from '@/lib/utils'
 import { motion } from 'motion/react'
-import { Check, Star, Zap } from 'lucide-react'
+import { Check, Star, ChevronDown, ChevronUp } from 'lucide-react'
+import { useState, useEffect } from 'react'
 
 interface PricingCardProps {
   name: string
@@ -17,6 +18,7 @@ interface PricingCardProps {
   isPopular?: boolean
   onSelect?: (priceId: string, planName: string, planCode?: string) => void
   className?: string
+  initialVisibleFeatures?: number
 }
 
 export function PricingCard({
@@ -32,11 +34,35 @@ export function PricingCard({
   isPopular,
   onSelect,
   className,
+  initialVisibleFeatures = 4,
 }: PricingCardProps) {
+  const [showAllFeatures, setShowAllFeatures] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768) // 768px is the standard md breakpoint
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  // On desktop, show all features; on mobile, respect the toggle state
+  const shouldShowAll = !isMobile || showAllFeatures
+  const hasMoreThanInitial = features.length > initialVisibleFeatures && isMobile
+  const visibleFeatures = shouldShowAll 
+    ? features 
+    : features.slice(0, initialVisibleFeatures)
+  
+  const hiddenCount = features.length - initialVisibleFeatures
+
   return (
     <motion.div
       className={cn(
-        'relative flex flex-col rounded border bg-card/80 p-8',
+        'relative flex flex-col rounded border bg-card/80 p-4',
         'backdrop-blur-sm transition-all duration-300',
         'hover:border-primary/30 hover:shadow-medium',
         isCurrent &&
@@ -72,8 +98,8 @@ export function PricingCard({
         </div>
       </div>
 
-      <div className="mb-6 space-y-3">
-        {features.map((feature, i) => (
+      <div className="mb-6 space-y-1.5 md:space-y-3">
+        {visibleFeatures.map((feature, i) => (
           <div key={i} className="flex items-start gap-2.5">
             <div className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-success">
               <Check className="h-3 w-3" />
@@ -81,6 +107,32 @@ export function PricingCard({
             <span className="text-sm text-muted-foreground">{feature}</span>
           </div>
         ))}
+        
+        {hasMoreThanInitial && (
+          <button
+            onClick={() => setShowAllFeatures(!showAllFeatures)}
+            className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80 transition-colors mt-1 ml-7 md:hidden"
+          >
+            {showAllFeatures ? (
+              <>
+                <ChevronUp className="h-3.5 w-3.5" />
+                Show less
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-3.5 w-3.5" />
+                Show {hiddenCount} more feature{hiddenCount > 1 ? 's' : ''}
+              </>
+            )}
+          </button>
+        )}
+        
+        {/* Optional: Show a subtle indicator on desktop that all features are visible */}
+        {/* {!isMobile && features.length > initialVisibleFeatures && (
+          <div className="text-xs text-muted-foreground/50 mt-1 ml-7">
+            {features.length} features available
+          </div>
+        )} */}
       </div>
 
       {limits && (

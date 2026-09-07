@@ -26,7 +26,49 @@ function sanitize(location: SelectedUSLocation & { token?: string }): SelectedUS
   return rest
 }
 
-export function USLocationPicker({ value, onChange }: { value?: SelectedUSLocation; onChange: (location?: SelectedUSLocation) => void }) {
+// Deterministic display formatter for the selected location. The full
+// normalized address is preferred when meaningful; otherwise city/state is
+// used. Candidate strings are trimmed/case-normalized and de-duplicated so a
+// place-level result (e.g. normalizedAddress "Dallas, TX" with city "Dallas",
+// state "TX") is never shown twice.
+export function formatSelectedLocation(location: SelectedUSLocation): string {
+  const address = (location.normalizedAddress || '').trim()
+  const cityState = [location.city, location.state].filter(Boolean).map((s) => s.trim()).join(', ').trim()
+  const zip = (location.zip || '').trim()
+
+  const normalized = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim()
+  if (address) {
+    if (cityState && normalized(address) === normalized(cityState)) {
+      // The address is exactly the city/state — show it once, with ZIP if present.
+      return [cityState, zip].filter(Boolean).join(' ')
+    }
+    return address
+  }
+  return [cityState, zip].filter(Boolean).join(' ')
+}
+
+export function USLocationPicker({ value, onChange, onClear }: {
+  value?: SelectedUSLocation
+  onChange: (location?: SelectedUSLocation) => void
+  // Fires ONLY for the explicit "Clear location" action — never for typing
+  // (typing calls onChange(undefined) to invalidate unvalidated text). The
+  // parent uses this to persist the cleared state so it survives a refresh.
+  onClear?: () => void
+}) {
+  // The search input is purely transient UI state: it is seeded once from the
+  // canonical value (draft resume) and afterwards updated ONLY by user actions
+  // (typing, select, clear). It must NOT be synchronized from `value` on every
+  // render or in an effect:
+  //
+  //  - A render-body sync caused the Phase 8.24.4 "Too many re-renders" loop
+  //    (a comparison like `undefined !== ''` never converges).
+  //  - An effect sync would erase the user's typing, because typing calls
+  //    onChange(undefined) to invalidate unvalidated text, which sets `value`
+  //    to undefined and would reset the input to '' on every keystroke.
+  //
+  // The parent clears the canonical location (setValue(undefined)) and the
+  // confirmation panel is gated on `value?.placeId`, so no stale display can
+  // survive a clear; clear() also empties this input directly.
   const [input, setInput] = useState(value?.normalizedAddress || '')
   const [suggestions, setSuggestions] = useState<Array<{ placeId: string; label: string }>>([])
   const [error, setError] = useState('')
@@ -66,10 +108,19 @@ export function USLocationPicker({ value, onChange }: { value?: SelectedUSLocati
   }
 
   function clear() {
+    // Reset every piece of state this component owns that represents the
+    // selected location: the search input, any open suggestions, and any error.
+    // Then clear the single canonical value — the parent (wizard/form) clears
+    // its `location` field and every derived address field in its
+    // onChange(undefined) handler, so the confirmation panel below (which
+    // renders from `value`) disappears. The input is emptied here directly
+    // (the canonical `value` is not synchronized into it), so no stale address
+    // text survives a clear and no re-render loop is possible.
     setInput('')
     setSuggestions([])
     setError('')
     onChange(undefined)
+    onClear?.()
   }
 
   return (
@@ -97,9 +148,9 @@ export function USLocationPicker({ value, onChange }: { value?: SelectedUSLocati
           ))}
         </div>
       )}
-      {value ? (
+      {value && value.placeId ? (
         <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-success/40 bg-success/5 px-3 py-2">
-          <p className="text-xs text-success">{value.normalizedAddress} · {value.city}, {value.state} {value.zip}</p>
+          <p className="text-xs text-success">{formatSelectedLocation(value)}</p>
           <button
             type="button"
             onClick={clear}

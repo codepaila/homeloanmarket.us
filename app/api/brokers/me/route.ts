@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // app/api/brokers/me/route.ts
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { SubscriptionService } from '@/lib/subscription'
 import { getCurrentUser } from '@/lib/currentUser'
@@ -14,6 +14,7 @@ import { resolveUSPlace } from '@/lib/location/google-place'
 import { requireValidResolvedUSLocation } from '@/lib/location/broker-location'
 import { isSameOriginRequest } from '@/lib/origin'
 import { Prisma } from '@prisma/client'
+import { toBrokerOwnerDto } from '@/lib/broker-owner-dto'
 
 export async function GET() {
   try {
@@ -51,21 +52,6 @@ export async function GET() {
             startDate: true,
             endDate: true
           }
-        },
-        bankPartners: {
-          select: {
-            id: true,
-            bankName: true,
-            bankType: true,
-            since: true
-          }
-        },
-        reviews: {
-          select: {
-            rating: true,
-            comment: true,
-            createdAt: true
-          }
         }
       }
     })
@@ -78,8 +64,17 @@ export async function GET() {
     }
 
     const effectiveSubscription = SubscriptionService.effectiveSubscription(broker.subscription)
+    const owner = toBrokerOwnerDto(broker)
     return NextResponse.json({
-      broker,
+      broker: {
+        ...owner,
+        user: {
+          name: broker.user?.name ?? null,
+          email: broker.user?.email ?? null,
+          phone: broker.user?.phone ?? null,
+          image: broker.user?.image ?? null,
+        },
+      },
       hasActiveSubscription: effectiveSubscription.isActive,
       subscriptionPlan: effectiveSubscription.plan
     })
@@ -139,23 +134,11 @@ export async function PATCH(request: Request) {
     if (body.displayName !== undefined) updateData.displayName = body.displayName
     if (body.companyName !== undefined) updateData.companyName = body.companyName
     if (body.description !== undefined) updateData.description = body.description
-    if (body.profileSlug !== undefined) {
-      // Check if slug is already taken by another broker
-      const existingSlug = await prisma.broker.findFirst({
-        where: {
-          profileSlug: body.profileSlug,
-          id: { not: broker.id }
-        }
-      })
-      
-      if (existingSlug) {
-        return NextResponse.json(
-          { message: 'Profile slug is already taken. Please choose another.' },
-          { status: 400 }
-        )
-      }
-      updateData.profileSlug = body.profileSlug
-    }
+    // profileSlug is SERVER-GENERATED and IMMUTABLE. A client-supplied value is
+    // intentionally ignored — the server remains authoritative (the canonical
+    // slug is derived at finalization from companyName/displayName and made
+    // unique in lib/broker-registration.ts). Brokers can never change it and no
+    // tampered payload can overwrite it here.
     
     // Contact info
     if (body.phone !== undefined) updateData.phone = body.phone
@@ -268,27 +251,6 @@ export async function PATCH(request: Request) {
     // Settings
     if (body.isVisible !== undefined) updateData.isVisible = body.isVisible
     
-    // Bank partnerships (handle separately through BrokerBank model)
-    if (body.bankPartnerships !== undefined) {
-      // Delete existing bank partnerships
-      await prisma.brokerBank.deleteMany({
-        where: { brokerId: broker.id }
-      })
-      
-      // Create new bank partnerships
-      if (Array.isArray(body.bankPartnerships) && body.bankPartnerships.length > 0) {
-        const bankPartners = body.bankPartnerships.map((bankName: string) => ({
-          brokerId: broker.id,
-          bankName,
-          bankType: 'PRIVATE' // Default, could be improved
-        }))
-        
-        await prisma.brokerBank.createMany({
-          data: bankPartners
-        })
-      }
-    }
-
     const updatedBroker = await prisma.broker.update({
       where: { id: broker.id },
       data: updateData,
@@ -305,12 +267,6 @@ export async function PATCH(request: Request) {
           select: {
             plan: true,
             isActive: true
-          }
-        },
-        bankPartners: {
-          select: {
-            bankName: true,
-            bankType: true
           }
         }
       }

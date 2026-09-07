@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
           email: updatedUser.email || requestedEmail,
           verificationToken: token,
           redirect: false,
-          redirectTo: '/broker/subscription/select',
+          redirectTo: '/setup',
         })
         authenticated = true
       } catch (error) {
@@ -192,8 +192,8 @@ export async function POST(request: NextRequest) {
 
     const baseRedirect = claimContext
       ? '/claim-broker/continue'
-      : updatedUser.brokerRegistration?.id ? '/broker/subscription/select'
-      : updatedUser.companyMemberships?.length ? '/company/subscription/select'
+      : updatedUser.brokerRegistration?.id ? '/setup'
+      : updatedUser.companyMemberships?.length ? '/company/onboarding'
       : updatedUser.brokerProfile?.[0]?.id ? '/setup'
       : '/'
 

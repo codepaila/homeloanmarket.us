@@ -11,7 +11,8 @@ const dashboardClient = read('app/company/dashboard/CompanyDashboardClient.tsx')
 const checkout = read('app/api/company/subscription/checkout/route.ts')
 const subscriptionService = read('lib/subscription.ts')
 const webhook = read('app/api/stripe/webhook/route.ts')
-const selectPage = read('app/company/subscription/select/page.tsx')
+const selectPage = read('app/company/subscription/select/CompanySubscriptionSelect.tsx')
+const selectPageServer = read('app/company/subscription/select/page.tsx')
 
 // ---------------------------------------------------------------------------
 // Abandoned checkout self-healing on the dashboard
@@ -91,4 +92,11 @@ test('checkout route reconciles stale pending before creating a fresh session', 
 test('company plan selection supports retry and coupon revalidation', () => {
   assert.match(selectPage, /\/api\/company\/subscription\/checkout/)
   assert.match(selectPage, /couponCode: couponState === 'applied' \? couponAppliedCode : ''/)
+})
+
+test('plan selection is server-gated: incomplete profile goes to onboarding, active to dashboard', () => {
+  assert.match(selectPageServer, /getCompanyOnboardingStatus/)
+  assert.match(selectPageServer, /PROFILE_INCOMPLETE/)
+  assert.match(selectPageServer, /redirect\('\/company\/onboarding'\)/)
+  assert.match(selectPageServer, /redirect\('\/company\/dashboard'\)/)
 })

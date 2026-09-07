@@ -10,7 +10,7 @@ const profileImageUpload = read('components/brokers/ProfileImageUpload.tsx')
 const imageUpload = read('components/ImageUpload.tsx')
 const companyProfile = read('components/sections/broker/CompanyProfile.tsx')
 const companyDashboard = read('app/company/dashboard/CompanyDashboardClient.tsx')
-const companyOnboarding = read('app/company/onboarding/page.tsx')
+const companyOnboarding = read('app/company/onboarding/CompanyOnboarding.tsx')
 const adminMedia = read('app/admin/media/page.tsx')
 const footer = read('components/layout/Footer.tsx')
 

@@ -167,9 +167,10 @@ test('wizard labels the broker tax field as a US Tax ID / EIN', () => {
   assert.doesNotMatch(wizard, /Permanent Account Number/)
 })
 
-test('broker profile tax field is labeled as a US tax identifier', () => {
+test('broker-facing edit profile no longer exposes registration/tax identifier fields', () => {
   const edit = read('components/sections/broker/EditProfile.tsx')
-  assert.match(edit, /Your business tax identifier \(EIN or individual tax ID\)/)
+  assert.doesNotMatch(edit, /registrationNumber/)
+  assert.doesNotMatch(edit, /panNumber/)
   assert.doesNotMatch(edit, /Permanent Account Number/)
 })
 

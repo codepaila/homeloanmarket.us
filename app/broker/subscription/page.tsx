@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -18,7 +18,6 @@ import {
   Download,
   TrendingUp,
   Zap,
-  MessageSquare,
   Settings,
   RefreshCw,
   ArrowRight,
@@ -26,6 +25,10 @@ import {
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { useSubscriptionPlans } from '@/hooks/useClient'
+import { useBrokerChromeResync } from '@/hooks/useSubscription'
+import { useSWRConfig } from 'swr'
+import { baseUrl } from '@/utils/baseUrl'
+import { brokerPlanDisplayName } from '@/lib/broker-plan-display'
 import  SubscriptionPlans  from '@/components/sections/subscriptions/SubscriptionPlan'
 import  UsageStats  from '@/components/sections/subscriptions/Usagestats'
 import  BillingHistory  from '@/components/sections/subscriptions/BillingHistory'
@@ -46,18 +49,43 @@ export default function SubscriptionPage() {
   const { plans: availablePlans, error: plansError, isLoading: plansLoading, mutate: refetchPlans } =
     useSubscriptionPlans()
 
+  // Live badge sync: after the authoritative subscription data is confirmed,
+  // the broker layout is re-rendered (router.refresh) and the client-side
+  // broker/subscription SWR keys are revalidated, so the header badge and any
+  // mounted subscription surface update without a manual browser refresh.
+  const resync = useBrokerChromeResync()
+  const { cache } = useSWRConfig()
+  const fetchedOnceRef = useRef(false)
+
+  const detailsKey = `${baseUrl}/api/subscription/details`
+
   async function fetchSubscriptionData() {
     try {
       const [usageRes, subscriptionRes] = await Promise.all([
         fetch('/api/subscription/usage'),
-        fetch('/api/subscription/details')
+        fetch(detailsKey)
       ])
 
       const usageJson = await usageRes.json()
       const subscriptionJson = await subscriptionRes.json()
 
       if (usageJson.success) setUsageData(usageJson.data)
-      if (subscriptionJson.success) setSubscriptionData(subscriptionJson.data)
+      if (subscriptionJson.success) {
+        // Compare against the previously confirmed plan (from the SWR cache) so
+        // a plan change made in the Stripe billing portal is reported on return.
+        const previousPlan = cache.get(detailsKey)?.data?.data?.plan as string | undefined
+        const nextPlan = subscriptionJson.data?.plan as string | undefined
+        if (previousPlan && nextPlan && previousPlan !== nextPlan) {
+          toast.success(
+            nextPlan === 'FEATURED'
+              ? `You're now on the ${brokerPlanDisplayName(nextPlan)} plan.`
+              : 'Your subscription has been changed to Free.',
+          )
+        }
+        setSubscriptionData(subscriptionJson.data)
+        // The server has confirmed the authoritative subscription state.
+        resync()
+      }
     } catch (error) {
       toast.error('Failed to load subscription data')
       console.error(error)
@@ -68,7 +96,8 @@ export default function SubscriptionPage() {
 
   useEffect(() => {
     // Allow guests to view subscription plans, but only load user data for authenticated users.
-    if (sessionStatus === 'authenticated') {
+    if (sessionStatus === 'authenticated' && !fetchedOnceRef.current) {
+      fetchedOnceRef.current = true
       fetchSubscriptionData()
     }
     // Guests stay on the page and see public subscription plans.
@@ -174,7 +203,7 @@ export default function SubscriptionPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid grid-cols-4">
+        <TabsList className="grid grid-cols-3">
           <TabsTrigger value="overview">
             <BarChart3 className="h-4 w-4 mr-2" />
             Overview
@@ -183,10 +212,10 @@ export default function SubscriptionPage() {
             <CreditCard className="h-4 w-4 mr-2" />
             Plans & Pricing
           </TabsTrigger>
-          <TabsTrigger value="usage">
+          {/* <TabsTrigger value="usage">
             <TrendingUp className="h-4 w-4 mr-2" />
             Usage
-          </TabsTrigger>
+          </TabsTrigger> */}
           <TabsTrigger value="billing">
             <Download className="h-4 w-4 mr-2" />
             Billing
@@ -302,14 +331,14 @@ export default function SubscriptionPage() {
                   View Plans
                 </Button>
 
-                <Button 
+                {/* <Button 
                   variant="outline" 
                   className="gap-2"
                   onClick={() => setActiveTab('usage')}
                 >
                   <TrendingUp className="h-4 w-4" />
                   View Usage
-                </Button>
+                </Button> */}
               </div>
             </CardContent>
           </Card>

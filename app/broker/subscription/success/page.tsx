@@ -1,7 +1,7 @@
 // app/broker/subscription/success/page.tsx
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent} from '@/components/ui/card'
@@ -13,14 +13,22 @@ import {
  
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import { useBrokerChromeResync } from '@/hooks/useSubscription'
+import { brokerPlanDisplayName } from '@/lib/broker-plan-display'
 
 function SubscriptionSuccessContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const resync = useBrokerChromeResync()
   const [planName, setPlanName] = useState<string>('')
   const [loading, setLoading] = useState(true)
+  const verifyingRef = useRef(false)
 
   const verifySubscription = async (sessionId: string) => {
+    // Guard against duplicate verification (rapid navigation / React strict
+    // mode double effects) so the webhook reconciliation is not re-run.
+    if (verifyingRef.current) return
+    verifyingRef.current = true
     try {
       const response = await fetch(`/api/subscription/verify?session_id=${sessionId}`)
       const data = await response.json()
@@ -29,6 +37,11 @@ function SubscriptionSuccessContent() {
         setPlanName(data.data.planName)
         setLoading(false)
         toast.success('Subscription activated successfully!')
+        // The verify route reconciled the database with the paid Stripe
+        // subscription, so this is the authoritative state. Re-render the
+        // server components (header badge) and revalidate the client-side
+        // subscription queries so the new plan shows immediately.
+        resync()
       } else {
         setLoading(false)
         toast.error('Failed to verify subscription')
@@ -76,7 +89,7 @@ function SubscriptionSuccessContent() {
               </h1>
               
               <p className="text-muted-foreground text-lg mb-2">
-                Thank you for subscribing to {planName || 'Premium'}
+                Thank you for subscribing to {planName ? brokerPlanDisplayName(planName) : 'Premium'}
               </p>
               <p className="text-muted-foreground">
                 Your account has been upgraded successfully

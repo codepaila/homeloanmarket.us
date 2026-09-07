@@ -91,17 +91,17 @@ function SubscriptionSelectContent() {
   }
 
   return (
-    <main className="min-h-screen bg-background px-4 py-12">
+    <main className="min-h-screen ">
       <div className="mx-auto max-w-5xl">
         <div className="mx-auto max-w-2xl text-center">
-          <h1 className="text-3xl font-bold text-foreground">Choose your broker plan</h1>
-          <p className="mt-3 text-muted-foreground">Select a plan before completing your broker profile.</p>
+          <h1 className=" text-xl sm:text-3xl font-bold text-foreground">Choose your broker plan</h1>
+          <p className="mt-1.5 sm:mt-3 text-muted-foreground text-sm sm:text-base">Select a plan before completing your broker profile.</p>
         </div>
         {error && <p className="mx-auto mt-6 max-w-2xl rounded bg-destructive/10 p-3 text-center text-sm text-destructive">{error}</p>}
         {plans.length === 0 && !error ? (
           <p className="mt-10 text-center text-sm text-muted-foreground">Loading plans…</p>
         ) : (
-        <div className="mt-10 grid gap-8 md:grid-cols-2">
+        <div className=" mt-5 sm:mt-10 grid gap-4 md:gap-8 md:grid-cols-2">
           {plans.map((plan) => (
             <div
               key={plan.id}

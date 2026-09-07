@@ -7,7 +7,7 @@ const read = (path: string) => fs.readFileSync(path, 'utf8')
 const checkout = read('app/api/company/subscription/checkout/route.ts')
 const couponRoute = read('app/api/company/subscription/coupon/validate/route.ts')
 const couponLib = read('lib/company-coupon.ts')
-const selectPage = read('app/company/subscription/select/page.tsx')
+const selectPage = read('app/company/subscription/select/CompanySubscriptionSelect.tsx')
 const plansApi = read('app/api/company/subscription/plans/route.ts')
 const companyPlanLib = read('lib/company-plan.ts')
 const subscriptionLib = read('lib/subscription.ts')
@@ -79,7 +79,7 @@ test('paid plans use the DB plan Stripe price ID and a server-validated promotio
 })
 
 test('inactive plans are not offered for purchase', () => {
-  assert.match(plansApi, /getActiveCompanyAdvertisingPlans/)
+  assert.match(plansApi, /getCanonicalCompanyAdvertisingPlan/)
   assert.match(companyPlanLib, /where: \{ id: planId, isActive: true \}/)
 })
 
@@ -158,7 +158,7 @@ test('coupon is only sent to checkout after server validation succeeds', () => {
 // ---------------------------------------------------------------------------
 
 test('company plans are DB-backed, not a static catalog', () => {
-  assert.match(plansApi, /getActiveCompanyAdvertisingPlans/)
+  assert.match(plansApi, /getCanonicalCompanyAdvertisingPlan/)
   assert.doesNotMatch(plansApi, /subscriptionPlans from/)
   assert.match(companyPlanLib, /companyAdvertisingPlan\.findMany/)
 })

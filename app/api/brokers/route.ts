@@ -391,7 +391,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       message: 'Broker profile created successfully',
       broker,
-      profileUrl: `/broker/${broker.profileSlug}`,
+      profileUrl: `/brokers/${broker.profileSlug}`,
       nextSteps: [
         'Complete your profile verification',
         'Add your bank partnerships',
@@ -409,6 +409,17 @@ export async function POST(request: Request) {
     if (error?.name === 'BrokerSubscriptionRequiredError') {
       return NextResponse.json(
         { message: error.message },
+        { status: 409 }
+      )
+    }
+    // profileSlug is the only unique constraint on Broker, so P2002 here can
+    // only be a slug collision that slipped in between the collision check and
+    // the create (concurrent same-company-name setup). The atomic transaction
+    // already guarantees no duplicate/broken record; this surfaces a clean,
+    // retryable response. The next attempt deterministically gets a `-2` suffix.
+    if (error?.code === 'P2002') {
+      return NextResponse.json(
+        { message: 'Another broker was just created with this company name. Please retry.' },
         { status: 409 }
       )
     }

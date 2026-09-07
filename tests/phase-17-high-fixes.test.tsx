@@ -94,7 +94,6 @@ test('H2: allowlist keeps legitimate broker-editable fields', () => {
     displayName: 'New Name',
     companyName: 'New Co',
     description: 'desc',
-    profileSlug: 'new-slug',
     phone: '+1-555-0000',
     whatsapp: '+1-555-0000',
     email: 'n@x.com',
@@ -117,7 +116,7 @@ test('H2: allowlist keeps legitimate broker-editable fields', () => {
   assert.equal(picked.isVisible, undefined, 'visibility must remain admin-only')
 })
 
-test('H2: non-admin cannot set ownership, status, metrics, or verification fields', () => {
+test('H2: non-admin cannot set ownership, status, metrics, system-managed slug, or verification fields', () => {
   const body = {
     userId: 'u-victim',
     brokerStatus: 'FEATURED',
@@ -130,10 +129,11 @@ test('H2: non-admin cannot set ownership, status, metrics, or verification field
     creationSource: 'SELF_REGISTERED',
     subscription: 'FEATURED',
     verificationDocuments: ['x'],
+    profileSlug: 'new-slug',
     displayName: 'Allowed Edit',
   }
   const picked = pickBrokerEditableFields(body, false)
-  for (const field of ['userId', 'brokerStatus', 'verificationStatus', 'featuredRank', 'verifiedAt', 'avgRating', 'totalLeads', 'profileViews', 'creationSource', 'subscription', 'verificationDocuments']) {
+  for (const field of ['userId', 'brokerStatus', 'verificationStatus', 'featuredRank', 'verifiedAt', 'avgRating', 'totalLeads', 'profileViews', 'creationSource', 'subscription', 'verificationDocuments', 'profileSlug']) {
     assert.equal(picked[field], undefined, `field ${field} must be rejected for a broker`)
   }
   assert.equal(picked.displayName, 'Allowed Edit', 'legitimate edits must still pass')

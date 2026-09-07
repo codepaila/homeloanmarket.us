@@ -8,13 +8,13 @@ const registerPage = read('app/(public)/company/register/CompanyRegisterForm.tsx
 const registerRoute = read('app/api/company/register/route.ts')
 const checkout = read('app/api/company/subscription/checkout/route.ts')
 const verifyEmail = read('app/api/auth/verify-email/route.ts')
-const plansSelectPage = read('app/company/subscription/select/page.tsx')
+const plansSelectPage = read('app/company/subscription/select/CompanySubscriptionSelect.tsx')
 const companyIntent = read('app/api/auth/company-intent/route.ts')
 const companyIntentLib = read('lib/company-intent.ts')
 const subscription = read('lib/subscription.ts')
 const companyPlan = read('lib/company-plan.ts')
 const schema = read('prisma/schema.prisma')
-const onboardingPage = read('app/company/onboarding/page.tsx')
+const onboardingPage = read('app/company/onboarding/CompanyOnboarding.tsx')
 const onboardingRoute = read('app/api/company/onboarding/route.ts')
 const dashboardPage = read('app/company/dashboard/page.tsx')
 const dashboardClient = read('app/company/dashboard/CompanyDashboardClient.tsx')
@@ -49,9 +49,16 @@ test('company checkout has no global price fallback and fails clearly', () => {
   assert.match(checkout, /Company advertising plan is not configured for checkout/)
 })
 
-test('verified company is routed to company advertising plans, not the dashboard', () => {
-  assert.match(verifyEmail, /companyMemberships\?\.length \? '\/company\/subscription\/select'/)
+test('verified company is routed to company onboarding, not billing', () => {
+  assert.match(verifyEmail, /companyMemberships\?\.length \? '\/company\/onboarding'/)
+  assert.doesNotMatch(verifyEmail, /companyMemberships\?\.length \? '\/company\/subscription\/select'/)
   assert.doesNotMatch(verifyEmail, /companyMemberships\?\.length \? '\/company\/dashboard'/)
+})
+
+test('Google company intent redirects to onboarding (state-based), never auto-charges', () => {
+  assert.match(companyIntent, /resolveCompanyOnboardingDestination/)
+  assert.match(companyIntent, /\/company\/onboarding/)
+  assert.doesNotMatch(companyIntent, /checkout\.sessions|stripe\.customers/)
 })
 
 test('company plan selection page loads plans and submits the selected planId', () => {

@@ -50,11 +50,12 @@ test('state machine: completed broker with no registration (claim/admin flow) ->
   assert.equal(resolveBrokerOnboardingDestination(user, '/setup'), '/broker/dashboard')
 })
 
-test('state machine: subscription-pending broker -> plan selection from either page', () => {
+test('state machine: pending / in-progress broker stays on /setup or /broker/subscription/select and is redirected away from dashboard', () => {
   const user: User = { role: 'BROKER', brokerProfile: null, brokerRegistration: { subscription: pendingSub } }
   assert.equal(getBrokerOnboardingStatus(user), 'SUBSCRIPTION_PENDING')
-  assert.equal(resolveBrokerOnboardingDestination(user, '/broker/dashboard'), '/broker/subscription/select')
-  assert.equal(resolveBrokerOnboardingDestination(user, '/setup'), '/broker/subscription/select')
+  assert.equal(resolveBrokerOnboardingDestination(user, '/broker/dashboard'), '/setup')
+  assert.equal(resolveBrokerOnboardingDestination(user, '/setup'), null, 'profile preparation on /setup is permitted')
+  assert.equal(resolveBrokerOnboardingDestination(user, '/broker/subscription/select'), null, 'plan selection is permitted')
 })
 
 test('state machine: BROKER with no registration -> /register', () => {

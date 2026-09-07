@@ -15,10 +15,13 @@
 //                 subscription never sets it)
 //   hasImage  -> 1 when profileImage OR logo is a non-empty value (matches what
 //                the listing card actually renders via `profileImage || logo`)
+//   tier      -> 1 = paid active subscription, 2 = admin-enabled Mortgage
+//                Expert (no paid plan), 3 = profile image, 4 = no qualifying
+//                signal. The ranked listing excludes tier 4 (eligibility is
+//                separate: completeness/visibility still gate the detail page).
 //
 // Sort (before skip/take so pagination stays server-side and correct):
-//   featured desc, featuredRank desc, mortgageExpertEnabled desc,
-//   hasImage desc, experienceYears desc, _id asc
+//   tier asc, featuredRank desc, experienceYears desc, _id asc
 import prisma from '@/lib/prisma'
 
 type PublicListingMatchInput = {
@@ -54,9 +57,14 @@ function buildListingMatch(input: PublicListingMatchInput, isAdmin: boolean): Re
   if (!isAdmin) {
     conditions.push({ isVisible: true })
     conditions.push({ brokerStatus: { $ne: 'SUSPENDED' } })
-    // Mirrors publicBrokerWhere(): ADMIN_CREATED brokers are public regardless
-    // of verificationStatus; all other sources must be VERIFIED.
-    conditions.push({ $or: [{ creationSource: 'ADMIN_CREATED' }, { verificationStatus: 'VERIFIED' }] })
+    // Canonical public eligibility (mirrors publicBrokerWhere()):
+    // profile completeness, not verification/creationSource. A self-registered
+    // broker with a valid, complete, published profile is public.
+    conditions.push({ displayName: { $nin: [null, ''] } })
+    conditions.push({ description: { $nin: [null, ''] } })
+    conditions.push({ phone: { $nin: [null, ''] } })
+    conditions.push({ officeAddress: { $nin: [null, ''] } })
+    conditions.push({ profileSlug: { $nin: [null, ''] } })
   }
   if (input.search) {
     conditions.push({
@@ -156,12 +164,14 @@ export async function getPublicListingPage(
           ],
         },
         // Has a usable profile/company image: matches the card's `profileImage || logo`.
+        // $type 'string' excludes null AND missing fields (a `$ne` alone would
+        // let a missing field through as "has image").
         hasImage: {
           $cond: [
             {
               $or: [
-                { $and: [{ $ne: ['$profileImage', null] }, { $ne: ['$profileImage', ''] }] },
-                { $and: [{ $ne: ['$logo', null] }, { $ne: ['$logo', ''] }] },
+                { $and: [{ $ne: ['$profileImage', ''] }, { $eq: [{ $type: '$profileImage' }, 'string'] }] },
+                { $and: [{ $ne: ['$logo', ''] }, { $eq: [{ $type: '$logo' }, 'string'] }] },
               ],
             },
             1,
@@ -170,13 +180,50 @@ export async function getPublicListingPage(
         },
       },
     },
+    {
+      // Business-priority tier, computed separately from eligibility so the
+      // ranked listing can surface only qualifying brokers:
+      //   1 = paid active subscription (featured)
+      //   2 = admin-enabled Mortgage Expert (no paid plan)
+      //   3 = usable profile image
+      //   4 = no qualifying signal
+      //
+      // Deliberately a SECOND aggregation stage: MongoDB resolves a field
+      // reference inside the same stage against the input document, not
+      // against fields computed earlier in that stage, so `$featured`/`$hasImage`
+      // above would always read as missing here (and every broker would fall to
+      // tier 4). Splitting the stage materializes them first.
+      $addFields: {
+        tier: {
+          $cond: [
+            { $eq: ['$featured', 1] },
+            1,
+            {
+              $cond: [
+                { $eq: ['$mortgageExpertEnabled', true] },
+                2,
+                { $cond: [{ $eq: ['$hasImage', 1] }, 3, 4] },
+              ],
+            },
+          ],
+        },
+      },
+    },
   )
+
+  // The ranked listing only surfaces brokers with at least one qualifying
+  // business signal (paid plan / admin Mortgage Expert / profile image).
+  // Eligibility (isVisible, status, completeness, ownership) is separate and
+  // still governs the public detail page and sitemap.
+  if (!opts.admin) {
+    pipeline.push({ $match: { tier: { $lte: 3 } } })
+  }
 
   pipeline.push({
     $facet: {
       metadata: [{ $count: 'total' }],
       data: [
-        { $sort: { featured: -1, featuredRank: -1, mortgageExpertEnabled: -1, hasImage: -1, experienceYears: -1, _id: 1 } },
+        { $sort: { tier: 1, featuredRank: -1, experienceYears: -1, _id: 1 } },
         { $skip: opts.take * (opts.page - 1) },
         { $limit: opts.take },
         { $project: { _id: 1 } },

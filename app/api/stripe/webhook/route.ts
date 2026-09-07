@@ -150,14 +150,19 @@ async function handleStripeEvent(event: Stripe.Event) {
       // checkout.session.completed can still establish ACTIVE afterwards.
       const session = event.data.object as Stripe.Checkout.Session
       const ownerType = session.metadata?.ownerType || null
-      // Other products do not keep a persistent CHECKOUT_PENDING that this
-      // expiry needs to reconcile; COMPANY is the only product with this state.
-      if (ownerType !== 'COMPANY' || !session.customer) return
-      await SubscriptionService.reconcileCompanyCheckoutExpired(
-        session.customer as string,
-        ownerType,
-        { companyId: session.metadata?.companyId || null },
-      )
+      if (ownerType === 'COMPANY' && session.customer) {
+        await SubscriptionService.reconcileCompanyCheckoutExpired(
+          session.customer as string,
+          ownerType,
+          { companyId: session.metadata?.companyId || null },
+        )
+      } else if (ownerType === 'BROKER_REGISTRATION' && session.customer) {
+        await SubscriptionService.reconcileBrokerRegistrationCheckoutExpired(
+          session.customer as string,
+          ownerType,
+          { registrationId: session.metadata?.brokerRegistrationId || null },
+        )
+      }
       return
     }
     case 'customer.subscription.updated': {

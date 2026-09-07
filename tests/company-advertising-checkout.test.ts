@@ -60,13 +60,13 @@ type Plan = {
 } | null
 
 const state: {
-  currentCompany: { user: { id: string; email: string }; company: { id: string; name: string; status?: string }; membership: Record<string, unknown> } | null
+  currentCompany: { user: { id: string; email: string }; company: { id: string; name: string; status?: string; onboardedAt?: Date | null }; membership: Record<string, unknown> } | null
   plan: Plan
   stripeSecretKey: string | null
   createdCustomer: boolean
   freePlanUpdated: boolean
 } = {
-  currentCompany: { user: { id: 'user-1', email: 'company@example.com' }, company: { id: 'company-1', name: 'Acme Realty' }, membership: {} },
+  currentCompany: { user: { id: 'user-1', email: 'company@example.com' }, company: { id: 'company-1', name: 'Acme Realty', status: 'ACTIVE', onboardedAt: new Date('2026-01-01') }, membership: {} },
   plan: null,
   stripeSecretKey: 'sk_test_fake_not_real',
   createdCustomer: false,
@@ -84,6 +84,7 @@ mock.module('@/lib/origin', {
 mock.module('@/lib/company-plan', {
   namedExports: {
     resolveCompanyPlanForCheckout: async () => state.plan,
+    getCanonicalCompanyAdvertisingPlan: async () => state.plan,
     COMPANY_PLAN_DEFAULT_NAME: 'ADVERTISING',
   },
 })
@@ -142,7 +143,16 @@ test('company checkout requires an authenticated company (session ownership)', a
   state.currentCompany = null
   const res = await post({ planId: 'plan-1' })
   assert.equal(res.status, 403)
-  state.currentCompany = { user: { id: 'user-1', email: 'company@example.com' }, company: { id: 'company-1', name: 'Acme Realty' }, membership: {} }
+  state.currentCompany = { user: { id: 'user-1', email: 'company@example.com' }, company: { id: 'company-1', name: 'Acme Realty', status: 'ACTIVE', onboardedAt: new Date('2026-01-01') }, membership: {} }
+})
+
+test('company checkout rejects an incomplete company profile before any Stripe work', async () => {
+  state.currentCompany = { user: { id: 'user-1', email: 'company@example.com' }, company: { id: 'company-1', name: 'Acme Realty', status: 'PENDING', onboardedAt: null }, membership: {} }
+  const res = await post({ planId: 'plan-1' })
+  assert.equal(res.status, 403)
+  const data = await res.json()
+  assert.equal(data.code, 'PROFILE_REQUIRED')
+  state.currentCompany = { user: { id: 'user-1', email: 'company@example.com' }, company: { id: 'company-1', name: 'Acme Realty', status: 'ACTIVE', onboardedAt: new Date('2026-01-01') }, membership: {} }
 })
 
 test('company checkout rejects an inactive/missing plan', async () => {

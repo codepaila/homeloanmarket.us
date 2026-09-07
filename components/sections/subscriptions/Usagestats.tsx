@@ -3,10 +3,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import {
-  Banknote, 
   Eye, 
-  Star, 
-  FileText,
+  Star,
   BarChart3,
   Target,
   Zap,
@@ -41,25 +39,11 @@ export default function UsageStats({ usageData, plan }: UsageStatsProps) {
 
   const usageItems = [
     {
-      label: 'Bank Partners',
-      current: usage?.bankPartners || 0,
-      icon: Banknote,
-      color: 'blue',
-      description: 'Number of bank partnerships'
-    },
-    {
       label: 'Profile Views',
       current: usage?.profileViews || 0,
       icon: Eye,
       color: 'purple',
       description: 'Total profile views'
-    },
-    {
-      label: 'Contact Messages',
-      current: usage?.contactMessages || 0,
-      icon: FileText,
-      color: 'orange',
-      description: 'Messages received'
     },
     {
       label: 'Reviews',
@@ -73,23 +57,7 @@ export default function UsageStats({ usageData, plan }: UsageStatsProps) {
   return (
     <div className="space-y-6">
       {/* Stats Overview */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Bank Partners</p>
-                <p className="text-2xl font-bold mt-1">
-                  {usage?.bankPartners || 0}
-                </p>
-              </div>
-              <div className="h-12 w-12 rounded bg-blue-100 flex items-center justify-center">
-                <Banknote className="h-6 w-6 text-info" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">

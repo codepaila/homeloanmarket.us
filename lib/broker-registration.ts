@@ -164,8 +164,8 @@ export async function createBrokerAccount(input: BrokerRegistrationInput) {
     let profileSlug = baseSlug
     let suffix = 1
     while (await tx.broker.findUnique({ where: { profileSlug } })) {
-      profileSlug = `${baseSlug}-${suffix}`
       suffix += 1
+      profileSlug = `${baseSlug}-${suffix}`
     }
 
     const user = await tx.user.create({
@@ -220,7 +220,9 @@ export type ExistingUserBrokerInput = {
   description?: string
   profileSlug?: string
   phone: string
+  whatsapp?: string | null
   email?: string | null
+  website?: string | null
   // When a `location` is supplied the structured office fields are derived
   // from it server-side, so these are optional fallbacks.
   officeAddress?: string
@@ -229,6 +231,8 @@ export type ExistingUserBrokerInput = {
   pinCode?: string
   experienceYears?: number
   bankPartnerships?: string[]
+  registrationNumber?: string | null
+  panNumber?: string | null
   nmls?: string
   licenseStates?: string[]
   logo?: string
@@ -246,90 +250,127 @@ export type ExistingUserBrokerInput = {
   }
 }
 
-type RegistrationSubscription = {
-  plan: SubscriptionPlan
-  isActive: boolean
-  startDate?: Date | null
-  endDate?: Date | null
-  stripeCustomerId?: string | null
-  stripeSubId?: string | null
-}
-
-export async function createBrokerForExistingUser(userId: string, data: ExistingUserBrokerInput) {
+export async function finalizeBrokerRegistration(
+  userId: string,
+  dataOverride?: Partial<ExistingUserBrokerInput>,
+) {
   return prisma.$transaction(async (tx) => {
-    const existing = await tx.broker.findFirst({ where: { userId }, select: { id: true } })
+    const existing = await tx.broker.findFirst({ where: { userId } })
     if (existing) {
-      const error = new Error('ALREADY_A_BROKER')
-      error.name = 'AlreadyBrokerError'
-      throw error
+      return existing
     }
 
     const registration = await tx.brokerRegistration.findUnique({
       where: { userId },
       include: { subscription: true, draft: true },
     })
-    const selectedSubscription: RegistrationSubscription = registration?.subscription || {
-      plan: 'FREE',
-      isActive: true,
-      startDate: new Date(),
-      endDate: null,
+    if (!registration) {
+      const error = new Error('Broker registration not found')
+      error.name = 'RegistrationNotFoundError'
+      throw error
     }
-    if (registration && (registration.status === 'INTENT_SELECTED' || !registration.subscription?.isActive || registration.subscription.status !== 'ACTIVE')) {
+
+    const selectedSubscription = registration.subscription
+    if (!selectedSubscription || !selectedSubscription.isActive || selectedSubscription.status !== 'ACTIVE') {
       const error = new Error('An active broker subscription is required before onboarding')
       error.name = 'BrokerSubscriptionRequiredError'
       throw error
     }
 
-    const displayName = data.displayName.trim()
-    const slugSource = data.companyName?.trim() || displayName
-    const baseSlug = data.profileSlug?.trim() ? data.profileSlug.trim() : slugifyBrokerName(slugSource)
+    const rawDraft = registration.draft?.data && typeof registration.draft.data === 'object' && !Array.isArray(registration.draft.data)
+      ? (registration.draft.data as Record<string, unknown>)
+      : {}
+    const merged: Record<string, unknown> = {
+      ...rawDraft,
+      ...(dataOverride || {}),
+    }
+
+    const displayName = typeof merged.displayName === 'string' ? merged.displayName.trim() : ''
+    const phone = typeof merged.phone === 'string' ? merged.phone.trim() : ''
+    const description = typeof merged.description === 'string' ? merged.description.trim() : ''
+    const nmls = typeof merged.nmls === 'string' ? merged.nmls.trim() : ''
+    const licenseStates = Array.isArray(merged.licenseStates) ? (merged.licenseStates as string[]) : []
+
+    if (!displayName || displayName.length < 2) {
+      throw new Error('Display name must be at least 2 characters')
+    }
+    if (!phone || phone.replace(/\D/g, '').length < 7) {
+      throw new Error('Phone number must be at least 7 digits')
+    }
+    if (!description || description.length < 20) {
+      throw new Error('Description must be at least 20 characters')
+    }
+    if (!nmls || !/^\d{4,10}$/.test(nmls)) {
+      throw new Error('NMLS ID must be 4–10 digits')
+    }
+    if (licenseStates.length === 0) {
+      throw new Error('Select at least one licensed state')
+    }
+
+    const location = merged.location && typeof merged.location === 'object' ? (merged.location as ExistingUserBrokerInput['location']) : undefined
+    const officeAddress = location?.normalizedAddress || (typeof merged.officeAddress === 'string' ? merged.officeAddress : '')
+    const city = location?.city || (typeof merged.city === 'string' ? merged.city : '')
+    const state = location?.state || (typeof merged.state === 'string' ? merged.state : '')
+    const pinCode = location?.zip || (typeof merged.pinCode === 'string' ? merged.pinCode : typeof merged.zipCode === 'string' ? merged.zipCode : '')
+
+    // profileSlug is SERVER-GENERATED and NEVER a user/client input. It is
+    // derived from the canonical display source (companyName, else displayName)
+    // and made unique deterministically. A client-supplied slug (e.g. from an
+    // older draft or a tampered payload) is intentionally ignored — the server
+    // remains authoritative. Existing Brokers already have a slug preserved
+    // because finalization returns early for an existing Broker.
+    const slugSource = (typeof merged.companyName === 'string' && merged.companyName.trim()) || displayName
+    const baseSlug = slugifyBrokerName(slugSource)
     let profileSlug = baseSlug
     let suffix = 1
     while (await tx.broker.findUnique({ where: { profileSlug } })) {
-      profileSlug = `${slugifyBrokerName(slugSource)}-${suffix}`
       suffix += 1
+      profileSlug = `${slugifyBrokerName(slugSource)}-${suffix}`
     }
 
-    // The Google-resolved location is the authoritative source for the office
-    // address. When present, the structured fields are derived from it so the
-    // stored city/state/ZIP/coordinates always describe the same place.
-    const officeAddress = data.location?.normalizedAddress || data.officeAddress || ''
-    const city = data.location?.city || data.city || ''
-    const state = data.location?.state || data.state || ''
-    const pinCode = data.location?.zip || data.pinCode || ''
+    const dbPlan = await tx.brokerSubscriptionPlan.findFirst({
+      where: { code: selectedSubscription.plan, isActive: true },
+      select: { id: true },
+    })
 
     const broker = await tx.broker.create({
       data: {
         userId,
         creationSource: 'SELF_REGISTERED',
         displayName,
-        companyName: data.companyName || null,
-        description: data.description || '',
+        companyName: (typeof merged.companyName === 'string' && merged.companyName.trim()) || null,
+        description,
         profileSlug,
-        phone: data.phone,
-        email: data.email || null,
-        logo: data.logo || null,
-        profileImage: data.profileImage || null,
-        coverImage: data.coverImage || null,
+        phone,
+        whatsapp: (typeof merged.whatsapp === 'string' && merged.whatsapp.trim()) || null,
+        email: (typeof merged.email === 'string' && merged.email.trim()) || null,
+        website: (typeof merged.website === 'string' && merged.website.trim()) || null,
+        logo: typeof merged.logo === 'string' ? merged.logo : null,
+        profileImage: typeof merged.profileImage === 'string' ? merged.profileImage : null,
+        coverImage: typeof merged.coverImage === 'string' ? merged.coverImage : null,
         officeAddress,
         city,
         state,
         pinCode,
-        normalizedAddress: data.location?.normalizedAddress || data.officeAddress,
-        googlePlaceId: data.location?.placeId,
-        locationCountryCode: data.location?.countryCode || 'US',
-        location: data.location
-          ? JSON.parse(JSON.stringify({ type: 'Point', coordinates: [data.location.longitude, data.location.latitude] }))
+        normalizedAddress: location?.normalizedAddress || officeAddress,
+        googlePlaceId: location?.placeId || (typeof merged.googlePlaceId === 'string' ? merged.googlePlaceId : null),
+        locationCountryCode: location?.countryCode || 'US',
+        location: location?.longitude != null && location?.latitude != null
+          ? JSON.parse(JSON.stringify({ type: 'Point', coordinates: [location.longitude, location.latitude] }))
           : undefined,
-        experienceYears: data.experienceYears || 0,
-        nmls: data.nmls || null,
-        licenseStates: Array.isArray(data.licenseStates) ? data.licenseStates : [],
+        experienceYears: Number(merged.experienceYears) || 0,
+        registrationNumber: typeof merged.registrationNumber === 'string' ? merged.registrationNumber.trim() : null,
+        panNumber: typeof merged.panNumber === 'string' ? merged.panNumber.trim() : null,
+        nmls,
+        licenseStates,
         verificationStatus: 'UNVERIFIED',
         brokerStatus: 'FREE',
         isVisible: true,
+        mortgageExpertEnabled: false,
         subscription: {
           create: {
             plan: selectedSubscription.plan,
+            planId: dbPlan?.id ?? null,
             isActive: selectedSubscription.isActive,
             startDate: selectedSubscription.startDate || new Date(),
             endDate: selectedSubscription.endDate ?? undefined,
@@ -340,9 +381,10 @@ export async function createBrokerForExistingUser(userId: string, data: Existing
       },
     })
 
-    if (data.bankPartnerships?.length) {
+    const bankPartnerships = Array.isArray(merged.bankPartnerships) ? (merged.bankPartnerships as string[]) : []
+    if (bankPartnerships.length > 0) {
       await tx.brokerBank.createMany({
-        data: data.bankPartnerships.map((bankName) => ({
+        data: bankPartnerships.map((bankName) => ({
           brokerId: broker.id,
           bankName,
           bankType: 'PRIVATE' as BankType,
@@ -351,18 +393,20 @@ export async function createBrokerForExistingUser(userId: string, data: Existing
     }
 
     await tx.user.update({ where: { id: userId }, data: { role: 'BROKER' } })
-    if (registration) {
-      await tx.brokerRegistration.update({
-        where: { id: registration.id },
-        data: { status: 'COMPLETED' },
+    await tx.brokerRegistration.update({
+      where: { id: registration.id },
+      data: { status: 'COMPLETED' },
+    })
+    if (registration.draft) {
+      await tx.brokerOnboardingDraft.update({
+        where: { id: registration.draft.id },
+        data: { completedAt: new Date(), currentStep: 5 },
       })
-      if (registration.draft) {
-        await tx.brokerOnboardingDraft.update({
-          where: { id: registration.draft.id },
-          data: { completedAt: new Date(), currentStep: 4 },
-        })
-      }
     }
     return broker
   })
+}
+
+export async function createBrokerForExistingUser(userId: string, data: ExistingUserBrokerInput) {
+  return finalizeBrokerRegistration(userId, data)
 }

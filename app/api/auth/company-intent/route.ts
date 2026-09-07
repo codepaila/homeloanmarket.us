@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/currentUser'
+import { getCurrentCompany } from '@/lib/company-policy'
+import { resolveCompanyOnboardingDestination } from '@/lib/company-onboarding-state'
 import { isSameOriginRequest } from '@/lib/origin'
 import {
   COMPANY_INTENT_COOKIE,
@@ -37,10 +39,17 @@ export async function PUT(request: NextRequest) {
 
   try {
     const result = await establishCompanyForUser(user.id)
+    // State-based canonical redirect (same lifecycle for email + Google): a
+    // freshly created company (or one with an incomplete profile) continues to
+    // onboarding; a complete profile without an active subscription goes to
+    // plan selection; an active advertiser goes to its dashboard. Returning to
+    // the app never auto-charges.
+    const current = await getCurrentCompany()
+    const redirectTo = resolveCompanyOnboardingDestination(current?.company ?? null, '/company/dashboard') || '/company/onboarding'
     const response = NextResponse.json({
       success: true,
       alreadyCompany: result.alreadyCompany,
-      redirectTo: '/company/subscription/select',
+      redirectTo,
     })
     response.cookies.delete(COMPANY_INTENT_COOKIE)
     return response

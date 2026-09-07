@@ -1,4 +1,4 @@
-// app/broker/profile/edit/page.tsx
+// app/broker/company/edit/page.tsx
 import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/currentUser'
 import { EditBrokerProfile } from '@/components/sections/broker/EditProfile'
@@ -28,9 +28,7 @@ export default async function BrokerProfileEditPage() {
     id: brokerProfile.id,
     displayName: brokerProfile.displayName,
     companyName: brokerProfile.companyName,
-    profileSlug: brokerProfile.profileSlug,
     logo: brokerProfile.logo,
-    coverImage: brokerProfile.coverImage,
     profileImage: brokerProfile.profileImage,
     description: brokerProfile.description,
     phone: brokerProfile.phone,
@@ -48,11 +46,8 @@ export default async function BrokerProfileEditPage() {
     experienceYears: brokerProfile.experienceYears,
     nmls: brokerProfile.nmls,
     licenseStates: brokerProfile.licenseStates,
-    registrationNumber: brokerProfile.registrationNumber,
-    panNumber: brokerProfile.panNumber,
     socialLinks: brokerProfile.socialLinks,
     isVisible: brokerProfile.isVisible,
-    verificationStatus: brokerProfile.verificationStatus,
   }
 
   return <EditBrokerProfile broker={brokerDto} />

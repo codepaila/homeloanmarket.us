@@ -34,18 +34,12 @@ export function BrokerDetailSkeleton({ className }: { className?: string }) {
       </nav>
 
       {/* Cover banner + overlapping avatar */}
-      <section aria-hidden="true" className="relative">
-        <SkeletonSubtle className="h-48 w-full rounded-b-3xl md:h-72 lg:h-80" />
-        <div className="absolute left-1/2 -bottom-16 -translate-x-1/2 md:left-8 md:translate-x-0">
-          {/* 128px square, same border/shadow treatment as the real avatar frame */}
-          <SkeletonSubtle className="h-32 w-32 rounded border-2 border-background shadow-large" />
-        </div>
-      </section>
 
-      <div className="mx-auto max-w-7xl px-4">
+      <div className="mx-auto max-w-7xl px-4 mt-4"> 
+          <SkeletonSubtle className="h-32 w-32 my-2 rounded border-2 border-background" />
         {/* Profile header: name (primary/50) + NMLS + company; centered on
             mobile, left-aligned on desktop like the real header */}
-        <header aria-hidden="true" className="mt-20 text-center md:text-left">
+        <header aria-hidden="true" className=" text-center md:text-left">
           <div className="flex flex-col items-center md:items-start">
             <SkeletonHeading className="h-9 w-64 max-w-full md:h-10" />
             <SkeletonSubtle className="mt-1.5 h-5 w-32" />

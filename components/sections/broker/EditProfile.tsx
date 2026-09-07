@@ -32,7 +32,6 @@ import {
   Users,
   X,
   Save,
-  Shield,
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -40,7 +39,6 @@ import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import ImageUpload from '@/components/ImageUpload'
 import { ProfileImageUpload } from '@/components/brokers/ProfileImageUpload'
-import { CoverImageUpload } from '@/components/brokers/CoverImageUpload'
 import { USLocationPicker, type SelectedUSLocation } from '@/components/location/USLocationPicker'
 import { US_STATES } from '@/lib/us-states'
 import { isSafeHttpUrl } from '@/lib/broker-social-links'
@@ -51,7 +49,6 @@ const profileSchema = z.object({
   displayName: z.string().min(2, 'Display name must be at least 2 characters'),
   companyName: z.string().optional(),
   description: z.string().min(20, 'Description must be at least 20 characters'),
-  profileSlug: z.string().min(2, 'Profile slug must be at least 2 characters'),
   logo: z.string().optional(),
 
   // Contact Information
@@ -64,7 +61,7 @@ const profileSchema = z.object({
   officeAddress: z.string().min(10, 'Address must be at least 10 characters'),
   city: z.string().min(2, 'City must be at least 2 characters'),
   state: z.string().min(2, 'State must be at least 2 characters'),
-  pinCode: z.string().length(5, 'ZIP Code must be 5 digits'),
+  pinCode: z.string().regex(/^\d{5}(-\d{4})?$/, 'ZIP Code must be 5 digits or 5+4'),
   location: z.object({
     placeId: z.string(),
     normalizedAddress: z.string(),
@@ -81,10 +78,6 @@ const profileSchema = z.object({
   // US Licensing
   nmls: z.string().trim().regex(/^\d{4,10}$/, 'NMLS ID must be 4–10 digits'),
   licenseStates: z.array(z.string()).min(1, 'Select at least one licensed state'),
-
-  // Additional Info
-  registrationNumber: z.string().optional(),
-  panNumber: z.string().max(20, 'Tax ID / EIN must be 20 characters or fewer').optional().or(z.literal('')),
 
   // Social Links
   facebook: z.string().trim().refine((v) => v === '' || isSafeHttpUrl(v), 'Enter a valid https:// URL').optional().or(z.literal('')),
@@ -127,7 +120,7 @@ function locationFromBroker(broker: any) {
 // (switch to the first tab that contains an error, then focus its field) and
 // to render per-tab error indicators.
 const TAB_FIELDS = {
-  basic: ['displayName', 'companyName', 'profileSlug', 'description'],
+  basic: ['displayName', 'companyName', 'description'],
   contact: ['phone', 'whatsapp', 'email', 'website', 'location', 'officeAddress', 'city', 'state', 'pinCode'],
   professional: ['experienceYears', 'nmls', 'licenseStates'],
   social: ['facebook', 'twitter', 'linkedin', 'instagram'],
@@ -196,7 +189,6 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
       displayName: broker?.displayName || '',
       companyName: broker?.companyName || '',
       description: broker?.description || '',
-      profileSlug: broker?.profileSlug || '',
       logo: broker?.logo || '',
 
       phone: broker?.phone || '',
@@ -213,9 +205,6 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
       experienceYears: broker?.experienceYears || 0,
       nmls: broker?.nmls || '',
       licenseStates: Array.isArray(broker?.licenseStates) ? broker.licenseStates : [],
-
-      registrationNumber: broker?.registrationNumber || '',
-      panNumber: broker?.panNumber || '',
 
       facebook: broker?.socialLinks?.facebook || '',
       twitter: broker?.socialLinks?.twitter || '',
@@ -304,7 +293,7 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
     <div className="max-w-6xl mx-auto  ">
       {/* Header */}
       <div className="mb-8">
-         <h1 className="text-3xl font-bold text-foreground mb-2">Edit Mortgage Originator Profile</h1>
+         <h1 className="text-3xl font-bold text-foreground mb-2">Edit Company Profile</h1>
         <p className="text-muted-foreground">
           Update your company information, services, and professional details
         </p>
@@ -359,20 +348,6 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
                       label="Profile image"
                       helperText="Professional mortgage originator photo shown on public cards and profile."
                     />
-                  </div>
-
-                  <div className="space-y-4">
-                    <FormLabel>Cover Photo</FormLabel>
-                    <CoverImageUpload
-                      value={broker?.coverImage}
-                      uploadUrl="/api/brokers/me/cover-image"
-                      removeUrl="/api/brokers/me/cover-image"
-                      onUploaded={() => router.refresh()}
-                      label="Cover photo"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Upload from your device only — the admin Media Library is never used for mortgage originator profile photos.
-                    </p>
                   </div>
 
                   <div className="space-y-4">
@@ -445,37 +420,6 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
                     />
                   </div>
 
-                  <FormField
-                    control={form.control}
-                    name="profileSlug"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Profile URL Slug *</FormLabel>
-                        <FormControl>
-                          <div className="flex items-center">
-                             <span className="text-muted-foreground mr-2 whitespace-nowrap">homeloanmarket.com/</span>
-                            <Input
-                              placeholder="your-profile-name"
-                              {...field}
-                              onChange={(e) => {
-                                const value = e.target.value
-                                  .toLowerCase()
-                                  .replace(/[^a-z0-9-]/g, '-')
-                                  .replace(/-+/g, '-')
-                                  .replace(/^-|-$/g, '')
-                                field.onChange(value)
-                              }}
-                              className="min-w-0"
-                            />
-                          </div>
-                        </FormControl>
-                        <FormDescription>
-                          This will be your public profile URL
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                   <FormField
                     control={form.control}
                     name="description"
@@ -605,11 +549,28 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
                             onChange={(location) => {
                               field.onChange(location)
                               if (location) {
-                                form.setValue('officeAddress', location.normalizedAddress)
-                                form.setValue('city', location.city)
-                                form.setValue('state', location.state)
-                                form.setValue('pinCode', location.zip)
+                                // Google-derived values replace the previous
+                                // ones; where the new result is missing a field
+                                // the current (possibly manually entered) value
+                                // is preserved so a manual fallback survives a
+                                // reselect.
+                                const prev = form.getValues()
+                                form.setValue('officeAddress', location.normalizedAddress || (prev.officeAddress || ''))
+                                form.setValue('city', location.city || (prev.city || ''))
+                                form.setValue('state', location.state || (prev.state || ''))
+                                form.setValue('pinCode', location.zip || (prev.pinCode || ''))
                               }
+                            }}
+                            onClear={() => {
+                              // Explicit "Clear location": reset EVERY derived
+                              // address field so no stale address text survives
+                              // a clear. The picker's clear() also calls
+                              // onChange(undefined), which clears the canonical
+                              // location field.
+                              form.setValue('officeAddress', '')
+                              form.setValue('city', '')
+                              form.setValue('state', '')
+                              form.setValue('pinCode', '')
                             }}
                           />
                         </FormControl>
@@ -827,63 +788,6 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
 
             </TabsContent>
 
-            {/* Additional Information Tab */}
-            <TabsContent value="additional" className="space-y-6">
-              <Card>
-                <CardHeader>
-                   <CardTitle>Registration & Tax ID Details</CardTitle>
-                   <CardDescription>
-                     Add your registration and tax ID details for verification
-                   </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <FormField
-                      control={form.control}
-                      name="registrationNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Registration Number</FormLabel>
-                          <FormControl>
-                             <Input placeholder="State registration or EIN" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            Your business registration number
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="panNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                           <FormLabel>Tax ID Number</FormLabel>
-                           <FormControl>
-                             <Input
-                               placeholder="XX-XXXXXXX"
-                               {...field}
-                              onChange={(e) => {
-                                const value = e.target.value.toUpperCase()
-                                field.onChange(value)
-                              }}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Your business tax identifier (EIN or individual tax ID)
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-            </TabsContent>
-
             {/* Social & Features Tab */}
             <TabsContent value="social" className="space-y-6">
               <div className="grid gap-6">
@@ -1019,36 +923,6 @@ export function EditBrokerProfile({ broker }: EditBrokerProfileProps) {
                         </FormItem>
                       )}
                     />
-
-                    {/* Verification Status */}
-                    <div className="rounded border p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Shield className="h-5 w-5 text-primary" />
-                        <h4 className="font-medium">Verification Status</h4>
-                      </div>
-                      <Badge 
-                        variant="outline"
-                        className={broker?.verificationStatus === 'VERIFIED' ? 'bg-green-50 text-green-700 border-green-200' : ''}
-                      >
-                        {broker?.verificationStatus === 'VERIFIED' ? 'Verified' : 'Verification Required'}
-                      </Badge>
-                      <p className="text-sm text-muted-foreground">
-                        {broker?.verificationStatus === 'VERIFIED'
-                          ? 'Your profile is verified and visible to clients'
-                          : 'Complete verification to access all features'}
-                      </p>
-                      {broker?.verificationStatus !== 'VERIFIED' && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="mt-3 w-full"
-                          onClick={() => router.push('/broker/profile/verification')}
-                        >
-                          Complete Verification
-                        </Button>
-                      )}
-                    </div>
                   </CardContent>
                 </Card>
               </div>

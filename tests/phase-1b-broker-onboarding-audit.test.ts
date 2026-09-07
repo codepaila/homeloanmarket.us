@@ -111,12 +111,14 @@ test('completion uses the shared NMLS helper and passes media to persistence', (
 
 test('broker persistence derives address from the resolved location and saves media', () => {
   const lib = read('lib/broker-registration.ts')
-  assert.match(lib, /const officeAddress = data\.location\?\.normalizedAddress/)
-  assert.match(lib, /const pinCode = data\.location\?\.zip/)
-  assert.match(lib, /logo: data\.logo \|\| null/)
-  assert.match(lib, /profileImage: data\.profileImage \|\| null/)
-  assert.match(lib, /coverImage: data\.coverImage \|\| null/)
-  assert.match(lib, /coordinates: \[data\.location\.longitude, data\.location\.latitude\]/)
+  // The canonical finalization (finalizeBrokerRegistration) derives the
+  // structured address from the resolved Google place and persists media.
+  assert.match(lib, /const officeAddress = location\?\.normalizedAddress/)
+  assert.match(lib, /const pinCode = location\?\.zip/)
+  assert.match(lib, /logo: typeof merged\.logo === 'string' \? merged\.logo : null/)
+  assert.match(lib, /profileImage: typeof merged\.profileImage === 'string' \? merged\.profileImage : null/)
+  assert.match(lib, /coverImage: typeof merged\.coverImage === 'string' \? merged\.coverImage : null/)
+  assert.match(lib, /coordinates: \[location\.longitude, location\.latitude\]/)
 })
 
 // ---------------------------------------------------------------------------
@@ -140,7 +142,7 @@ test('profile edit form restores pinCode and uses the shared location picker', (
   assert.match(edit, /form\.setValue\('location', undefined\)/, 'manual address edits must clear the place selection')
   assert.doesNotMatch(edit, /name="zipCode"/, 'the form field must use pinCode')
   assert.doesNotMatch(edit, /zipCode: broker\?\.zipCode/)
-  assert.equal((edit.match(/CoverImageUpload/g) || []).length >= 1, true)
+  assert.doesNotMatch(edit, /CoverImageUpload/, 'the broker-facing edit form must not render a cover-image upload')
   assert.doesNotMatch(edit, /ImageUpload[\s\S]*?type="cover"/, 'no duplicate generic cover upload path')
 })
 
@@ -173,8 +175,11 @@ test('wizard requires a Google-resolved place and clears it when address text is
   const wizard = read('components/sections/broker/BrokerSetupWizard.tsx')
   assert.match(wizard, /Select a validated US office location from the suggestions/)
   assert.match(wizard, /Boolean\(value\.placeId\)/)
-  assert.match(wizard, /form\.setValue\('location', undefined\)/, 'manual address edits clear the place selection')
-  assert.match(wizard, /'pinCode', 'location'/, 'step validation covers the place selection')
+  assert.match(wizard, /form\.setValue\('location', undefined\)/, 'clearing the place uses setValue(undefined) so a saved draft location cannot be rehydrated')
+  assert.doesNotMatch(wizard, /form\.resetField\('location'\)/, 'resetField would rehydrate defaultValues from the persisted draft')
+  // The dedicated Location step validates the Google-resolved place and the
+  // derived address fields together.
+  assert.match(wizard, /'location', 'officeAddress', 'city', 'state', 'pinCode'/, 'step validation covers the place selection')
   assert.match(wizard, /restoreInitialData\(initialData\)/)
 })
 

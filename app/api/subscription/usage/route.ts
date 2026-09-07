@@ -20,10 +20,6 @@ export async function GET() {
       where: { id: user.brokerProfile.id },
       include: {
         subscription: { include: { planRef: true } },
-        bankPartners: true,
-        contactMessages: {
-          where: { createdAt: { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } }
-        },
         reviews: true,
       }
     })
@@ -43,11 +39,8 @@ export async function GET() {
     const usage = {
       teamMembers: 1,
       branches: 1,
-      loanProducts: broker.bankPartners.length,
-      contactMessages: broker.contactMessages.length,
       profileViews: broker.profileViews,
       totalLeads: broker.totalLeads,
-      bankPartners: broker.bankPartners.length,
       reviews: broker.totalReviews,
     }
 

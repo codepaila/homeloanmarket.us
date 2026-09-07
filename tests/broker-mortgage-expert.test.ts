@@ -181,7 +181,10 @@ test('public listing API derives isMortgageExpert from the shared helper', () =>
 })
 
 test('public DTO never leaks the admin-controlled field', () => {
-  assert.match(publicDto, /mortgageExpertEnabled: _mortgageExpertEnabled/)
+  // The public DTO is an explicit allowlist; the raw admin-controlled
+  // mortgageExpertEnabled flag must never appear in it (the derived
+  // `isMortgageExpert` boolean is computed server-side instead).
+  assert.doesNotMatch(publicDto, /mortgageExpertEnabled/)
 })
 
 test('grid card renders the badge only when isMortgageExpert is true', () => {
@@ -244,20 +247,25 @@ test('FREE + admin disabled + no profile image does not qualify', () => {
 // ---------------------------------------------------------------------------
 
 test('listing ranks active FEATURED first via the live subscription tier', () => {
-  assert.match(listingModule, /\$sort: \{ featured: -1/)
+  assert.match(listingModule, /\$sort: \{ tier: 1/)
   assert.match(listingModule, /featuredRank: -1/)
   assert.doesNotMatch(listingModule, /brokerStatus: -1/)
   assert.doesNotMatch(listingApi, /brokerStatus: 'desc'/)
 })
 
 test('listing ranks admin-enabled Mortgage Expert brokers before image brokers', () => {
-  const sortBlock = listingModule.slice(listingModule.indexOf('$sort'), listingModule.indexOf('$skip'))
-  const featuredIdx = sortBlock.indexOf('featured: -1')
-  const adminIdx = sortBlock.indexOf('mortgageExpertEnabled: -1')
-  const imageIdx = sortBlock.indexOf('hasImage: -1')
-  assert.ok(featuredIdx > -1, 'featured tier is present')
-  assert.ok(adminIdx > featuredIdx, 'admin-enabled tier follows the FEATURED tier')
+  // Tier precedence is computed in the aggregation $addFields: paid tier 1,
+  // admin-enabled Mortgage Expert tier 2, image tier 3, no signal tier 4. The
+  // ranked listing sorts by tier ascending and drops tier 4 for the public.
+  const tierCond = listingModule.slice(listingModule.indexOf('tier: {'), listingModule.indexOf('$facet'))
+  const paidIdx = tierCond.indexOf("$eq: ['$featured', 1]")
+  const adminIdx = tierCond.indexOf("$eq: ['$mortgageExpertEnabled', true]")
+  const imageIdx = tierCond.indexOf("$eq: ['$hasImage', 1]")
+  assert.ok(paidIdx > -1, 'paid (featured) tier is the first branch')
+  assert.ok(adminIdx > paidIdx, 'admin-enabled tier follows the paid tier')
   assert.ok(imageIdx > adminIdx, 'image tier follows the admin-enabled tier')
+  assert.match(listingModule, /\$sort: \{ tier: 1/)
+  assert.match(listingModule, /tier: \{ \$lte: 3 \}/)
 })
 
 test('listing ordering is applied server-side before pagination', () => {
@@ -270,15 +278,15 @@ test('listing ordering is applied server-side before pagination', () => {
 })
 
 test('radius search preserves the same FEATURED -> admin -> image priority', () => {
-  assert.match(geo, /featured: -1/)
-  assert.match(geo, /featuredRank: -1/)
-  assert.match(geo, /mortgageExpertEnabled: -1/)
-  assert.match(geo, /hasImage: -1/)
-  const featuredIdx = geo.indexOf('featured: -1')
-  const adminIdx = geo.indexOf('mortgageExpertEnabled: -1')
-  const imageIdx = geo.indexOf('hasImage: -1')
-  assert.ok(adminIdx > featuredIdx, 'admin-enabled tier after FEATURED tier in radius sort')
-  assert.ok(imageIdx > adminIdx, 'image tier after admin-enabled tier in radius sort')
+  const tierCond = geo.slice(geo.indexOf('tier: {'), geo.indexOf('$facet'))
+  const paidIdx = tierCond.indexOf("$eq: ['$featured', 1]")
+  const adminIdx = tierCond.indexOf("$eq: ['$mortgageExpertEnabled', true]")
+  const imageIdx = tierCond.indexOf("$eq: ['$hasImage', 1]")
+  assert.ok(paidIdx > -1, 'paid (featured) tier is the first radius branch')
+  assert.ok(adminIdx > paidIdx, 'admin-enabled tier after FEATURED tier in radius ranking')
+  assert.ok(imageIdx > adminIdx, 'image tier after admin-enabled tier in radius ranking')
+  assert.match(geo, /\$sort: \{ tier: 1/)
+  assert.match(geo, /tier: \{ \$lte: 3 \}/)
 })
 
 test('ranking never uses rating, reviews, or the badge itself', () => {

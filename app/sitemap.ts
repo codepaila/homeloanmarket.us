@@ -1,6 +1,7 @@
 import type { MetadataRoute } from 'next'
 import prisma from '@/lib/prisma'
 import { canonicalUrl, isIndexablePublicBroker } from '@/lib/seo'
+import { publicBrokerWhere } from '@/lib/broker-policy'
 import { ABOUT_PAGE_ID } from '@/lib/about/about'
 
 const corePublicPaths = ['/', '/brokers', '/contact', '/faq', '/guides', '/blog', '/calculator', '/privacy-policy', '/terms-of-service']
@@ -8,14 +9,11 @@ const corePublicPaths = ['/', '/brokers', '/contact', '/faq', '/guides', '/blog'
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [brokers, posts, aboutPage] = await Promise.all([
     prisma.broker.findMany({
-      where: {
-        isVisible: true,
-        brokerStatus: { not: 'SUSPENDED' },
-        OR: [
-          { creationSource: 'ADMIN_CREATED' },
-          { verificationStatus: 'VERIFIED' },
-        ],
-      },
+      // Same canonical public eligibility as the listing/detail (visibility,
+      // status, completeness, ownership). Verification is not a public
+      // eligibility requirement, so self-registered brokers are indexable once
+      // their complete, published profile is public.
+      where: publicBrokerWhere(),
       select: {
         profileSlug: true,
         userId: true,

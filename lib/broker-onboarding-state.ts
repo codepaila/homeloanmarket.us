@@ -69,11 +69,13 @@ export function brokerOnboardingDestination<T extends OnboardingUser>(
     case 'COMPLETED':
       return currentPath === '/broker/dashboard' ? null : '/broker/dashboard'
     case 'SUBSCRIPTION_PENDING':
-      return currentPath === '/broker/subscription/select' ? null : '/broker/subscription/select'
+    case 'ONBOARDING_IN_PROGRESS':
+      if (currentPath === '/setup' || currentPath === '/broker/subscription/select') {
+        return null
+      }
+      return '/setup'
     case 'NOT_STARTED':
       return currentPath === '/register' ? null : '/register'
-    case 'ONBOARDING_IN_PROGRESS':
-      return currentPath === '/setup' ? null : '/setup'
   }
 }
 

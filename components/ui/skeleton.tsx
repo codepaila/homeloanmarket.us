@@ -29,7 +29,7 @@ function SkeletonHeading({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="skeleton-heading"
-      className={cn("bg-primary/50 animate-pulse motion-reduce:animate-none rounded-md", className)}
+      className={cn("bg-primary/30 animate-pulse motion-reduce:animate-none rounded-md", className)}
       {...props}
     />
   )

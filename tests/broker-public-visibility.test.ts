@@ -11,17 +11,19 @@ const publicBroker = {
   userId: null,
 }
 
-test('admin-created unowned visible verified active broker is publicly eligible', () => {
+test('visible active unowned brokers are publicly eligible regardless of verification', () => {
   assert.equal(isPublicBroker(publicBroker), true)
+  assert.equal(isPublicBroker({ ...publicBroker, creationSource: 'SELF_REGISTERED', verificationStatus: 'UNVERIFIED' }), true)
 })
 
-test('hidden, suspended, and unverified unowned brokers are not publicly eligible', () => {
+test('hidden, suspended, incomplete, and company-owned brokers are not publicly eligible', () => {
   assert.equal(isPublicBroker({ ...publicBroker, isVisible: false }), false)
   assert.equal(isPublicBroker({ ...publicBroker, brokerStatus: 'SUSPENDED' }), false)
-  assert.equal(isPublicBroker({ ...publicBroker, verificationStatus: 'UNVERIFIED' }), false)
+  assert.equal(isPublicBroker({ ...publicBroker, profileComplete: false }), false)
+  assert.equal(isPublicBroker({ ...publicBroker, userId: 'owner', userIsActive: true, hasActiveCompanyMembership: true }), false)
 })
 
-test('owned public brokers still require an active owner account', () => {
+test('owned public brokers still require an active, non-company owner account', () => {
   assert.equal(isPublicBroker({ ...publicBroker, userId: 'owner', userIsActive: true }), true)
   assert.equal(isPublicBroker({ ...publicBroker, userId: 'owner', userIsActive: false }), false)
 })
@@ -34,7 +36,7 @@ test('visibility is admin-only and cannot be mass-assigned by broker users', () 
   assert.equal((BROKER_ADMIN_FIELDS as readonly string[]).includes('isVisible'), true)
 })
 
-test('public and radius queries preserve the same unowned visibility rule', () => {
+test('public and radius queries preserve the same unowned visibility and completeness rule', () => {
   const publicApi = read('app/api/brokers/route.ts')
   const listingQuery = read('lib/broker-listing.ts')
   const geoQuery = read('lib/location/broker-geo.ts')
@@ -42,8 +44,10 @@ test('public and radius queries preserve the same unowned visibility rule', () =
   assert.match(listingQuery, /isVisible: true/)
   assert.match(listingQuery, /\{ userId: null \}/)
   assert.match(listingQuery, /\$ne: 'SUSPENDED'/)
+  assert.match(listingQuery, /profileSlug: \{ \$nin: \[null, ''\] \}/)
   assert.match(geoQuery, /conditions\.push\(\{ isVisible: true \}\)/)
   assert.match(geoQuery, /\{ userId: null \}/)
+  assert.match(geoQuery, /\$nin: \[null, ''\]/)
 })
 
 test('admin mutation and claim completion preserve the same Broker record', () => {

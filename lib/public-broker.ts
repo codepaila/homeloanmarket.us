@@ -1,10 +1,5 @@
 type PublicObject = Record<string, unknown>
 
-// Protected contact fields are only emitted when the caller is entitled
-// (FEATURED plan, broker owner, or admin). They must never leak to anonymous
-// or FREE-plan callers.
-const PROTECTED_CONTACT_FIELDS = ['phone', 'whatsapp', 'email', 'website', 'officeAddress', 'pinCode'] as const
-
 export type PublicBrokerOptions = {
   /** Include protected contact fields. Server-controlled only. */
   includeContact?: boolean
@@ -19,86 +14,46 @@ export function toPublicBrokerRecord(value: unknown, options?: PublicBrokerOptio
   if (!broker) return {}
 
   const includeContact = options?.includeContact === true
+  const str = (v: unknown) => (v == null || v === '' ? null : String(v))
+  const num = (v: unknown) => Number(v) || 0
 
-  const {
-    id: _id,
-    userId: _userId,
-    subscription: _subscription,
-    claim: _claim,
-    contactMessages: _contactMessages,
-    registrationNumber: _registrationNumber,
-    panNumber: _panNumber,
-    creationSource: _creationSource,
-    verifiedAt: _verifiedAt,
-    featuredRank: _featuredRank,
-    isVisible: _isVisible,
-    // Admin-controlled badge flag — never leaks to public callers. Public
-    // consumers receive the derived `isMortgageExpert` boolean instead.
-    mortgageExpertEnabled: _mortgageExpertEnabled,
-    // Protected contact fields — dropped unless includeContact is true.
-    phone: _phone,
-    whatsapp: _whatsapp,
-    email: _email,
-    website: _website,
-    officeAddress: _officeAddress,
-    pinCode: _pinCode,
-    reviews,
-    bankPartners,
-    _count,
-    user,
-    ...publicBroker
-  } = broker
-  const publicUser = objectValue(user)
-  const publicReviews = Array.isArray(reviews)
-    ? reviews.map((review) => {
-        const record = objectValue(review)
-        if (!record) return review
-        const { rating, comment, createdAt, user: reviewer } = record
-        const reviewerRecord = objectValue(reviewer)
-        return {
-          rating,
-          comment,
-          createdAt,
-          user: reviewerRecord
-            ? { name: reviewerRecord.name, image: reviewerRecord.image }
-            : null,
-        }
-      })
-    : []
-
-  const publicBankPartners = Array.isArray(bankPartners)
-    ? bankPartners.map((bank) => {
-        const record = objectValue(bank)
-        return record
-          ? { bankName: record.bankName, bankType: record.bankType, since: record.since }
-          : bank
-      })
-    : []
-
-  const contact = includeContact
-    ? {
-        phone: _phone,
-        whatsapp: _whatsapp,
-        email: _email,
-        website: _website,
-        officeAddress: _officeAddress,
-        pinCode: _pinCode,
-      }
-    : {}
-
+  // Explicit allowlist — a public caller may only ever receive the identity,
+  // marketing, professional, and trust signals below. Internal/CRM-facing
+  // state (leads, view counters, broker status, privacy-dropped fields,
+  // creation/update timestamps, geo internals) and relational payloads
+  // (reviews, bank partners, count aggregates) are never leaked.
   return {
-    ...publicBroker,
-    ...contact,
-    nmls: publicBroker.nmls ?? null,
-    licenseStates: publicBroker.licenseStates ?? [],
-    user: publicUser
-      ? { name: publicUser.name, image: publicUser.image }
+    profileSlug: str(broker.profileSlug) ?? '',
+    displayName: String(broker.displayName ?? ''),
+    companyName: str(broker.companyName),
+    description: str(broker.description),
+    nmls: str(broker.nmls),
+    licenseStates: Array.isArray(broker.licenseStates) ? broker.licenseStates : [],
+    city: str(broker.city),
+    state: str(broker.state),
+    logo: str(broker.logo),
+    profileImage: str(broker.profileImage),
+    coverImage: str(broker.coverImage),
+    experienceYears: num(broker.experienceYears),
+    avgRating: num(broker.avgRating),
+    totalReviews: num(broker.totalReviews),
+    socialLinks: broker.socialLinks && typeof broker.socialLinks === 'object'
+      ? broker.socialLinks as PublicObject
       : null,
-    reviews: publicReviews,
-    bankPartners: publicBankPartners,
-    _count: _count && typeof _count === 'object'
-      ? { reviews: objectValue(_count)?.reviews }
-      : undefined,
+    user: (() => {
+      const user = objectValue(broker.user)
+      return user ? { name: user.name, image: user.image } : null
+    })(),
+    // Protected contact fields — only emitted when the caller is entitled
+    // (FEATURED plan, broker owner, or admin).
+    ...(includeContact ? {
+      phone: str(broker.phone),
+      whatsapp: str(broker.whatsapp),
+      email: str(broker.email),
+      website: str(broker.website),
+      officeAddress: str(broker.officeAddress),
+      pinCode: str(broker.pinCode),
+    } : {}),
   }
 }
 

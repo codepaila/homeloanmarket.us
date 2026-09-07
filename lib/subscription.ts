@@ -303,15 +303,6 @@ export class SubscriptionService {
       where: { id: brokerId },
       include: {
         subscription: { include: { planRef: true } },
-        bankPartners: true,
-   
-        contactMessages: {
-          where: {
-            createdAt: {
-              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-            }
-          }
-        },
         reviews: true
       }
     })
@@ -330,12 +321,10 @@ export class SubscriptionService {
 
     return {
       usage: {
-        bankPartners: broker.bankPartners.length,
-        contactMessages: broker.contactMessages.length,
         profileViews: broker.profileViews,
         totalLeads: broker.totalLeads,
         reviews: broker.totalReviews,
-  
+
         teamMembers: 1, // Default, can be expanded
         branches: 1 // Default, can be expanded
       },
@@ -556,6 +545,40 @@ export class SubscriptionService {
     if (liveSubscription) return { reconciled: false, reason: 'live-subscription-present' }
 
     await prisma.companySubscription.update({
+      where: { id: existing.id },
+      data: { status: 'EXPIRED', isActive: false, endDate: existing.endDate ?? new Date(), updatedAt: new Date() },
+    })
+    return { reconciled: true }
+  }
+
+  // Reconciles an abandoned (expired) Broker Registration Checkout Session.
+  // Safe by design: only CHECKOUT_PENDING rows with no live Stripe subscription
+  // are transitioned to EXPIRED; ACTIVE rows are never modified.
+  static async reconcileBrokerRegistrationCheckoutExpired(
+    stripeCustomerId: string,
+    ownerType?: string | null,
+    metadata?: { registrationId?: string | null } | null,
+  ) {
+    if (ownerType && ownerType !== 'BROKER_REGISTRATION') {
+      throw new Error('Stripe event ownerType does not belong to the broker registration product')
+    }
+    const existing = await prisma.brokerRegistrationSubscription.findFirst({ where: { stripeCustomerId } })
+    if (!existing) return { reconciled: false, reason: 'no-registration-subscription' }
+    if (existing.status !== 'CHECKOUT_PENDING') return { reconciled: false, reason: 'already-advanced' }
+    if (metadata?.registrationId && existing.registrationId !== metadata.registrationId) {
+      throw new Error('Stripe checkout session does not belong to this registration')
+    }
+
+    let liveSubscription = false
+    if (existing.stripeSubId) {
+      const subs = await (await getStripe()).subscriptions.list({ customer: stripeCustomerId, status: 'all', limit: 20 })
+      liveSubscription = subs.data.some((s) =>
+        ['active', 'trialing', 'incomplete', 'past_due', 'unpaid', 'paused'].includes(s.status),
+      )
+    }
+    if (liveSubscription) return { reconciled: false, reason: 'live-subscription-present' }
+
+    await prisma.brokerRegistrationSubscription.update({
       where: { id: existing.id },
       data: { status: 'EXPIRED', isActive: false, endDate: existing.endDate ?? new Date(), updatedAt: new Date() },
     })

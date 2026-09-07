@@ -11,12 +11,12 @@ const useCurrentUser = read('hooks/useCurrentUser.ts')
 const card = read('components/brokers/BrokerGridCard.tsx')
 const sessionTypes = read('types/next-auth.d.ts')
 
-test('company register page redirects authenticated brokers to the broker dashboard', () => {
-  assert.match(registerPage, /user\?\.isBroker\) redirect\('\/broker\/dashboard'\)/)
-})
-
-test('company register page redirects existing company users to the company dashboard', () => {
-  assert.match(registerPage, /companyMemberships\.length > 0\) redirect\('\/company\/dashboard'\)/)
+test('company register page redirects authenticated visitors to their canonical resume destination', () => {
+  // The page uses the DB-authoritative product resume resolver: an incomplete
+  // broker resumes /setup, a company member resumes company onboarding/select/
+  // dashboard, an admin goes to /admin, and a normal USER goes home.
+  assert.match(registerPage, /resolveUserResumePath\(user\)/)
+  assert.doesNotMatch(registerPage, /roleHome\(user\.role\)/)
 })
 
 test('company register page is server-rendered and defers to the client form', () => {

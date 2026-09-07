@@ -135,13 +135,12 @@ test('toBrokerOwnerDto passes socialLinks through', () => {
 
 test('public serialization exposes socialLinks without private broker data', () => {
   const pub = read('lib/public-broker.ts')
-  // Protected/private fields are stripped; socialLinks is public by design.
-  assert.match(pub, /email: _email,/)
-  assert.match(pub, /phone: _phone,/)
-  assert.match(pub, /userId: _userId,/)
-  // The public record is a spread of the broker, so socialLinks survives while
-  // private fields are explicitly destructured away.
-  assert.match(pub, /\.\.\.publicBroker/)
+  // Protected/private fields are never emitted; socialLinks is public by design.
+  // The DTO is an explicit allowlist (no wholesale `...broker` spread), so
+  // socialLinks is preserved while contact/CRM fields stay gated or dropped.
+  assert.match(pub, /socialLinks: broker\.socialLinks/)
+  assert.doesNotMatch(pub, /email: _email,/)
+  assert.doesNotMatch(pub, /\.\.\.publicBroker/)
 })
 
 // ==================== WIRING — edit form ====================
@@ -161,8 +160,11 @@ test('edit form submits the social fields and validates http(s) client-side', ()
   assert.match(form, /name="twitter"/)
   assert.match(form, /name="linkedin"/)
   assert.match(form, /name="instagram"/)
-  assert.match(form, /tabData\.facebook = formData\.facebook/)
-  assert.match(form, /tabData\.instagram = formData\.instagram/)
+  // The social fields are validated in the form schema and submitted with the
+  // whole form payload.
+  assert.match(form, /facebook: z\.string\(\)\.trim\(\)\.refine/)
+  assert.match(form, /instagram: z\.string\(\)\.trim\(\)\.refine/)
+  assert.match(form, /JSON\.stringify\(data\)/)
   assert.match(form, /isSafeHttpUrl/)
 })
 

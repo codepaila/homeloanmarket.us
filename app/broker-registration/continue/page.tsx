@@ -26,7 +26,7 @@ export default function BrokerRegistrationContinuePage() {
         }
 
         await refreshSession()
-        router.replace(data.redirectTo || '/broker/subscription/select')
+        router.replace(data.redirectTo || '/setup')
       } catch (cause) {
         if (active) setError(cause instanceof Error ? cause.message : 'Unable to continue mortgage originator registration')
       }

@@ -30,9 +30,9 @@ test('commercial placement calculation does not alter profile policy fields', ()
   assert.equal(SubscriptionService.calculateFeaturedRank(broker, 'FREE'), 28)
 })
 
-test('initial dynamic plans are FREE, FEATURED, PREMIUM with no PRO', () => {
-  assert.deepEqual(DEFAULT_BROKER_PLANS.map((plan) => plan.code), ['FREE', 'FEATURED', 'PREMIUM'])
-  assert.doesNotMatch(DEFAULT_BROKER_PLANS.map((plan) => plan.code).join(' '), /PRO/)
+test('initial dynamic plans are FREE and FEATURED only, with no PREMIUM and no PRO', () => {
+  assert.deepEqual(DEFAULT_BROKER_PLANS.map((plan) => plan.code), ['FREE', 'FEATURED'])
+  assert.doesNotMatch(DEFAULT_BROKER_PLANS.map((plan) => plan.code).join(' '), /PREMIUM|PRO/)
 })
 
 test('initial dynamic feature configuration matches the product (display-only)', () => {
@@ -42,7 +42,7 @@ test('initial dynamic feature configuration matches the product (display-only)',
   assert.equal(freeLabels.includes('Mortgage Expert Badge + 5 Green Stars'), false)
   assert.equal(featuredLabels.includes('Mortgage Expert Badge + 5 Green Stars'), true)
   // Feature rows are display-only (label/enabled/sortOrder).
-  for (const plan of ['FREE', 'FEATURED', 'PREMIUM']) {
+  for (const plan of ['FREE', 'FEATURED']) {
     for (const f of DEFAULT_BROKER_PLAN_FEATURES[plan]) {
       assert.ok(typeof f.enabled === 'boolean')
       assert.ok(typeof f.label === 'string' && f.label.length > 0)

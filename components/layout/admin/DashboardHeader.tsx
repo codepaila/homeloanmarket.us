@@ -2,25 +2,11 @@
 // components/layout/DashboardHeader.tsx
 'use client'
 
-import { Bell, Menu, Search, ChevronDown } from 'lucide-react'
-import { useSession, signOut } from 'next-auth/react'
+import { Menu } from 'lucide-react'
+
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '@/components/ui/avatar'
-import { QuickActionButton } from './QuickActionButton'
+
+
 import { SubscriptionBadge } from './SubscriptionBadge'
 
 interface DashboardHeaderProps {
@@ -36,7 +22,7 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ onMenuClick, quickActions, user }: DashboardHeaderProps) {
 
-  const unreadCount = user?.unreadNotifications || 0
+  // const unreadCount = user?.unreadNotifications || 0
 
   return (
     <header className="sticky top-0 z-40 flex justify-between h-16 items-center gap-4 border-b bg-background px-4 sm:px-6 lg:px-8">

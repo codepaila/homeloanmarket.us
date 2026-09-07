@@ -9,6 +9,7 @@ import prisma from "@/lib/prisma";
 import { brokerLoginRateLimit as loginRateLimit } from "@/lib/rateLimit";
 import { signIn, signOut } from "@/lib/auth";
 import { postLoginRedirect, sanitizeCallbackUrl } from '@/lib/auth-redirect'
+import { resolveUserResumePathFromDb } from '@/lib/user-resume'
 
 
 interface LoginSuccess {
@@ -72,9 +73,17 @@ export const LoginWithCredential = async (_previousState: LoginActionState, form
   const configuredBaseUrl = process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || 'http://localhost:3000'
   const user = await prisma.user.findUnique({
     where: { email },
-    select: { role: true },
+    select: { id: true, role: true },
   })
-  const redirectTo = postLoginRedirect(user?.role, sanitizeCallbackUrl(callbackUrl, configuredBaseUrl), configuredBaseUrl)
+  const requestedPath = sanitizeCallbackUrl(callbackUrl, configuredBaseUrl)
+  // Canonical resume destination: database-authoritative, product-aware. A
+  // callbackUrl is honored only when compatible with the user's current product
+  // state; incomplete broker/company registrations always resume their own flow
+  // (never the wrong dashboard or the generic home page). The role-based
+  // postLoginRedirect remains the fallback for unknown/deleted accounts.
+  const redirectTo = user?.id
+    ? await resolveUserResumePathFromDb(user.id, requestedPath)
+    : postLoginRedirect(user?.role, requestedPath, configuredBaseUrl)
 
   try {
     await signIn("credentials", { email, password, redirectTo });

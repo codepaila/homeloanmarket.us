@@ -39,13 +39,22 @@ export async function GET() {
     const brokers = await prisma.broker.findMany({
       where: {
         isVisible: true,
-        verificationStatus: 'VERIFIED',
         brokerStatus: { not: 'SUSPENDED' },
-        user: {
-          isActive: true,
-          // An advertising/company account is never a public broker owner.
-          companyMemberships: { none: { isActive: true } },
-        },
+        // Profile completeness (mirrors publicBrokerWhere): paid featured
+        // brokers must still be complete to appear on the public homepage.
+        displayName: { not: '' },
+        description: { not: '' },
+        phone: { not: '' },
+        officeAddress: { not: '' },
+        profileSlug: { not: '' },
+        // Canonical ownership eligibility (mirrors publicBrokerWhere): an
+        // unowned broker is eligible, and an owned broker must belong to an
+        // active, non-company user. An advertising/company account is never a
+        // public broker owner.
+        OR: [
+          { userId: null },
+          { user: { isActive: true, companyMemberships: { none: { isActive: true } } } },
+        ],
         subscription: {
           is: {
             isActive: true,

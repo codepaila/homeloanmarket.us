@@ -1,18 +1,25 @@
 import { NextResponse } from 'next/server'
-import { getActiveCompanyAdvertisingPlans } from '@/lib/company-plan'
+import { getCanonicalCompanyAdvertisingPlan } from '@/lib/company-plan'
 
 export async function GET() {
-  const plans = await getActiveCompanyAdvertisingPlans()
+  // Exactly one customer-facing company advertising plan. The canonical helper
+  // guarantees a single active plan is exposed even if legacy/inactive rows or
+  // admin misconfiguration left additional active rows in the database.
+  const canonical = await getCanonicalCompanyAdvertisingPlan()
   return NextResponse.json({
-    plans: plans.map((plan) => ({
-      id: plan.id,
-      name: plan.name,
-      description: plan.description,
-      price: plan.price,
-      currency: plan.currency,
-      billingInterval: plan.billingInterval,
-      displayOrder: plan.displayOrder,
-      features: plan.features,
-    })),
+    plans: canonical
+      ? [
+          {
+            id: canonical.id,
+            name: canonical.name,
+            description: canonical.description,
+            price: canonical.price,
+            currency: canonical.currency,
+            billingInterval: canonical.billingInterval,
+            displayOrder: canonical.displayOrder,
+            features: canonical.features,
+          },
+        ]
+      : [],
   })
 }

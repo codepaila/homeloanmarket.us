@@ -1,6 +1,7 @@
 'use client'
 
-import useSWR from 'swr'
+import useSWR, { mutate } from 'swr'
+import { useRouter } from 'next/navigation'
 import { baseUrl } from '@/utils/baseUrl'
 import { SubscriptionPlan } from '@prisma/client'
 
@@ -211,6 +212,23 @@ export const useSubscriptionStatus = () => {
     canUpgrade,
     canDowngrade,
     isLoading
+  }
+}
+
+// Re-syncs the entire broker subscription surface after an authoritative plan
+// change, without a manual browser refresh:
+//   1. router.refresh() re-renders the server components (including the broker
+//      layout), so the header badge follows the fresh getCurrentUser() result.
+//   2. The SWR keys for the client-side broker/subscription queries are
+//      marked stale, so mounted surfaces (dashboard plan badge, subscription
+//      page, usage) re-fetch immediately.
+export function useBrokerChromeResync() {
+  const router = useRouter()
+  return () => {
+    void router.refresh()
+    void mutate(`${baseUrl}/api/brokers/me`, undefined, { revalidate: true })
+    void mutate(`${baseUrl}/api/subscription/details`, undefined, { revalidate: true })
+    void mutate(`${baseUrl}/api/subscription/usage`, undefined, { revalidate: true })
   }
 }
 

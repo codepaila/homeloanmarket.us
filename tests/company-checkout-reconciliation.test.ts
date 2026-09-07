@@ -17,11 +17,16 @@ test('webhook allowlist includes checkout.session.expired (critical)', () => {
   assert.ok(line && line.includes('critical: true'), 'expired must be critical so it is never disabled')
 })
 
-test('webhook handles checkout.session.expired only for COMPANY and reconciles', () => {
+test('webhook handles checkout.session.expired for COMPANY (and BROKER_REGISTRATION) with product isolation', () => {
   const webhook = read('app/api/stripe/webhook/route.ts')
   assert.match(webhook, /case 'checkout\.session\.expired'/)
   assert.match(webhook, /reconcileCompanyCheckoutExpired/)
-  assert.match(webhook, /ownerType !== 'COMPANY'/)
+  // Company expired checkouts are routed to the company reconcile path via the
+  // explicit ownerType guard, keeping COMPANY and broker-registration rows
+  // strictly isolated.
+  assert.match(webhook, /ownerType === 'COMPANY'/)
+  assert.match(webhook, /reconcileBrokerRegistrationCheckoutExpired/)
+  assert.match(webhook, /ownerType === 'BROKER_REGISTRATION'/)
 })
 
 test('reconcile method only touches CHECKOUT_PENDING and never cancels a live subscription', () => {

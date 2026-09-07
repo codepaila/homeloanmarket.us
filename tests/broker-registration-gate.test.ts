@@ -47,7 +47,7 @@ test('verification routes broker registrations to plan without a client delay', 
   const verify = read('app/api/auth/verify-email/route.ts')
   const page = read('app/(public)/auth/verify-email/page.tsx')
   const auth = read('lib/auth.config.ts')
-  assert.match(verify, /updatedUser\.brokerRegistration\?\.id \? '\/broker\/subscription\/select'/)
+  assert.match(verify, /updatedUser\.brokerRegistration\?\.id \? '\/setup'/)
   assert.match(verify, /signIn\('credentials'/)
   assert.match(verify, /verificationToken: token/)
   assert.match(auth, /verificationToken: \{ label: "Verification token"/)
@@ -56,7 +56,7 @@ test('verification routes broker registrations to plan without a client delay', 
   assert.doesNotMatch(page, /setTimeout\(\(\) => \{\s*router\.push/)
 })
 
-test('setup requires active pre-profile subscription and saves durable draft progress', () => {
+test('setup saves durable draft progress and coordinates onboarding destination', () => {
   const setup = read('app/setup/page.tsx')
   const state = read('lib/broker-onboarding-state.ts')
   const status = read('app/api/broker-registration/status/route.ts')
@@ -66,7 +66,7 @@ test('setup requires active pre-profile subscription and saves durable draft pro
   // Subscription gating lives in the single authoritative state machine and
   // is enforced server-side by the /setup page.
   assert.match(setup, /resolveBrokerOnboardingDestination\(user, '\/setup'\)/)
-  assert.match(state, /'\/broker\/subscription\/select'/)
+  assert.match(state, /'\/broker\/dashboard'/)
   assert.match(status, /subscription/)
   assert.match(draft, /DRAFT_FIELDS/)
   assert.match(draft, /brokerOnboardingDraft\.upsert/)

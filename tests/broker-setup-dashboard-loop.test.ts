@@ -48,7 +48,7 @@ test('/setup restores the saved server-side draft on every render (reload-safe)'
   assert.match(setup, /brokerRegistration\?\.draft/)
   assert.match(setup, /initialData/)
   assert.match(setup, /initialStep/)
-  assert.match(setup, /BrokerSetupWizard user=\{sessionUser\} initialData=\{initialData\} initialStep=\{initialStep\}/)
+  assert.match(setup, /BrokerSetupWizard[\s\S]*user=\{sessionUser\}[\s\S]*initialData=\{initialData\}[\s\S]*initialStep=\{initialStep\}/)
 })
 
 test('setup completion is persisted before dashboard navigation', () => {

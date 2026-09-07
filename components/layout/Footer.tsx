@@ -126,7 +126,7 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
           <div className="w-full lg:max-w-md">
             <form
               onSubmit={handleSubscribe}
-              className="flex w-full items-center gap-2 rounded border border-border bg-background p-1.5 shadow-soft"
+              className="flex w-full items-center gap-2 rounded border border-border bg-background p-1 shadow-soft"
             >
               <input
                 type="email"
@@ -140,7 +140,7 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
               <button
                 type="submit"
                 disabled={newsletterLoading}
-                className="flex h-10 flex-shrink-0 items-center gap-1.5 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90"
+                className="flex h-10 flex-shrink-0 items-center gap-1.5 rounded bg-primary px-4 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary/90"
               >
                 {subscribed ? (
                   <>

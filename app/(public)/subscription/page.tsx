@@ -99,7 +99,7 @@ export default function SubscriptionPage() {
           ) : plans.length === 0 ? (
             <p className="text-center text-sm text-muted-foreground">No plans are currently available.</p>
           ) : (
-          <div className="grid lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-3 md:gap-8 max-w-5xl mx-auto">
             {plans.map((plan) => (
               <PricingCard
                 key={plan.id}

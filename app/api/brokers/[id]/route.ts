@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/currentUser'
 import prisma from '@/lib/prisma'
-import { hasPaidEntitlement, isBrokerOwner, isMortgageExpertBroker, isPublicBroker, pickBrokerEditableFields } from '@/lib/broker-policy'
+import { hasPaidEntitlement, isBrokerOwner, isMortgageExpertBroker, isPublicBroker, brokerProfileIsComplete, pickBrokerEditableFields } from '@/lib/broker-policy'
 import { brokerSubscriptionHasProfileBadge } from '@/lib/broker-plans'
 import { toPublicBrokerRecord } from '@/lib/public-broker'
 
@@ -88,6 +88,7 @@ export async function GET(
         userId: broker.userId,
         userIsActive: broker.user?.isActive,
         hasActiveCompanyMembership: (broker.user?.companyMemberships?.length ?? 0) > 0,
+        profileComplete: brokerProfileIsComplete(broker),
       })) {
         return NextResponse.json(
           { message: 'Broker profile not available' },

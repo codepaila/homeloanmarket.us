@@ -324,6 +324,22 @@ export const authOptions = {
       return true;
     },
     async redirect({ url, baseUrl }) {
+      // Returning users who log in via OAuth land on /auth/signin?callbackUrl=...
+      // (the signin page's Google entry). Let that path through — after the
+      // inner callbackUrl is sanitized — so the proxy can route the now-
+      // authenticated user to their canonical product resume destination. The
+      // proxy re-sanitizes the inner callbackUrl before redirecting, so an open
+      // redirect is still impossible. All other paths keep the existing rules.
+      try {
+        const parsed = new URL(url, baseUrl)
+        if (parsed.pathname === '/auth/signin') {
+          const inner = parsed.searchParams.get('callbackUrl')
+          const safeInner = inner ? sanitizeCallbackUrl(inner, baseUrl) : null
+          return safeInner ? `${baseUrl}/auth/signin?callbackUrl=${encodeURIComponent(safeInner)}` : baseUrl
+        }
+      } catch {
+        return baseUrl
+      }
       const safePath = sanitizeCallbackUrl(url, baseUrl)
       if (!safePath) return baseUrl
       if (safePath === '/admin' || safePath === '/admin/dashboard') return `${baseUrl}/admin/ads`

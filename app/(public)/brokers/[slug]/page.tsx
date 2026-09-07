@@ -3,12 +3,13 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import prisma from '@/lib/prisma'
 import BrokerDetailClient from '@/components/sections/broker/BrokerDetailClient'
-import { isPublicBroker, isMortgageExpertBroker, hasPaidEntitlement } from '@/lib/broker-policy'
+import { isPublicBroker, isMortgageExpertBroker, hasPaidEntitlement, brokerProfileIsComplete } from '@/lib/broker-policy'
 import { brokerSubscriptionHasProfileBadge } from '@/lib/broker-plans'
 import { canonicalUrl, safeJsonLd, brokerLocalBusinessJsonLd, breadcrumbJsonLd } from '@/lib/seo'
 import { locationHasValidCoordinates } from '@/lib/location/broker-location'
 import { toPublicBrokerRecord, toPublicBrokerListRecord } from '@/lib/public-broker'
 import { getPublicListingPage } from '@/lib/broker-listing'
+import { BrokerDetailSkeleton } from '@/components/design/BrokerDetailSkeleton'
 
 // Compact column set for the "Similar mortgage originators" cards on the
 // profile page — the same fields the public listing grid renders (identity +
@@ -55,6 +56,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       state: true,
       logo: true,
       coverImage: true,
+      phone: true,
+      officeAddress: true,
+      profileSlug: true,
       isVisible: true,
       verificationStatus: true,
       brokerStatus: true,
@@ -70,6 +74,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     userId: broker.userId,
     userIsActive: broker.user?.isActive,
     hasActiveCompanyMembership: (broker.user?.companyMemberships?.length ?? 0) > 0,
+    profileComplete: brokerProfileIsComplete(broker),
   })) {
     return { title: 'Mortgage Originator Profile Not Found', robots: { index: false, follow: false } }
   }
@@ -108,17 +113,6 @@ export default async function PublicBrokerPage({ params }: PageProps) {
             companyMemberships: { where: { isActive: true }, select: { id: true } },
           }
         },
-        bankPartners: {
-          select: { bankName: true, bankType: true, since: true },
-          orderBy: { bankName: 'asc' },
-        },
-        reviews: {
-          where: { status: 'APPROVED' },
-          select: { rating: true, comment: true, createdAt: true, user: { select: { name: true, image: true } } },
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-        },
-        _count: { select: { reviews: { where: { status: 'APPROVED' } } } },
         subscription: {
           select: { plan: true, planId: true, isActive: true, endDate: true, planRef: { include: { features: true } } },
         },
@@ -139,6 +133,7 @@ export default async function PublicBrokerPage({ params }: PageProps) {
     userId: broker.userId,
     userIsActive: broker.user?.isActive,
     hasActiveCompanyMembership: (broker.user?.companyMemberships?.length ?? 0) > 0,
+    profileComplete: brokerProfileIsComplete(broker),
   })) {
     notFound()
   }

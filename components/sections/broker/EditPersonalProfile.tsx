@@ -199,7 +199,7 @@ export default function EditPersonalProfile({user}:{user: ProfileUser}) {
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   
                            
-                            <div className="space-y-4">
+                            {/* <div className="space-y-4">
                                 <FormLabel>Profile Picture</FormLabel>
                                 <FormField
                                     control={form.control}
@@ -234,9 +234,9 @@ export default function EditPersonalProfile({user}:{user: ProfileUser}) {
                                         </FormItem>
                                     )}
                                 />
-                            </div>
+                            </div> */}
 
-                            <Separator />
+                            {/* <Separator /> */}
 
                             {/* Basic Information */}
                             <div className="space-y-4">
@@ -454,13 +454,13 @@ export default function EditPersonalProfile({user}:{user: ProfileUser}) {
                             </div>
 
                             <div className="flex justify-end pt-4 space-x-3">
-                                <Button
+                                {/* <Button
                                     type="button"
                                     variant="outline"
                                     onClick={() => router.push('/broker/profile')}
                                 >
                                     Back to Profile
-                                </Button>
+                                </Button> */}
                                 <Button
                                     type="submit"
                                     disabled={isSubmitting}

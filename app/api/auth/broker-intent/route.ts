@@ -61,7 +61,7 @@ export async function PUT(request: NextRequest) {
 
   try {
     const result = await establishBrokerRegistration(user.id)
-    let redirectTo = result.alreadyBroker ? '/broker/dashboard' : '/broker/subscription/select'
+    let redirectTo = result.alreadyBroker ? '/broker/dashboard' : '/setup'
 
     if (!result.alreadyBroker) {
       const intentPlan = await getBrokerRegistrationIntentPlan()

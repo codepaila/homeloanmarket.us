@@ -336,10 +336,6 @@ export const appSidebarData = (user: SidebarUserInput): SidebarData => {
         verificationStatus: brokerProfile.verificationStatus,
         brokerStatus: brokerProfile.brokerStatus,
         profileSlug: brokerProfile.profileSlug,
-        avgRating: brokerProfile.avgRating,
-        totalReviews: brokerProfile.totalReviews,
-        totalLeads: brokerProfile.totalLeads,
-        profileViews: brokerProfile.profileViews,
         subscription: subscription ?? null,
       } : null,
       

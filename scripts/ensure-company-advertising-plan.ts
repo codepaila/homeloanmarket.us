@@ -1,13 +1,21 @@
 import 'dotenv/config'
 import prisma from '@/lib/prisma'
+import { DEFAULT_COMPANY_PLANS } from '@/lib/company-plan-definitions'
 
-const DEFAULT_NAME = 'ADVERTISING'
-
+// Canonical company advertising plan reconcile. Ensures the single customer-
+// facing active company plan ('ADVERTISING') exists and carries the configured
+// Stripe product/price IDs. Never deletes historical plans or subscriptions and
+// never deactivates rows that already exist — it only reconciles the canonical
+// plan's Stripe configuration from environment variables.
 async function main() {
-  const existing = await prisma.companyAdvertisingPlan.findFirst({ where: { name: DEFAULT_NAME } })
+  const canonical = DEFAULT_COMPANY_PLANS[0]
+  if (!canonical) throw new Error('No canonical company advertising plan is defined')
+
+  const existing = await prisma.companyAdvertisingPlan.findUnique({ where: { name: canonical.name } })
+  const priceId = canonical.stripePriceId || null
+  const productId = canonical.stripeProductId || null
+
   if (existing) {
-    const priceId = process.env.STRIPE_COMPANY_AD_PRICE_ID
-    const productId = process.env.STRIPE_COMPANY_AD_PRODUCT_ID
     if ((priceId && existing.stripePriceId !== priceId) || (productId && existing.stripeProductId !== productId)) {
       const updated = await prisma.companyAdvertisingPlan.update({
         where: { id: existing.id },
@@ -25,13 +33,15 @@ async function main() {
 
   const plan = await prisma.companyAdvertisingPlan.create({
     data: {
-      name: DEFAULT_NAME,
-      description: 'Company advertising subscription with campaign and ad-request access.',
-      price: 0,
-      billingInterval: 'month',
-      stripeProductId: process.env.STRIPE_COMPANY_AD_PRODUCT_ID || null,
-      stripePriceId: process.env.STRIPE_COMPANY_AD_PRICE_ID || null,
-      features: ['advertising request access', 'location and radius targeting', 'admin review'],
+      name: canonical.name,
+      description: canonical.description,
+      price: canonical.price,
+      billingInterval: canonical.billingInterval,
+      currency: canonical.currency,
+      displayOrder: canonical.displayOrder,
+      stripeProductId: productId,
+      stripePriceId: priceId,
+      features: canonical.features,
       isActive: true,
     },
   })

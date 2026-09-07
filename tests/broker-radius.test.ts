@@ -21,8 +21,19 @@ test('geo coordinates use GeoJSON Point with [longitude, latitude] order', () =>
 test('radius search filters to public eligibility for non-admin', () => {
   assert.match(geo, /isVisible: true/)
   assert.match(geo, /\{ \$ne: 'SUSPENDED' \}/)
-  assert.match(geo, /creationSource: 'ADMIN_CREATED'/)
-  assert.match(geo, /verificationStatus: 'VERIFIED'/)
+  assert.match(geo, /displayName: \{ \$nin: \[null, ''\] \}/)
+  assert.match(geo, /description: \{ \$nin: \[null, ''\] \}/)
+  assert.match(geo, /phone: \{ \$nin: \[null, ''\] \}/)
+  assert.match(geo, /officeAddress: \{ \$nin: \[null, ''\] \}/)
+  assert.match(geo, /profileSlug: \{ \$nin: \[null, ''\] \}/)
+  assert.doesNotMatch(geo, /creationSource: 'ADMIN_CREATED'/)
+  assert.doesNotMatch(geo, /verificationStatus: 'VERIFIED'/)
+})
+
+test('radius ranking surfaces paying, enabled, and imaged brokers first and excludes tier 4', () => {
+  assert.match(geo, /tier: \{\n/)
+  assert.match(geo, /\$eq: \['\$featured', 1\]/)
+  assert.match(geo, /tier: \{ \$lte: 3 \}/)
 })
 
 test('radius search supports both unowned and active-owner brokers', () => {
@@ -80,8 +91,10 @@ test('radius broker API delegates to the geographic-only pipeline that keeps pub
   assert.match(geo, /function baseMatch/)
   assert.match(geo, /isVisible: true/)
   assert.match(policy, /isVisible: true/)
-  assert.match(policy, /verificationStatus: 'VERIFIED'/)
+  assert.match(policy, /brokerProfileIsComplete/)
+  assert.match(policy, /profileComplete !== false/)
   assert.match(policy, /brokerStatus: \{ not: 'SUSPENDED' \}/)
   assert.match(policy, /userId: null/)
+  assert.doesNotMatch(policy, /sourceEligible/)
 })
 

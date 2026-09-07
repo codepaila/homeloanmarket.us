@@ -46,15 +46,20 @@ export default async function BrokerSetupPage() {
     <div className="min-h-screen bg-background py-6 sm:py-10">
       <div className="mx-auto w-full max-w-3xl px-4">
         <div className="mb-6 text-center sm:mb-8">
-          <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
-            Become a Verified Mortgage Originator
+          <h1 className="text-xl font-bold text-foreground sm:text-4xl">
+           Mortgage Originators Get Listed
           </h1>
           <p className="mx-auto mt-1.5 max-w-2xl text-sm text-muted-foreground sm:text-base">
             Join America&apos;s leading mortgage marketplace and connect with borrowers across the United States.
           </p>
         </div>
 
-        <BrokerSetupWizard user={sessionUser} initialData={initialData} initialStep={initialStep} />
+        <BrokerSetupWizard
+          user={sessionUser}
+          initialData={initialData}
+          initialStep={initialStep}
+          subscription={user.brokerRegistration?.subscription ?? null}
+        />
       </div>
     </div>
   )

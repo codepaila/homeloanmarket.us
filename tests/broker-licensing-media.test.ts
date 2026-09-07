@@ -99,8 +99,12 @@ test('/api/brokers POST enforces NMLS and license states before creating a broke
 
 test('createBrokerForExistingUser persists nmls + licenseStates on the Broker record', () => {
   const lib = read('lib/broker-registration.ts')
-  assert.match(lib, /nmls: data\.nmls \|\| null/)
-  assert.match(lib, /licenseStates: Array\.isArray\(data\.licenseStates\)/)
+  // The canonical finalization (finalizeBrokerRegistration) reads the merged
+  // onboarding data and persists the validated NMLS and license states.
+  assert.match(lib, /const nmls = typeof merged\.nmls === 'string' \? merged\.nmls\.trim\(\) : ''/)
+  assert.match(lib, /const licenseStates = Array\.isArray\(merged\.licenseStates\)/)
+  assert.match(lib, /nmls,/)
+  assert.match(lib, /licenseStates,/)
   assert.match(lib, /nmls\?: string/)
   assert.match(lib, /licenseStates\?: string\[\]/)
 })
@@ -195,11 +199,12 @@ test('broker profile image/cover uploads reuse the shared validated upload pipel
   assert.match(shared, /assertSafeCategory/)
 })
 
-test('broker-facing profile/cover editing does NOT render the admin Media Picker', () => {
+test('broker-facing edit exposes a profile-image upload and no cover-image upload', () => {
   const edit = read('components/sections/broker/EditProfile.tsx')
   assert.doesNotMatch(edit, /MediaPickerDialog|MediaPicker/)
   assert.doesNotMatch(edit, /mediaSelectUrl/)
-  assert.match(edit, /\/api\/brokers\/me\/cover-image/)
+  assert.doesNotMatch(edit, /CoverImageUpload/)
+  assert.doesNotMatch(edit, /\/api\/brokers\/me\/cover-image/)
   assert.match(edit, /\/api\/brokers\/me\/profile-image/)
   assert.doesNotMatch(edit, /GST|Aadhaar|indianCities|Permanent Account Number/)
 })
@@ -221,10 +226,15 @@ test('broker profile fields remain separate: profileImage and coverImage are bro
 // Public exposure + India terms removed
 // ---------------------------------------------------------------------------
 
-test('public broker DTO never exposes nmls or licenseStates', () => {
+test('public broker DTO exposes NMLS/license states but never India-era registration numbers', () => {
   const pub = read('lib/public-broker.ts')
-  assert.match(pub, /nmls: _nmls/)
-  assert.match(pub, /licenseStates: _licenseStates/)
+  // NMLS + licensed states are public professional identity (the detail page
+  // renders "NMLS #..." and the listing grid card does too). India-era internal
+  // registration/pan numbers are never public.
+  assert.match(pub, /nmls: str\(broker\.nmls\)/)
+  assert.match(pub, /licenseStates: Array\.isArray\(broker\.licenseStates\)/)
+  assert.doesNotMatch(pub, /registrationNumber/)
+  assert.doesNotMatch(pub, /panNumber/)
 })
 
 test('owner DTO exposes nmls and licenseStates', () => {

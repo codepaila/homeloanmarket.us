@@ -147,7 +147,9 @@ test('similar-broker cards on the profile page also show the badge', () => {
 })
 
 test('internal mortgageExpertEnabled flag is stripped from public DTOs', () => {
-  assert.match(publicDto, /mortgageExpertEnabled: _mortgageExpertEnabled/)
+  // The public DTO is an explicit allowlist; the raw admin-controlled
+  // mortgageExpertEnabled flag must never appear in it.
+  assert.doesNotMatch(publicDto, /mortgageExpertEnabled/)
 })
 
 // ---------------------------------------------------------------------------

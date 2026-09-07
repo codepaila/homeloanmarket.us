@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { Home, Briefcase, Check } from 'lucide-react'
 import { getCurrentUser } from '@/lib/currentUser'
-import { roleHome } from '@/lib/auth-redirect'
+import { resolveUserResumePath } from '@/lib/user-resume'
 import { AuthFormWrapper } from '@/components/design/AuthFormWrapper'
 import { GoogleContinueButton } from '@/components/auth/GoogleContinueButton'
 import { HomeBuyerCard } from '@/components/auth/HomeBuyerCard'
@@ -29,7 +29,10 @@ const brokerFeatures = [
 
 export default async function RegisterPage() {
   const user = await getCurrentUser()
-  if (user) redirect(roleHome(user.role))
+  // An authenticated visitor is sent to their canonical resume destination:
+  // incomplete broker/company registrations resume their own flow, a normal
+  // USER goes home, an admin goes to /admin. Never the wrong product.
+  if (user) redirect(resolveUserResumePath(user))
 
   return (
     <AuthFormWrapper

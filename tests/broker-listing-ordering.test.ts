@@ -12,7 +12,7 @@ const utils = read('utils/index.ts')
 test('paid/subscribed brokers are ordered first via live entitlement, not the enum string', () => {
   // The listing aggregation computes the paid tier live from the subscription
   // (FEATURED + active + not expired) before any other tie-breaker.
-  assert.match(listing, /\$sort: \{ featured: -1/)
+  assert.match(listing, /\$sort: \{ tier: 1/)
   assert.match(listing, /featuredRank: -1/)
   assert.doesNotMatch(listing, /brokerStatus: -1/)
   assert.doesNotMatch(api, /brokerStatus: 'desc'/)
@@ -23,7 +23,7 @@ test('ordering keeps a stable unique id tiebreaker', () => {
 })
 
 test('radius geo sort also orders featured brokers first via live entitlement', () => {
-  assert.match(geo, /\$sort: \{ featured: -1/)
+  assert.match(geo, /\$sort: \{ tier: 1/)
   assert.match(geo, /featuredRank: -1/)
   assert.doesNotMatch(geo, /brokerStatus: -1/)
 })

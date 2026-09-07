@@ -211,34 +211,10 @@ export async function PATCH(
       if (updateData.brokerStatus === 'FEATURED') updateData.featuredRank = Math.floor(Math.random() * 100) + 1
     }
 
-    // Special handling for profile slug - ensure uniqueness
-    if (body.profileSlug && body.profileSlug !== slug) {
-      // Validate slug format
-      const slugRegex = /^[a-z0-9-]+$/
-      if (!slugRegex.test(body.profileSlug)) {
-        return NextResponse.json(
-          { message: 'Profile slug can only contain lowercase letters, numbers, and hyphens' },
-          { status: 400 }
-        )
-      }
-
-      // Check if slug is already taken
-      const existingSlug = await prisma.broker.findFirst({
-        where: {
-          profileSlug: body.profileSlug,
-          id: { not: broker.id }
-        }
-      })
-
-      if (existingSlug) {
-        return NextResponse.json(
-          { message: 'Profile slug is already taken. Please choose another.' },
-          { status: 400 }
-        )
-      }
-
-      updateData.profileSlug = body.profileSlug
-    }
+    // profileSlug is SERVER-GENERATED and IMMUTABLE after creation. It is not
+    // part of BROKER_EDITABLE_FIELDS (see lib/broker-policy.ts), so a
+    // client-supplied value is dropped by pickBrokerEditableFields above and a
+    // tampered payload can never overwrite the canonical slug here.
 
     // Handle bank partnerships separately (if provided)
     if (body.bankPartnerships && Array.isArray(body.bankPartnerships)) {

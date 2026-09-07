@@ -3,7 +3,8 @@ import Stripe from 'stripe'
 import { getCurrentCompany } from '@/lib/company-policy'
 import { isSameOriginRequest } from '@/lib/origin'
 import { SubscriptionService } from '@/lib/subscription'
-import { resolveCompanyPlanForCheckout, COMPANY_PLAN_DEFAULT_NAME } from '@/lib/company-plan'
+import { resolveCompanyPlanForCheckout, getCanonicalCompanyAdvertisingPlan, COMPANY_PLAN_DEFAULT_NAME } from '@/lib/company-plan'
+import { isCompanyProfileComplete } from '@/lib/company-onboarding-state'
 import { validateCompanyCoupon } from '@/lib/company-coupon'
 import { buildCompanyCheckoutIdempotencyKey } from '@/lib/company-checkout'
 import prisma from '@/lib/prisma'
@@ -20,12 +21,35 @@ export async function POST(request: NextRequest) {
   const current = await getCurrentCompany()
   if (!current) return NextResponse.json({ error: 'Company access required' }, { status: 403 })
 
+  // Company profile completion is a hard prerequisite for advertising checkout:
+  // a PENDING/incomplete company may not purchase advertising before its
+  // required profile fields are completed (onboarding sets status=ACTIVE +
+  // onboardedAt). This is the authoritative server-side gate — the plan-select
+  // page also redirects incomplete companies to onboarding, but a direct API
+  // call must be rejected here regardless of UI state.
+  if (!isCompanyProfileComplete(current.company)) {
+    return NextResponse.json(
+      { error: 'Complete your company profile before selecting an advertising plan.', code: 'PROFILE_REQUIRED' },
+      { status: 403 },
+    )
+  }
+
   const body = await request.json().catch(() => ({}))
   const requestedPlanId = typeof body?.planId === 'string' ? body.planId : null
   const couponCode = typeof body?.couponCode === 'string' ? body.couponCode.trim() : ''
 
   const plan = await resolveCompanyPlanForCheckout(requestedPlanId)
   if (!plan) return NextResponse.json({ error: 'No active company advertising plan is available' }, { status: 503 })
+
+  // Exactly one customer-facing company advertising plan. Even if legacy
+  // inactive rows (or an admin misconfiguration) leave more than one active
+  // plan in the database, only the canonical customer-facing plan is
+  // purchasable. Historical records are never deleted; they are simply not
+  // selectable.
+  const canonicalPlan = await getCanonicalCompanyAdvertisingPlan()
+  if (!canonicalPlan || canonicalPlan.id !== plan.id) {
+    return NextResponse.json({ error: 'This advertising plan is not available for purchase' }, { status: 400 })
+  }
 
   // Resolve the authoritative Stripe price from the plan. FREE / zero-price
   // plans do not require Stripe checkout. A client-supplied price is never

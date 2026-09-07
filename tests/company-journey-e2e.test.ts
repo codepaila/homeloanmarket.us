@@ -25,9 +25,11 @@ test('both google and email entries land on the same canonical register flow', (
   assert.match(registerForm, /GoogleContinueButton[\s\S]{0,80}companyIntent/)
   assert.match(registerForm, /callbackUrl={?["']\/company\/register\/continue["']}|callbackUrl="\/company\/register\/continue"/)
   assert.match(googleBtn, /\/api\/auth\/company-intent/)
-  // The google button's callbackUrl prop is supplied by callers; the auth
-  // config / intent route define the canonical continue destination.
-  assert.match(intentRoute, /redirectTo: '\/company\/subscription\/select'/)
+  // The google button's callbackUrl prop is supplied by callers; the intent
+  // route defines the canonical state-based continue destination. A brand-new
+  // company continues to onboarding (profile must precede advertising billing).
+  assert.match(intentRoute, /resolveCompanyOnboardingDestination/)
+  assert.match(intentRoute, /redirectTo/)
 })
 
 test('email and google both create a company shell + OWNER exactly once', () => {

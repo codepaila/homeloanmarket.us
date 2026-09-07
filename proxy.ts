@@ -87,6 +87,13 @@ function isPublicMethodAwareApi(method: string, path: string): boolean {
   )
 }
 
+// A company-scoped destination for the proxy's post-login / auth/signin routing.
+// Deliberately prefix-based (no DB access in the edge runtime); the company
+// pages themselves enforce the exact resume step server-side.
+function isCompanyPathForProxy(path: string): boolean {
+  return path.startsWith('/company/')
+}
+
 export default async function proxy(request: NextRequest) {
   const token = await getToken({
     req: request,
@@ -97,8 +104,20 @@ export default async function proxy(request: NextRequest) {
   const method = request.method
 
   if (path === '/auth/signin' && token) {
+    const callbackUrl = request.nextUrl.searchParams.get('callbackUrl')
+    const origin = request.nextUrl.origin
+    // Company users are membership-based (User.role stays USER); route them to
+    // their company account hub so they can never fall to the generic home page
+    // after login. The /company/dashboard page (and /company/onboarding) then
+    // self-correct to the exact resume step. Broker/Admin use the role-based
+    // postLoginRedirect; the broker dashboard further gates to /setup.
+    if (token.isCompany) {
+      const safePath = sanitizeCallbackUrl(callbackUrl, origin)
+      const destination = safePath && isCompanyPathForProxy(safePath) ? safePath : '/company/dashboard'
+      return NextResponse.redirect(new URL(destination, request.url))
+    }
     return NextResponse.redirect(new URL(
-      postLoginRedirect(token.role, request.nextUrl.searchParams.get('callbackUrl'), request.nextUrl.origin),
+      postLoginRedirect(token.role, callbackUrl, origin),
       request.url,
     ))
   }
@@ -200,8 +219,15 @@ export default async function proxy(request: NextRequest) {
     }
   }
 
-  // Broker routes
-  if (path.startsWith('/broker')) {
+  // Broker routes. The protected broker product area is /broker[/...]; the
+  // /broker-registration/* continuation pages are NOT role-gated here because a
+  // fresh Google signup still holds role USER until the broker-intent PUT on
+  // the continue page creates the registration and flips the role to BROKER.
+  // Gating those pages on BROKER would strand the Google broker flow in a
+  // redirect loop to the role home. The broker-intent route (intent cookie +
+  // legal-consent check + establishBrokerRegistration) remains the
+  // authoritative gate for that boundary.
+  if (path.startsWith('/broker') && !path.startsWith('/broker-registration')) {
     if (userRole !== 'BROKER') {
       return NextResponse.redirect(new URL(roleHome(userRole), request.url))
     }

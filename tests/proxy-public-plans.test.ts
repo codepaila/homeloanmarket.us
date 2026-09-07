@@ -14,8 +14,13 @@ test('GET /api/subscription/plans is in PUBLIC_METHOD_AWARE_API', () => {
 })
 
 test('GET /api/subscription/plans is GET-only (not POST)', () => {
-  const match = proxy.match(/pattern:\s*\/.*subscription.*plans.*\/\s*,\s*method:\s*['"]GET['"]/)
-  assert.ok(match, 'Plans rule must be method: GET, not ALL or POST')
+  // Structure-independent: assert the plans rule is method-aware GET and never
+  // ALL/POST, regardless of whether the object lists method before or after
+  // the pattern. The rule must never open POST to the public plans surface.
+  const rules = proxy.split('\n').filter((line) => line.includes('subscription') && line.includes('plans'))
+  assert.ok(rules.length > 0, 'Plans rule must exist')
+  assert.ok(rules.some((line) => /method:\s*['"]GET['"]/.test(line)), 'Plans rule must be method: GET')
+  assert.ok(rules.every((line) => !/method:\s*(['"]ALL['"]|['"]POST['"])/.test(line)), 'Plans rule must not be ALL/POST')
 })
 
 test('isPublicMethodAwareApi function is defined', () => {

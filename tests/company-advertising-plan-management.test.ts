@@ -138,7 +138,7 @@ test('client cannot override the Stripe price ID', () => {
 // ---------------------------------------------------------------------------
 
 test('inactive plans are not offered for purchase', () => {
-  assert.match(plansApi, /getActiveCompanyAdvertisingPlans/)
+  assert.match(plansApi, /getCanonicalCompanyAdvertisingPlan/)
 })
 
 test('free plans do not require Stripe checkout', () => {

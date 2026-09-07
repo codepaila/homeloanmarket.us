@@ -134,11 +134,12 @@ test('verify-email API preserves existing redirect semantics', () => {
   const src = read('app/api/auth/verify-email/route.ts')
   // Broker registration redirect
   assert.match(src, /updatedUser\.brokerRegistration\?\.id/)
-  assert.match(src, /\/broker\/subscription\/select/)
+  assert.match(src, /\/setup/)
   // Claim context redirect
   assert.match(src, /\/claim-broker\/continue/)
-  // Company redirect
-  assert.match(src, /\/company\/subscription\/select/)
+  // Company redirect: a newly verified company continues to company onboarding
+  // (profile must be completed before advertising billing), never billing.
+  assert.match(src, /\/company\/onboarding/)
   // Default redirect
   assert.match(src, /redirectTo: appendPlanToRedirect\(baseRedirect, plan\)/)
 })

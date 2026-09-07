@@ -38,7 +38,6 @@ import {
   Save,
   Upload,
   FileText,
-  Shield,
   CheckCircle,
   Star,
   ArrowLeft,
@@ -867,35 +866,6 @@ export function CompanyProfile({ user, broker }: CompanyProfileProps) {
                 )}
               />
 
-              {/* Verification Status */}
-              <div className="rounded border p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <Shield className="h-5 w-5 text-primary" />
-                  <h4 className="font-medium">Verification Status</h4>
-                </div>
-                <Badge 
-                  variant="outline"
-                  className={broker?.verificationStatus === 'VERIFIED' ? 'bg-green-50 text-green-700 border-green-200 mb-2' : 'mb-2'}
-                >
-                  {broker?.verificationStatus === 'VERIFIED' ? 'Verified' : 'Verification Required'}
-                </Badge>
-                <p className="text-sm text-muted-foreground">
-                  {broker?.verificationStatus === 'VERIFIED' 
-                    ? 'Your profile is verified and visible to clients'
-                    : 'Complete verification to access all features'}
-                </p>
-                {broker?.verificationStatus !== 'VERIFIED' && (
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm" 
-                    className="mt-3 w-full"
-                    onClick={() => router.push('/broker/profile/verification')}
-                  >
-                    Complete Verification
-                  </Button>
-                )}
-              </div>
             </CardContent>
           </Card>
 

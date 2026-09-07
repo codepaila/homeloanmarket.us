@@ -234,11 +234,15 @@ test('Google reauthenticated claimant completes even when emailVerified is false
   assert.equal(persisted?.creationSource, 'ADMIN_CREATED')
 })
 
-// TEST K/L — existing USER → broker onboarding via createBrokerForExistingUser (SELF_REGISTERED, FREE once)
+// TEST K/L — existing USER → broker onboarding via finalizeBrokerRegistration
+// (SELF_REGISTERED, FREE once). The canonical flow requires a BrokerRegistration
+// with an ACTIVE registration subscription before finalization; finalization is
+// idempotent and can never create a duplicate Broker or BrokerSubscription.
 test('existing USER onboarding creates SELF_REGISTERED Broker with exactly one FREE subscription', async () => {
   const user = await prisma.user.create({ data: { email: `${suffix}-onboard@example.test`, phone: `+1557${Date.now().toString().slice(-7)}`, role: 'USER', isActive: true, emailVerified: true, password: 'hash' } })
   userIds.push(user.id)
-  const broker = await createBrokerForExistingUser(user.id, {
+
+  const profile = {
     displayName: 'Onboarded Broker',
     companyName: 'Onboarded Loans',
     phone: '+15571234567',
@@ -247,8 +251,31 @@ test('existing USER onboarding creates SELF_REGISTERED Broker with exactly one F
     state: 'Texas',
     pinCode: '78702',
     description: 'Onboarded through wizard.',
+    nmls: '12345678',
+    licenseStates: ['TX'],
     bankPartnerships: ['Chase Bank'],
+  }
+
+  // No BrokerRegistration yet: finalization must refuse to create a Broker.
+  await assert.rejects(createBrokerForExistingUser(user.id, profile), /Broker registration not found/)
+
+  // Register + select FREE: the registration subscription is established but
+  // NO Broker is created by subscription selection.
+  const registration = await prisma.brokerRegistration.create({
+    data: {
+      userId: user.id,
+      status: 'SUBSCRIPTION_PENDING',
+      draft: { create: { data: {}, currentStep: 1 } },
+    },
+    include: { subscription: true, draft: true },
   })
+  await prisma.brokerRegistrationSubscription.create({
+    data: { registrationId: registration.id, plan: 'FREE', status: 'ACTIVE', isActive: true, startDate: new Date() },
+  })
+  assert.equal(await prisma.broker.count({ where: { userId: user.id } }), 0, 'FREE selection must not create a Broker')
+
+  // Profile submission finalizes exactly one Broker + one FREE BrokerSubscription.
+  const broker = await createBrokerForExistingUser(user.id, profile)
   brokerIds.push(broker.id)
 
   const persisted = await prisma.broker.findUnique({ where: { id: broker.id }, include: { subscription: true } })
@@ -257,16 +284,22 @@ test('existing USER onboarding creates SELF_REGISTERED Broker with exactly one F
 
   assert.equal(persisted?.userId, user.id)
   assert.equal(persisted?.creationSource, 'SELF_REGISTERED')
+  assert.equal(persisted?.nmls, '12345678')
+  assert.deepEqual(persisted?.licenseStates, ['TX'])
   assert.equal(persisted?.subscription?.plan, 'FREE')
   assert.equal(persisted?.subscription?.isActive, true)
   assert.equal(await prisma.brokerSubscription.count({ where: { brokerId: broker.id } }), 1)
   assert.equal(promoted?.role, 'BROKER')
   assert.equal(claim, null)
   assert.equal(await prisma.brokerBank.count({ where: { brokerId: broker.id } }), 1)
-  await assert.rejects(createBrokerForExistingUser(user.id, {
-    displayName: 'Duplicate', phone: '+15571234568', officeAddress: 'X', city: 'Austin', state: 'Texas', pinCode: '78702', description: 'Duplicate',
-  }), /ALREADY_A_BROKER/)
+  assert.equal((await prisma.brokerRegistration.findUnique({ where: { id: registration.id } }))?.status, 'COMPLETED')
+
+  // Repeated submission is idempotent: the same Broker is returned and the
+  // BrokerSubscription is never duplicated.
+  const again = await createBrokerForExistingUser(user.id, profile)
+  assert.equal(again.id, broker.id)
   assert.equal(await prisma.broker.count({ where: { userId: user.id } }), 1)
+  assert.equal(await prisma.brokerSubscription.count({ where: { brokerId: broker.id } }), 1)
 })
 
 // TEST M — customer registration creates USER only, no Broker/Claim
