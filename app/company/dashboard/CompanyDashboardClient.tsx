@@ -7,6 +7,7 @@ import { toast } from 'react-hot-toast'
 import { RequestStatusBadge } from '@/components/admin/company/RequestStatusBadge'
 import { formatRequestTargetLocation } from '@/lib/advertisements/request-status'
 import { hasActiveCompanyAdvertisingSubscription } from '@/lib/company-ad-access'
+import Link from 'next/link'
 
 type CompanyDashboardData = {
   id: string
@@ -170,8 +171,8 @@ export function CompanyDashboardClient({ company, requests, onboarded }: { compa
           <h2 className="font-semibold text-amber-800">Complete your company profile</h2>
           <p className="mt-1 text-sm text-amber-700">Add your company details to help mortgage originators find you and to enable advertising on relevant listings.</p>
           <div className="mt-3 flex gap-2">
-            <a href="/company/onboarding" className="rounded bg-primary px-4 py-2 text-sm font-semibold text-white">Complete setup</a>
-            <a href="/company/dashboard" className="rounded border px-4 py-2 text-sm font-semibold text-amber-800">Skip for now</a>
+            <Link href="/company/onboarding" className="rounded bg-primary px-4 py-2 text-sm font-semibold text-white">Complete setup</Link>
+            {/* <a href="/company/dashboard" className="rounded border px-4 py-2 text-sm font-semibold text-amber-800">Skip for now</a> */}
           </div>
         </section>
       )}

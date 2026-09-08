@@ -84,7 +84,9 @@ test('Stripe checkout never shows the paid badge before authoritative activation
 
 test('downgrade/portal return re-fetches authoritative state and re-syncs the chrome', () => {
   const page = read('app/broker/subscription/page.tsx')
-  assert.match(page, /fetch\('\/api\/subscription\/usage'\)/)
+  // The page re-fetches the authoritative subscription state; Usage is not part
+  // of the broker subscription product and is no longer fetched by this page.
+  assert.doesNotMatch(page, /fetch\('\/api\/subscription\/usage'\)/)
   assert.match(page, /fetch\(detailsKey\)/)
   assert.equal((page.match(/resync\(\)/g) || []).length, 1)
   const successBranch = page.slice(page.indexOf('if (subscriptionJson.success)'), page.indexOf('} finally {'))
@@ -131,8 +133,6 @@ test('duplicate subscription actions are prevented', () => {
   assert.match(page, /disabled=\{portalLoading \|\| !subscriptionData\?\.stripeCustomerId\}/)
   const success = read('app/broker/subscription/success/page.tsx')
   assert.match(success, /verifyingRef\.current/)
-  const select = read('app/broker/subscription/select/page.tsx')
-  assert.match(select, /setLoading\('FREE'\)/)
 })
 
 // ---------------------------------------------------------------------------

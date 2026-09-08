@@ -103,19 +103,28 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Send email notification to broker if they have an email
+    // Send email notification to broker if they have an email (existing buyer →
+    // broker contact flow; escaped + deterministic idempotency per contact message)
     const brokerNotificationEmail = broker.email || broker.user?.email
     if (brokerNotificationEmail) {
       try {
-        const brokerTemplate = emailTemplates.newContactMessage(broker, {
-          ...contactMessage,
-          createdAt: contactMessage.createdAt,
+        const brokerTemplate = emailTemplates.newContactMessage({
+          contactName: contactMessage.name,
+          contactEmail: contactMessage.email || '',
+          contactPhone: contactMessage.phone || '',
+          contactMessage: contactMessage.message,
+          loanType: contactMessage.loanType || '',
+          propertyType: contactMessage.propertyType || '',
+          loanAmount: contactMessage.loanAmount,
+          receivedAt: contactMessage.createdAt,
+          reviewUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://homeloanmarket.com'}/broker/contacts/${contactMessage.id}`,
         })
         await sendEmail({
           to: brokerNotificationEmail,
           subject: brokerTemplate.subject,
           html: brokerTemplate.html,
           text: htmlToText(brokerTemplate.html),
+          idempotencyKey: `contact_message_broker_${contactMessage.id}`,
         })
       } catch (emailError) {
         console.error('Failed to send broker notification email:', emailError)
@@ -125,16 +134,19 @@ export async function POST(request: NextRequest) {
     // Send confirmation email to customer
     if (email) {
       try {
-        const customerTemplate = emailTemplates.contactMessageConfirmation(
-          { name, email },
-          broker,
-          { ...contactMessage, createdAt: contactMessage.createdAt }
-        )
+        const customerTemplate = emailTemplates.contactMessageConfirmation({
+          recipientName: name,
+          brokerName: broker.displayName || 'the mortgage originator',
+          companyName: broker.companyName,
+          messageSubject: contactMessage.subject || '',
+          sentAt: contactMessage.createdAt,
+        })
         await sendEmail({
           to: email,
           subject: customerTemplate.subject,
           html: customerTemplate.html,
           text: htmlToText(customerTemplate.html),
+          idempotencyKey: `contact_message_customer_${contactMessage.id}`,
         })
       } catch (emailError) {
         console.error('Failed to send customer confirmation email:', emailError)

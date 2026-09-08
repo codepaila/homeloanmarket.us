@@ -68,7 +68,14 @@ export function isPublicBroker(state: BrokerPublicState) {
   return state.isVisible &&
     state.brokerStatus !== 'SUSPENDED' &&
     state.profileComplete !== false &&
-    ownerEligible
+    ownerEligible &&
+    // Source-aware verification gate (canonical policy):
+    //   - ADMIN_CREATED brokers are verified by construction and stay eligible.
+    //   - SELF_REGISTERED brokers — and legacy records with no known source —
+    //     must be explicitly VERIFIED by an administrator before they may appear
+    //     in any public broker discovery surface.
+    // Verification is an ELIGIBILITY gate here; it is never a ranking tier.
+    (state.creationSource === 'ADMIN_CREATED' || state.verificationStatus === 'VERIFIED')
 }
 
 // Canonical public marketplace eligibility shared by the broker listing,
@@ -105,6 +112,15 @@ export function publicBrokerWhere(): Prisma.BrokerWhereInput {
         OR: [
           { userId: null },
           { user: { isActive: true, companyMemberships: { none: { isActive: true } } } },
+        ],
+      },
+      // Source-aware verification gate (mirrors isPublicBroker): ADMIN_CREATED
+      // brokers are eligible by construction; SELF_REGISTERED (or null-source)
+      // brokers must be admin VERIFIED to be publicly listed.
+      {
+        OR: [
+          { creationSource: 'ADMIN_CREATED' },
+          { verificationStatus: 'VERIFIED' },
         ],
       },
     ],

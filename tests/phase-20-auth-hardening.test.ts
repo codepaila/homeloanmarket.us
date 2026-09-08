@@ -103,7 +103,7 @@ test('email-change: PATCH /api/user/profile never mutates User.email directly', 
 test('email-change: the verification link is sent to the NEW address only', () => {
   const source = read('actions/email.action.ts')
   assert.ok(source.includes('sendEmailChangeVerificationEmail('), 'send function must exist')
-  const block = source.slice(source.indexOf('export async function sendEmailChangeVerificationEmail('), source.indexOf('export async function sendNewLeadNotification('))
+  const block = source.slice(source.indexOf('export async function sendEmailChangeVerificationEmail('), source.indexOf('export async function sendPasswordResetEmail('))
   assert.ok(block.includes('crypto.randomBytes(32)'), '256-bit token')
   assert.ok(block.includes("createHash('sha256')"), 'token hashed before persistence')
   assert.ok(block.includes('60 * 60 * 1000'), 'token expires after 1 hour')
@@ -131,7 +131,7 @@ test('email-change: expired / invalid / used tokens still rejected (expiry prece
 test('email-change: signup verification path remains unchanged (no differing email)', () => {
   const source = read('app/api/auth/verify-email/route.ts')
   assert.ok(source.includes('emailVerified: true'), 'signup branch flips emailVerified')
-  assert.ok(source.includes('sendBrokerVerificationEmail'), 'broker welcome flow preserved')
+  assert.doesNotMatch(source, /sendBrokerVerificationEmail/, 'email verification must NOT send the broker-verified email (Phase 8.36.5)')
   assert.ok(source.includes('getClaimContext'), 'claim redirect flow preserved')
 })
 

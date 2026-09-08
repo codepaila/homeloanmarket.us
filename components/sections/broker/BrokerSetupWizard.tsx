@@ -168,6 +168,10 @@ interface BrokerSetupWizardProps {
   initialData?: Partial<FormData>
   initialStep?: number
   subscription?: { isActive?: boolean | null; status?: string | null; plan?: string | null } | null
+  // Intended plan selection (FREE/FEATURED) carried from /setup?plan=... It
+  // preselects the plan card on Step 6 only; it never bypasses profile steps
+  // and never creates a subscription.
+  planParam?: string | null
 }
 
 // Older onboarding drafts persisted the postal code as `zipCode`. The canonical
@@ -219,14 +223,23 @@ function Stepper({ steps, currentStep }: { steps: StepDef[]; currentStep: number
   )
 }
 
-export function BrokerSetupWizard({ initialData = {}, initialStep = 1, subscription = null }: BrokerSetupWizardProps) {
+export function BrokerSetupWizard({ initialData = {}, initialStep = 1, subscription = null, planParam = null }: BrokerSetupWizardProps) {
   const router = useRouter()
   const { update: refreshSession } = useSession()
   // Clamp the server-persisted step into the canonical step range so a stale
   // draft (from an older wizard revision) always resumes on a real step.
-  const [currentStep, setCurrentStep] = useState(
-    Math.min(Math.max(Number.isInteger(initialStep) ? initialStep : 1, 1), steps.length),
-  )
+  // After an authoritative ACTIVE subscription (e.g. a successful FEATURED
+  // checkout return), the profile was already reviewed before the plan step, so
+  // the wizard resumes on the plan step instead of Review — the auto-finalize
+  // below still goes through POST /api/brokers, and finalizeBrokerRegistration
+  // continues to enforce every server-side completeness/ownership rule.
+  const [currentStep, setCurrentStep] = useState(() => {
+    const persisted = Math.min(Math.max(Number.isInteger(initialStep) ? initialStep : 1, 1), steps.length)
+    if (subscription?.isActive && subscription?.status === 'ACTIVE' && persisted >= 5) {
+      return steps.length
+    }
+    return persisted
+  })
   const [isSubmitting, setIsSubmitting] = useState(false)
   // Per-step save guard: prevents double-click duplicate PATCH requests and
   // drives the "Saving…" state on the Continue button.
@@ -235,11 +248,15 @@ export function BrokerSetupWizard({ initialData = {}, initialStep = 1, subscript
   // user always sees WHY Next did not advance.
   const locationSectionRef = useRef<HTMLDivElement>(null)
   // Set when the Step 6 FREE flow activates the subscription, so onSubmit can
-  // finalize before the server-rendered `subscription` prop refreshes. A plain
-  // state (not a ref) keeps onSubmit form/ref-hook linter friendly. See the
-  // guard in onSubmit.
-  const [freeActivatedOverride, setFreeActivatedOverride] = useState(false)
-  const markFreeActivated = () => setFreeActivatedOverride(true)
+  // finalize before the server-rendered `subscription` prop refreshes. A ref
+  // (not state) is authoritative: `markFreeActivated` runs synchronously inside
+  // the still-executing `selectFree` before it calls `onFinalize`, and the guard
+  // in onSubmit reads `freeActivatedOverrideRef.current` at call time. A state
+  // update would only be visible to a LATER render's onSubmit closure, so the
+  // running selectFree → onFinalize call would still observe the stale `false`
+  // and wrongly block finalization. See the guard in onSubmit.
+  const freeActivatedOverrideRef = useRef(false)
+  const markFreeActivated = () => { freeActivatedOverrideRef.current = true }
   // Verification document uploads are not part of the current flow; the field
   // is retained so the completion payload shape stays stable.
   const uploadedDocs: Record<string, { name: string; url: string }> = {}
@@ -445,12 +462,12 @@ export function BrokerSetupWizard({ initialData = {}, initialStep = 1, subscript
       // the subscription is still pending/incomplete — the plan step wires the
       // finalize button only to the ACTIVE state.
       //
-      // `freeActivatedOverride` is set by the Step 6 FREE flow: the FREE
-      // endpoint just upserted an ACTIVE subscription server-side, but the
-      // `subscription` prop is a server-render snapshot that hasn't refreshed
-      // yet. The guard is bypassed ONLY then; a CHECKOUT_PENDING/FEATURED state
-      // can never reach finalization.
-      if (!(subscription?.isActive && subscription?.status === 'ACTIVE') && !freeActivatedOverride) {
+      // `freeActivatedOverrideRef.current` is set synchronously by the Step 6
+      // FREE flow: the FREE endpoint just upserted an ACTIVE subscription
+      // server-side, but the `subscription` prop is a server-render snapshot
+      // that hasn't refreshed yet. The guard is bypassed ONLY then; a
+      // CHECKOUT_PENDING/FEATURED state can never reach finalization.
+      if (!(subscription?.isActive && subscription?.status === 'ACTIVE') && !freeActivatedOverrideRef.current) {
         toast.error("We couldn't finish your broker setup. Please try again.")
         return
       }
@@ -490,6 +507,16 @@ export function BrokerSetupWizard({ initialData = {}, initialStep = 1, subscript
       const result = await response.json()
 
       if (!response.ok) {
+        // Idempotent finalization: a concurrent/duplicate finalize (StrictMode
+        // double-mount, a repeated checkout-return, or a manual retry) may find
+        // the Broker already created. That is the finalized outcome, so proceed
+        // to the dashboard instead of surfacing an error.
+        if (response.status === 400 && result.message === 'You already have a broker profile') {
+          toast.success('Your broker profile is ready.')
+          await refreshSession()
+          router.push('/broker/dashboard')
+          return
+        }
         throw new Error(result.message || 'Failed to create broker profile')
       }
 
@@ -507,6 +534,25 @@ export function BrokerSetupWizard({ initialData = {}, initialStep = 1, subscript
       setIsSubmitting(false)
     }
   }
+
+  // After an authoritative ACTIVE registration subscription is present on mount
+  // (e.g. a successful FEATURED checkout return, or a resumed/interrupted
+  // FREE/FEATURED finalization), the broker profile has already been reviewed
+  // and the broker should be finalized automatically — no Review re-display and
+  // no manual "Complete Broker Profile" click. POST /api/brokers
+  // (finalizeBrokerRegistration) remains the authoritative server-side gate for
+  // ownership, profile completeness, and the ACTIVE-subscription requirement.
+  const autoFinalizeAttemptedRef = useRef(false)
+  useEffect(() => {
+    const isActive = Boolean(subscription?.isActive && subscription?.status === 'ACTIVE')
+    if (isActive && !autoFinalizeAttemptedRef.current) {
+      autoFinalizeAttemptedRef.current = true
+      void onSubmit()
+    }
+    // Intentionally run once on mount; onSubmit reads the current form and the
+    // FREE-activation ref at call time.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const renderStep = () => {
     switch (currentStep) {
@@ -527,6 +573,7 @@ export function BrokerSetupWizard({ initialData = {}, initialStep = 1, subscript
             onFinalize={onSubmit}
             isSubmitting={isSubmitting}
             onFreeActivated={markFreeActivated}
+            preselectedPlan={planParam}
           />
         )
       default:
@@ -557,6 +604,10 @@ export function BrokerSetupWizard({ initialData = {}, initialStep = 1, subscript
       <div className="rounded border bg-card text-card-foreground shadow-sm">
         <div className="p-5 sm:p-6">
           <Form {...form}>
+            {/* onSubmit reads the FREE-activation ref only inside the async event
+                handler (never during render), so the react-hooks/refs false positive
+                is disabled for this single submit handler wiring. */}
+            {/* eslint-disable-next-line react-hooks/refs */}
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               {renderStep()}
 
@@ -1211,7 +1262,7 @@ type PublicPlan = {
   features: string[]
 }
 
-function Step6PlanSelection({ subscription, onFinalize, isSubmitting, onFreeActivated }: any) {
+function Step6PlanSelection({ subscription, onFinalize, isSubmitting, onFreeActivated, preselectedPlan }: any) {
   const router = useRouter()
   const [plans, setPlans] = useState<PublicPlan[]>([])
   const [loadingPlans, setLoadingPlans] = useState(true)
@@ -1261,7 +1312,7 @@ function Step6PlanSelection({ subscription, onFinalize, isSubmitting, onFreeActi
       // this step (Back → Continue) shows the ACTIVE state directly.
       router.refresh()
       // onFinalize → POST /api/brokers → finalizeBrokerRegistration. The parent
-      // freeActivatedOverride bypasses the stale-prop guard because FREE just
+      // freeActivatedOverride ref bypasses the stale-prop guard because FREE just
       // activated the subscription server-side. onSubmit never rejects — it
       // reports its own toasts — so a finalize failure keeps the user on this
       // step with the finalize button still available.
@@ -1322,7 +1373,13 @@ function Step6PlanSelection({ subscription, onFinalize, isSubmitting, onFreeActi
         <>
           <div className="grid gap-4 md:grid-cols-2">
             {plans.map((plan) => (
-              <div key={plan.id}>
+              // `preselectedPlan` (from /setup?plan=...) highlights the intended
+              // card only — the user still clicks to activate, so profile steps
+              // are never bypassed and no subscription is created implicitly.
+              <div
+                key={plan.id}
+                className={preselectedPlan === plan.code ? 'rounded ring-2 ring-primary/40' : ''}
+              >
                 <PricingCard
                   name={plan.name}
                   description={plan.description || ''}

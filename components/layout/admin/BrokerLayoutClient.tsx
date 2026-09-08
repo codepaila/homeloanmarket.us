@@ -75,7 +75,7 @@ export default function BrokerLayoutClient({
       <div className="lg:pl-72 flex flex-col flex-1">
         <DashboardHeader onMenuClick={() => setSidebarOpen(true)} quickActions={sidebarData.quickActions} user={sidebarData.user} />
         <main className="flex-1 pb-8">
-          <div className="px-4 sm:px-6 lg:px-8 py-8">
+          <div className="px-3 sm:px-4 lg:px-6 py-4">
             {/* <Breadcrumbs /> */}
             <div className="mt-0">{children}</div>
           </div>

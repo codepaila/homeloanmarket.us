@@ -6,6 +6,7 @@ import prisma from '@/lib/prisma'
 import { SubscriptionService } from '@/lib/subscription'
 import { getCorrelationId } from '@/lib/correlation'
 import { getStripeSecretKey, getStripeWebhookSecret } from '@/lib/stripe-config'
+import { sendSubscriptionPurchaseEmail } from '@/actions/email.action'
 
 async function getStripe(): Promise<Stripe> {
   const key = await getStripeSecretKey()
@@ -133,13 +134,22 @@ async function handleStripeEvent(event: Stripe.Event) {
       const session = event.data.object as Stripe.Checkout.Session
       if (!session.customer || !session.subscription) return
       const subscription = await (await getStripe()).subscriptions.retrieve(session.subscription as string)
-      await SubscriptionService.updateSubscriptionFromStripe(
+      const updated = await SubscriptionService.updateSubscriptionFromStripe(
         session.customer as string,
         subscription.id,
         subscription.status,
         subscription.items.data[0]?.price.id,
         subscription.metadata?.ownerType || session.metadata?.ownerType || null,
       )
+      // Broker-product subscription purchase/activation confirmation. Fires only
+      // when the synced row is a BrokerSubscription that became active (a
+      // broker-registration checkout resolves to the registration subscription
+      // and intentionally produces no broker purchase email here). Fire-and-forget
+      // with a deterministic per-subscription idempotency key; the sync result is
+      // never affected by email delivery.
+      if (updated && 'brokerId' in updated && updated.isActive && typeof updated.id === 'string') {
+        void sendSubscriptionPurchaseEmail(updated.id)
+      }
       return
     }
     case 'checkout.session.expired': {

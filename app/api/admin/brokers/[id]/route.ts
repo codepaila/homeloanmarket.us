@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma'
 import { Prisma } from '@prisma/client'
 import { resolveBrokerLocation } from '@/lib/location/broker-location'
 import { validateLicenseStates } from '@/lib/broker-licensing'
+import { buildVerificationUpdate, wasVerifiedTransition, sendBrokerVerifiedEmail } from '@/lib/broker-verification'
 
 async function isAdmin() {
   const user = await getCurrentUser()
@@ -53,7 +54,23 @@ export async function PATCH(
   const admin = await getCurrentUser()
   if (admin?.role !== 'ADMIN') return NextResponse.json({ message: 'Forbidden' }, { status: 403 })
   const { id } = await params
-  const broker = await prisma.broker.findUnique({ where: { id }, select: { id: true, officeAddress: true, city: true, state: true, pinCode: true } })
+  const broker = await prisma.broker.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      officeAddress: true,
+      city: true,
+      state: true,
+      pinCode: true,
+      verificationStatus: true,
+      verifiedAt: true,
+      email: true,
+      profileSlug: true,
+      displayName: true,
+      experienceYears: true,
+      user: { select: { email: true } },
+    },
+  })
   if (!broker) return NextResponse.json({ message: 'Broker not found' }, { status: 404 })
 
   const body = await request.json()
@@ -72,6 +89,21 @@ export async function PATCH(
   if (data.website !== undefined && data.website !== null) data.website = String(data.website).trim()
   if (data.verificationStatus !== undefined && !['UNVERIFIED', 'VERIFIED'].includes(String(data.verificationStatus))) {
     return NextResponse.json({ message: 'Invalid verification status' }, { status: 422 })
+  }
+
+  // Verification state transition handling: preserve/clear verifiedAt and
+  // detect the UNVERIFIED → VERIFIED transition for the notification email.
+  // isVisible is never modified here (verification and visibility are separate).
+  const statusChange = data.verificationStatus !== undefined && data.verificationStatus !== broker.verificationStatus
+  let transitionedToVerified = false
+  if (statusChange && (data.verificationStatus === 'VERIFIED' || data.verificationStatus === 'UNVERIFIED')) {
+    const update = buildVerificationUpdate(
+      { verificationStatus: broker.verificationStatus, verifiedAt: broker.verifiedAt },
+      data.verificationStatus as string,
+    )
+    data.verificationStatus = update.verificationStatus
+    data.verifiedAt = update.verifiedAt
+    transitionedToVerified = wasVerifiedTransition(broker.verificationStatus, data.verificationStatus as string)
   }
   if (data.nmls !== undefined && data.nmls !== null) {
     const nmls = String(data.nmls).trim()
@@ -119,6 +151,20 @@ export async function PATCH(
   try {
     const updatedBroker = await prisma.broker.update({ where: { id }, data })
     console.info('Admin broker profile updated', { adminId: admin.id, brokerId: id })
+    // Fire-and-forget on the actual transition only; email failure never rolls
+    // back the authoritative DB verification.
+    if (transitionedToVerified) {
+      const brokerEmail = broker.email || broker.user?.email
+      if (brokerEmail) {
+        void sendBrokerVerifiedEmail({
+          to: brokerEmail,
+          displayName: broker.displayName,
+          profileSlug: broker.profileSlug,
+          city: broker.city,
+          experienceYears: broker.experienceYears,
+        })
+      }
+    }
     return NextResponse.json({ broker: updatedBroker })
   } catch (error) {
     console.error('Admin broker update failed', error)

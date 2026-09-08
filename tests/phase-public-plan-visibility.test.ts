@@ -24,8 +24,11 @@ test('Subscription page allows unauthenticated access', () => {
   assert.doesNotMatch(subscriptionPage, /router\.push\('\/auth\/signin'\)/)
 })
 
-test('Subscription page has handleCheckout with unauthenticated redirect', () => {
-  assert.match(subscriptionPage, /sessionStatus === 'unauthenticated'/)
-  assert.match(subscriptionPage, /\/auth\/signup/)
+test('Broker subscription page relies on the server-protected boundary for auth', () => {
+  // /broker/* is proxy-protected for BROKER role, so the page carries no client
+  // unauthenticated branch; checkout auth is enforced server-side by the route.
+  assert.doesNotMatch(subscriptionPage, /sessionStatus === 'unauthenticated'/)
+  assert.doesNotMatch(subscriptionPage, /useSession\(\)/)
+  assert.match(subscriptionPage, /\/api\/subscription\/checkout/)
   assert.match(subscriptionPage, /planName/)
 })

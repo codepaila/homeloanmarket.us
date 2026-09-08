@@ -41,10 +41,17 @@ test('UsageStats renders no Bank Partners or Contact Messages', () => {
   assert.match(stats, /No usage data available/)
 })
 
-test('UsageStats stays wired into the broker subscription page', () => {
+test('UsageStats is no longer part of the broker subscription page (Usage product removed)', () => {
   const page = read('app/broker/subscription/page.tsx')
-  assert.match(page, /from '@\/components\/sections\/subscriptions\/Usagestats'/)
-  assert.match(page, /<UsageStats usageData=\{usageData\}/)
+  assert.doesNotMatch(page, /from '@\/components\/sections\/subscriptions\/Usagestats'/)
+  assert.doesNotMatch(page, /<UsageStats/)
+  assert.doesNotMatch(page, /usageData/)
+  // The Usage tab and Quick Stats are gone; only Subscription, Plans, and
+  // Billing remain.
+  assert.doesNotMatch(page, /TabsTrigger value="usage"/)
+  assert.doesNotMatch(page, /TabsContent value="usage"/)
+  assert.doesNotMatch(page, /Profile Views/)
+  assert.doesNotMatch(page, /fetch\('\/api\/subscription\/usage'\)/)
 })
 
 // ---------------------- Subscription pages ----------------------
@@ -52,7 +59,6 @@ test('UsageStats stays wired into the broker subscription page', () => {
 test('no broker subscription page renders the removed categories or dashboard-style metrics', () => {
   const files = [
     'app/broker/subscription/page.tsx',
-    'app/broker/subscription/select/page.tsx',
     'app/broker/subscription/billing/page.tsx',
     'app/broker/subscription/success/page.tsx',
     'app/broker/subscription/upgrade/page.tsx',
@@ -127,18 +133,13 @@ test('FEATURED / Mortgage Expert plan still renders', () => {
   const plans = read('components/sections/subscriptions/SubscriptionPlan.tsx')
   assert.match(plans, /plan\.code === 'FEATURED'/)
   assert.match(plans, /Most Popular/)
-  const select = read('app/broker/subscription/select/page.tsx')
-  assert.match(select, /VALID_PLAN_CODES = \['FREE', 'FEATURED'\]/)
-  assert.match(select, /isPopular=\{plan\.code === 'FEATURED'\}/)
+  // Legacy standalone select route removed (Phase 8.35.5); the wizard Step 6 is
+  // the canonical plan surface.
 })
 
 // ---------------------- Checkout / selection unchanged ----------------------
 
 test('plan selection and checkout endpoints are unchanged', () => {
-  const select = read('app/broker/subscription/select/page.tsx')
-  assert.match(select, /fetch\('\/api\/subscription\/plans'\)/)
-  assert.match(select, /fetch\('\/api\/broker-registration\/subscription\/free'/)
-  assert.match(select, /fetch\('\/api\/broker-registration\/subscription\/checkout'/)
   const page = read('app/broker/subscription/page.tsx')
   assert.match(page, /fetch\('\/api\/subscription\/checkout'/)
   assert.match(page, /fetch\('\/api\/subscription\/portal'/)

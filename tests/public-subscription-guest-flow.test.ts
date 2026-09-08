@@ -8,7 +8,6 @@ const subscriptionPage = read('app/(public)/subscription/page.tsx')
 const signupPage = read('app/(public)/auth/signup/page.tsx')
 const verifyEmailRoute = read('app/api/auth/verify-email/route.ts')
 const brokerIntentRoute = read('app/api/auth/broker-intent/route.ts')
-const subscriptionSelectPage = read('app/broker/subscription/select/page.tsx')
 const googleButton = read('components/auth/GoogleContinueButton.tsx')
 const brokerIntentLib = read('lib/broker-intent.ts')
 
@@ -28,8 +27,12 @@ test('Public subscription page: unauthenticated redirects to /auth/signup with p
   assert.match(subscriptionPage, /\/auth\/signup\?plan=/)
 })
 
-test('Public subscription page: authenticated redirects to /broker/subscription/select with plan', () => {
-  assert.match(subscriptionPage, /\/broker\/subscription\/select\?plan=/)
+test('Public subscription page: authenticated new broker redirects to /setup with plan', () => {
+  assert.match(subscriptionPage, /\/setup\?plan=/)
+  // Already-finalized existing brokers go to subscription management instead.
+  assert.match(subscriptionPage, /\/broker\/subscription/)
+  // The legacy registration plan-select route is no longer the handoff target.
+  assert.doesNotMatch(subscriptionPage, /\/broker\/subscription\/select\?plan=/)
 })
 
 test('Public subscription page: does NOT call checkout API directly', () => {
@@ -92,24 +95,13 @@ test('Verify-email: validates plan before using it', () => {
 })
 
 // ============================================================================
-// SUBSCRIPTION SELECT TESTS
+// PLAN-SELECTION DESTINATION (Phase 8.35.5: legacy select route removed)
 // ============================================================================
 
-test('Subscription select: reads plan from URL searchParams', () => {
-  assert.match(subscriptionSelectPage, /searchParams\.get\('plan'\)/)
-})
-
-test('Subscription select: preselects valid plan from URL', () => {
-  assert.match(subscriptionSelectPage, /setSelectedPlanCode\(planParam\)/)
-})
-
-test('Subscription select: validates plan code against VALID_PLAN_CODES', () => {
-  assert.match(subscriptionSelectPage, /VALID_PLAN_CODES/)
-})
-
-test('Subscription select: does NOT auto-checkout on mount', () => {
-  assert.doesNotMatch(subscriptionSelectPage, /selectFree\(\)/)
-  assert.doesNotMatch(subscriptionSelectPage, /selectPaid\(/)
+test('Subscription plan selection is served by /setup (legacy select route removed)', () => {
+  // The standalone /broker/subscription/select page was deleted; new-broker plan
+  // selection lives in /setup Step 6 (covered by phase-8.35.4 tests).
+  assert.doesNotMatch(subscriptionPage, /\/broker\/subscription\/select\?plan=/)
 })
 
 // ============================================================================

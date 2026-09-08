@@ -112,6 +112,15 @@ export default async function proxy(request: NextRequest) {
     // self-correct to the exact resume step. Broker/Admin use the role-based
     // postLoginRedirect; the broker dashboard further gates to /setup.
     if (token.isCompany) {
+      // Email verification gate (Phase 8.37.1 F1): an email-registered company
+      // user must verify before protected company functionality. Google company
+      // users are verified-by-construction. Routing here (instead of the
+      // company destination) also prevents the redirect loop that would
+      // otherwise occur when a company page sends an unverified member to
+      // /auth/signin.
+      if (!token.emailVerified) {
+        return NextResponse.redirect(new URL('/auth/verify-email', request.url))
+      }
       const safePath = sanitizeCallbackUrl(callbackUrl, origin)
       const destination = safePath && isCompanyPathForProxy(safePath) ? safePath : '/company/dashboard'
       return NextResponse.redirect(new URL(destination, request.url))

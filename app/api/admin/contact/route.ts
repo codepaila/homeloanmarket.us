@@ -3,10 +3,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/currentUser'
-import { sendEmail } from '@/lib/email'
+import { sendEmail, emailTemplates } from '@/lib/email'
 import { contactBrokerRateLimit } from '@/lib/rateLimit'
-
-const escapeHtml = (value: string) => value.replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character] || character)
 
 export async function GET(request: NextRequest) {
   try {
@@ -117,11 +115,23 @@ export async function POST(request: NextRequest) {
 
     const recipient = process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_CONTACT_EMAIL
     if (!recipient) return NextResponse.json({ success: false, error: 'Contact service is not configured.' }, { status: 503 })
+    const template = emailTemplates.notification({
+      title: `New platform contact message: ${subject || 'New message'}`,
+      message: 'A visitor submitted the platform contact form.',
+      info: {
+        Name: name,
+        Email: email,
+        Phone: phone || 'Not provided',
+        Subject: subject || 'No subject',
+        Message: message,
+      },
+    })
     const result = await sendEmail({
       to: recipient,
-      subject: `[HomeLoanMarket contact] ${subject || 'New message'}`,
-      html: `<h2>${escapeHtml(subject || 'New message')}</h2><p><strong>From:</strong> ${escapeHtml(name)} (${escapeHtml(email)})</p><p><strong>Phone:</strong> ${escapeHtml(phone || 'Not provided')}</p><p>${escapeHtml(message).replace(/\n/g, '<br />')}</p>`,
+      subject: template.subject,
+      html: template.html,
       text: `From: ${name} (${email})\nPhone: ${phone || 'Not provided'}\n\n${message}`,
+      replyTo: email,
     })
     if (!result.success) return NextResponse.json({ success: false, error: 'Unable to send your message right now.' }, { status: 502 })
     return NextResponse.json({ success: true, message: 'Message sent successfully.' })

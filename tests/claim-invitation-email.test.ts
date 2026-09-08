@@ -20,13 +20,12 @@ const mockBroker = {
 }
 
 const mockClaimLink = 'https://homeloanmarket.com/claim-broker/a1b2c3d4e5f6g7h8'
-const mockExpiresAt = new Date('2026-12-31T23:59:59.000Z')
 
 // ---------------------------------------------------------------------------
 // 1. Correct subject
 // ---------------------------------------------------------------------------
 test('subject is the exact required subject line', () => {
-  const template = emailTemplates.claimInvitation(mockBroker, mockClaimLink, mockExpiresAt)
+  const template = emailTemplates.claimInvitation({ displayName: mockBroker.displayName, claimLink: mockClaimLink })
   assert.equal(
     template.subject,
     'Your Mortgage Professional Profile Is Now Listed on HomeLoanMarket.com',
@@ -37,13 +36,13 @@ test('subject is the exact required subject line', () => {
 // 2. First-name rendering
 // ---------------------------------------------------------------------------
 test('renders displayName in greeting', () => {
-  const template = emailTemplates.claimInvitation(mockBroker, mockClaimLink, mockExpiresAt)
+  const template = emailTemplates.claimInvitation({ displayName: mockBroker.displayName, claimLink: mockClaimLink })
   assert.match(template.html, /Hi John Smith/)
 })
 
 test('renders fallback greeting when displayName is missing', () => {
   const brokerNoName = { ...mockBroker, displayName: '' }
-  const template = emailTemplates.claimInvitation(brokerNoName, mockClaimLink, mockExpiresAt)
+  const template = emailTemplates.claimInvitation({ displayName: brokerNoName.displayName, claimLink: mockClaimLink })
   assert.match(template.html, /Hi there/)
   assert.doesNotMatch(template.html, /Hi undefined/)
   assert.doesNotMatch(template.html, /Hi null/)
@@ -54,12 +53,12 @@ test('renders fallback greeting when displayName is missing', () => {
 // 3. Claim URL rendering
 // ---------------------------------------------------------------------------
 test('claim link points to the canonical claim URL', () => {
-  const template = emailTemplates.claimInvitation(mockBroker, mockClaimLink, mockExpiresAt)
+  const template = emailTemplates.claimInvitation({ displayName: mockBroker.displayName, claimLink: mockClaimLink })
   assert.match(template.html, new RegExp(mockClaimLink))
 })
 
 test('"Claim Your Profile" button links to the canonical claim URL', () => {
-  const template = emailTemplates.claimInvitation(mockBroker, mockClaimLink, mockExpiresAt)
+  const template = emailTemplates.claimInvitation({ displayName: mockBroker.displayName, claimLink: mockClaimLink })
   assert.match(template.html, new RegExp(`href="${mockClaimLink}"`))
 })
 
@@ -67,7 +66,7 @@ test('"Claim Your Profile" button links to the canonical claim URL', () => {
 // 4. Exact required paragraphs present
 // ---------------------------------------------------------------------------
 test('subject matches exactly', () => {
-  const template = emailTemplates.claimInvitation(mockBroker, mockClaimLink, mockExpiresAt)
+  const template = emailTemplates.claimInvitation({ displayName: mockBroker.displayName, claimLink: mockClaimLink })
   assert.equal(
     template.subject,
     'Your Mortgage Professional Profile Is Now Listed on HomeLoanMarket.com',
@@ -75,7 +74,7 @@ test('subject matches exactly', () => {
 })
 
 test('contains all required body paragraphs', () => {
-  const template = emailTemplates.claimInvitation(mockBroker, mockClaimLink, mockExpiresAt)
+  const template = emailTemplates.claimInvitation({ displayName: mockBroker.displayName, claimLink: mockClaimLink })
   assert.match(template.html, /Your mortgage professional profile is now listed on HomeLoanMarket\.com/)
   assert.match(template.html, /helping local homebuyers discover and connect with mortgage professionals in their area/)
   assert.match(template.html, /Claim your profile for FREE/)
@@ -91,7 +90,7 @@ test('contains all required body paragraphs', () => {
 // 5. "Claim Your Profile" CTA
 // ---------------------------------------------------------------------------
 test('button text is exactly "Claim Your Profile"', () => {
-  const template = emailTemplates.claimInvitation(mockBroker, mockClaimLink, mockExpiresAt)
+  const template = emailTemplates.claimInvitation({ displayName: mockBroker.displayName, claimLink: mockClaimLink })
   assert.match(template.html, /Claim Your Profile/)
 })
 
@@ -99,19 +98,19 @@ test('button text is exactly "Claim Your Profile"', () => {
 // 6. No internal IDs / tokens leak
 // ---------------------------------------------------------------------------
 test('does not expose broker database ID', () => {
-  const template = emailTemplates.claimInvitation(mockBroker, mockClaimLink, mockExpiresAt)
+  const template = emailTemplates.claimInvitation({ displayName: mockBroker.displayName, claimLink: mockClaimLink })
   assert.doesNotMatch(template.html, /broker_abc123/)
 })
 
 test('does not expose raw token hash', () => {
-  const template = emailTemplates.claimInvitation(mockBroker, mockClaimLink, mockExpiresAt)
+  const template = emailTemplates.claimInvitation({ displayName: mockBroker.displayName, claimLink: mockClaimLink })
   // The claim link contains only the raw token (in the URL), not the hash.
   // Verify no sha256 hash pattern appears.
   assert.doesNotMatch(template.html, /[a-f0-9]{64}/)
 })
 
 test('does not expose internal invitation ID', () => {
-  const template = emailTemplates.claimInvitation(mockBroker, mockClaimLink, mockExpiresAt)
+  const template = emailTemplates.claimInvitation({ displayName: mockBroker.displayName, claimLink: mockClaimLink })
   assert.doesNotMatch(template.html, /invitationId/)
   assert.doesNotMatch(template.html, /invitation_id/)
 })
@@ -120,7 +119,7 @@ test('does not expose internal invitation ID', () => {
 // 7. No customer-facing "Broker" terminology in rendered email
 // ---------------------------------------------------------------------------
 test('uses "Mortgage Professional" not "Broker" in customer-facing text', () => {
-  const template = emailTemplates.claimInvitation(mockBroker, mockClaimLink, mockExpiresAt)
+  const template = emailTemplates.claimInvitation({ displayName: mockBroker.displayName, claimLink: mockClaimLink })
   assert.match(template.html, /mortgage professional/)
   // "broker" should not appear in the customer-visible message text
   // (it may appear in internal code or info item keys, but not rendered body)
@@ -149,7 +148,7 @@ test('resendVerification template is unchanged', () => {
 })
 
 test('passwordReset template is unchanged', () => {
-  const template = emailTemplates.passwordReset('Test User', 'https://example.com/reset', 1)
+  const template = emailTemplates.passwordReset({ name: 'Test User', resetLink: 'https://example.com/reset', expiryHours: 1 })
   assert.match(template.subject, /Reset your HomeLoanMarket password/)
 })
 

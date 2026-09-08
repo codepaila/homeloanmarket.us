@@ -116,8 +116,7 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker, initialR
             <BrokerAvatar src={profileImage || logo} alt={displayName || companyName} name={displayName || companyName} className="h-full w-full" />
           </div>
         {/* Profile Header */}
-        <header className=" space-y-4 text-center  md:text-left">
-          <div className="flex flex-col items-center md:items-start md:flex-row md:justify-between gap-3 md:gap-4">
+        <header className=" space-y-4 text-center  md:text-left mt-4">
             <div className="text-center md:text-left">
               {displayName && (
                 <div className="flex flex-col items-start justify-center gap-2 md:justify-start">
@@ -138,20 +137,6 @@ export default function BrokerDetailClient({ brokerSlug, initialBroker, initialR
                 </p>
               )}
             </div>
-
-            <div className="flex items-center gap-2 flex-wrap justify-center">
-              {isFeaturedBroker && <BrokerSubscriptionBadge className="h-20 w-30" />}
-
-              {/* {isVerifiedBadge(currentBroker.verificationStatus) && (
-                <Badge className="bg-emerald-500/10 text-emerald-700 ring-1 ring-emerald-600/20">
-                  <Shield className="h-3 w-3 mr-1" />
-                  Verified Mortgage Broker
-                </Badge>
-              )} */}
-            </div>
-          </div>
-
-
         </header>
 
 

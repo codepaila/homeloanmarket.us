@@ -3,7 +3,7 @@
 import { sendEmail, emailTemplates } from '@/lib/email'
 import prisma from '@/lib/prisma'
 import crypto from 'crypto'
-import { getBrokerContactEmail } from '@/lib/broker-policy'
+import { sendBrokerSubscriptionPurchaseEmailDurable } from '@/lib/broker-subscription-email'
 
 export async function sendBrokerRegistrationEmails(userId: string) {
     try {
@@ -39,7 +39,7 @@ export async function sendBrokerRegistrationEmails(userId: string) {
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://homeloanmarket.com'
         const verifyUrl = `${appUrl}/auth/verify-email?token=${rawToken}&email=${encodeURIComponent(user.email || '')}`
 
-        const idempotencyKey = `broker_registration_${user.id}_${Date.now()}`
+        const idempotencyKey = `broker_registration_${user.id}`
 
         // 1. Send verification email to broker
         const brokerTemplate = emailTemplates.brokerWelcome(
@@ -51,6 +51,7 @@ export async function sendBrokerRegistrationEmails(userId: string) {
             to: user.email!,
             subject: brokerTemplate.subject,
             html: brokerTemplate.html,
+            text: `Verify your HomeLoanMarket email: ${verifyUrl}`,
             idempotencyKey: `${idempotencyKey}_broker`
         })
 
@@ -58,7 +59,15 @@ export async function sendBrokerRegistrationEmails(userId: string) {
         // notification is therefore deferred until that profile exists.
         let adminEmailResult = null
         if (process.env.ADMIN_EMAIL && user.brokerProfile[0]) {
-            const adminTemplate = emailTemplates.adminNewBroker(user, user.brokerProfile[0])
+            const brokerProfile = user.brokerProfile[0]
+            const adminTemplate = emailTemplates.adminNewBroker({
+                brokerDisplayName: brokerProfile.displayName,
+                brokerCompanyName: brokerProfile.companyName,
+                brokerCity: brokerProfile.city,
+                brokerExperienceYears: brokerProfile.experienceYears,
+                userEmail: user.email || '',
+                adminUrl: `${appUrl}/admin/brokers/${brokerProfile.id}`,
+            })
 
             adminEmailResult = await sendEmail({
                 to: process.env.ADMIN_EMAIL,
@@ -110,12 +119,15 @@ export async function sendBrokerClaimInvitationEmail(
 
         if (!broker) throw new Error('Broker not found')
 
-        const template = emailTemplates.claimInvitation(broker, claimLink, expiresAt)
+        const template = emailTemplates.claimInvitation({
+            displayName: broker.displayName || '',
+            claimLink,
+        })
         const result = await sendEmail({
             to: recipient,
             subject: template.subject,
             html: template.html,
-            text: `Your Mortgage Professional Profile Is Now Listed on HomeLoanMarket.com\n\nHi ${broker.displayName || 'there'},\n\nYour mortgage professional profile is now listed on HomeLoanMarket.com, helping local homebuyers discover and connect with mortgage professionals in their area.\n\nClaim your profile for FREE to review your information, update your details, add or change your photo, and manage your listing.\n\nClaim Your Profile:\n${claimLink}\n\nHomeLoanMarket is built to give local mortgage professionals greater exposure to a large, hard-to-reach homebuyer community.\n\nThere is no cost to claim or maintain your basic listing.\n\nIf you prefer not to be listed on HomeLoanMarket, you can also remove your profile at any time.\n\nBest,\nHomeLoanMarket Team\nHomeLoanMarket.com`,
+            text: `Hi ${broker.displayName || 'there'},\n\nYour mortgage professional profile is now listed on HomeLoanMarket.com, helping local homebuyers discover and connect with mortgage professionals in their area.\n\nClaim your profile for FREE to review your information, update your details, add or change your photo, and manage your listing.\n\nClaim Your Profile:\n${claimLink}\n\nHomeLoanMarket is built to give local mortgage professionals greater exposure to a large, hard-to-reach homebuyer community.\n\nThere is no cost to claim or maintain your basic listing.\n\nIf you prefer not to be listed on HomeLoanMarket, you can also remove your profile at any time.\n\nBest,\nHomeLoanMarket Team\nHomeLoanMarket.com`,
             idempotencyKey: `claim_invitation_${invitationId}`,
         })
 
@@ -214,110 +226,6 @@ export async function sendEmailChangeVerificationEmail(userId: string, newEmail:
     })
 }
 
-export async function sendNewLeadNotification(brokerId: string, leadId: string) {
-    try {
-        const [broker, lead] = await Promise.all([
-            prisma.broker.findUnique({
-                where: { id: brokerId },
-                include: {
-                    user: true
-                }
-            }),
-            prisma.contactMessage.findUnique({
-                where: { id: leadId }
-            })
-        ])
-
-        if (!broker || !lead) {
-            throw new Error('Broker or lead not found')
-        }
-
-        const idempotencyKey = `new_lead_${broker.id}_${lead.id}_${Date.now()}`
-
-        const leadTemplate = emailTemplates.newLead(broker, lead)
-
-        const recipient = getBrokerContactEmail(broker)
-        const emailResult = recipient
-            ? await sendEmail({
-                to: recipient,
-                subject: leadTemplate.subject,
-                html: leadTemplate.html,
-                idempotencyKey
-            })
-            : null
-
-        // Update lead notification status
-        await prisma.contactMessage.update({
-            where: { id: leadId },
-            data: {
-                isRead: false, // Will be marked as read when broker opens dashboard
-            }
-        })
-
-        return {
-            success: true,
-            email: emailResult,
-            skipped: !recipient
-        }
-    } catch (error) {
-        console.error('Error sending new lead notification:', error)
-        return {
-            success: false,
-            error: 'Failed to send notification',
-            details: error instanceof Error ? error.message : 'Unknown error'
-        }
-    }
-}
-
-export async function sendBrokerVerificationEmail(brokerId: string) {
-    try {
-        const broker = await prisma.broker.findUnique({
-            where: { id: brokerId },
-            include: {
-                user: true
-            }
-        })
-
-        if (!broker) {
-            throw new Error('Broker not found')
-        }
-
-        const idempotencyKey = `broker_verified_${broker.id}_${Date.now()}`
-
-        const verificationTemplate = emailTemplates.brokerVerified(broker)
-
-        const recipient = getBrokerContactEmail(broker, true)
-        const emailResult = recipient
-            ? await sendEmail({
-                to: recipient,
-                subject: verificationTemplate.subject,
-                html: verificationTemplate.html,
-                idempotencyKey
-            })
-            : null
-
-        const emailFailed = Boolean(emailResult && !emailResult.success)
-        const emailError = emailResult && !emailResult.success ? emailResult.error : undefined
-
-        return {
-            success: !emailFailed,
-            email: emailResult,
-            skipped: !recipient,
-            ...(emailError ? {
-                error: 'Failed to send verification email',
-                details: emailError,
-            } : {}),
-        }
-    } catch (error) {
-        console.error('Error sending broker verification email:', error)
-        return {
-            success: false,
-            error: 'Failed to send verification email',
-            details: error instanceof Error ? error.message : 'Unknown error'
-        }
-    }
-}
-// In your email.actions.ts file - fix the function
 export async function resendBrokerVerificationEmail(brokerId: string) {
     try {
         const broker = await prisma.broker.findUnique({
@@ -358,7 +266,7 @@ export async function resendBrokerVerificationEmail(brokerId: string) {
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://homeloanmarket.com'
         const verifyUrl = `${appUrl}/auth/verify-email?token=${rawToken}&email=${encodeURIComponent(broker.user.email)}`
 
-        const idempotencyKey = `resend_verification_${broker.id}_${Date.now()}`
+        const idempotencyKey = `resend_verification_${broker.id}_${hashedToken}`
 
         // Send verification email
         const verificationTemplate = emailTemplates.resendVerification(
@@ -397,105 +305,6 @@ export async function resendBrokerVerificationEmail(brokerId: string) {
         }
     }
 }
-export async function sendSubscriptionEmail(brokerId: string, subscriptionId: string) {
-    try {
-        const [broker, subscription] = await Promise.all([
-            prisma.broker.findUnique({
-                where: { id: brokerId },
-                include: {
-                    user: true
-                }
-            }),
-            prisma.brokerSubscription.findUnique({
-                where: { id: subscriptionId },
-                include: { planRef: true }
-            })
-        ])
-
-        if (!broker || !subscription) {
-            throw new Error('Broker or subscription not found')
-        }
-
-        const idempotencyKey = `subscription_${broker.id}_${subscription.id}_${Date.now()}`
-
-        const subscriptionTemplate = emailTemplates.subscriptionPurchased(broker, subscription, subscription.planRef)
-
-        const recipient = getBrokerContactEmail(broker, true)
-        const emailResult = recipient
-            ? await sendEmail({
-                to: recipient,
-                subject: subscriptionTemplate.subject,
-                html: subscriptionTemplate.html,
-                idempotencyKey
-            })
-            : null
-
-        return {
-            success: true,
-            email: emailResult,
-            skipped: !recipient
-        }
-    } catch (error) {
-        console.error('Error sending subscription email:', error)
-        return {
-            success: false,
-            error: 'Failed to send subscription email',
-            details: error instanceof Error ? error.message : 'Unknown error'
-        }
-    }
-}
-
-export async function sendNewReviewNotification(reviewId: string) {
-    try {
-        const review = await prisma.review.findUnique({
-            where: { id: reviewId },
-            include: {
-                broker: {
-                    include: {
-                        user: true
-                    }
-                },
-                user: true
-            }
-        })
-
-        if (!review || !review.broker) {
-            throw new Error('Review or broker not found')
-        }
-
-        const idempotencyKey = `new_review_${review.id}_${Date.now()}`
-
-        const reviewTemplate = emailTemplates.newReview(
-            review.broker,
-            review,
-            review.user || { name: 'Anonymous' }
-        )
-
-        const recipient = getBrokerContactEmail(review.broker, true)
-        const emailResult = recipient
-            ? await sendEmail({
-                to: recipient,
-                subject: reviewTemplate.subject,
-                html: reviewTemplate.html,
-                idempotencyKey
-            })
-            : null
-
-        return {
-            success: true,
-            email: emailResult,
-            skipped: !recipient
-        }
-    } catch (error) {
-        console.error('Error sending new review notification:', error)
-        return {
-            success: false,
-            error: 'Failed to send notification',
-            details: error instanceof Error ? error.message : 'Unknown error'
-        }
-    }
-}
-
 export async function sendPasswordResetEmail(email: string) {
     try {
         const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : ''
@@ -534,18 +343,18 @@ export async function sendPasswordResetEmail(email: string) {
         // Never log the raw reset token or the email-send result.
         const resetUrl = `${appUrl}/auth/reset-password?token=${rawToken}&email=${encodeURIComponent(normalizedEmail)}`
 
-        const resetTemplate = emailTemplates.passwordReset(
-            user.name || 'User',
-            resetUrl,
-            1
-        )
+        const resetTemplate = emailTemplates.passwordReset({
+            name: user.name || 'User',
+            resetLink: resetUrl,
+            expiryHours: 1,
+        })
 
         const emailResult = await sendEmail({
             to: normalizedEmail,
             subject: resetTemplate.subject,
             html: resetTemplate.html,
             text: `Reset your HomeLoanMarket password: ${resetUrl}\n\nThis link expires in 1 hour.`,
-            idempotencyKey: `reset_${user.id}_${Date.now()}`
+            idempotencyKey: `reset_${user.id}_${hashedToken}`
         })
 
         if (emailResult.success) {
@@ -585,20 +394,20 @@ export async function sendSupportTicketNotification(ticketId: string) {
             throw new Error('Ticket not found')
         }
 
-        const idempotencyKey = `support_ticket_${ticket.id}_${Date.now()}`
+        const idempotencyKey = `support_ticket_${ticket.id}`
 
-        const notificationTemplate = emailTemplates.notification(
-            `Support Ticket Created: ${ticket.ticketNumber}`,
-            `Your support request has been received and will be processed shortly.`,
-            {
+        const notificationTemplate = emailTemplates.notification({
+            title: `Support Ticket Created: ${ticket.ticketNumber}`,
+            message: `Your support request has been received and will be processed shortly.`,
+            info: {
                 "Ticket Number": ticket.ticketNumber,
                 "Category": ticket.category,
                 "Priority": ticket.priority,
                 "Status": ticket.status,
                 "Created At": new Date(ticket.createdAt).toLocaleString(),
-                "Reference": `Keep this ticket number for reference: ${ticket.ticketNumber}`
-            }
-        )
+                "Reference": `Keep this ticket number for reference: ${ticket.ticketNumber}`,
+            },
+        })
 
         const emailResult = await sendEmail({
             to: ticket.user.email!,
@@ -607,26 +416,28 @@ export async function sendSupportTicketNotification(ticketId: string) {
             idempotencyKey
         })
 
-        // Also notify admin if ticket is high priority
+        // Also notify admin if ticket is high priority. High-priority flag is
+        // only applied to this genuinely urgent administrative alert.
         if (ticket.priority === 'high' || ticket.priority === 'urgent') {
-            const adminTemplate = emailTemplates.notification(
-                `🔴 High Priority Support Ticket: ${ticket.ticketNumber}`,
-                `A high priority support ticket has been created and requires immediate attention.`,
-                {
+            const adminTemplate = emailTemplates.notification({
+                title: `High Priority Support Ticket: ${ticket.ticketNumber}`,
+                message: `A high priority support ticket has been created and requires immediate attention.`,
+                info: {
                     "Ticket Number": ticket.ticketNumber,
                     "User": `${ticket.user.name} (${ticket.user.email})`,
                     "Category": ticket.category,
                     "Priority": ticket.priority,
-                    "Subject": ticket.subject,
+                    "Subject": ticket.subject || '',
                     "Created At": new Date(ticket.createdAt).toLocaleString(),
-                    "Ticket URL": `${process.env.NEXT_PUBLIC_APP_URL}/admin/support/${ticket.id}`
-                }
-            )
+                    "Ticket URL": `${process.env.NEXT_PUBLIC_APP_URL}/admin/support/${ticket.id}`,
+                },
+            })
 
             await sendEmail({
                 to: process.env.ADMIN_EMAIL!,
                 subject: adminTemplate.subject,
                 html: adminTemplate.html,
+                highPriority: true,
                 idempotencyKey: `${idempotencyKey}_admin`
             })
         }
@@ -645,6 +456,19 @@ export async function sendSupportTicketNotification(ticketId: string) {
     }
 }
 
+// Broker subscription purchase/activation confirmation. One canonical owner for
+// the broker product: fire-and-forget, deterministic key per broker subscription,
+// never mixed with company billing data. Delivery is hardened with durable,
+// concurrency-safe idempotency (lib/broker-subscription-email.ts) so the same
+// successful subscription cannot trigger duplicate purchase emails across
+// webhook retries, distinct events, or application instances.
+export async function sendSubscriptionPurchaseEmail(brokerSubscriptionId: string) {
+    const result = await sendBrokerSubscriptionPurchaseEmailDurable(brokerSubscriptionId)
+    if (result.status === 'sent') return { success: true }
+    if (result.status === 'skipped') return { success: true, skipped: true, reason: result.reason }
+    return { success: false, error: result.error, details: result.error }
+}
+
 // Debug email delivery
 export async function debugEmailDelivery(email: string) {
     console.log('🔍 Email Delivery Debug:')
@@ -658,7 +482,7 @@ export async function debugEmailDelivery(email: string) {
         to: email,
         subject: 'HomeLoanMarket Test Email',
         html: `
-      <div style="font-family: Arial, sans-serif; padding: 20px;">
+      <div style="font-family: Arial, Helvetica, sans-serif; padding: 20px; background-color: #ffffff;">
         <h2>HomeLoanMarket Test Email</h2>
         <p>If you can see this, email delivery is working!</p>
         <p>Sent at: ${new Date().toISOString()}</p>

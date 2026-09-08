@@ -30,7 +30,6 @@ const FORBIDDEN_DTO_FIELDS = [
   'responseRate',
   'avgProcessingTime',
   'totalLoansProcessed',
-  'verificationStatus',
   'verifiedAt',
 ]
 
@@ -69,7 +68,7 @@ test('broker dashboard page fetches no contact messages or analytics', () => {
 
 // ---------------------- BrokerDashboard component ----------------------
 
-test('BrokerDashboard renders no rating/review/lead/message/analytics/cover/verification data', () => {
+test('BrokerDashboard renders no rating/review/lead/message/analytics/cover data', () => {
   const dashboard = read('components/sections/broker/BrokerDashboard.tsx')
   for (const token of [
     'avgRating',
@@ -91,13 +90,16 @@ test('BrokerDashboard renders no rating/review/lead/message/analytics/cover/veri
     'successRate',
     'responseRate',
     'totalLoansProcessed',
-    'verificationStatus',
-    'verificationStatusConfig',
-    'Complete Verification',
-    'Verify Profile',
   ]) {
     assert.doesNotMatch(dashboard, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `BrokerDashboard must not render ${token}`)
   }
+})
+
+test('BrokerDashboard surfaces broker verification status from the authoritative record', () => {
+  const dashboard = read('components/sections/broker/BrokerDashboard.tsx')
+  assert.match(dashboard, /currentBroker\.verificationStatus === 'VERIFIED'/)
+  assert.match(dashboard, /creationSource === 'SELF_REGISTERED'/)
+  assert.doesNotMatch(dashboard, /localStorage/)
 })
 
 test('BrokerDashboard keeps professional status labels', () => {

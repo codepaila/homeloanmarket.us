@@ -70,10 +70,11 @@ export function brokerOnboardingDestination<T extends OnboardingUser>(
       return currentPath === '/broker/dashboard' ? null : '/broker/dashboard'
     case 'SUBSCRIPTION_PENDING':
     case 'ONBOARDING_IN_PROGRESS':
-      if (currentPath === '/setup' || currentPath === '/broker/subscription/select') {
-        return null
-      }
-      return '/setup'
+      // /setup is the canonical broker-registration wizard (including plan
+      // selection on Step 6). The legacy standalone plan-select route is retired
+      // as a registration destination; any pending/in-progress broker is
+      // directed to /setup.
+      return currentPath === '/setup' ? null : '/setup'
     case 'NOT_STARTED':
       return currentPath === '/register' ? null : '/register'
   }

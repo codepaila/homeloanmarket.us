@@ -9,7 +9,20 @@ import { getCurrentUser } from '@/lib/currentUser'
 import { resolveBrokerOnboardingDestination } from '@/lib/broker-onboarding-state'
 import { BrokerSetupWizard } from '@/components/sections/broker/BrokerSetupWizard'
 
-export default async function BrokerSetupPage() {
+export default async function BrokerSetupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plan?: string }>
+}) {
+  const params = await searchParams
+  // The `?plan=` query parameter carries an INTENDED plan selection (FREE or
+  // FEATURED) from the public pricing page / migrated fallbacks. It only
+  // preselects the plan card on Step 6 — it never bypasses the required broker
+  // profile steps and never creates a subscription directly. Unknown values are
+  // ignored so a malformed URL cannot influence the wizard.
+  const rawPlan = params.plan
+  const planParam = rawPlan === 'FREE' || rawPlan === 'FEATURED' ? rawPlan : null
+
   const user = await getCurrentUser()
 
   if (!user) {
@@ -59,6 +72,7 @@ export default async function BrokerSetupPage() {
           initialData={initialData}
           initialStep={initialStep}
           subscription={user.brokerRegistration?.subscription ?? null}
+          planParam={planParam}
         />
       </div>
     </div>

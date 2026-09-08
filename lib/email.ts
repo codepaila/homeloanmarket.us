@@ -22,18 +22,22 @@ export async function verifyEmailConnection() {
 }
 
 // Enhanced sendEmail with duplicate prevention
-export async function sendEmail({ 
-  to, 
-  subject, 
-  html, 
+export async function sendEmail({
+  to,
+  subject,
+  html,
   text,
-  idempotencyKey // Optional: Use to prevent duplicates
-}: { 
-  to: string | string[]; 
-  subject: string; 
+  idempotencyKey, // Optional: Use to prevent duplicates
+  replyTo,
+  highPriority, // Optional: mark as high priority only when the business event requires it
+}: {
+  to: string | string[];
+  subject: string;
   html: string;
   text?: string;
   idempotencyKey?: string;
+  replyTo?: string;
+  highPriority?: boolean;
 }) {
   try {
     // Fail clearly when the email service is not configured instead of
@@ -79,17 +83,23 @@ export async function sendEmail({
     
     // Send email using Resend
     const { data, error } = await resend.emails.send({
-      from: `${process.env.EMAIL_FROM_NAME || 'Homeloanmarket'} <${process.env.EMAIL_FROM}>`,
+      from: `${process.env.EMAIL_FROM_NAME || 'HomeLoanMarket'} <${process.env.EMAIL_FROM}>`,
       to: recipients,
-      reply_to: process.env.ADMIN_EMAIL,
-      // reply_to: process.env.ADMIN_EMAIL || process.env.EMAIL_FROM,
+      // Explicit reply-to policy: callers may override; the default routes
+      // replies to the platform support/operational address rather than an
+      // unrelated admin inbox for every email.
+      reply_to: replyTo || process.env.EMAIL_REPLY_TO || process.env.ADMIN_EMAIL,
       subject,
       html,
       text: text || htmlToText(html),
       headers: {
-        'X-Priority': '1',
-        'X-MSMail-Priority': 'High',
-        'Importance': 'high',
+        ...(highPriority
+          ? {
+              'X-Priority': '1',
+              'X-MSMail-Priority': 'High',
+              'Importance': 'high',
+            }
+          : {}),
         'X-Mailer': 'Homeloanmarket Platform',
         'List-Unsubscribe': `<mailto:${process.env.EMAIL_UNSUBSCRIBE || process.env.EMAIL_FROM}>`,
       }

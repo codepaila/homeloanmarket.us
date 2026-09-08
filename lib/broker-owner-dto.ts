@@ -29,6 +29,8 @@ type BrokerOwnerSource = {
   brokerStatus: string
   featuredRank: number | null
   isVisible: boolean
+  verificationStatus: string
+  creationSource: string | null
   subscription?: OwnerSubscription | null
 }
 
@@ -57,6 +59,8 @@ export function toBrokerOwnerDto(
     brokerStatus: broker.brokerStatus,
     featuredRank: broker.featuredRank,
     isVisible: broker.isVisible,
+    verificationStatus: broker.verificationStatus,
+    creationSource: broker.creationSource,
     subscription: broker.subscription
       ? {
           plan: broker.subscription.plan,

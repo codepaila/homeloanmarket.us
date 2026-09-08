@@ -11,12 +11,40 @@ const publicBroker = {
   userId: null,
 }
 
-test('visible active unowned brokers are publicly eligible regardless of verification', () => {
+// ===========================================================================
+// PHASE 8.36.1 — source-aware verification gate
+//
+// SELF_REGISTERED brokers must be admin VERIFIED before they are publicly
+// eligible. ADMIN_CREATED brokers are verified by construction and stay
+// eligible. Verification is an ELIGIBILITY gate, never a ranking tier, and
+// never changes isVisible.
+// ===========================================================================
+
+test('visible active unowned ADMIN_CREATED brokers are publicly eligible (no manual verification step)', () => {
+  assert.equal(isPublicBroker({ ...publicBroker, creationSource: 'ADMIN_CREATED' }), true)
+  // Legacy records with no known source must still be VERIFIED to be public.
   assert.equal(isPublicBroker(publicBroker), true)
-  assert.equal(isPublicBroker({ ...publicBroker, creationSource: 'SELF_REGISTERED', verificationStatus: 'UNVERIFIED' }), true)
 })
 
-test('hidden, suspended, incomplete, and company-owned brokers are not publicly eligible', () => {
+test('SELF_REGISTERED + UNVERIFIED is NOT publicly eligible', () => {
+  assert.equal(isPublicBroker({ ...publicBroker, creationSource: 'SELF_REGISTERED', verificationStatus: 'UNVERIFIED' }), false)
+})
+
+test('SELF_REGISTERED + VERIFIED is publicly eligible (when otherwise eligible)', () => {
+  assert.equal(isPublicBroker({ ...publicBroker, creationSource: 'SELF_REGISTERED', verificationStatus: 'VERIFIED' }), true)
+})
+
+test('isVisible=false prevents public listing even after verification', () => {
+  assert.equal(isPublicBroker({ ...publicBroker, creationSource: 'SELF_REGISTERED', verificationStatus: 'VERIFIED', isVisible: false }), false)
+  assert.equal(isPublicBroker({ ...publicBroker, creationSource: 'ADMIN_CREATED', isVisible: false }), false)
+})
+
+test('SUSPENDED brokers are never publicly eligible regardless of verification', () => {
+  assert.equal(isPublicBroker({ ...publicBroker, creationSource: 'SELF_REGISTERED', verificationStatus: 'VERIFIED', brokerStatus: 'SUSPENDED' }), false)
+  assert.equal(isPublicBroker({ ...publicBroker, creationSource: 'ADMIN_CREATED', brokerStatus: 'SUSPENDED' }), false)
+})
+
+test('hidden, incomplete, and company-owned brokers are not publicly eligible', () => {
   assert.equal(isPublicBroker({ ...publicBroker, isVisible: false }), false)
   assert.equal(isPublicBroker({ ...publicBroker, brokerStatus: 'SUSPENDED' }), false)
   assert.equal(isPublicBroker({ ...publicBroker, profileComplete: false }), false)
@@ -36,18 +64,35 @@ test('visibility is admin-only and cannot be mass-assigned by broker users', () 
   assert.equal((BROKER_ADMIN_FIELDS as readonly string[]).includes('isVisible'), true)
 })
 
-test('public and radius queries preserve the same unowned visibility and completeness rule', () => {
-  const publicApi = read('app/api/brokers/route.ts')
+test('verification is NOT a ranking tier (ranking stays tier 1-4, all eligible)', () => {
+  const listing = read('lib/broker-listing.ts')
+  assert.match(listing, /1\s*=\s*paid active subscription/)
+  assert.match(listing, /4\s*=\s*no qualifying signal/)
+  // Tier is rank-only: no $match on tier.
+  assert.match(listing, /No \$match on `tier`/)
+})
+
+test('public, radius, featured, and sitemap queries all include the source-aware verification gate', () => {
   const listingQuery = read('lib/broker-listing.ts')
   const geoQuery = read('lib/location/broker-geo.ts')
-  assert.match(publicApi, /publicBrokerWhere\(\)|getPublicListingPage/)
-  assert.match(listingQuery, /isVisible: true/)
-  assert.match(listingQuery, /\{ userId: null \}/)
-  assert.match(listingQuery, /\$ne: 'SUSPENDED'/)
-  assert.match(listingQuery, /profileSlug: \{ \$nin: \[null, ''\] \}/)
-  assert.match(geoQuery, /conditions\.push\(\{ isVisible: true \}\)/)
-  assert.match(geoQuery, /\{ userId: null \}/)
-  assert.match(geoQuery, /\$nin: \[null, ''\]/)
+  const featured = read('app/api/brokers/featured/route.ts')
+  const policy = read('lib/broker-policy.ts')
+  // Canonical predicate requires ADMIN_CREATED OR VERIFIED.
+  assert.match(policy, /state\.creationSource === 'ADMIN_CREATED' \|\| state\.verificationStatus === 'VERIFIED'/)
+  assert.match(policy, /OR: \[\s*\{ creationSource: 'ADMIN_CREATED' \},\s*\{ verificationStatus: 'VERIFIED' \},\s*\]/)
+  // Listing + radius mirrors.
+  assert.match(listingQuery, /creationSource: 'ADMIN_CREATED'/)
+  assert.match(listingQuery, /verificationStatus: 'VERIFIED'/)
+  assert.match(geoQuery, /creationSource: 'ADMIN_CREATED'/)
+  assert.match(geoQuery, /verificationStatus: 'VERIFIED'/)
+  // Featured route.
+  assert.match(featured, /creationSource: 'ADMIN_CREATED'/)
+  assert.match(featured, /verificationStatus: 'VERIFIED'/)
+})
+
+test('public broker profile page passes creationSource to the canonical predicate', () => {
+  const profile = read('app/(public)/brokers/[slug]/page.tsx')
+  assert.match(profile, /creationSource: broker\.creationSource/)
 })
 
 test('admin mutation and claim completion preserve the same Broker record', () => {

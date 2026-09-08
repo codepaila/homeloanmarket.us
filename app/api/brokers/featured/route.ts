@@ -55,6 +55,12 @@ export async function GET() {
           { userId: null },
           { user: { isActive: true, companyMemberships: { none: { isActive: true } } } },
         ],
+        // Source-aware verification gate (mirrors publicBrokerWhere):
+        // ADMIN_CREATED brokers are eligible by construction; SELF_REGISTERED
+        // brokers must be admin VERIFIED to appear in the featured section.
+        AND: [
+          { OR: [{ creationSource: 'ADMIN_CREATED' }, { verificationStatus: 'VERIFIED' }] },
+        ],
         subscription: {
           is: {
             isActive: true,

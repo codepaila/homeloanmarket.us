@@ -8,6 +8,7 @@ import {
   companyIntentValue,
   hasCompanyRegistrationIntent,
   establishCompanyForUser,
+  CompanyConsentRequiredError,
 } from '@/lib/company-intent'
 
 export async function POST(request: NextRequest) {
@@ -54,6 +55,15 @@ export async function PUT(request: NextRequest) {
     response.cookies.delete(COMPANY_INTENT_COOKIE)
     return response
   } catch (error) {
+    // Explicit legal consent is server-authoritative for the Google company
+    // path. The client routes through the company consent step before the
+    // intent PUT is re-attempted.
+    if (error instanceof CompanyConsentRequiredError) {
+      return NextResponse.json(
+        { error: 'Legal consent is required before completing company registration', consentRequired: true },
+        { status: 403 },
+      )
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unable to complete company registration' },
       { status: 400 },

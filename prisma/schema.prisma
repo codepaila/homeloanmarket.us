@@ -40,6 +40,18 @@ enum StripeWebhookEventStatus {
   FAILED
 }
 
+// Durable state machine for the Broker subscription purchase email. The unique
+// idempotencyKey (subscription_purchase_<brokerSubscriptionId>) provides
+// cross-instance, cross-webhook-event deduplication for exactly one purchase
+// email per broker subscription. Durable (MongoDB) so a process crash cannot
+// permanently lose or duplicate the email.
+enum BrokerSubscriptionEmailStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+}
+
 enum BrokerCreationSource {
   ADMIN_CREATED
   SELF_REGISTERED
@@ -365,12 +377,42 @@ model BrokerSubscription {
 
   broker   Broker                  @relation(fields: [brokerId], references: [id])
   planRef  BrokerSubscriptionPlan? @relation(fields: [planId], references: [id])
+  purchaseEmail BrokerSubscriptionEmailLog?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([planId])
   @@map("broker_subscriptions")
+}
+
+// Durable idempotency + delivery state for the broker subscription purchase
+// email. One row per broker subscription (unique idempotency key). Provides:
+//   - durable dedup across application instances and distinct Stripe events
+//   - atomic concurrency-safe claiming (lease)
+//   - safe retry after failure (FAILED -> PENDING -> retry)
+//   - stale-claim recovery (expired lease -> PROCESSING becomes retryable)
+// The email is marked SENT only AFTER a successful provider send, never before,
+// so a crash cannot "lose" an email that was never sent.
+model BrokerSubscriptionEmailLog {
+  id                    String @id @default(auto()) @map("_id") @db.ObjectId
+  idempotencyKey        String @unique
+  brokerSubscriptionId  String @unique @db.ObjectId
+  status                BrokerSubscriptionEmailStatus
+  attempts              Int     @default(0)
+  leaseExpiresAt        DateTime?
+  claimedAt             DateTime?
+  sentAt                DateTime?
+  messageId             String?
+  lastError             String?
+
+  brokerSubscription BrokerSubscription @relation(fields: [brokerSubscriptionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@map("broker_subscription_email_logs")
 }
 
 // Admin-managed broker subscription plans. This is the authoritative source
@@ -511,6 +553,10 @@ model CompanyMembership {
   updatedAt DateTime @updatedAt
 
   @@unique([companyId, userId])
+  // One OWNER membership per user across all companies — enforces the
+  // "one company owner → one company" invariant at the database level so
+  // concurrent Company establishment cannot produce duplicate owner rows.
+  @@unique([userId, role])
   @@index([userId, isActive])
   @@map("company_memberships")
 }

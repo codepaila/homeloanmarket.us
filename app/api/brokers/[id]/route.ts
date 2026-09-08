@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma'
 import { hasPaidEntitlement, isBrokerOwner, isMortgageExpertBroker, isPublicBroker, brokerProfileIsComplete, pickBrokerEditableFields } from '@/lib/broker-policy'
 import { brokerSubscriptionHasProfileBadge } from '@/lib/broker-plans'
 import { toPublicBrokerRecord } from '@/lib/public-broker'
+import { buildVerificationUpdate, wasVerifiedTransition, sendBrokerVerifiedEmail } from '@/lib/broker-verification'
 
 export async function GET(
   request: Request,
@@ -211,9 +212,21 @@ export async function PATCH(
     // and system-managed fields are never accepted from client input.
     const updateData: any = pickBrokerEditableFields(body, currentUser.isAdmin)
 
-    // Admin-only derived handling for verification and featured status
+    // Admin-only derived handling for verification and featured status.
+    // Verification: set verifiedAt if null on VERIFIED, clear on explicit
+    // UNVERIFIED, detect the transition for the notification email. isVisible is
+    // never modified here.
+    let transitionedToVerified = false
     if (currentUser.isAdmin) {
-      if (updateData.verificationStatus === 'VERIFIED') updateData.verifiedAt = new Date()
+      if (updateData.verificationStatus !== undefined && (updateData.verificationStatus === 'VERIFIED' || updateData.verificationStatus === 'UNVERIFIED')) {
+        const statusUpdate = buildVerificationUpdate(
+          { verificationStatus: broker.verificationStatus, verifiedAt: broker.verifiedAt },
+          updateData.verificationStatus as string,
+        )
+        updateData.verificationStatus = statusUpdate.verificationStatus
+        updateData.verifiedAt = statusUpdate.verifiedAt
+        transitionedToVerified = wasVerifiedTransition(broker.verificationStatus, updateData.verificationStatus as string)
+      }
       if (updateData.brokerStatus === 'FEATURED') updateData.featuredRank = Math.floor(Math.random() * 100) + 1
     }
 
@@ -231,6 +244,18 @@ export async function PATCH(
         }
       }
     })
+
+    // Fire-and-forget on the actual transition only; email failure never rolls
+    // back the authoritative DB verification.
+    if (transitionedToVerified && (broker.email || updatedBroker.user?.email)) {
+      void sendBrokerVerifiedEmail({
+        to: (broker.email || updatedBroker.user?.email) as string,
+        displayName: updatedBroker.displayName,
+        profileSlug: updatedBroker.profileSlug,
+        city: updatedBroker.city,
+        experienceYears: updatedBroker.experienceYears,
+      })
+    }
 
     return NextResponse.json({
       message: 'Broker profile updated successfully',

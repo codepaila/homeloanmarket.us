@@ -3,7 +3,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import crypto from 'crypto'
-import { sendBrokerVerificationEmail } from '@/actions/email.action'
 import { getClaimContext } from '@/lib/claim-context'
 import { signIn } from '@/lib/auth'
 
@@ -147,8 +146,13 @@ export async function POST(request: NextRequest) {
     // tokens remain available only long enough for the same Auth.js request to
     // exchange them for a normal session; the credentials provider consumes it.
     const isBrokerRegistration = Boolean(user.brokerRegistration?.id)
-    const updatedUser = await prisma.user.update({
-      where: { id: user.id },
+    // Atomic token consumption: the update is gated on the exact token that was
+    // read, so a stale/in-flight request cannot consume a newer token, and a
+    // token can be consumed at most once. Zero matched rows means another
+    // request already consumed this token (or a newer token replaced it).
+    const expectedTokenHash = emailChangeTokenMatched ? emailChangeTokenHash : hashedToken
+    const consumed = await prisma.user.updateMany({
+      where: { id: user.id, emailVerificationToken: expectedTokenHash },
       data: {
         emailVerified: true,
         ...(isBrokerRegistration ? {} : {
@@ -157,8 +161,20 @@ export async function POST(request: NextRequest) {
         }),
         updatedAt: new Date()
       },
-      include: { brokerProfile: { take: 1 }, brokerRegistration: true, companyMemberships: { where: { isActive: true }, take: 1 } }
     })
+    if (consumed.count !== 1) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid or expired verification token. Please request a new verification email.' },
+        { status: 400 },
+      )
+    }
+    const updatedUser = await prisma.user.findUnique({
+      where: { id: user.id },
+      include: { brokerProfile: { take: 1 }, brokerRegistration: true, companyMemberships: { where: { isActive: true }, take: 1 } },
+    })
+    if (!updatedUser) {
+      return NextResponse.json({ success: false, error: 'Account not found' }, { status: 404 })
+    }
 
     let authenticated = false
     if (isBrokerRegistration) {
@@ -175,18 +191,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Send welcome email if user is a broker
-    if (user?.brokerProfile?.[0]?.id) {
-      const broker = await prisma.broker.findUnique({
-        where: { id: user.brokerProfile[0].id },
-        include: { user: true }
-      })
-      
-      if (broker) {
-        // You might want to send a welcome/verification complete email here
-        await sendBrokerVerificationEmail(broker.id)
-      }
-    }
+    // Broker verification is a separate ADMIN event (lib/broker-verification.ts).
+    // Email verification must NOT send the "broker account verified" email.
 
     const claimContext = await getClaimContext()
 

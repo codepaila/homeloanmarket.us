@@ -155,6 +155,7 @@ export function PricingCard({
           </div>
         ) : (
           <motion.button
+            type="button"
             onClick={() => (stripePriceId || price === 0) && onSelect?.(stripePriceId || '', name, code || name)}
             disabled={!stripePriceId && price !== 0}
             className={cn(

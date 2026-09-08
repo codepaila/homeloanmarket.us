@@ -6,7 +6,7 @@ import { Toaster } from "react-hot-toast";
 import { getSiteUrl } from "@/lib/seo";
 import { getSiteSettings } from "@/lib/site/settings";
 import { AnalyticsProvider } from "@/lib/analytics/provider";
-
+import NextTopLoader from 'nextjs-toploader';
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-heading",
   subsets: ["latin"],
@@ -62,6 +62,21 @@ export default function RootLayout({
       </head>
       <body className={`${jakarta.variable} ${inter.variable} min-h-screen `}>
         <Toaster />
+        <NextTopLoader
+          color="#222"
+          initialPosition={0.08}
+          crawlSpeed={200}
+          height={3}
+          crawl={false}
+          showSpinner={false}
+          easing="ease"
+          speed={200}
+          shadow="0 0 10px #222,0 0 5px #222"
+          // template='<div class="bar" role="bar"><div class="peg"></div></div> 
+          // <div class="spinner" role="spinner"><div class="spinner-icon"></div></div>'
+          // zIndex={1600}
+          showAtBottom={false}
+        />
         <AnalyticsProvider>
           <SessionProvider>{children}</SessionProvider>
         </AnalyticsProvider>

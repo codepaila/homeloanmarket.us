@@ -20,10 +20,12 @@ const dashboardPage = read('app/company/dashboard/page.tsx')
 const dashboardClient = read('app/company/dashboard/CompanyDashboardClient.tsx')
 const couponLib = read('lib/company-coupon.ts')
 
-test('company registration form is account-only (Full name, email, password, confirm)', () => {
+test('company registration form is account-only + legal consent (Full name, email, password, confirm, consent)', () => {
   assert.match(registerPage, /label="Full name"/)
   assert.match(registerPage, /confirmPassword/)
-  assert.match(registerPage, /payload = \{ name: data\.name, email: data\.email, password: data\.password \}/)
+  // Account-only payload: identity fields plus the server-authoritative legal
+  // consent flags. No company business fields are collected at registration.
+  assert.match(registerPage, /payload = \{ name: data\.name, email: data\.email, password: data\.password, agreeToTerms: data\.agreeTerms, agreeToPrivacy: data\.agreeTerms \}/)
   assert.doesNotMatch(registerPage, /companyName/)
   assert.doesNotMatch(registerPage, /bannerAddress/)
   assert.doesNotMatch(registerPage, /contactPosition/)

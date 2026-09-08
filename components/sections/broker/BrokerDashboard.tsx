@@ -48,6 +48,8 @@ interface DashboardBroker {
   nmls?: string | null
   licenseStates?: string[]
   brokerStatus: string
+  verificationStatus: string
+  creationSource?: string | null
   user?: { name?: string | null; email?: string | null; phone?: string | null; image?: string | null } | null
   subscription?: { plan?: string; isActive?: boolean } | null
 }
@@ -221,6 +223,12 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
                   <plan.icon className="h-3 w-3 mr-1" />
                   {plan.label}
                 </Badge>
+                {currentBroker.verificationStatus === 'VERIFIED' && (
+                  <Badge variant="secondary" className="bg-white/20 hover:bg-white/30">
+                    <ShieldCheck className="h-3 w-3 mr-1" />
+                    Verified
+                  </Badge>
+                )}
                 {currentBroker.city && (
                   <Badge variant="secondary" className="bg-white/20 hover:bg-white/30">
                     <MapPin className="h-3 w-3 mr-1" />
@@ -263,6 +271,24 @@ export function BrokerDashboard({ initialData }: BrokerDashboardProps) {
           </div>
         </div>
       </div>
+
+      {/* Broker verification status — shown only for SELF_REGISTERED brokers
+          awaiting admin review. Once verified, the header "Verified" badge
+          communicates the state; the redundant verified success card is
+          intentionally not rendered. */}
+      {currentBroker.creationSource === 'SELF_REGISTERED' && currentBroker.verificationStatus !== 'VERIFIED' && (
+        <Card className="border-warning/40">
+          <CardContent className="p-4 flex items-start gap-3">
+            <ShieldCheck className="h-5 w-5 mt-0.5 text-warning" aria-hidden="true" />
+            <div className="space-y-0.5">
+              <p className="text-sm font-semibold">Verification Under Review</p>
+              <p className="text-sm text-muted-foreground">
+                Your broker profile is currently being reviewed by our team. Your profile will become available in the public broker directory after an administrator verifies your account.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Quick actions */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

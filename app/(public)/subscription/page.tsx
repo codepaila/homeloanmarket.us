@@ -57,9 +57,20 @@ export default function SubscriptionPage() {
     const isAuth = status === 'authenticated' && session?.user?.id
 
     if (isAuth && code) {
-      // Authenticated: redirect to the authenticated subscription select page
-      // so the existing paid/free subscription flow runs as intended.
-      window.location.href = `/broker/subscription/select?plan=${code}`
+      // New-broker registration intent (BROKER role, no profile yet) → continue
+      // in the canonical setup wizard with the plan preselected. An
+      // already-finalized existing broker → subscription management (never the
+      // registration wizard). Any other authenticated user → broker signup with
+      // the plan preserved.
+      const role = session?.user?.role
+      const hasBrokerProfile = Boolean(session?.user?.brokerProfile)
+      if (role === 'BROKER' && !hasBrokerProfile) {
+        window.location.href = `/setup?plan=${code}`
+      } else if (role === 'BROKER' && hasBrokerProfile) {
+        window.location.href = '/broker/subscription'
+      } else {
+        window.location.href = `/auth/signup?plan=${code}`
+      }
       return
     }
 

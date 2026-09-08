@@ -23,7 +23,6 @@ const brokerPolicyLib = read('lib/broker-policy.ts')
 const subscriptionLib = read('lib/subscription.ts')
 const setupPage = read('app/setup/page.tsx')
 const setupWizard = read('components/sections/broker/BrokerSetupWizard.tsx')
-const selectPlanPage = read('app/broker/subscription/select/page.tsx')
 const freeEndpoint = read('app/api/broker-registration/subscription/free/route.ts')
 const checkoutEndpoint = read('app/api/broker-registration/subscription/checkout/route.ts')
 const verifyEndpoint = read('app/api/broker-registration/subscription/verify/route.ts')
@@ -46,7 +45,7 @@ test('state machine: new broker with no profile stays on /setup for profile prep
   }
   assert.equal(getBrokerOnboardingStatus(user), 'SUBSCRIPTION_PENDING')
   assert.equal(resolveBrokerOnboardingDestination(user, '/setup'), null, 'stays on /setup')
-  assert.equal(resolveBrokerOnboardingDestination(user, '/broker/subscription/select'), null, 'allowed on plan select')
+  assert.equal(resolveBrokerOnboardingDestination(user, '/broker/subscription/select'), '/setup', 'legacy plan select is retired to /setup')
   assert.equal(resolveBrokerOnboardingDestination(user, '/broker/dashboard'), '/setup', 'gated away from dashboard')
 })
 
@@ -58,7 +57,7 @@ test('state machine: broker with CHECKOUT_PENDING stays on /setup or plan select
   }
   assert.equal(getBrokerOnboardingStatus(user), 'SUBSCRIPTION_PENDING')
   assert.equal(resolveBrokerOnboardingDestination(user, '/setup'), null)
-  assert.equal(resolveBrokerOnboardingDestination(user, '/broker/subscription/select'), null)
+  assert.equal(resolveBrokerOnboardingDestination(user, '/broker/subscription/select'), '/setup', 'legacy plan select redirects to /setup')
   assert.equal(resolveBrokerOnboardingDestination(user, '/broker/dashboard'), '/setup')
 })
 
@@ -105,7 +104,7 @@ test('redirect matrix: every subscription state routes to the canonical destinat
   // A. NO SUBSCRIPTION -> subscription selection reachable, dashboard gated
   const noSub = { role: 'BROKER', brokerProfile: null, brokerRegistration: { subscription: null } }
   assert.equal(getBrokerOnboardingStatus(noSub), 'SUBSCRIPTION_PENDING')
-  assert.equal(resolveBrokerOnboardingDestination(noSub, '/broker/subscription/select'), null)
+  assert.equal(resolveBrokerOnboardingDestination(noSub, '/broker/subscription/select'), '/setup')
   assert.equal(resolveBrokerOnboardingDestination(noSub, '/broker/dashboard'), '/setup')
 
   // B. FREE ACTIVE -> setup/profile
@@ -118,7 +117,7 @@ test('redirect matrix: every subscription state routes to the canonical destinat
   const featuredPending = { role: 'BROKER', brokerProfile: null, brokerRegistration: { subscription: { status: 'CHECKOUT_PENDING', isActive: false, plan: 'FEATURED' } } }
   assert.equal(getBrokerOnboardingStatus(featuredPending), 'SUBSCRIPTION_PENDING')
   assert.equal(isBrokerSetupComplete(featuredPending), false)
-  assert.equal(resolveBrokerOnboardingDestination(featuredPending, '/broker/subscription/select'), null)
+  assert.equal(resolveBrokerOnboardingDestination(featuredPending, '/broker/subscription/select'), '/setup')
   assert.equal(resolveBrokerOnboardingDestination(featuredPending, '/broker/dashboard'), '/setup')
 
   // D. FEATURED ACTIVE -> setup/profile
@@ -197,12 +196,11 @@ test('/setup wizard saves draft on Step 4 and integrates plan selection as Step 
 // 4. PLAN SELECTION UX & ENDPOINTS
 // ===========================================================================
 
-test('plan selection page communicates Free and Mortgage Expert choices without buy/upgrade labels', () => {
-  assert.match(selectPlanPage, /Choose your broker plan/)
-  assert.match(selectPlanPage, /PricingCard/)
-  assert.match(selectPlanPage, /selectFree/)
-  assert.match(selectPlanPage, /selectPaid/)
-  assert.doesNotMatch(selectPlanPage, /Upgrade Now|Create Account|Buy Now/)
+test('plan selection is served by the setup wizard Step 6 (legacy select route removed)', () => {
+  // Plan selection for new-broker registration lives only in /setup Step 6
+  // (Phase 8.35.5 removed the standalone select route).
+  assert.match(setupWizard, /Step6PlanSelection/)
+  assert.match(setupWizard, /case 6:/)
 })
 
 test('FREE endpoint activates the registration subscription without Stripe and never creates a Broker', () => {
@@ -230,9 +228,12 @@ test('FEATURED checkout endpoint uses server-authoritative DB plan and Stripe pr
 // ===========================================================================
 
 test('plan selection sends plan.code, never plan.name (Mortgage Expert is display-only)', () => {
-  assert.match(selectPlanPage, /if \(plan\.code === 'FREE'\)/)
-  assert.match(selectPlanPage, /selectPaid\(plan\.code, priceId\)/)
-  assert.match(selectPlanPage, /plan\.code === 'FEATURED'/)
+  // The canonical plan step (wizard Step 6) uses the internal code only; the
+  // FEATURED display name is never sent to an API.
+  assert.match(setupWizard, /plan\.code === 'FREE'/)
+  assert.match(setupWizard, /plan\.code === 'FEATURED'/)
+  const featured = setupWizard.slice(setupWizard.indexOf('async function selectFeatured'), setupWizard.indexOf('  }', setupWizard.indexOf('window.location.assign')))
+  assert.match(featured, /plan: 'FEATURED'/)
   // The customer-facing name is only a display label; the internal code is
   // what the API receives. "Mortgage Expert" must never reach an API as a plan.
   assert.match(brokerPlansLib, /FEATURED: 'Mortgage Expert'/)

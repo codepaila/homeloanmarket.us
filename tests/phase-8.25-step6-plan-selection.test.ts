@@ -4,7 +4,6 @@ import test from 'node:test'
 
 const read = (path: string) => fs.readFileSync(path, 'utf8')
 const wizard = read('components/sections/broker/BrokerSetupWizard.tsx')
-const selectPlanPage = read('app/broker/subscription/select/page.tsx')
 const plansRoute = read('app/api/subscription/plans/route.ts')
 const freeRoute = read('app/api/broker-registration/subscription/free/route.ts')
 const checkoutRoute = read('app/api/broker-registration/subscription/checkout/route.ts')
@@ -234,10 +233,11 @@ test('ARCH: Step 6 reuses the existing plan/checkout/finalize endpoints in place
   assert.match(onSubmit, /fetch\('\/api\/brokers'/)
 })
 
-test('ARCH: the legacy /broker/subscription/select route remains intact for fallback/resume', () => {
-  assert.match(selectPlanPage, /PricingCard/)
-  assert.match(selectPlanPage, /\/api\/subscription\/plans/)
-  assert.match(selectPlanPage, /subscription\/free/)
+test('ARCH: /setup (wizard Step 6) is the sole canonical plan-selection surface', () => {
+  // The legacy standalone plan-select route was removed in Phase 8.35.5;
+  // plan selection lives only in the setup wizard Step 6.
+  assert.match(wizard, /Step6PlanSelection/)
+  assert.match(wizard, /case 6:/)
 })
 
 test('ARCH: finalizeBrokerRegistration remains the only Broker-creation path', () => {

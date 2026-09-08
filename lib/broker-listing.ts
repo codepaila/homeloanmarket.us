@@ -59,13 +59,22 @@ function buildListingMatch(input: PublicListingMatchInput, isAdmin: boolean): Re
     conditions.push({ isVisible: true })
     conditions.push({ brokerStatus: { $ne: 'SUSPENDED' } })
     // Canonical public eligibility (mirrors publicBrokerWhere()):
-    // profile completeness, not verification/creationSource. A self-registered
-    // broker with a valid, complete, published profile is public.
+    // profile completeness, not verification/creationSource as a ranking tier.
+    // A self-registered broker with a valid, complete, published profile is public.
     conditions.push({ displayName: { $nin: [null, ''] } })
     conditions.push({ description: { $nin: [null, ''] } })
     conditions.push({ phone: { $nin: [null, ''] } })
     conditions.push({ officeAddress: { $nin: [null, ''] } })
     conditions.push({ profileSlug: { $nin: [null, ''] } })
+    // Source-aware verification gate (mirrors publicBrokerWhere()): ADMIN_CREATED
+    // brokers are eligible by construction; SELF_REGISTERED (or null-source)
+    // brokers must be admin VERIFIED to appear in the listing.
+    conditions.push({
+      $or: [
+        { creationSource: 'ADMIN_CREATED' },
+        { verificationStatus: 'VERIFIED' },
+      ],
+    })
   }
   if (input.search) {
     conditions.push({

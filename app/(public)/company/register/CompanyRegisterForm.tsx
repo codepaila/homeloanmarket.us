@@ -23,7 +23,7 @@ export default function CompanyRegisterForm() {
     if (data.confirmPassword !== data.password) return toast.error('Passwords do not match')
     setLoading(true)
     try {
-      const payload = { name: data.name, email: data.email, password: data.password }
+      const payload = { name: data.name, email: data.email, password: data.password, agreeToTerms: data.agreeTerms, agreeToPrivacy: data.agreeTerms }
       const response = await fetch('/api/company/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Registration failed')

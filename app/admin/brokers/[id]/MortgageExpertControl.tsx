@@ -68,11 +68,11 @@ export default function MortgageExpertControl({
   }
 
   return (
-    <section className="rounded border bg-card p-6">
+    <section className="rounded border bg-card p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold">Mortgage Expert</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h2 className="text-lg font-semibold">Mortgage Expert</h2>
+          <p className="mt-0.5 text-sm text-muted-foreground">
             {effective ? (
               <span className="inline-flex items-center gap-1.5 font-medium text-primary">
                 <BadgeCheck className="h-4 w-4" aria-hidden="true" />
@@ -82,7 +82,7 @@ export default function MortgageExpertControl({
               'Status: Disabled'
             )}
           </p>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-0.5 text-sm text-muted-foreground">
             Qualification source: <span className="font-medium">{qualificationSource(profileBadge, enabled)}</span>
           </p>
         </div>
@@ -91,12 +91,12 @@ export default function MortgageExpertControl({
         )}
       </div>
 
-      <div className="mt-5 grid gap-4 lg:grid-cols-2">
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <div className="rounded border p-4">
           <h3 className="text-sm font-semibold">Subscription qualification</h3>
-          <p className="mt-1 text-sm text-muted-foreground">Paid plan (Mortgage Expert)</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">Paid plan (Mortgage Expert)</p>
           {profileBadge ? (
-            <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600">
+            <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-success">
               <ShieldCheck className="h-4 w-4" aria-hidden="true" />
               Automatically qualified
             </p>
@@ -110,7 +110,7 @@ export default function MortgageExpertControl({
 
         <div className="rounded border p-4">
           <h3 className="text-sm font-semibold">Admin badge</h3>
-          <p className="mt-1 text-sm text-muted-foreground">Mortgage Expert badge</p>
+          <p className="mt-0.5 text-sm text-muted-foreground">Mortgage Expert badge</p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <button
               type="button"

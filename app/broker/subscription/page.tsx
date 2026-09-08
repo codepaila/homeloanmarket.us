@@ -2,26 +2,22 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { 
-  CreditCard, 
-  BarChart3, 
+import {
+  CreditCard,
+  BarChart3,
   CheckCircle,
   Clock,
   AlertCircle,
   Download,
-  TrendingUp,
   Zap,
   Settings,
   RefreshCw,
   ArrowRight,
-  Eye
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { useSubscriptionPlans } from '@/hooks/useClient'
@@ -29,30 +25,21 @@ import { useBrokerChromeResync } from '@/hooks/useSubscription'
 import { useSWRConfig } from 'swr'
 import { baseUrl } from '@/utils/baseUrl'
 import { brokerPlanDisplayName } from '@/lib/broker-plan-display'
-import  SubscriptionPlans  from '@/components/sections/subscriptions/SubscriptionPlan'
-import  UsageStats  from '@/components/sections/subscriptions/Usagestats'
-import  BillingHistory  from '@/components/sections/subscriptions/BillingHistory'
-
-// Import components - create these if they don't exist
-// import SubscriptionPlans from '@/components/subscription/SubscriptionPlans'
-// import UsageStats from '@/components/subscription/UsageStats'
-// import BillingHistory from '@/components/subscription/BillingHistory'
+import SubscriptionPlans from '@/components/sections/subscriptions/SubscriptionPlan'
+import BillingHistory from '@/components/sections/subscriptions/BillingHistory'
+import { Skeleton } from '@/components/ui/skeleton'
 
 export default function SubscriptionPage() {
-  const { status: sessionStatus } = useSession()
-  const router = useRouter()
   const [activeTab, setActiveTab] = useState('overview')
   const [loading, setLoading] = useState(true)
-  const [usageData, setUsageData] = useState<any>(null)
   const [subscriptionData, setSubscriptionData] = useState<any>(null)
   const [portalLoading, setPortalLoading] = useState(false)
   const { plans: availablePlans, error: plansError, isLoading: plansLoading, mutate: refetchPlans } =
     useSubscriptionPlans()
 
-  // Live badge sync: after the authoritative subscription data is confirmed,
-  // the broker layout is re-rendered (router.refresh) and the client-side
-  // broker/subscription SWR keys are revalidated, so the header badge and any
-  // mounted subscription surface update without a manual browser refresh.
+  // Live badge sync after an authoritative plan change (e.g. Stripe billing
+  // portal return): the broker layout is re-rendered (router.refresh) and the
+  // client-side broker/subscription SWR keys are revalidated.
   const resync = useBrokerChromeResync()
   const { cache } = useSWRConfig()
   const fetchedOnceRef = useRef(false)
@@ -61,21 +48,16 @@ export default function SubscriptionPage() {
 
   async function fetchSubscriptionData() {
     try {
-      const [usageRes, subscriptionRes] = await Promise.all([
-        fetch('/api/subscription/usage'),
-        fetch(detailsKey)
-      ])
-
-      const usageJson = await usageRes.json()
+      const subscriptionRes = await fetch(detailsKey)
       const subscriptionJson = await subscriptionRes.json()
 
-      if (usageJson.success) setUsageData(usageJson.data)
       if (subscriptionJson.success) {
         // Compare against the previously confirmed plan (from the SWR cache) so
         // a plan change made in the Stripe billing portal is reported on return.
         const previousPlan = cache.get(detailsKey)?.data?.data?.plan as string | undefined
         const nextPlan = subscriptionJson.data?.plan as string | undefined
-        if (previousPlan && nextPlan && previousPlan !== nextPlan) {
+        const planChanged = Boolean(previousPlan && nextPlan && previousPlan !== nextPlan)
+        if (planChanged) {
           toast.success(
             nextPlan === 'FEATURED'
               ? `You're now on the ${brokerPlanDisplayName(nextPlan)} plan.`
@@ -83,8 +65,13 @@ export default function SubscriptionPage() {
           )
         }
         setSubscriptionData(subscriptionJson.data)
-        // The server has confirmed the authoritative subscription state.
-        resync()
+        // Only re-sync the broker chrome (router.refresh + SWR revalidation)
+        // when the plan actually changed, e.g. on return from the Stripe billing
+        // portal. On an ordinary page load the broker layout is already
+        // server-rendered from the authoritative subscription, so a redundant
+        // resync would re-issue the same requests plus a full RSC re-render for
+        // no state change.
+        if (planChanged) resync()
       }
     } catch (error) {
       toast.error('Failed to load subscription data')
@@ -95,13 +82,11 @@ export default function SubscriptionPage() {
   }
 
   useEffect(() => {
-    // Allow guests to view subscription plans, but only load user data for authenticated users.
-    if (sessionStatus === 'authenticated' && !fetchedOnceRef.current) {
+    if (!fetchedOnceRef.current) {
       fetchedOnceRef.current = true
       fetchSubscriptionData()
     }
-    // Guests stay on the page and see public subscription plans.
-  }, [sessionStatus, router])
+  }, [])
 
   const handlePortal = async () => {
     setPortalLoading(true)
@@ -122,14 +107,6 @@ export default function SubscriptionPage() {
   }
 
   const handleCheckout = async (priceId: string, planName: string) => {
-    // If user is not authenticated, redirect to signup with the selected plan
-    if (sessionStatus === 'unauthenticated') {
-      const params = new URLSearchParams()
-      if (planName) params.set('plan', planName)
-      window.location.href = `/auth/signup?${params.toString()}`
-      return
-    }
-
     try {
       const response = await fetch('/api/subscription/checkout', {
         method: 'POST',
@@ -140,7 +117,7 @@ export default function SubscriptionPage() {
       })
 
       const data = await response.json()
-      
+
       if (data.success && data.url) {
         window.location.href = data.url
       } else {
@@ -150,17 +127,6 @@ export default function SubscriptionPage() {
       toast.error(error.message)
       console.error(error)
     }
-  }
-
-  if (loading || sessionStatus === 'loading') {
-    return (
-      <div className="flex items-center justify-center py-24">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading subscription information...</p>
-        </div>
-      </div>
-    )
   }
 
   const currentPlan = subscriptionData?.plan || 'FREE'
@@ -193,12 +159,12 @@ export default function SubscriptionPage() {
   const status = statusConfig[subscriptionStatus] || statusConfig.INACTIVE
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-4">
         <h1 className="text-3xl font-bold text-foreground mb-2">Subscription Management</h1>
         <p className="text-muted-foreground">
-          Manage your subscription plan, view usage, and upgrade features
+          Manage your subscription plan and upgrade features
         </p>
       </div>
 
@@ -212,10 +178,6 @@ export default function SubscriptionPage() {
             <CreditCard className="h-4 w-4 mr-2" />
             Plans & Pricing
           </TabsTrigger>
-          {/* <TabsTrigger value="usage">
-            <TrendingUp className="h-4 w-4 mr-2" />
-            Usage
-          </TabsTrigger> */}
           <TabsTrigger value="billing">
             <Download className="h-4 w-4 mr-2" />
             Billing
@@ -243,6 +205,10 @@ export default function SubscriptionPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Plan Info */}
+              {loading ? (
+                <SubscriptionOverviewSkeleton />
+
+              ) : (
               <div className="grid gap-6 md:grid-cols-3">
                 <div className="space-y-2">
                   <div className="text-sm text-muted-foreground">Current Plan</div>
@@ -280,6 +246,7 @@ export default function SubscriptionPage() {
                   )}
                 </div>
               </div>
+              )}
 
               <Separator />
 
@@ -309,7 +276,7 @@ export default function SubscriptionPage() {
 
               {/* Actions */}
               <div className="flex flex-wrap gap-3 pt-4">
-                <Button 
+                <Button
                   onClick={handlePortal}
                   disabled={portalLoading || !subscriptionData?.stripeCustomerId}
                   className="gap-2"
@@ -321,49 +288,18 @@ export default function SubscriptionPage() {
                   )}
                   Manage Billing
                 </Button>
-                
-                <Button 
-                  variant="outline" 
+
+                <Button
+                  variant="outline"
                   className="gap-2"
                   onClick={() => setActiveTab('plans')}
                 >
                   <ArrowRight className="h-4 w-4" />
                   View Plans
                 </Button>
-
-                {/* <Button 
-                  variant="outline" 
-                  className="gap-2"
-                  onClick={() => setActiveTab('usage')}
-                >
-                  <TrendingUp className="h-4 w-4" />
-                  View Usage
-                </Button> */}
               </div>
             </CardContent>
           </Card>
-
-          {/* Quick Stats */}
-          {usageData && (
-            <div className="grid gap-6 md:grid-cols-2">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Profile Views</p>
-                      <p className="text-2xl font-bold mt-1">
-                        {usageData.usage?.profileViews || 0}
-                      </p>
-                    </div>
-                    <Eye className="h-10 w-10 text-purple-100 bg-purple-500/20 p-2 rounded" />
-                  </div>
-                  <div className="mt-4 text-sm text-muted-foreground">
-                    +{(usageData.usage?.profileViews || 0) > 100 ? 'High' : 'Growing'} visibility
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
 
           {/* Premium Features */}
           {currentPlan !== 'FREE' && (
@@ -415,7 +351,7 @@ export default function SubscriptionPage() {
 
         {/* Plans Tab */}
         <TabsContent value="plans">
-          <SubscriptionPlans 
+          <SubscriptionPlans
             currentPlan={currentPlan}
             onSelectPlan={handleCheckout}
             subscriptionStatus={subscriptionStatus}
@@ -426,16 +362,40 @@ export default function SubscriptionPage() {
           />
         </TabsContent>
 
-        {/* Usage Tab */}
-        <TabsContent value="usage">
-          <UsageStats usageData={usageData} plan={planConfig} />
-        </TabsContent>
-
         {/* Billing Tab */}
         <TabsContent value="billing">
           <BillingHistory />
         </TabsContent>
       </Tabs>
     </div>
+  )
+}
+
+function SubscriptionOverviewSkeleton() {
+  return (
+   <div className="grid gap-6 md:grid-cols-3">
+    {/* Current Plan */}
+    <div className="space-y-2">
+      <Skeleton className="h-4 w-24" />
+      <Skeleton className="h-8 w-36" />
+      <Skeleton className="h-9 w-28" />
+    </div>
+
+    {/* Billing Cycle */}
+    <div className="space-y-2">
+      <Skeleton className="h-4 w-24" />
+      <Skeleton className="h-7 w-28" />
+      <Skeleton className="h-4 w-32" />
+      <Skeleton className="h-5 w-28" />
+    </div>
+
+    {/* Account Status */}
+    <div className="space-y-2">
+      <Skeleton className="h-4 w-28" />
+      <Skeleton className="h-7 w-24" />
+      <Skeleton className="h-4 w-20" />
+      <Skeleton className="h-5 w-28" />
+    </div>
+  </div>
   )
 }

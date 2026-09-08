@@ -1,56 +1,60 @@
-'use client'
+// app/broker-registration/subscription/success/page.tsx
+//
+// Server-side Stripe Checkout return handler for broker registration FEATURED
+// checkout. This page performs the authoritative verification and finalization
+// entirely server-side and redirects directly to /broker/dashboard — the user
+// never visits /setup or the Review/plan steps after a successful checkout.
+//
+//   Stripe success_url → this page (GET, server component)
+//     → verifyBrokerRegistrationCheckout() (Stripe session + subscription
+//       ownership/status validation, registration subscription → ACTIVE)
+//     → finalizeBrokerRegistration() (Broker + BrokerSubscription, idempotent)
+//     → redirect /broker/dashboard
+//
+// Security/authority is preserved: the browser never provides price or
+// ACTIVE-subscription state; finalizeBrokerRegistration enforces ownership,
+// profile completeness, ACTIVE subscription, and duplicate prevention. A
+// cancelled/failed/unverified return redirects back to plan selection and never
+// finalizes.
+import { redirect } from 'next/navigation'
+import { getCurrentUser } from '@/lib/currentUser'
+import { verifyBrokerRegistrationCheckout } from '@/lib/broker-registration-verify'
+import { finalizeBrokerRegistration } from '@/lib/broker-registration'
 
-import { useEffect, useState } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
-import { Suspense } from 'react'
+export default async function BrokerRegistrationSubscriptionSuccessPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ session_id?: string }>
+}) {
+  const params = await searchParams
+  const sessionId = params.session_id || ''
 
-function BrokerRegistrationSubscriptionSuccessContent() {
-  const router = useRouter()
-  const params = useSearchParams()
-  const [error, setError] = useState('')
+  const user = await getCurrentUser()
+  if (!user) {
+    redirect('/auth/signin')
+  }
 
-  useEffect(() => {
-    const sessionId = params.get('session_id')
-    if (!sessionId) {
-      router.replace('/broker/subscription/select')
-      return
-    }
+  if (!sessionId || !sessionId.startsWith('cs_')) {
+    redirect('/setup')
+  }
 
-    fetch(`/api/broker-registration/subscription/verify?session_id=${encodeURIComponent(sessionId)}`)
-      .then(async (response) => {
-        const data = await response.json()
-        if (!response.ok) throw new Error(data.error || 'Unable to verify subscription')
-        router.replace(data.redirectTo || '/setup')
-      })
-      .catch((cause) => setError(cause instanceof Error ? cause.message : 'Unable to verify subscription'))
-  }, [params, router])
+  const verified = await verifyBrokerRegistrationCheckout({ user, sessionId })
+  if (!verified.ok) {
+    // Not a valid paid checkout return (cancelled, incomplete, or ownership
+    // mismatch). Never finalize; send the broker back into the canonical setup
+    // flow where plan selection resumes on Step 6.
+    redirect('/setup')
+  }
 
-  return (
-    <main className="flex min-h-[60vh] items-center justify-center px-4">
-      <div className="text-center">
-        {error ? (
-          <>
-            <p className="text-sm text-destructive">{error}</p>
-            <button type="button" className="mt-4 text-sm font-medium text-primary underline" onClick={() => router.replace('/broker/subscription/select')}>
-              Return to plans
-            </button>
-          </>
-        ) : (
-          <>
-            <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" aria-hidden="true" />
-            <p className="mt-3 text-sm text-muted-foreground">Verifying your subscription...</p>
-          </>
-        )}
-      </div>
-    </main>
-  )
-}
+  // The registration subscription is now authoritative ACTIVE. Finalize exactly
+  // once (idempotent: a webhook-first or duplicate return returns the existing
+  // Broker without creating a duplicate). If the profile is incomplete,
+  // finalizeBrokerRegistration rejects and the broker continues on /setup.
+  try {
+    await finalizeBrokerRegistration(user.id)
+  } catch {
+    redirect('/setup')
+  }
 
-export default function BrokerRegistrationSubscriptionSuccessPage() {
-  return (
-    <Suspense fallback={<main className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></main>}>
-      <BrokerRegistrationSubscriptionSuccessContent />
-    </Suspense>
-  )
+  redirect('/broker/dashboard')
 }

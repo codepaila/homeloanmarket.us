@@ -165,51 +165,9 @@ test('broker-registration continue page delegates plan to server-side intent', (
 })
 
 // ---------------------------------------------------------------------------
-// SUBSCRIPTION SELECT PAGE — visual preselection
+// PLAN SELECTION (Phase 8.35.5: legacy standalone select route removed; /setup
+// Step 6 is the canonical new-broker plan surface — see phase-8.35.4 tests)
 // ---------------------------------------------------------------------------
-
-test('subscription select page reads plan from URL', () => {
-  const src = read('app/broker/subscription/select/page.tsx')
-  assert.match(src, /useSearchParams/)
-  assert.match(src, /searchParams\.get\('plan'\)/)
-  assert.match(src, /VALID_PLAN_CODES/)
-  assert.match(src, /'FREE'/)
-  assert.match(src, /'FEATURED'/)
-})
-
-test('subscription select page only preselects valid active plans', () => {
-  const src = read('app/broker/subscription/select/page.tsx')
-  assert.match(src, /p\.isActive/)
-  assert.match(src, /selectedPlanCode/)
-  // No auto-submission — selection is visual only
-  assert.doesNotMatch(src, /auto.*select|auto.*submit|setTimeout.*select/)
-})
-
-test('subscription select page wraps content in Suspense', () => {
-  const src = read('app/broker/subscription/select/page.tsx')
-  assert.match(src, /<Suspense/)
-  assert.match(src, /SubscriptionSelectContent/)
-})
-
-test('subscription select page highlights preselected plan card', () => {
-  const src = read('app/broker/subscription/select/page.tsx')
-  assert.match(src, /ring-2 ring-primary\/40/)
-  assert.match(src, /selectedPlanCode === plan\.code/)
-  // Plans are wrapped in a div for styling
-  assert.match(src, /<div[^>]*key=\{plan\.id\}/)
-})
-
-test('subscription select page preserves existing CTA behavior', () => {
-  const src = read('app/broker/subscription/select/page.tsx')
-  // FREE handler
-  assert.match(src, /selectFree/)
-  assert.match(src, /\/api\/broker-registration\/subscription\/free/)
-  // Paid handler
-  assert.match(src, /selectPaid/)
-  assert.match(src, /\/api\/broker-registration\/subscription\/checkout/)
-  // PricingCard onSelect is wired
-  assert.match(src, /onSelect/)
-})
 
 // ---------------------------------------------------------------------------
 // SECURITY — plan is only intent, never authoritative
@@ -261,14 +219,16 @@ test('registration page does not create duplicate broker registration', () => {
   assert.doesNotMatch(src, /createBrokerAccount/)
 })
 
-test('broker onboarding state machine is unchanged', () => {
+test('broker onboarding state machine routes pending/in-progress brokers to /setup only', () => {
   const src = read('lib/broker-onboarding-state.ts')
   assert.match(src, /SUBSCRIPTION_PENDING/)
-  assert.match(src, /\/broker\/subscription\/select/)
   assert.match(src, /ONBOARDING_IN_PROGRESS/)
   assert.match(src, /\/setup/)
   assert.match(src, /COMPLETED/)
   assert.match(src, /\/broker\/dashboard/)
+  // The legacy standalone plan-select route is retired; /setup owns plan selection.
+  assert.doesNotMatch(src, /\/broker\/subscription\/select/)
+  assert.match(src, /return currentPath === '\/setup' \? null : '\/setup'/)
 })
 
 // ---------------------------------------------------------------------------
@@ -286,19 +246,11 @@ test('PricingCard uses "Choose {name}" for the plan-selection CTA', () => {
   assert.doesNotMatch(src, /'Subscribe'/)
 })
 
-test('broker plan-selection page keeps Free CTA wired to FREE endpoint', () => {
-  const src = read('app/broker/subscription/select/page.tsx')
-  assert.match(src, /plan\.code === 'FREE'/)
-  assert.match(src, /\/api\/broker-registration\/subscription\/free/)
-  assert.doesNotMatch(src, /'Create Account'/)
-})
-
-test('broker plan-selection page keeps FEATURED CTA sending plan.code', () => {
-  const src = read('app/broker/subscription/select/page.tsx')
-  // The paid handler receives the canonical internal code (FEATURED),
-  // never the customer-facing display name.
-  assert.match(src, /selectPaid\(plan\.code, priceId\)/)
-  assert.match(src, /\/api\/broker-registration\/subscription\/checkout/)
-  assert.doesNotMatch(src, /'Upgrade'/)
-  assert.doesNotMatch(src, /selectPaid\(plan\.name/)
+test('plan-selection CTAs live in the setup wizard Step 6 (legacy select route removed)', () => {
+  const wizard = read('components/sections/broker/BrokerSetupWizard.tsx')
+  // FREE wired to the FREE activation endpoint; FEATURED sends the internal code.
+  const featured = wizard.slice(wizard.indexOf('async function selectFeatured'), wizard.indexOf('  }', wizard.indexOf('window.location.assign')))
+  assert.match(wizard, /\/api\/broker-registration\/subscription\/free/)
+  assert.match(featured, /plan: 'FEATURED'/)
+  assert.match(featured, /priceId: plan\.stripePriceId/)
 })

@@ -96,65 +96,7 @@ function SubscriptionSuccessContent() {
               </p>
             </div>
 
-            {/* Next Steps */}
-            {/* <div className="space-y-6 mb-8">
-              <h2 className="text-xl font-semibold text-foreground text-center">
-                What Is Next?
-              </h2>
-
-              <div className="space-y-4">
-                <div className="flex items-start gap-4 p-4 border rounded">
-                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                    <Mail className="h-5 w-5 text-info" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-foreground mb-1">Email Confirmation</h3>
-                    <p className="text-muted-foreground text-sm">
-                      You'll receive a welcome email with your subscription details and next steps
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4 p-4 border rounded">
-                  <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                    <Zap className="h-5 w-5 text-purple-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-foreground mb-1">Instant Access</h3>
-                    <p className="text-muted-foreground text-sm">
-                      All premium features are now available in your account
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4 p-4 border rounded">
-                  <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                    <Users className="h-5 w-5 text-success" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-foreground mb-1">Premium Features</h3>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <Badge variant="outline" className="gap-1">
-                        <FileText className="h-3 w-3" />
-                        More Listings
-                      </Badge>
-                      <Badge variant="outline" className="gap-1">
-                        <Users className="h-3 w-3" />
-                        Team Members
-                      </Badge>
-                      <Badge variant="outline" className="gap-1">
-                        <Building className="h-3 w-3" />
-                        Branch Locations
-                      </Badge>
-                      <Badge variant="outline" className="gap-1">
-                        <Star className="h-3 w-3" />
-                        Featured Placement
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div> */}
+           
 
             {/* Actions */}
             <div className="space-y-4">

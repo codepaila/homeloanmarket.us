@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { toast } from 'react-hot-toast'
 import { FormInput } from '@/components/design/FormInput'
 import { PremiumButton } from '@/components/design/PremiumButton'
@@ -134,9 +133,7 @@ export function CompanyOnboarding() {
               : <PremiumButton type="submit" fullWidth loading={loading} loadingText="Completing setup...">Complete Company Setup</PremiumButton>}
           </div>
         </form>
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          <Link href="/company/dashboard" className="font-medium text-primary hover:underline">Skip for now</Link>
-        </p>
+      
       </div>
     </main>
   )

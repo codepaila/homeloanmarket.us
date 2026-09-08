@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
         line_items: [{ price: checkoutPlan.plan.stripePriceId!, quantity: 1 }],
         mode: 'subscription' as const,
         success_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/broker-registration/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/broker/subscription/select`,
+        cancel_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/setup`,
         metadata: { userId: user.id, brokerRegistrationId: registrationId, plan: 'FEATURED' },
         subscription_data: { metadata: { userId: user.id, brokerRegistrationId: registrationId, plan: 'FEATURED' } },
         billing_address_collection: 'required' as const,

@@ -26,8 +26,8 @@ test('radius search filters to public eligibility for non-admin', () => {
   assert.match(geo, /phone: \{ \$nin: \[null, ''\] \}/)
   assert.match(geo, /officeAddress: \{ \$nin: \[null, ''\] \}/)
   assert.match(geo, /profileSlug: \{ \$nin: \[null, ''\] \}/)
-  assert.doesNotMatch(geo, /creationSource: 'ADMIN_CREATED'/)
-  assert.doesNotMatch(geo, /verificationStatus: 'VERIFIED'/)
+  assert.match(geo, /creationSource: 'ADMIN_CREATED'/)
+  assert.match(geo, /verificationStatus: 'VERIFIED'/)
 })
 
 test('radius ranking surfaces paying, enabled, and imaged brokers first; tier 4 brokers remain listed', () => {

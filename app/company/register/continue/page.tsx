@@ -17,7 +17,15 @@ export default function CompanyRegisterContinuePage() {
       try {
         const response = await fetch('/api/auth/company-intent', { method: 'PUT' })
         const data = await response.json()
-        if (!response.ok) throw new Error(data.error || 'Unable to continue company registration')
+        if (!response.ok) {
+          // Explicit legal consent is server-authoritative for the Google
+          // company path; route through the consent step before retrying.
+          if (data?.consentRequired) {
+            router.replace('/company/register/consent')
+            return
+          }
+          throw new Error(data.error || 'Unable to continue company registration')
+        }
 
         await refreshSession()
         router.replace(data.redirectTo || '/company/subscription/select')

@@ -60,10 +60,10 @@ export default function BrokerCard({
               {name}
             </h3>
      
-               {isPremium && <div className="absolute right-2 top-2 ">
+               {/* {isPremium && <div className="absolute right-2 top-2 ">
 
               <BrokerSubscriptionBadge className=" h-8 w-20 shrink-0" />
-            </div>}
+            </div>} */}
           </div>
           <p className="truncate text-sm text-muted-foreground">{company}</p>
           {nmls && (

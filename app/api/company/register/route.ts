@@ -17,10 +17,17 @@ export async function POST(request: NextRequest) {
     const name = typeof body.name === 'string' ? body.name.trim() : ''
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
     const password = typeof body.password === 'string' ? body.password : ''
+    const agreeToTerms = body?.agreeToTerms === true
+    const agreeToPrivacy = body?.agreeToPrivacy === true
 
     if (!name) return NextResponse.json({ error: 'Full name is required.' }, { status: 400 })
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return NextResponse.json({ error: 'Please enter a valid email address.' }, { status: 400 })
     if (password.length < 8) return NextResponse.json({ error: 'Password must be at least 8 characters.' }, { status: 400 })
+    // Legal consent is server-authoritative; a client checkbox alone is never
+    // sufficient. Both agreements must be explicitly true.
+    if (!agreeToTerms || !agreeToPrivacy) {
+      return NextResponse.json({ error: 'You must agree to both the Terms & Conditions and Privacy Policy.' }, { status: 400 })
+    }
 
     const rate = await customerRegisterRateLimit.limit(`company_register:${request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown'}`)
     if (!rate.success) return NextResponse.json({ error: 'Too many registration attempts. Please try again later.' }, { status: 429 })
@@ -30,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.$transaction(async (tx) => {
       const createdUser = await tx.user.create({
-        data: { name, email, password: await hashPassword(password), role: 'USER', isActive: true, emailVerified: false },
+        data: { name, email, password: await hashPassword(password), role: 'USER', isActive: true, emailVerified: false, agreeToTerms, agreeToPrivacy },
       })
       await tx.company.create({
         data: {
@@ -51,6 +58,12 @@ export async function POST(request: NextRequest) {
     const emailResult = await sendUserVerificationEmail(user.id)
     return NextResponse.json({ success: true, redirectTo: `/auth/verify-email?email=${encodeURIComponent(email)}`, emailSent: emailResult.success })
   } catch (error) {
+    // User.email is the authoritative uniqueness constraint. A concurrent
+    // duplicate registration surfaces as a Prisma unique-constraint failure;
+    // map it to the same duplicate-account response without leaking internals.
+    if ((error as { code?: string } | null)?.code === 'P2002') {
+      return NextResponse.json({ error: 'An account with this email already exists. Please sign in.' }, { status: 409 })
+    }
     console.error('Company registration failed:', error)
     return NextResponse.json({ error: 'Failed to create company account' }, { status: 500 })
   }

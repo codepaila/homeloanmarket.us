@@ -48,12 +48,12 @@ test('formatLoanAmountDollars formats lead amounts as USD', () => {
 // ---------------------------------------------------------------------------
 
 test('email templates contain no India-specific currency or copy', () => {
-  const source = read('lib/email-templates.ts')
+  const source = read('lib/email-templates.ts') + read('lib/email-shell.ts')
   for (const term of ['India', 'Indian', 'INR', '₹', 'Rupee', 'rupees', '1999', '4999']) {
     assert.doesNotMatch(source, new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), `email templates must not contain ${term}`)
   }
-  // The US tagline is present.
-  assert.match(source, /Connecting homebuyers with trusted mortgage professionals across the United States/)
+  // The US tagline is present in the shared shell.
+  assert.match(read('lib/email-shell.ts'), /Connecting homebuyers with trusted mortgage professionals across the United States/)
 })
 
 test('rendered broker welcome email is US-oriented and includes a verification CTA', () => {
@@ -66,12 +66,16 @@ test('rendered broker welcome email is US-oriented and includes a verification C
 })
 
 test('rendered subscription email uses the actual plan price, not hardcoded values', () => {
-  const plan = { name: 'Featured', price: 1500, currency: 'usd', billingInterval: 'month' }
-  const t = emailTemplates.subscriptionPurchased(
-    { displayName: 'Acme Mortgage', profileSlug: 'acme' },
-    { plan: 'FEATURED', startDate: new Date(), endDate: null },
-    plan,
-  )
+  const t = emailTemplates.subscriptionPurchased({
+    brokerName: 'Acme Mortgage',
+    planName: 'Featured',
+    priceCents: 1500,
+    currency: 'usd',
+    interval: 'month',
+    startDate: new Date(),
+    endDate: null,
+    dashboardUrl: 'https://homeloanmarket.com/broker/subscription',
+  })
   assert.match(t.html, /\$15\.00\/month/)
   assert.match(t.html, /Featured plan/)
   assert.doesNotMatch(t.html, /1999/)
@@ -80,19 +84,31 @@ test('rendered subscription email uses the actual plan price, not hardcoded valu
 })
 
 test('subscription email without a plan falls back to truthful generic text', () => {
-  const t = emailTemplates.subscriptionPurchased(
-    { displayName: 'Acme', profileSlug: 'acme' },
-    { plan: 'FEATURED', startDate: new Date(), endDate: null },
-    undefined,
-  )
+  const t = emailTemplates.subscriptionPurchased({
+    brokerName: 'Acme',
+    planName: 'FEATURED',
+    priceCents: 0,
+    currency: 'usd',
+    interval: 'month',
+    startDate: new Date(),
+    endDate: null,
+    dashboardUrl: 'https://homeloanmarket.com/broker/subscription',
+  })
   assert.match(t.html, /Free|plan is now active/)
 })
 
-test('new lead email formats loan amount as USD', () => {
-  const t = emailTemplates.newLead(
-    { displayName: 'Acme' },
-    { id: 'l1', name: 'Bob', phone: '555', email: 'b@x.com', city: 'Houston', loanAmount: 350000, loanType: 'Conventional', propertyType: 'Single Family', timeline: 'Immediate', createdAt: new Date() },
-  )
+test('new contact message email formats loan amount as USD', () => {
+  const t = emailTemplates.newContactMessage({
+    contactName: 'Bob',
+    contactEmail: 'b@x.com',
+    contactPhone: '555',
+    contactMessage: 'Hi',
+    loanType: 'Conventional',
+    propertyType: 'Single Family',
+    loanAmount: 350000,
+    receivedAt: new Date(),
+    reviewUrl: 'https://homeloanmarket.com/broker/contacts/l1',
+  })
   assert.match(t.html, /\$350,000\.00/)
   assert.doesNotMatch(t.html, /₹/)
   assert.doesNotMatch(t.html, /INR/)
@@ -109,10 +125,10 @@ test('company/broker/user shared verification wording is generic', () => {
 // ---------------------------------------------------------------------------
 
 test('email links use the application base URL and correct US routes', () => {
-  const t = emailTemplates.passwordReset('Pat', 'https://homeloanmarket.com/auth/reset-password?token=z', 1)
+  const t = emailTemplates.passwordReset({ name: 'Pat', resetLink: 'https://homeloanmarket.com/auth/reset-password?token=z', expiryHours: 1 })
   assert.match(t.html, /https:\/\/homeloanmarket\.com\/auth\/reset-password\?token=z/)
   assert.match(t.html, /Reset Your Password/)
-  const footer = emailTemplates.notification('Title', 'Body', {})
+  const footer = emailTemplates.notification({ title: 'Title', message: 'Body', info: {} })
   assert.match(footer.html, /\/privacy-policy/)
   assert.match(footer.html, /\/terms-of-service/)
 })
@@ -143,11 +159,18 @@ test('email.ts derives plain text via htmlToText (links preserved)', () => {
 // ---------------------------------------------------------------------------
 
 test('template helpers tolerate missing optional data', () => {
-  const lead = emailTemplates.newLead(
-    { displayName: 'Acme' },
-    { id: 'l1', name: 'Bob', phone: '555', email: null, city: null, loanAmount: null, loanType: null, propertyType: null, timeline: null, createdAt: new Date() },
-  )
-  assert.match(lead.html, /Not provided|Not specified/)
+  const contact = emailTemplates.newContactMessage({
+    contactName: 'Bob',
+    contactEmail: '',
+    contactPhone: '',
+    contactMessage: '',
+    loanType: '',
+    propertyType: '',
+    loanAmount: null,
+    receivedAt: new Date(),
+    reviewUrl: 'https://homeloanmarket.com/broker/contacts/l1',
+  })
+  assert.match(contact.html, /Not provided|Not specified/)
 })
 
 // ---------------------------------------------------------------------------

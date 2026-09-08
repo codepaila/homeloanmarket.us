@@ -13,8 +13,13 @@ const fastLoans = {
   profileComplete: true,
 }
 
-test('FastLoans-style self-registered broker is publicly eligible (Phase 8.28.1 root fix)', () => {
-  assert.equal(isPublicBroker(fastLoans), true)
+test('FastLoans-style self-registered UNVERIFIED broker is NOT publicly eligible', () => {
+  // Phase 8.36.1: a self-registered broker must be admin VERIFIED to be public.
+  assert.equal(isPublicBroker(fastLoans), false)
+})
+
+test('FastLoans-style self-registered broker becomes publicly eligible once VERIFIED', () => {
+  assert.equal(isPublicBroker({ ...fastLoans, verificationStatus: 'VERIFIED' as const }), true)
 })
 
 test('FastLoans-style broker appears in listing tier 1 (paid active subscription)', () => {
@@ -28,7 +33,7 @@ test('FastLoans-style broker appears in listing tier 1 (paid active subscription
   assert.equal(tier, 1)
 })
 
-test('self-registered UNVERIFIED complete visible broker is public (core fix)', () => {
+test('self-registered UNVERIFIED complete visible broker is NOT public (admin verification is the gate)', () => {
   assert.equal(isPublicBroker({
     isVisible: true,
     verificationStatus: 'UNVERIFIED',
@@ -37,7 +42,7 @@ test('self-registered UNVERIFIED complete visible broker is public (core fix)', 
     userId: 'user-1',
     userIsActive: true,
     profileComplete: true,
-  }), true)
+  }), false)
 })
 
 test('incomplete profile is not public (profileComplete=false)', () => {
@@ -110,16 +115,16 @@ test('admin-created broker is public regardless of verificationStatus', () => {
   }), true)
 })
 
-test('no competing eligibility system exists (single canonical helper)', () => {
+test('one canonical eligibility system exists (policy + listing + radius share the source-aware gate)', () => {
   const policy = fs.readFileSync('lib/broker-policy.ts', 'utf8')
   const listing = fs.readFileSync('lib/broker-listing.ts', 'utf8')
   const geo = fs.readFileSync('lib/location/broker-geo.ts', 'utf8')
-  // The old OR gate is gone from all three files
-  assert.doesNotMatch(policy, /sourceEligible/)
-  assert.doesNotMatch(listing, /verificationStatus: 'VERIFIED'/)
-  assert.doesNotMatch(listing, /creationSource: 'ADMIN_CREATED'/)
-  assert.doesNotMatch(geo, /verificationStatus: 'VERIFIED'/)
-  assert.doesNotMatch(geo, /creationSource: 'ADMIN_CREATED'/)
+  // The canonical source-aware verification gate is present consistently.
+  assert.match(policy, /state\.creationSource === 'ADMIN_CREATED' \|\| state\.verificationStatus === 'VERIFIED'/)
+  assert.match(listing, /verificationStatus: 'VERIFIED'/)
+  assert.match(listing, /creationSource: 'ADMIN_CREATED'/)
+  assert.match(geo, /verificationStatus: 'VERIFIED'/)
+  assert.match(geo, /creationSource: 'ADMIN_CREATED'/)
 })
 
 test('brokerProfileIsComplete rejects empty/missing fields', () => {
@@ -229,7 +234,7 @@ test('public detail page does not use user.image as fallback for broker photo', 
   assert.doesNotMatch(detailClient, /fallback.*user\.image/)
 })
 
-test('publicBrokerWhere enforces completeness, not verification/source', () => {
+test('publicBrokerWhere enforces completeness AND the source-aware verification gate', () => {
   const where = publicBrokerWhere()
   const serialized = JSON.stringify(where)
   assert.match(serialized, /"displayName":\{"not":""\}/)
@@ -237,9 +242,8 @@ test('publicBrokerWhere enforces completeness, not verification/source', () => {
   assert.match(serialized, /"phone":\{"not":""\}/)
   assert.match(serialized, /"officeAddress":\{"not":""\}/)
   assert.match(serialized, /"profileSlug":\{"not":""\}/)
-  assert.doesNotMatch(serialized, /creationSource/)
-  assert.doesNotMatch(serialized, /verificationStatus/)
-  assert.doesNotMatch(serialized, /"isPublicBroker"/)
+  assert.match(serialized, /"creationSource":"ADMIN_CREATED"/)
+  assert.match(serialized, /"verificationStatus":"VERIFIED"/)
 })
 
 test('listing and geo pipelines use tier for RANKING ONLY; all four tiers are publicly eligible', () => {

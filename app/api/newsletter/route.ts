@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { sendEmail } from '@/lib/email'
+import { sendEmail, emailTemplates } from '@/lib/email'
 import { contactBrokerRateLimit } from '@/lib/rateLimit'
 
 export async function POST(request: NextRequest) {
@@ -16,13 +16,16 @@ export async function POST(request: NextRequest) {
 
     const recipient = process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_CONTACT_EMAIL
     if (!recipient) return NextResponse.json({ success: false, error: 'Newsletter service is not configured.' }, { status: 503 })
-    const entities: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
-    const escaped = email.replace(/[&<>"']/g, (character: string) => entities[character] || character)
+    const template = emailTemplates.notification({
+      title: 'Newsletter signup',
+      message: 'A new visitor subscribed to the HomeLoanMarket newsletter.',
+      info: { Email: email },
+    })
     const result = await sendEmail({
       to: recipient,
-      subject: '[HomeLoanMarket newsletter] New subscriber',
+      subject: template.subject,
+      html: template.html,
       text: `Newsletter signup: ${email}`,
-      html: `<p>Newsletter signup: ${escaped}</p>`,
       idempotencyKey: `newsletter_${email}`,
     })
     if (!result.success) return NextResponse.json({ success: false, error: 'Unable to subscribe right now.' }, { status: 502 })
