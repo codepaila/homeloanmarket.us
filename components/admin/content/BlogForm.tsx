@@ -11,7 +11,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 export type BlogInitialValues = {
   id?: string
   title: string
-  slug: string
   excerpt: string
   content: string
   coverImage: string | null
@@ -68,7 +67,6 @@ export function BlogForm({
           <div className="sm:col-span-2">
             <TextField label="Title" name="title" defaultValue={initial.title} />
           </div>
-          <TextField label="Slug" name="slug" defaultValue={initial.slug} />
           <TextField label="Author" name="author" defaultValue={initial.author} />
           <TextField label="Category" name="category" defaultValue={initial.category} />
           <TextField label="Tags (comma separated)" name="tags" defaultValue={initial.tags.join(', ')} />

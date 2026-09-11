@@ -96,6 +96,8 @@ function Toolbar({ editor }: { editor: Editor }) {
       isH1: current.isActive('heading', { level: 1 }),
       isH2: current.isActive('heading', { level: 2 }),
       isH3: current.isActive('heading', { level: 3 }),
+      isH4: current.isActive('heading', { level: 4 }),
+      isH5: current.isActive('heading', { level: 5 }),
       isBulletList: current.isActive('bulletList'),
       isOrderedList: current.isActive('orderedList'),
       isBlockquote: current.isActive('blockquote'),

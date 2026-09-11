@@ -31,7 +31,6 @@ export default async function EditContentPage({ params }: { params: Promise<{ id
       initial={{
         id,
         title: post.title,
-        slug: post.slug,
         excerpt: post.excerpt || '',
         content: post.content,
         coverImage: post.coverImage,

@@ -24,7 +24,7 @@ export default async function NewContentPage() {
     <BlogForm
       action={createBlog}
       assets={assets}
-      initial={{ title: '', slug: '', excerpt: '', content: '', coverImage: null, author: 'HomeLoanMarket', category: 'Mortgage Basics', tags: [], isPublished: false, seoTitle: null, seoDescription: null }}
+      initial={{ title: '', excerpt: '', content: '', coverImage: null, author: 'HomeLoanMarket', category: 'Mortgage Basics', tags: [], isPublished: false, seoTitle: null, seoDescription: null }}
     />
   )
 }

@@ -20,6 +20,7 @@
 # production
 /build
 /public
+/hlm.zip
 /homeloanmarket.zip
 /loanmarket.zip
 /market.zip

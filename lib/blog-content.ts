@@ -121,3 +121,43 @@ export function sanitizeArticleHtml(content: string | null | undefined): string 
   if (!content || !content.trim()) return ''
   return hardenExternalLinks(sanitizeHtml(content, SANITIZER_OPTIONS))
 }
+
+// ===========================================================================
+// BlogPost.slug — canonical server-side slug generation
+// ===========================================================================
+
+/** Hard cap for generated slugs. The schema stores an unbounded String with a
+ *  unique constraint; the cap keeps URLs sane without any data change. Titles
+ *  that would exceed this are truncated at a hyphen boundary (never mid-word). */
+export const BLOG_SLUG_MAX_LENGTH = 80
+
+/**
+ * The ONE canonical BlogPost slugifier. Server-side only: a client-supplied
+ * slug is NEVER accepted; the title is the single source of truth.
+ *
+ * Normalization:
+ *   - lowercase
+ *   - unsupported punctuation runs become separators ("Next.js" -> "next-js",
+ *     "Getting Started!" -> "getting-started")
+ *   - whitespace / underscore / hyphen runs collapsed to a single hyphen
+ *   - repeated hyphens collapsed, leading/trailing hyphens trimmed
+ *   - truncated at a hyphen boundary past BLOG_SLUG_MAX_LENGTH
+ *
+ * Returns '' when the value produces no slug-worthy characters (punctuation-only,
+ * empty, or whitespace-only input).
+ */
+export function slugifyBlogTitle(value: string): string {
+  const slug = value
+    .toLowerCase()
+    .replace(/[^\w\s-]+/g, ' ')
+    .trim()
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+  if (slug.length <= BLOG_SLUG_MAX_LENGTH) return slug
+
+  let truncated = slug.slice(0, BLOG_SLUG_MAX_LENGTH)
+  const lastHyphen = truncated.lastIndexOf('-')
+  if (lastHyphen > 0) truncated = truncated.slice(0, lastHyphen)
+  return truncated.replace(/-+$/g, '')
+}
