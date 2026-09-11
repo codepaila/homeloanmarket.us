@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sendEmail, emailTemplates } from '@/lib/email'
 import { contactBrokerRateLimit } from '@/lib/rateLimit'
+import { platformConfig } from '@/lib/platform-config'
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Enter a valid email address.' }, { status: 400 })
     }
 
-    const recipient = process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_CONTACT_EMAIL
+    const recipient = platformConfig.adminEmails.length > 0 ? platformConfig.adminEmails : null
     if (!recipient) return NextResponse.json({ success: false, error: 'Newsletter service is not configured.' }, { status: 503 })
     const template = emailTemplates.notification({
       title: 'Newsletter signup',

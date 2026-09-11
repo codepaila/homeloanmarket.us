@@ -10,6 +10,7 @@ import {
   establishCompanyForUser,
   CompanyConsentRequiredError,
 } from '@/lib/company-intent'
+import { sendAdminNewCompanyNotification } from '@/actions/email.action'
 
 export async function POST(request: NextRequest) {
   if (!isSameOriginRequest(request)) {
@@ -40,6 +41,15 @@ export async function PUT(request: NextRequest) {
 
   try {
     const result = await establishCompanyForUser(user.id)
+    // Fire-and-forget admin "new company" notification for every configured
+    // ADMIN_EMAILS recipient, but ONLY on a genuinely fresh registration
+    // (alreadyCompany=false). Re-entering the intent PUT converges on the
+    // existing company and must not re-notify. A failure never rolls back the
+    // created company.
+    if (!result.alreadyCompany) {
+      void sendAdminNewCompanyNotification(result.companyId)
+    }
+
     // State-based canonical redirect (same lifecycle for email + Google): a
     // freshly created company (or one with an incomplete profile) continues to
     // onboarding; a complete profile without an active subscription goes to

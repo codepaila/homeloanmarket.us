@@ -6,7 +6,7 @@ import prisma from '@/lib/prisma'
 import { SubscriptionService } from '@/lib/subscription'
 import { getCorrelationId } from '@/lib/correlation'
 import { getStripeSecretKey, getStripeWebhookSecret } from '@/lib/stripe-config'
-import { sendSubscriptionPurchaseEmail } from '@/actions/email.action'
+import { sendSubscriptionPurchaseEmail, sendCompanySubscriptionPurchaseEmail, sendBrokerPaymentFailureEmail, sendCompanyPaymentFailureEmail } from '@/actions/email.action'
 
 async function getStripe(): Promise<Stripe> {
   const key = await getStripeSecretKey()
@@ -112,7 +112,8 @@ async function processEvent(event: Stripe.Event) {
   })
 }
 
-async function handleStripeEvent(event: Stripe.Event) {
+// Exported for webhook-path tests. Production entry remains POST below.
+export async function handleStripeEvent(event: Stripe.Event) {
   // Server-side event gate: only allowlisted events the app handles are
   // processed. Critical billing events are always processed; optional events
   // that an admin disabled are skipped (still idempotently logged as PROCESSED
@@ -149,6 +150,16 @@ async function handleStripeEvent(event: Stripe.Event) {
       // never affected by email delivery.
       if (updated && 'brokerId' in updated && updated.isActive && typeof updated.id === 'string') {
         void sendSubscriptionPurchaseEmail(updated.id)
+      }
+      // Company-product subscription purchase/activation confirmation. Fires
+      // only when the synced row is a CompanySubscription that became active.
+      // Fire-and-forget with a deterministic idempotency key scoped to
+      // (companySubscriptionId, stripeSubscription.id): the authoritative
+      // Stripe subscription identity distinguishes a genuinely new activation
+      // (cancel + re-subscribe) from a replay/retry of the same activation, and
+      // the sync result is never affected by email delivery.
+      if (updated && 'companyId' in updated && updated.isActive && typeof updated.id === 'string') {
+        void sendCompanySubscriptionPurchaseEmail(updated.id, subscription.id)
       }
       return
     }
@@ -202,13 +213,32 @@ async function handleStripeEvent(event: Stripe.Event) {
       const invoice = event.data.object as any
       if (!invoice.subscription) return
       const subscription = await (await getStripe()).subscriptions.retrieve(invoice.subscription as string)
-      await SubscriptionService.updateSubscriptionFromStripe(
+      const updated = await SubscriptionService.updateSubscriptionFromStripe(
         subscription.customer as string,
         subscription.id,
         event.type === 'invoice.payment_failed' ? 'past_due' : subscription.status,
         subscription.items.data[0]?.price.id,
         subscription.metadata?.ownerType || null,
       )
+      // Payment-failure notification. Dispatched only after the subscription
+      // state is reconciled, only for actual failures, and only when the sync
+      // resolved a product-owned subscription row. Broker registration rows
+      // (registrationId) and ambiguous/unknown ownership intentionally produce
+      // no notification. Fire-and-forget: the durable senders own per-
+      // subscription + per-invoice idempotency, and email delivery can never
+      // affect or roll back billing state.
+      if (
+        event.type === 'invoice.payment_failed' &&
+        updated &&
+        typeof updated.id === 'string' &&
+        typeof invoice.id === 'string'
+      ) {
+        if ('brokerId' in updated) {
+          void sendBrokerPaymentFailureEmail(updated.id, invoice.id)
+        } else if ('companyId' in updated) {
+          void sendCompanyPaymentFailureEmail(updated.id, invoice.id)
+        }
+      }
       return
     }
     default:

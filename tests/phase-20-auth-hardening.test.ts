@@ -143,7 +143,11 @@ test('email-change: the change is scoped to the token-bound user only', () => {
 
 test('email-change: verify page sends the target email with the token', () => {
   const source = read('app/(public)/auth/verify-email/page.tsx')
-  assert.ok(source.includes('JSON.stringify({ token, email })'), 'verify request must include the target email')
+  // The request body is assembled first and conditionally adds the target
+  // email; the token must always be present and the email echoed by the URL.
+  assert.ok(source.includes('const body: Record<string, string> = { token }'), 'verify request must include the token')
+  assert.ok(source.includes('if (email) body.email = email'), 'verify request must include the target email')
+  assert.ok(source.includes('JSON.stringify(body)'), 'assembled body is sent')
 })
 
 test('email-change: client input cannot directly set emailVerified', () => {

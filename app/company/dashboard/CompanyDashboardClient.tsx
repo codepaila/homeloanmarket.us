@@ -75,16 +75,22 @@ export function CompanyDashboardClient({ company, requests, onboarded }: { compa
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [confirming])
 
-  // Once the webhook activates the subscription, stop confirming and remove the
-  // temporary `?subscription=success` query state.
+  // Once the webhook resolves the pending window, stop confirming and remove the
+  // temporary `?subscription=success` query state. "Resolved" means the row has
+  // left the transient CHECKOUT_PENDING state — either ACTIVE (success) or a
+  // synced status such as EXPIRED / CANCELED / PAST_DUE. Gating on isActive
+  // alone left the "Payment received" banner up beside a resolved EXPIRED /
+  // canceled status (e.g. after cancel) until the poll timeout.
   useEffect(() => {
-    if (company.subscription?.isActive) {
+    if (!confirming) return
+    const status = company.subscription?.status
+    if (status && status !== 'CHECKOUT_PENDING') {
       setConfirming(false)
       setConfirmationTimedOut(false)
       if (fromCheckout) router.replace('/company/dashboard')
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [company.subscription?.isActive])
+  }, [company.subscription?.status])
 
   async function checkout() {
     // Allow returning to plan selection once confirmation has timed out (the

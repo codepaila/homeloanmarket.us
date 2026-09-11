@@ -26,14 +26,19 @@ test('production email sender uses the .com domain, never .net', () => {
 })
 
 test('lib/email.ts constructs the sender from EMAIL_FROM/EMAIL_FROM_NAME env, not a hardcoded domain', () => {
+  // Env resolution is centralized in lib/platform-config.ts; lib/email.ts
+  // composes the Resend sender from that config.
   const email = read('lib/email.ts')
-  assert.match(email, /EMAIL_FROM_NAME \|\| 'Homeloanmarket'/, 'sender name comes from env')
-  assert.match(email, /<\$\{process\.env\.EMAIL_FROM\}>/, 'sender address comes from env')
+  const platformConfig = read('lib/platform-config.ts')
+  assert.match(platformConfig, /EMAIL_FROM_NAME \|\| 'HomeLoanMarket'/, 'sender name comes from env')
+  assert.match(platformConfig, /process\.env\.EMAIL_FROM \|\| null/, 'sender address comes from env')
+  assert.doesNotMatch(email, /noreply@homeloanmarket\.(com|net)/, 'sender address is never hardcoded in lib/email.ts')
+  assert.match(email, /\$\{platformConfig\.emailFromName\} <\$\{platformConfig\.emailFrom\}>/, 'sender is composed from platform config')
 })
 
 test('lib/email.ts fails clearly when EMAIL_FROM or RESEND_API_KEY is missing', () => {
   const email = read('lib/email.ts')
-  assert.match(email, /!process\.env\.RESEND_API_KEY \|\| !process\.env\.EMAIL_FROM/, 'config guard present')
+  assert.match(email, /!platformConfig\.resendApiKey \|\| !platformConfig\.emailFrom \|\| !resend/, 'config guard present')
   assert.match(email, /'Email service is not configured'/, 'clear diagnostic message')
 })
 
@@ -46,10 +51,15 @@ test('env files configure the production sender as noreply@homeloanmarket.com', 
 })
 
 test('verification URLs fall back to the .com production domain', () => {
+  // Single source of truth for the app URL fallback (lib/platform-config.ts);
+  // email actions read it via platformConfig.appUrl and templates never
+  // hardcode a domain.
+  const platformConfig = read('lib/platform-config.ts')
   const actions = read('actions/email.action.ts')
   const templates = read('lib/email-templates.ts')
-  assert.match(actions, /'https:\/\/homeloanmarket\.com'/, 'email actions fall back to .com app URL')
-  assert.match(templates, /'https:\/\/homeloanmarket\.com'/, 'email templates fall back to .com app URL')
+  assert.match(platformConfig, /'https:\/\/homeloanmarket\.com'/, 'platform config falls back to .com app URL')
+  assert.match(actions, /platformConfig\.appUrl/, 'email actions build URLs from platformConfig.appUrl')
+  assert.doesNotMatch(templates, /https:\/\/homeloanmarket\.(com|net)/, 'email templates never hardcode a domain')
 })
 
 test('verification links use the HTTPS verify-email route', () => {
@@ -76,11 +86,20 @@ test('resendBrokerVerificationEmail propagates the real provider result', () => 
   assert.ok(block.includes('error: emailResult.error ||'), 'resend wrapper must surface the provider error')
 })
 
-test('sendBrokerVerificationEmail propagates the real provider result', () => {
-  const actions = read('actions/email.action.ts')
-  const block = actions.slice(actions.indexOf('sendBrokerVerificationEmail(brokerId'), actions.indexOf('resendBrokerVerificationEmail'))
-  assert.ok(block.includes('const emailFailed = Boolean(emailResult && !emailResult.success)'), 'verified-notification wrapper detects failure')
-  assert.ok(block.includes('success: !emailFailed'), 'verified-notification wrapper reflects failure')
+test('sendBrokerVerifiedEmail is fire-and-forget on the real admin VERIFIED transition', () => {
+  // The verified notification moved to lib/broker-verification.ts (Phase 8.36):
+  // the DB verification is authoritative, the email is dispatched only on the
+  // UNVERIFIED -> VERIFIED transition, and an email failure can never roll the
+  // persisted verification back (no success:false propagation path).
+  const verificationLib = read('lib/broker-verification.ts')
+  assert.match(verificationLib, /export async function sendBrokerVerifiedEmail/, 'canonical verified-notification sender exists')
+  assert.match(verificationLib, /idempotencyKey: `broker_verified_\$\{params\.profileSlug\}`/, 'deterministic per-broker idempotency key')
+  for (const route of ['app/api/admin/brokers/[id]/route.ts', 'app/api/brokers/[id]/route.ts']) {
+    const source = read(route)
+    assert.match(source, /wasVerifiedTransition/, `${route} detects the real transition`) 
+    assert.match(source, /void sendBrokerVerifiedEmail\(/, `${route} dispatches fire-and-forget`) 
+    assert.doesNotMatch(source, /await sendBrokerVerifiedEmail/, `${route} must never block on email delivery`) 
+  }
 })
 
 // ===========================================================================

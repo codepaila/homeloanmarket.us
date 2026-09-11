@@ -535,14 +535,27 @@ export class SubscriptionService {
 
     // Rule 7: never expire a pending row that already corresponds to a live
     // Stripe subscription (an unrelated abandoned session must not affect it).
-    let liveSubscription = false
-    if (existing.stripeSubId) {
-      const subs = await (await getStripe()).subscriptions.list({ customer: stripeCustomerId, status: 'all', limit: 20 })
-      liveSubscription = subs.data.some((s) =>
-        ['active', 'trialing', 'incomplete', 'past_due', 'unpaid', 'paused'].includes(s.status),
-      )
-    }
-    if (liveSubscription) return { reconciled: false, reason: 'live-subscription-present' }
+    // The live probe is deliberately NOT gated on the local stripeSubId: after a
+    // successful payment the webhook may not have recorded the subscription ID
+    // yet, so a null local stripeSubId must not be misread as "no live
+    // subscription" (that race stamped a premature EXPIRED next to a live
+    // payment — the reported "EXPIRED + Payment received" contradiction). An
+    // open subscription Checkout Session for this company (e.g. a retry after
+    // this session expired, or a re-checkout after a canceled subscription) is
+    // likewise never expired.
+    const subs = await (await getStripe()).subscriptions.list({ customer: stripeCustomerId, status: 'all', limit: 20 })
+    const live = subs.data.some((s) =>
+      ['active', 'trialing', 'incomplete', 'past_due', 'unpaid', 'paused'].includes(s.status),
+    )
+    if (live) return { reconciled: false, reason: 'live-subscription-present' }
+    const sessions = await (await getStripe()).checkout.sessions.list({ customer: stripeCustomerId, limit: 100 })
+    const openCheckout = sessions.data.some(
+      (session) =>
+        session.mode === 'subscription' &&
+        session.status === 'open' &&
+        (!metadata?.companyId || session.metadata?.companyId === metadata.companyId),
+    )
+    if (openCheckout) return { reconciled: false, reason: 'open-checkout-present' }
 
     await prisma.companySubscription.update({
       where: { id: existing.id },
@@ -593,13 +606,39 @@ export class SubscriptionService {
   static async reconcileStaleCompanyCheckout(companyId: string, customerId: string | null) {
     const existing = await prisma.companySubscription.findUnique({ where: { companyId } })
     if (!existing || existing.status !== 'CHECKOUT_PENDING') return { reconciled: false, reason: 'not-pending' }
-    if (existing.stripeSubId) {
-      const subs = await (await getStripe()).subscriptions.list({ customer: customerId ?? existing.stripeCustomerId ?? '', status: 'all', limit: 20 })
-      const live = subs.data.some((s) =>
-        ['active', 'trialing', 'incomplete', 'past_due', 'unpaid', 'paused'].includes(s.status),
-      )
-      if (live) return { reconciled: false, reason: 'live-subscription-present' }
+
+    // A checkout is never stale while Stripe still has a live subscription for
+    // this customer — probed unconditionally, because after a successful payment
+    // the webhook may not have recorded the subscription ID yet (a null local
+    // stripeSubId must not be misread as "nothing live": that race stamped
+    // EXPIRED next to a live payment — the reported "EXPIRED + Payment
+    // received" contradiction). An open subscription Checkout Session for this
+    // company (e.g. a re-checkout still in flight after an expired/canceled
+    // prior subscription, whose stale stripeSubId sits on the row) is likewise
+    // never expired; both probes keep the row pending until the webhook resolves
+    // it. Genuinely stale rows — no Stripe customer ever created — still
+    // reconcile to EXPIRED.
+    const effectiveCustomerId = customerId ?? existing.stripeCustomerId
+    if (!effectiveCustomerId) {
+      // No Stripe customer exists for this pending row, so there is nothing live
+      // or open to represent — genuinely stale.
+      await prisma.companySubscription.update({
+        where: { id: existing.id },
+        data: { status: 'EXPIRED', isActive: false, endDate: existing.endDate ?? new Date(), updatedAt: new Date() },
+      })
+      return { reconciled: true }
     }
+    const subs = await (await getStripe()).subscriptions.list({ customer: effectiveCustomerId, status: 'all', limit: 20 })
+    const live = subs.data.some((s) =>
+      ['active', 'trialing', 'incomplete', 'past_due', 'unpaid', 'paused'].includes(s.status),
+    )
+    if (live) return { reconciled: false, reason: 'live-subscription-present' }
+    const sessions = await (await getStripe()).checkout.sessions.list({ customer: effectiveCustomerId, limit: 100 })
+    const openCheckout = sessions.data.some(
+      (session) => session.mode === 'subscription' && session.status === 'open' && session.metadata?.companyId === companyId,
+    )
+    if (openCheckout) return { reconciled: false, reason: 'open-checkout-present' }
+
     await prisma.companySubscription.update({
       where: { id: existing.id },
       data: { status: 'EXPIRED', isActive: false, endDate: existing.endDate ?? new Date(), updatedAt: new Date() },
@@ -703,6 +742,25 @@ export class SubscriptionService {
   ) {
     const existing = await prisma.companySubscription.findFirst({ where: { stripeCustomerId } })
     if (!existing) return null
+
+    // Stale-subscription protection for the company product (mirrors the broker
+    // guard). When the local CompanySubscription already references a different
+    // live Stripe subscription, an old/replayed event for the superseded
+    // subscription must never overwrite the newer live subscription. A switch
+    // is only honored when the currently-referenced subscription is terminal
+    // (canceled / incomplete_expired) — that is the cancel → re-subscribe path
+    // (new subscription activation) and nothing else.
+    if (existing.stripeSubId && existing.stripeSubId !== stripeSubscriptionId) {
+      const currentStripeSubscription = await (await getStripe()).subscriptions.retrieve(existing.stripeSubId)
+      const incomingIsActive = status === 'active' || status === 'trialing'
+      const currentIsTerminal = ['canceled', 'incomplete_expired'].includes(currentStripeSubscription.status)
+      const currentIsActive = ['active', 'trialing', 'incomplete', 'past_due', 'unpaid', 'paused'].includes(currentStripeSubscription.status)
+      if (currentIsActive || !currentIsTerminal || !incomingIsActive) {
+        if (currentIsActive && !incomingIsActive) return existing
+        throw new Error('Stripe subscription does not match Company subscription')
+      }
+    }
+
     const plan = priceId ? await resolveCompanyPlanByStripePrice(priceId) : null
     const mapped = mapCompanySubscriptionStatus(status)
     const isActive = mapped.isActive

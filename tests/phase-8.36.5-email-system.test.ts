@@ -138,6 +138,11 @@ test('removed dead email artifacts have no production references', () => {
 })
 
 test('HomeLoanMarket sender name capitalization is correct', () => {
-  assert.match(emailService, /EMAIL_FROM_NAME \|\| 'HomeLoanMarket'/)
+  // Env resolution is centralized in lib/platform-config.ts (emailFromName).
+  const platformConfig = read('lib/platform-config.ts')
+  assert.match(platformConfig, /EMAIL_FROM_NAME \|\| 'HomeLoanMarket'/)
+  assert.doesNotMatch(platformConfig, /'Homeloanmarket'/)
+  // The service composes the sender from that config, never a hardcoded name.
+  assert.match(emailService, /\$\{platformConfig\.emailFromName\}/)
   assert.doesNotMatch(emailService, /'Homeloanmarket'/)
 })

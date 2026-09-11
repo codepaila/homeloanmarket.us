@@ -14,6 +14,17 @@ import { formatPlanPriceAndInterval, formatLoanAmountDollars } from '@/lib/email
 // fields are needed)
 // ---------------------------------------------------------------------------
 
+export type CompanySubscriptionPurchaseEmailData = {
+  companyName: string
+  planName: string
+  priceCents: number
+  currency: string
+  interval: string
+  startDate: Date
+  endDate?: Date | null
+  dashboardUrl: string
+}
+
 export type BrokerVerifiedEmailData = {
   displayName: string
   profileUrl: string
@@ -85,6 +96,30 @@ export type NotificationEmailData = {
   title: string
   message: string
   info: Record<string, string>
+}
+
+export type AccountDeletionConfirmationEmailData = {
+  name: string
+  accountType: 'User' | 'Broker' | 'Company'
+  deletedAt: Date
+}
+
+export type AdminAccountDeletionEmailData = {
+  accountType: 'User' | 'Broker' | 'Company'
+  deletedUserEmail: string
+  deletedUserName?: string
+  companyName?: string | null
+  deletedBy: 'USER' | 'ADMIN'
+  deletedAt: Date
+}
+
+export type AdminNewCompanyEmailData = {
+  companyName: string
+  ownerName: string
+  ownerEmail: string
+  companyId: string
+  adminUrl: string
+  registeredAt: Date
 }
 
 export type EmailTemplateResult = {
@@ -274,6 +309,111 @@ export const emailTemplates = {
         ...(data.brokerExperienceYears != null ? { Experience: `${data.brokerExperienceYears} years` } : {}),
         'Registration Date': new Date().toLocaleDateString(),
         'Verification Status': 'UNVERIFIED',
+      },
+    }),
+  }),
+
+  // Admin notification: a new company registered (PENDING shell established).
+  // Informational only — companies are not reviewed before activation, so this
+  // is NOT an action-required email.
+  adminNewCompany: (data: AdminNewCompanyEmailData): EmailTemplateResult => ({
+    subject: `New company registered: ${escapeHtml(data.companyName)}`,
+    preheader: 'A new company has registered on the platform.',
+    html: renderEmailShell({
+      preheader: 'A new company has registered on the platform.',
+      title: 'New company registration',
+      subtitle: 'A new company has joined the platform',
+      message: 'A new company has registered on HomeLoanMarket.',
+      status: { tone: 'warning', label: 'Informational' },
+      ctaLabel: 'View Company',
+      ctaHref: data.adminUrl,
+      info: {
+        Company: data.companyName,
+        Owner: `${data.ownerName} (${data.ownerEmail})`,
+        'Registered At': new Date(data.registeredAt).toLocaleString(),
+      },
+    }),
+  }),
+
+  // Account deletion confirmation. Sent after a successful self-service deletion
+  // so the user has a record of the action. Admin-initiated deletions do not
+  // send this email because the admin is already aware.
+  accountDeletionConfirmation: (data: AccountDeletionConfirmationEmailData): EmailTemplateResult => ({
+    subject: `Your HomeLoanMarket ${data.accountType} account has been deleted`,
+    preheader: `Your ${data.accountType.toLowerCase()} account has been permanently deleted.`,
+    html: renderEmailShell({
+      preheader: `Your ${data.accountType.toLowerCase()} account has been permanently deleted.`,
+      title: 'Account deleted',
+      message: `Hello ${data.name || 'there'},\n\nYour HomeLoanMarket ${data.accountType.toLowerCase()} account has been permanently deleted as requested. All associated data has been removed from our platform.`,
+      status: { tone: 'destructive', label: 'Status: Deleted' },
+      info: {
+        Account: data.accountType,
+        'Deleted At': new Date(data.deletedAt).toLocaleString(),
+      },
+    }),
+  }),
+
+  // Admin notification: an account was deleted. Sent AFTER the successful
+  // deletion transaction. Must never contain credentials, verification/reset
+  // tokens, Stripe keys, or session data.
+  adminAccountDeletion: (data: AdminAccountDeletionEmailData): EmailTemplateResult => ({
+    subject: `Account deleted on HomeLoanMarket: ${data.accountType} (${escapeHtml(data.deletedUserEmail)})`,
+    preheader: `A ${data.accountType.toLowerCase()} account has been deleted.`,
+    html: renderEmailShell({
+      preheader: `A ${data.accountType.toLowerCase()} account has been deleted from HomeLoanMarket.`,
+      title: 'Account deleted',
+      message: `The following ${data.accountType.toLowerCase()} account has been deleted from HomeLoanMarket.`,
+      status: { tone: 'destructive', label: 'Status: Deleted' },
+      info: {
+        Account: data.accountType,
+        Email: data.deletedUserEmail,
+        ...(data.deletedUserName ? { Name: data.deletedUserName } : {}),
+        ...(data.companyName ? { Company: data.companyName } : {}),
+        'Deleted By': data.deletedBy === 'ADMIN' ? 'Admin' : 'User (self-service)',
+        'Deleted At': new Date(data.deletedAt).toLocaleString(),
+      },
+    }),
+  }),
+
+  // Company subscription purchase/activation confirmation.
+  companySubscriptionPurchased: (data: CompanySubscriptionPurchaseEmailData): EmailTemplateResult => {
+    const priceLine = formatPlanPriceAndInterval(data.priceCents, data.currency, data.interval)
+    return {
+      subject: `Your HomeLoanMarket ${data.planName} subscription is active`,
+      preheader: `Your ${data.planName} subscription is now active.`,
+      html: renderEmailShell({
+        preheader: `Your ${data.planName} subscription is now active.`,
+        title: 'Your subscription is active',
+        subtitle: `${data.planName} plan`,
+        message: `Hello ${data.companyName},\n\nYour ${data.planName} subscription is now active.`,
+        status: { tone: 'success', label: 'Status: Active' },
+        ctaLabel: 'Go to Dashboard',
+        ctaHref: data.dashboardUrl,
+        info: {
+          Plan: data.planName,
+          Status: 'Active',
+          Amount: priceLine,
+          'Billing Cycle': data.interval,
+          'Start Date': new Date(data.startDate).toLocaleDateString(),
+          ...(data.endDate ? { 'Renews On': new Date(data.endDate).toLocaleDateString() } : {}),
+        },
+      }),
+    }
+  },
+
+  paymentFailure: (name: string, product: string, dashboardUrl: string): EmailTemplateResult => ({
+    subject: `Action required: Payment failure for your ${product} subscription`,
+    preheader: 'We were unable to process your subscription payment.',
+    html: renderEmailShell({
+      preheader: 'We were unable to process your subscription payment.',
+      title: 'Payment failure',
+      subtitle: 'Action required',
+      message: `Hello ${name},\n\nWe were unable to process the latest payment for your ${product} subscription. To avoid service interruption, please update your billing information.`,
+      status: { tone: 'destructive', label: 'Status: Action required' },
+      ctaLabel: 'Update Billing',
+      ctaHref: dashboardUrl,
+      info: {
+        Product: product,
       },
     }),
   }),

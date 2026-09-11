@@ -52,6 +52,27 @@ enum BrokerSubscriptionEmailStatus {
   FAILED
 }
 
+enum BrokerSubscriptionPaymentFailureEmailStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+}
+
+enum CompanySubscriptionEmailStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+}
+
+enum CompanySubscriptionPaymentFailureEmailStatus {
+  PENDING
+  PROCESSING
+  SENT
+  FAILED
+}
+
 enum BrokerCreationSource {
   ADMIN_CREATED
   SELF_REGISTERED
@@ -378,6 +399,7 @@ model BrokerSubscription {
   broker   Broker                  @relation(fields: [brokerId], references: [id])
   planRef  BrokerSubscriptionPlan? @relation(fields: [planId], references: [id])
   purchaseEmail BrokerSubscriptionEmailLog?
+  paymentFailureLogs BrokerSubscriptionPaymentFailureLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -576,6 +598,10 @@ model CompanySubscription {
 
   company         Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   advertisingPlan CompanyAdvertisingPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+  // One activation-email log row per genuinely new Stripe subscription
+  // activation (cancel → re-subscribe produces a new row, never a duplicate).
+  emailLogs       CompanySubscriptionEmailLog[]
+  paymentFailureLogs CompanySubscriptionPaymentFailureLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -585,6 +611,83 @@ model CompanySubscription {
   @@index([stripeCustomerId])
   @@index([stripeSubId])
   @@map("company_subscriptions")
+}
+
+model CompanySubscriptionEmailLog {
+  id                    String                         @id @default(auto()) @map("_id") @db.ObjectId
+  // The durable idempotency key is the primary uniqueness guard. It is scoped
+  // to (companySubscriptionId, stripeSubscriptionId) so each genuinely new
+  // Stripe subscription activation of the SAME CompanySubscription is
+  // independently representable and independently idempotent. The Stripe
+  // subscription id is the authoritative activation identity; it is stored on
+  // the record (when one exists, i.e. paid activations) for traceability and
+  // historical matching.
+  idempotencyKey        String                         @unique
+  companySubscriptionId String                         @db.ObjectId
+  stripeSubscriptionId  String?                        @db.ObjectId
+  status                CompanySubscriptionEmailStatus
+  attempts              Int                            @default(0)
+  leaseExpiresAt        DateTime?
+  claimedAt             DateTime?
+  sentAt                DateTime?
+  messageId             String?
+  lastError             String?
+
+  companySubscription CompanySubscription @relation(fields: [companySubscriptionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([companySubscriptionId])
+  @@index([stripeSubscriptionId])
+  @@map("company_subscription_email_logs")
+}
+
+model BrokerSubscriptionPaymentFailureLog {
+  id                    String                                       @id @default(auto()) @map("_id") @db.ObjectId
+  idempotencyKey        String                                       @unique
+  brokerSubscriptionId  String                                       @db.ObjectId
+  invoiceId             String
+  status                BrokerSubscriptionPaymentFailureEmailStatus
+  attempts              Int                                          @default(0)
+  leaseExpiresAt        DateTime?
+  claimedAt             DateTime?
+  sentAt                DateTime?
+  messageId             String?
+  lastError             String?
+
+  brokerSubscription BrokerSubscription @relation(fields: [brokerSubscriptionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([brokerSubscriptionId, invoiceId])
+  @@index([status])
+  @@map("broker_subscription_payment_failure_logs")
+}
+
+model CompanySubscriptionPaymentFailureLog {
+  id                    String                                         @id @default(auto()) @map("_id") @db.ObjectId
+  idempotencyKey        String                                         @unique
+  companySubscriptionId String                                         @db.ObjectId
+  invoiceId             String
+  status                CompanySubscriptionPaymentFailureEmailStatus
+  attempts              Int                                            @default(0)
+  leaseExpiresAt        DateTime?
+  claimedAt             DateTime?
+  sentAt                DateTime?
+  messageId             String?
+  lastError             String?
+
+  companySubscription CompanySubscription @relation(fields: [companySubscriptionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companySubscriptionId, invoiceId])
+  @@index([status])
+  @@map("company_subscription_payment_failure_logs")
 }
 
 model CompanyAdvertisingPlan {

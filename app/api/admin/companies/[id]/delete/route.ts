@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/currentUser'
+import prisma from '@/lib/prisma'
 import { isSameOriginRequest, clientIp } from '@/lib/origin'
 import { accountDeletionRateLimit } from '@/lib/rateLimit'
 import {
@@ -7,6 +8,7 @@ import {
   AccountDeletionError,
   AccountDeletionStripeError,
 } from '@/lib/account-deletion'
+import { sendAdminAccountDeletionNotification } from '@/actions/email.action'
 
 export async function DELETE(
   request: NextRequest,
@@ -38,11 +40,36 @@ export async function DELETE(
   try {
     // Target comes only from the validated route parameter. The service refuses
     // to delete an ADMIN account or the currently logged-in admin.
+    // Capture company + owner identity BEFORE deletion — the company record no
+    // longer exists after the destructive transaction.
+    const companyTarget = await prisma.company.findUnique({
+      where: { id },
+      select: {
+        name: true,
+        memberships: {
+          where: { role: 'OWNER', isActive: true },
+          select: { user: { select: { email: true, name: true } } },
+        },
+      },
+    })
+    const owner = companyTarget?.memberships[0]?.user
+
     const result = await AccountDeletionService.deleteCompanyAccount(
       { companyId: id },
       { userId: admin.id, role: admin.role },
     )
     console.info('Company account deleted by admin', { adminId: admin.id, companyId: id, result })
+
+    // Fire-and-forget admin account-deletion notification for every configured
+    // ADMIN_EMAILS recipient — failure must not roll back the completed deletion.
+    void sendAdminAccountDeletionNotification({
+      email: owner?.email || '',
+      name: owner?.name || 'Company Owner',
+      accountType: 'Company',
+      companyName: companyTarget?.name ?? null,
+      deletedBy: 'ADMIN',
+    })
+
     return NextResponse.json({ success: true, deleted: result.deleted })
   } catch (error) {
     if (error instanceof AccountDeletionStripeError) {

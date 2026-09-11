@@ -4,8 +4,19 @@ import { revalidatePath } from 'next/cache'
 import { notFound, redirect } from 'next/navigation'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/currentUser'
+import { isHtmlContent, sanitizeArticleHtml } from '@/lib/blog-content'
 
 type ContentState = { error?: string } | undefined
+
+// Defense-in-depth write-time sanitization. The public render sanitizer
+// (app/(public)/blog/[slug]) remains the mandatory boundary; this only reduces
+// what gets persisted. Legacy plain text is stored verbatim (it renders
+// escaped, so it needs no sanitization).
+function prepareContentForPersistence(raw: unknown): string {
+  const content = typeof raw === 'string' ? raw : ''
+  if (!content.trim()) return ''
+  return isHtmlContent(content) ? sanitizeArticleHtml(content) : content
+}
 
 async function requireAdmin() {
   const user = await getCurrentUser()
@@ -50,7 +61,7 @@ export async function createBlog(_previousState: ContentState, formData: FormDat
       title,
       slug,
       excerpt: formData.get('excerpt')?.toString().trim() || '',
-      content: formData.get('content')?.toString() || '',
+      content: prepareContentForPersistence(formData.get('content')),
       coverImage: formData.get('coverImage')?.toString().trim() || null,
       author: formData.get('author')?.toString().trim() || 'HomeLoanMarket',
       category: formData.get('category')?.toString().trim() || 'Mortgage Basics',
@@ -90,7 +101,7 @@ export async function updateBlog(blogId: string, _previousState: ContentState, f
       title,
       slug,
       excerpt: formData.get('excerpt')?.toString().trim() || '',
-      content: formData.get('content')?.toString() || '',
+      content: prepareContentForPersistence(formData.get('content')),
       coverImage: formData.get('coverImage')?.toString().trim() || null,
       author: formData.get('author')?.toString().trim() || 'HomeLoanMarket',
       category: formData.get('category')?.toString().trim() || 'Mortgage Basics',

@@ -29,6 +29,7 @@
 import { sendEmail, emailTemplates } from '@/lib/email'
 import prisma from '@/lib/prisma'
 import { CLAIM_LEASE_MS, isClaimEligible, claimEligibleWhere } from '@/lib/broker-subscription-email-state'
+import { platformConfig } from '@/lib/platform-config'
 
 export { isClaimEligible, claimEligibleWhere }
 
@@ -91,7 +92,7 @@ export async function sendBrokerSubscriptionPurchaseEmailDurable(brokerSubscript
     // 5. Build the canonical template (unchanged) and send via the shared
     //    sendEmail() boundary. Deterministic idempotency key preserved.
     const plan = subscription.planRef
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://homeloanmarket.com'
+    const appUrl = platformConfig.appUrl
     const template = emailTemplates.subscriptionPurchased({
       brokerName: subscription.broker.displayName || 'there',
       planName: plan?.name || subscription.plan,

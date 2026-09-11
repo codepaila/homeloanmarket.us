@@ -8,6 +8,7 @@ import {
   AccountDeletionError,
   AccountDeletionStripeError,
 } from '@/lib/account-deletion'
+import { sendAccountDeletionConfirmationEmail, sendAdminAccountDeletionNotification } from '@/actions/email.action'
 
 export async function POST(request: NextRequest) {
   if (!isSameOriginRequest(request)) {
@@ -41,11 +42,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Only the company owner can delete the company account.' }, { status: 403 })
     }
 
+    const recipientEmail = user.email || ''
+    const recipientName = user.name || 'Company Owner'
+
+    // Capture the company name BEFORE deletion — the company record is removed
+    // by the service and is no longer readable afterwards.
+    const companyRecord = await prisma.company.findUnique({
+      where: { id: ownership.companyId },
+      select: { name: true },
+    })
+
     const result = await AccountDeletionService.deleteCompanyAccount(
       { companyId: ownership.companyId },
       { userId: user.id, role: user.role },
     )
     console.info('Company account deleted via self-service', { userId: user.id, companyId: ownership.companyId, result })
+
+    if (recipientEmail) {
+      void sendAccountDeletionConfirmationEmail({
+        email: recipientEmail,
+        name: recipientName,
+        accountType: 'Company',
+      })
+    }
+
+    // Fire-and-forget admin account-deletion notification for every configured
+    // ADMIN_EMAILS recipient — failure must not roll back the deletion.
+    void sendAdminAccountDeletionNotification({
+      email: recipientEmail,
+      name: recipientName,
+      accountType: 'Company',
+      companyName: companyRecord?.name ?? null,
+      deletedBy: 'USER',
+    })
+
     return NextResponse.json({ success: true, deleted: result.deleted })
   } catch (error) {
     if (error instanceof AccountDeletionStripeError) {

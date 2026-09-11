@@ -8,7 +8,7 @@ const registerPage = read('app/(public)/company/register/CompanyRegisterForm.tsx
 const registerRoute = read('app/api/company/register/route.ts')
 const checkout = read('app/api/company/subscription/checkout/route.ts')
 const verifyEmail = read('app/api/auth/verify-email/route.ts')
-const plansSelectPage = read('app/company/subscription/select/CompanySubscriptionSelect.tsx')
+const plansComponent = read('components/company/CompanyPlanAndCoupon.tsx')
 const companyIntent = read('app/api/auth/company-intent/route.ts')
 const companyIntentLib = read('lib/company-intent.ts')
 const subscription = read('lib/subscription.ts')
@@ -63,9 +63,10 @@ test('Google company intent redirects to onboarding (state-based), never auto-ch
   assert.doesNotMatch(companyIntent, /checkout\.sessions|stripe\.customers/)
 })
 
-test('company plan selection page loads plans and submits the selected planId', () => {
-  assert.match(plansSelectPage, /\/api\/company\/subscription\/plans/)
-  assert.match(plansSelectPage, /planId: plan\.id/)
+test('company plan selection loads plans (shared component) and submits the selected planId', () => {
+  assert.match(plansComponent, /\/api\/company\/subscription\/plans/)
+  assert.match(plansComponent, /onSelectPlan\?\.\(plan\)/)
+  assert.match(plansComponent, /onCheckout\(plan, couponAppliedCode\)/)
 })
 
 test('an explicit inactive or missing planId never silently substitutes another plan', () => {

@@ -20,6 +20,7 @@ import { redirect } from 'next/navigation'
 import { getCurrentUser } from '@/lib/currentUser'
 import { verifyBrokerRegistrationCheckout } from '@/lib/broker-registration-verify'
 import { finalizeBrokerRegistration } from '@/lib/broker-registration'
+import { sendAdminNewBrokerNotification } from '@/actions/email.action'
 
 export default async function BrokerRegistrationSubscriptionSuccessPage({
   searchParams,
@@ -51,7 +52,12 @@ export default async function BrokerRegistrationSubscriptionSuccessPage({
   // Broker without creating a duplicate). If the profile is incomplete,
   // finalizeBrokerRegistration rejects and the broker continues on /setup.
   try {
-    await finalizeBrokerRegistration(user.id)
+    const broker = await finalizeBrokerRegistration(user.id)
+    // Fire-and-forget admin "new broker" notification for every configured
+    // ADMIN_EMAILS recipient at the broker-created moment. The Broker profile
+    // now exists (unlike at registration time). A failure never undoes the
+    // finalization.
+    void sendAdminNewBrokerNotification(broker.id)
   } catch {
     redirect('/setup')
   }

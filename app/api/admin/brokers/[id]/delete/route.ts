@@ -7,6 +7,8 @@ import {
   AccountDeletionError,
   AccountDeletionStripeError,
 } from '@/lib/account-deletion'
+import prisma from '@/lib/prisma'
+import { sendAdminAccountDeletionNotification } from '@/actions/email.action'
 
 export async function DELETE(
   request: NextRequest,
@@ -39,11 +41,32 @@ export async function DELETE(
     // Target comes only from the validated route parameter. Ownership/claim
     // information is never accepted from the client. The service additionally
     // refuses to delete an ADMIN account or the currently logged-in admin.
+    // Capture broker + user identity BEFORE deletion — the records no longer
+    // exist after the destructive transaction.
+    const brokerTarget = await prisma.broker.findUnique({
+      where: { id },
+      select: {
+        companyName: true,
+        user: { select: { email: true, name: true } },
+      },
+    })
+
     const result = await AccountDeletionService.deleteBrokerAccount(
       { brokerId: id },
       { userId: admin.id, role: admin.role },
     )
     console.info('Broker account deleted by admin', { adminId: admin.id, brokerId: id, result })
+
+    // Fire-and-forget admin account-deletion notification for every configured
+    // ADMIN_EMAILS recipient — failure must not roll back the completed deletion.
+    void sendAdminAccountDeletionNotification({
+      email: brokerTarget?.user?.email || '',
+      name: brokerTarget?.user?.name || 'Broker',
+      accountType: 'Broker',
+      companyName: brokerTarget?.companyName ?? null,
+      deletedBy: 'ADMIN',
+    })
+
     return NextResponse.json({ success: true, deleted: result.deleted })
   } catch (error) {
     if (error instanceof AccountDeletionStripeError) {

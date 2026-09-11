@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Resend } from 'resend';
 import { htmlToText } from './email-templates';
+import { platformConfig } from './platform-config';
 
 // Initialize Resend with your API key
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = platformConfig.resendApiKey ? new Resend(platformConfig.resendApiKey) : null;
 
 // Add email send tracking to prevent duplicates
 const emailSendLog = new Map<string, number>();
@@ -42,7 +43,7 @@ export async function sendEmail({
   try {
     // Fail clearly when the email service is not configured instead of
     // silently producing a malformed `from` (e.g. "Name <undefined>").
-    if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) {
+    if (!platformConfig.resendApiKey || !platformConfig.emailFrom || !resend) {
       console.error('❌ Email configuration missing: RESEND_API_KEY / EMAIL_FROM')
       return {
         success: false,
@@ -83,12 +84,12 @@ export async function sendEmail({
     
     // Send email using Resend
     const { data, error } = await resend.emails.send({
-      from: `${process.env.EMAIL_FROM_NAME || 'HomeLoanMarket'} <${process.env.EMAIL_FROM}>`,
+      from: `${platformConfig.emailFromName} <${platformConfig.emailFrom}>`,
       to: recipients,
       // Explicit reply-to policy: callers may override; the default routes
       // replies to the platform support/operational address rather than an
       // unrelated admin inbox for every email.
-      reply_to: replyTo || process.env.EMAIL_REPLY_TO || process.env.ADMIN_EMAIL,
+      reply_to: replyTo || platformConfig.emailReplyTo || platformConfig.supportEmail || platformConfig.adminEmails[0] || undefined,
       subject,
       html,
       text: text || htmlToText(html),
@@ -101,7 +102,7 @@ export async function sendEmail({
             }
           : {}),
         'X-Mailer': 'Homeloanmarket Platform',
-        'List-Unsubscribe': `<mailto:${process.env.EMAIL_UNSUBSCRIBE || process.env.EMAIL_FROM}>`,
+        'List-Unsubscribe': `<mailto:${platformConfig.emailUnsubscribe || platformConfig.emailFrom}>`,
       }
     });
 

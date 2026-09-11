@@ -23,6 +23,7 @@ namespace NodeJS {
     // Optional/Redundant (included for flexibility)
     GOOGLE_AUTH_EMAIL?: string;   // Alias for EMAIL_USER (optional)
     GOOGLE_AUTH_PASS?: string;    // Alias for EMAIL_PASS (optional)
+    SUPPORT_EMAIL: string;
 
     CLOUDINARY_CLOUD_NAME: string
     CLOUDINARY_API_KEY: string
@@ -44,6 +45,8 @@ namespace NodeJS {
     EMAIL_SERVER_PORT: string
     EMAIL_FROM: string
     ADMIN_EMAIL: string
+    ADMIN_EMAILS: string
+    SUPPORT_EMAIL: string
     SECONDARY_EMAIL: string
     EMAIL_FROM_NAME: string
     RESEND_API_KEY: string

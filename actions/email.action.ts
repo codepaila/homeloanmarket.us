@@ -4,6 +4,10 @@ import { sendEmail, emailTemplates } from '@/lib/email'
 import prisma from '@/lib/prisma'
 import crypto from 'crypto'
 import { sendBrokerSubscriptionPurchaseEmailDurable } from '@/lib/broker-subscription-email'
+import { sendCompanySubscriptionPurchaseEmailDurable } from '@/lib/company-subscription-email'
+import { sendBrokerPaymentFailureEmailDurable } from '@/lib/broker-payment-failure-email'
+import { sendCompanyPaymentFailureEmailDurable } from '@/lib/company-payment-failure-email'
+import { platformConfig } from '@/lib/platform-config'
 
 export async function sendBrokerRegistrationEmails(userId: string) {
     try {
@@ -36,7 +40,7 @@ export async function sendBrokerRegistrationEmails(userId: string) {
             }
         })
 
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://homeloanmarket.com'
+        const appUrl = platformConfig.appUrl
         const verifyUrl = `${appUrl}/auth/verify-email?token=${rawToken}&email=${encodeURIComponent(user.email || '')}`
 
         const idempotencyKey = `broker_registration_${user.id}`
@@ -55,39 +59,18 @@ export async function sendBrokerRegistrationEmails(userId: string) {
             idempotencyKey: `${idempotencyKey}_broker`
         })
 
-        // A profile is created after subscription and onboarding. The admin
-        // notification is therefore deferred until that profile exists.
-        let adminEmailResult = null
-        if (process.env.ADMIN_EMAIL && user.brokerProfile[0]) {
-            const brokerProfile = user.brokerProfile[0]
-            const adminTemplate = emailTemplates.adminNewBroker({
-                brokerDisplayName: brokerProfile.displayName,
-                brokerCompanyName: brokerProfile.companyName,
-                brokerCity: brokerProfile.city,
-                brokerExperienceYears: brokerProfile.experienceYears,
-                userEmail: user.email || '',
-                adminUrl: `${appUrl}/admin/brokers/${brokerProfile.id}`,
-            })
-
-            adminEmailResult = await sendEmail({
-                to: process.env.ADMIN_EMAIL,
-                subject: adminTemplate.subject,
-                html: adminTemplate.html,
-                idempotencyKey: `${idempotencyKey}_admin`
-            })
-        }
-
-        // Propagate the actual provider result. The broker verification email
-        // is the critical delivery; an admin notification must not turn the
-        // result into a false success when the broker email was rejected.
+        // The broker verification email is the critical delivery. The admin
+        // "new broker" notification never fires from here: a Broker profile does
+        // NOT exist at registration time (it is created later by
+        // finalizeBrokerRegistration), so dispatching it here would be dead code.
+        // sendAdminNewBrokerNotification is wired to the broker-created moment.
         return {
             success: brokerEmailResult.success,
             ...(brokerEmailResult.success ? {} : {
                 error: 'Failed to send verification email',
                 details: brokerEmailResult.error,
             }),
-            brokerEmail: brokerEmailResult,
-            adminEmail: adminEmailResult
+            brokerEmail: brokerEmailResult
         }
     } catch (error) {
         console.error('Error sending broker registration emails:', error)
@@ -96,6 +79,107 @@ export async function sendBrokerRegistrationEmails(userId: string) {
             error: 'Failed to send emails',
             details: error instanceof Error ? error.message : 'Unknown error'
         }
+    }
+}
+
+// Admin notification for a NEW self-registered broker. Sent at the
+// broker-created moment (after finalizeBrokerRegistration succeeds, via the
+// wizard POST /api/brokers or the subscription success page) — the Broker
+// profile does not exist when registration emails run. Fire-and-forget: an
+// email failure never rolls back the already-created Broker.
+export async function sendAdminNewBrokerNotification(brokerId: string) {
+    try {
+        const broker = await prisma.broker.findUnique({
+            where: { id: brokerId },
+            select: {
+                id: true,
+                displayName: true,
+                companyName: true,
+                city: true,
+                experienceYears: true,
+                user: { select: { email: true } },
+            },
+        })
+
+        if (!broker) {
+            throw new Error('Broker not found')
+        }
+
+        if (platformConfig.adminEmails.length === 0) {
+            console.warn('No ADMIN_EMAILS configured; skipping admin new-broker notification', { brokerId })
+            return { success: true, skipped: true, reason: 'No admin email recipients configured' }
+        }
+
+        const adminTemplate = emailTemplates.adminNewBroker({
+            brokerDisplayName: broker.displayName,
+            brokerCompanyName: broker.companyName,
+            brokerCity: broker.city,
+            brokerExperienceYears: broker.experienceYears ?? undefined,
+            userEmail: broker.user?.email || '',
+            adminUrl: `${platformConfig.appUrl}/admin/brokers/${broker.id}`,
+        })
+
+        return await sendEmail({
+            to: platformConfig.adminEmails,
+            subject: adminTemplate.subject,
+            html: adminTemplate.html,
+            idempotencyKey: `admin_new_broker_${broker.id}`,
+        })
+    } catch (error) {
+        console.error('Error sending admin new-broker notification:', error)
+        return { success: false, error: 'Failed to send admin new-broker notification' }
+    }
+}
+
+// Admin notification for a NEW company registration (PENDING company shell
+// established via the company-intent flow). Informational only — companies are
+// not reviewed before activation. Fire-and-forget: a failure never rolls back
+// the created company. Idempotency is scoped per company (deterministic), so a
+// repeated/intentional PUT convergence cannot spam admins.
+export async function sendAdminNewCompanyNotification(companyId: string) {
+    try {
+        if (platformConfig.adminEmails.length === 0) {
+            console.warn('No ADMIN_EMAILS configured; skipping admin new-company notification', { companyId })
+            return { success: true, skipped: true, reason: 'No admin email recipients configured' }
+        }
+
+        const company = await prisma.company.findUnique({
+            where: { id: companyId },
+            select: {
+                id: true,
+                name: true,
+                createdAt: true,
+                memberships: {
+                    where: { role: 'OWNER', isActive: true },
+                    select: { user: { select: { name: true, email: true } } },
+                },
+            },
+        })
+
+        if (!company) {
+            throw new Error('Company not found')
+        }
+
+        const owner = company.memberships[0]?.user
+
+        const adminTemplate = emailTemplates.adminNewCompany({
+            companyName: company.name,
+            ownerName: owner?.name || 'Company Owner',
+            ownerEmail: owner?.email || '',
+            companyId: company.id,
+            adminUrl: `${platformConfig.appUrl}/admin/companies`,
+            registeredAt: company.createdAt,
+        })
+
+        return await sendEmail({
+            to: platformConfig.adminEmails,
+            subject: adminTemplate.subject,
+            html: adminTemplate.html,
+            idempotencyKey: `admin_new_company_${company.id}`,
+        })
+    } catch (error) {
+        console.error('Error sending admin new-company notification:', error)
+        return { success: false, error: 'Failed to send admin new-company notification' }
     }
 }
 
@@ -163,9 +247,9 @@ export async function sendClaimVerificationEmail(userId: string) {
         data: { emailVerificationToken: hashedToken, emailVerificationTokenExpiresAt: expiresAt },
     })
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://homeloanmarket.com'
-    const verificationLink = `${appUrl}/auth/verify-email?token=${rawToken}&email=${encodeURIComponent(user.email)}`
-    const template = emailTemplates.claimVerification(user.name || 'Broker', verificationLink)
+        const appUrl = platformConfig.appUrl
+        const verificationLink = `${appUrl}/auth/verify-email?token=${rawToken}&email=${encodeURIComponent(user.email)}`
+        const template = emailTemplates.claimVerification(user.name || 'Broker', verificationLink)
     return sendEmail({
         to: user.email,
         subject: template.subject,
@@ -186,7 +270,7 @@ export async function sendUserVerificationEmail(userId: string) {
         where: { id: user.id },
         data: { emailVerificationToken: hashedToken, emailVerificationTokenExpiresAt: expiresAt },
     })
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://homeloanmarket.com'
+    const appUrl = platformConfig.appUrl
     const verificationLink = `${appUrl}/auth/verify-email?token=${rawToken}&email=${encodeURIComponent(user.email)}`
     const template = emailTemplates.resendVerification(user.name || 'User', verificationLink)
     return sendEmail({
@@ -214,7 +298,7 @@ export async function sendEmailChangeVerificationEmail(userId: string, newEmail:
         data: { emailVerificationToken: hashedToken, emailVerificationTokenExpiresAt: expiresAt },
     })
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://homeloanmarket.com'
+    const appUrl = platformConfig.appUrl
     const verificationLink = `${appUrl}/auth/verify-email?token=${rawToken}&email=${encodeURIComponent(target)}`
     const template = emailTemplates.emailChangeVerification(user.name || 'User', verificationLink, 1)
     return sendEmail({
@@ -263,7 +347,7 @@ export async function resendBrokerVerificationEmail(brokerId: string) {
             }
         })
 
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://homeloanmarket.com'
+        const appUrl = platformConfig.appUrl
         const verifyUrl = `${appUrl}/auth/verify-email?token=${rawToken}&email=${encodeURIComponent(broker.user.email)}`
 
         const idempotencyKey = `resend_verification_${broker.id}_${hashedToken}`
@@ -338,7 +422,7 @@ export async function sendPasswordResetEmail(email: string) {
             }
         })
 
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://homeloanmarket.com'
+        const appUrl = platformConfig.appUrl
         // The canonical reset page reads `token` and `email` query params.
         // Never log the raw reset token or the email-send result.
         const resetUrl = `${appUrl}/auth/reset-password?token=${rawToken}&email=${encodeURIComponent(normalizedEmail)}`
@@ -418,7 +502,7 @@ export async function sendSupportTicketNotification(ticketId: string) {
 
         // Also notify admin if ticket is high priority. High-priority flag is
         // only applied to this genuinely urgent administrative alert.
-        if (ticket.priority === 'high' || ticket.priority === 'urgent') {
+        if ((ticket.priority === 'high' || ticket.priority === 'urgent') && platformConfig.adminEmails.length > 0) {
             const adminTemplate = emailTemplates.notification({
                 title: `High Priority Support Ticket: ${ticket.ticketNumber}`,
                 message: `A high priority support ticket has been created and requires immediate attention.`,
@@ -429,12 +513,12 @@ export async function sendSupportTicketNotification(ticketId: string) {
                     "Priority": ticket.priority,
                     "Subject": ticket.subject || '',
                     "Created At": new Date(ticket.createdAt).toLocaleString(),
-                    "Ticket URL": `${process.env.NEXT_PUBLIC_APP_URL}/admin/support/${ticket.id}`,
+                    "Ticket URL": `${platformConfig.appUrl}/admin/support/${ticket.id}`,
                 },
             })
 
             await sendEmail({
-                to: process.env.ADMIN_EMAIL!,
+                to: platformConfig.adminEmails,
                 subject: adminTemplate.subject,
                 html: adminTemplate.html,
                 highPriority: true,
@@ -456,6 +540,75 @@ export async function sendSupportTicketNotification(ticketId: string) {
     }
 }
 
+// Account deletion confirmation. Fire-and-forget after a successful self-service
+// deletion. The recipient email and name are captured BEFORE the destructive
+// transaction and passed in by the caller — the DB user record may no longer
+// exist when this function runs.
+export async function sendAccountDeletionConfirmationEmail(params: {
+    email: string
+    name: string
+    accountType: 'User' | 'Broker' | 'Company'
+}) {
+    try {
+        const template = emailTemplates.accountDeletionConfirmation({
+            name: params.name,
+            accountType: params.accountType,
+            deletedAt: new Date(),
+        })
+        return await sendEmail({
+            to: params.email,
+            subject: template.subject,
+            html: template.html,
+            text: `Your HomeLoanMarket ${params.accountType} account has been permanently deleted.`,
+            idempotencyKey: `account_deleted_${params.email}_${params.accountType.toLowerCase()}`,
+        })
+    } catch (error) {
+        console.error('Failed to send account deletion confirmation email:', error)
+        return { success: false, error: 'Failed to send deletion confirmation email' }
+    }
+}
+
+// Admin account-deletion notification. Sent AFTER a successful deletion (the
+// transaction already committed) so every configured ADMIN_EMAILS recipient is
+// aware of the lifecycle event. Fire-and-forget: a failure never rolls back the
+// completed deletion. All fields are captured BEFORE deletion by the caller and
+// passed in — the user record may no longer exist. Never includes credentials,
+// tokens, Stripe keys, or session data. Deterministic in-memory idempotency key
+// (same account, same minute → suppressed).
+export async function sendAdminAccountDeletionNotification(params: {
+    email: string
+    name: string
+    accountType: 'User' | 'Broker' | 'Company'
+    companyName?: string | null
+    deletedBy: 'USER' | 'ADMIN'
+}) {
+    try {
+        if (platformConfig.adminEmails.length === 0) {
+            console.warn('No ADMIN_EMAILS configured; skipping admin account-deletion notification', { accountType: params.accountType })
+            return { success: true, skipped: true, reason: 'No admin email recipients configured' }
+        }
+
+        const template = emailTemplates.adminAccountDeletion({
+            accountType: params.accountType,
+            deletedUserEmail: params.email,
+            deletedUserName: params.name,
+            companyName: params.companyName ?? null,
+            deletedBy: params.deletedBy,
+            deletedAt: new Date(),
+        })
+
+        return await sendEmail({
+            to: platformConfig.adminEmails,
+            subject: template.subject,
+            html: template.html,
+            idempotencyKey: `admin_account_deleted_${params.email}_${params.accountType.toLowerCase()}`,
+        })
+    } catch (error) {
+        console.error('Failed to send admin account-deletion notification:', error)
+        return { success: false, error: 'Failed to send admin account-deletion notification' }
+    }
+}
+
 // Broker subscription purchase/activation confirmation. One canonical owner for
 // the broker product: fire-and-forget, deterministic key per broker subscription,
 // never mixed with company billing data. Delivery is hardened with durable,
@@ -469,11 +622,49 @@ export async function sendSubscriptionPurchaseEmail(brokerSubscriptionId: string
     return { success: false, error: result.error, details: result.error }
 }
 
+// Company subscription purchase/activation confirmation. Fire-and-forget with
+// durable, concurrency-safe idempotency (lib/company-subscription-email.ts)
+// mirroring the broker subscription email pattern. Company billing remains
+// completely isolated from broker billing. stripeSubscriptionId (the
+// authoritative Stripe `Subscription.id`) scopes the durable activation
+// idempotency so a genuinely new Stripe subscription activation after a cancel/
+// re-subscribe produces a NEW activation email while replays of the same
+// subscription stay suppressed.
+export async function sendCompanySubscriptionPurchaseEmail(companySubscriptionId: string, stripeSubscriptionId?: string | null) {
+  const result = await sendCompanySubscriptionPurchaseEmailDurable(companySubscriptionId, stripeSubscriptionId)
+  if (result.status === 'sent') return { success: true }
+  if (result.status === 'skipped') return { success: true, skipped: true, reason: result.reason }
+  return { success: false, error: result.error, details: result.error }
+}
+
+// Broker subscription payment-failure notification. Canonical action boundary
+// for the invoice.payment_failed webhook path: thin wrapper over the existing
+// durable sender (lib/broker-payment-failure-email.ts). Idempotency is owned
+// by the durable log (subscription + invoice); delivery can never affect
+// billing state.
+export async function sendBrokerPaymentFailureEmail(brokerSubscriptionId: string, invoiceId: string) {
+    const result = await sendBrokerPaymentFailureEmailDurable(brokerSubscriptionId, invoiceId)
+    if (result.status === 'sent') return { success: true }
+    if (result.status === 'skipped') return { success: true, skipped: true, reason: result.reason }
+    return { success: false, error: result.error, details: result.error }
+}
+
+// Company subscription payment-failure notification. Canonical action boundary
+// mirroring the broker wrapper. Company billing remains completely isolated
+// from broker billing; recipient resolution stays inside the durable sender
+// (active OWNER membership only).
+export async function sendCompanyPaymentFailureEmail(companySubscriptionId: string, invoiceId: string) {
+    const result = await sendCompanyPaymentFailureEmailDurable(companySubscriptionId, invoiceId)
+    if (result.status === 'sent') return { success: true }
+    if (result.status === 'skipped') return { success: true, skipped: true, reason: result.reason }
+    return { success: false, error: result.error, details: result.error }
+}
+
 // Debug email delivery
 export async function debugEmailDelivery(email: string) {
     console.log('🔍 Email Delivery Debug:')
-    console.log('1. App URL:', process.env.NEXT_PUBLIC_APP_URL)
-    console.log('2. From Address:', process.env.EMAIL_FROM)
+    console.log('1. App URL:', platformConfig.appUrl)
+    console.log('2. From Address:', platformConfig.emailFrom)
     console.log('3. To Address:', email)
     console.log('4. Time:', new Date().toISOString())
 
@@ -486,7 +677,7 @@ export async function debugEmailDelivery(email: string) {
         <h2>HomeLoanMarket Test Email</h2>
         <p>If you can see this, email delivery is working!</p>
         <p>Sent at: ${new Date().toISOString()}</p>
-        <p>From: ${process.env.EMAIL_FROM}</p>
+        <p>From: ${platformConfig.emailFrom}</p>
       </div>
     `,
         text: 'HomeLoanMarket Test Email - If you can see this, email delivery is working!'

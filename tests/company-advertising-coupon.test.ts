@@ -7,6 +7,8 @@ const read = (path: string) => fs.readFileSync(path, 'utf8')
 const checkout = read('app/api/company/subscription/checkout/route.ts')
 const couponRoute = read('app/api/company/subscription/coupon/validate/route.ts')
 const couponLib = read('lib/company-coupon.ts')
+const couponComponent = read('components/company/CompanyPlanAndCoupon.tsx')
+const onboardingPage = read('app/company/onboarding/CompanyOnboarding.tsx')
 const selectPage = read('app/company/subscription/select/CompanySubscriptionSelect.tsx')
 const plansApi = read('app/api/company/subscription/plans/route.ts')
 const companyPlanLib = read('lib/company-plan.ts')
@@ -142,15 +144,21 @@ test('dashboard shows current plan, price, status, and billing period', () => {
 })
 
 test('coupon select UI has loading, error, success, and remove states', () => {
-  assert.match(selectPage, /Checking…/)
-  assert.match(selectPage, /Coupon applied:/)
-  assert.match(selectPage, /Remove/)
-  assert.match(selectPage, /applying/)
-  assert.match(selectPage, /final amount is set by the server, not the browser/)
+  assert.match(couponComponent, /Checking…/)
+  assert.match(couponComponent, /Coupon applied:/)
+  assert.match(couponComponent, /Remove/)
+  assert.match(couponComponent, /applying/)
+  assert.match(couponComponent, /final amount is set by the server, not the browser/)
 })
 
-test('coupon is only sent to checkout after server validation succeeds', () => {
-  assert.match(selectPage, /couponState === 'applied' \? couponAppliedCode : ''/)
+test('coupon is only reported to checkout after server validation succeeds', () => {
+  // The shared component only forwards the applied code on a valid server
+  // response (display-only), and the onboarding/select checkout calls send the
+  // validated applied code, never a raw untrusted input.
+  assert.match(couponComponent, /if \(data\.valid\)/)
+  assert.match(couponComponent, /onCouponChange\?\.\(code, preview\)/)
+  assert.match(onboardingPage, /couponCode: appliedCouponCode/)
+  assert.match(selectPage, /couponCode: appliedCouponCode/)
 })
 
 // ---------------------------------------------------------------------------
@@ -204,7 +212,7 @@ test('coupon UI renders a display-only discount preview without computing a tota
   assert.match(couponRoute, /amountOff/)
   assert.doesNotMatch(couponRoute, /finalPrice|total|discountedPrice|priceAfterCoupon/)
   // Client shows Save {percent}% / Save ${amount} from server fields.
-  assert.match(selectPage, /setCouponDiscount\(`Save \$\{data\.percentOff\}%`\)/)
-  assert.match(selectPage, /data\.amountOff/)
-  assert.match(selectPage, /\{couponDiscount && \(/)
+  assert.match(couponComponent, /Save \$\{data\.percentOff\}%/)
+  assert.match(couponComponent, /data\.amountOff/)
+  assert.match(couponComponent, /\{couponDiscount && \(/)
 })

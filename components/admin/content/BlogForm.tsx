@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { MediaSelector } from '@/components/admin/media/MediaSelector'
+import { RichTextEditor } from '@/components/editor/RichTextEditor'
 import type { MediaAsset } from '@/lib/advertisements/types'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -50,6 +51,9 @@ export function BlogForm({
 }) {
   const [state, formAction, pending] = useActionState(action, undefined)
   const [coverImage, setCoverImage] = useState(initial.coverImage || '')
+  // Rich content state feeds the hidden FormData field; submission behavior is
+  // otherwise unchanged (uncontrolled fields + useActionState).
+  const [content, setContent] = useState(initial.content)
 
   return (
     <form action={formAction} className="space-y-6">
@@ -72,7 +76,12 @@ export function BlogForm({
             <TextField label="Excerpt" name="excerpt" defaultValue={initial.excerpt} />
           </div>
           <div className="sm:col-span-2">
-            <TextField label="Content" name="content" defaultValue={initial.content} rows={12} />
+            <label htmlFor="content" className="text-sm font-medium">
+              Content
+            </label>
+            {/* Reusable editor: parent owns persistence/validation/submission. */}
+            <RichTextEditor value={content} onChange={setContent} disabled={pending} className="mt-1.5" />
+            <input type="hidden" name="content" value={content} readOnly />
           </div>
           <div className="sm:col-span-2">
             <MediaSelector

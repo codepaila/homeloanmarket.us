@@ -8,6 +8,7 @@ import {
   AccountDeletionError,
   AccountDeletionStripeError,
 } from '@/lib/account-deletion'
+import { sendAccountDeletionConfirmationEmail, sendAdminAccountDeletionNotification } from '@/actions/email.action'
 
 export async function POST(request: NextRequest) {
   if (!isSameOriginRequest(request)) {
@@ -31,9 +32,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const recipientEmail = user.email || ''
+    const recipientName = user.name || 'Broker'
+
     const broker = await prisma.broker.findFirst({
       where: { userId: user.id },
-      select: { id: true },
+      select: { id: true, companyName: true },
     })
 
     if (broker) {
@@ -42,6 +46,25 @@ export async function POST(request: NextRequest) {
         { userId: user.id, role: user.role },
       )
       console.info('Broker account deleted via self-service', { userId: user.id, brokerId: broker.id, result })
+
+      if (recipientEmail) {
+        void sendAccountDeletionConfirmationEmail({
+          email: recipientEmail,
+          name: recipientName,
+          accountType: 'Broker',
+        })
+      }
+
+      // Fire-and-forget admin account-deletion notification for every configured
+      // ADMIN_EMAILS recipient — failure must not roll back the deletion.
+      void sendAdminAccountDeletionNotification({
+        email: recipientEmail,
+        name: recipientName,
+        accountType: 'Broker',
+        companyName: broker.companyName,
+        deletedBy: 'USER',
+      })
+
       return NextResponse.json({ success: true, deleted: result.deleted })
     }
 
@@ -58,6 +81,22 @@ export async function POST(request: NextRequest) {
         { userId: user.id, role: user.role },
       )
       console.info('Broker registration account deleted via self-service', { userId: user.id, result })
+
+      if (recipientEmail) {
+        void sendAccountDeletionConfirmationEmail({
+          email: recipientEmail,
+          name: recipientName,
+          accountType: 'User',
+        })
+      }
+
+      void sendAdminAccountDeletionNotification({
+        email: recipientEmail,
+        name: recipientName,
+        accountType: 'User',
+        deletedBy: 'USER',
+      })
+
       return NextResponse.json({ success: true, deleted: result.deleted })
     }
 

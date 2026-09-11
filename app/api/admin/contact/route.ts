@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/currentUser'
 import { sendEmail, emailTemplates } from '@/lib/email'
 import { contactBrokerRateLimit } from '@/lib/rateLimit'
+import { platformConfig } from '@/lib/platform-config'
 
 export async function GET(request: NextRequest) {
   try {
@@ -113,7 +114,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: 'Please provide a valid name, email, and message.' }, { status: 400 })
     }
 
-    const recipient = process.env.ADMIN_EMAIL || process.env.NEXT_PUBLIC_CONTACT_EMAIL
+    const recipient = platformConfig.adminEmails.length > 0 ? platformConfig.adminEmails : null
     if (!recipient) return NextResponse.json({ success: false, error: 'Contact service is not configured.' }, { status: 503 })
     const template = emailTemplates.notification({
       title: `New platform contact message: ${subject || 'New message'}`,

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import prisma from '@/lib/prisma'
+import { isHtmlContent, sanitizeArticleHtml } from '@/lib/blog-content'
 import { canonicalUrl, safeJsonLd, organizationId, breadcrumbJsonLd } from '@/lib/seo'
 
 interface BlogSlugPageProps {
@@ -80,9 +81,16 @@ export default async function BlogSlugPage({ params }: BlogSlugPageProps) {
         </div>
       ) : null}
 
-      <div className="prose prose-stone mt-8 max-w-none whitespace-pre-line text-foreground">
-        {post.content}
-      </div>
+      {/* Compat branch: legacy plain text renders escaped (never raw HTML);
+          editor HTML is sanitized server-side before dangerouslySetInnerHTML. */}
+      {isHtmlContent(post.content) ? (
+        <div
+          className="blog-article-content mt-8 text-foreground"
+          dangerouslySetInnerHTML={{ __html: sanitizeArticleHtml(post.content) }}
+        />
+      ) : (
+        <div className="mt-8 whitespace-pre-line text-foreground">{post.content}</div>
+      )}
 
       <div className="mt-10 border-t pt-6">
         <Link href="/blog" className="text-sm font-medium text-primary hover:text-primary">

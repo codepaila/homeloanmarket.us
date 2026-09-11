@@ -8,6 +8,7 @@ import { hasPaidEntitlement, isMortgageExpertBroker } from '@/lib/broker-policy'
 import { brokerSubscriptionHasProfileBadge } from '@/lib/broker-plans'
 import { toPublicBrokerRecord, toPublicBrokerListRecord } from '@/lib/public-broker'
 import { createBrokerForExistingUser } from '@/lib/broker-registration'
+import { sendAdminNewBrokerNotification } from '@/actions/email.action'
 import { validateLicenseStates, normalizeNmls, nmlsValidationError } from '@/lib/broker-licensing'
 import { findBrokerIdsWithinRadius } from '@/lib/location/broker-geo'
 import { resolveUSPlace } from '@/lib/location/google-place'
@@ -387,6 +388,12 @@ export async function POST(request: Request) {
       licenseStates: licenseStatesResult.states,
       location: resolvedLocation,
     })
+
+    // Fire-and-forget admin "new broker" notification for every configured
+    // ADMIN_EMAILS recipient. The Broker profile now exists (this is the
+    // broker-created moment), so the notification is dispatched here rather
+    // than at registration time. A failure never rolls back the created broker.
+    void sendAdminNewBrokerNotification(broker.id)
 
     return NextResponse.json({
       message: 'Broker profile created successfully',

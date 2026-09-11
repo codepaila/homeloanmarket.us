@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { toast } from 'react-hot-toast'
 import { FormInput } from '@/components/design/FormInput'
 import { PremiumButton } from '@/components/design/PremiumButton'
+import { CompanyPlanAndCoupon, type CompanyAdvertisingPlan } from '@/components/company/CompanyPlanAndCoupon'
 import { ArrowLeft, ArrowRight, Check } from 'lucide-react'
 
 const types = [
@@ -16,13 +16,15 @@ const types = [
   ['OTHER', 'Other'],
 ] as const
 
-const steps = ['Company Information', 'Contact Information', 'Advertisement Information', 'Review']
+const steps = ['Company Information', 'Contact Information', 'Advertisement Information', 'Advertising Plan', 'Review & Checkout']
 
 export function CompanyOnboarding() {
-  const router = useRouter()
   const [step, setStep] = useState(0)
-  const [loading, setLoading] = useState(false)
+  const [phase, setPhase] = useState<'idle' | 'saving' | 'checkout'>('idle')
   const [data, setData] = useState<Record<string, string>>({ type: 'HOME_LOAN_COMPANY' })
+  const [selectedPlan, setSelectedPlan] = useState<CompanyAdvertisingPlan | null>(null)
+  const [appliedCouponCode, setAppliedCouponCode] = useState('')
+  const [couponPreview, setCouponPreview] = useState<string | null>(null)
   const set = (key: string, value: string) => setData((current) => ({ ...current, [key]: value }))
 
   useEffect(() => {
@@ -49,34 +51,50 @@ export function CompanyOnboarding() {
     return () => { active = false }
   }, [])
 
-  async function submit() {
-    setLoading(true)
+  // Mandatory checkout ordering: the onboarding profile must be persisted and
+  // complete BEFORE the existing Company checkout API is called (it requires a
+  // complete profile). Checkout never runs when the PATCH fails.
+  async function handleFinalCheckout() {
+    if (!selectedPlan) {
+      toast.error('Please select an advertising plan.')
+      setStep(3)
+      return
+    }
+    setPhase('saving')
     try {
-      const response = await fetch('/api/company/onboarding', {
+      const patchResponse = await fetch('/api/company/onboarding', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       })
-      const result = await response.json()
-      if (!response.ok) throw new Error(result.error || 'Unable to complete onboarding')
-      toast.success('Company onboarding completed.')
-      router.push('/company/dashboard')
+      const patchResult = await patchResponse.json()
+      if (!patchResponse.ok) throw new Error(patchResult.error || 'Unable to complete onboarding')
+
+      setPhase('checkout')
+      const checkoutResponse = await fetch('/api/company/subscription/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planId: selectedPlan.id, couponCode: appliedCouponCode }),
+      })
+      const checkoutResult = await checkoutResponse.json()
+      if (!checkoutResponse.ok) {
+        throw new Error(checkoutResult.error || 'Unable to start checkout')
+      }
+      if (typeof checkoutResult.url !== 'string' || !checkoutResult.url) {
+        throw new Error('Stripe checkout is unavailable. Please try again.')
+      }
+      window.location.assign(checkoutResult.url)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Unable to complete onboarding. Please try again.')
-      setLoading(false)
+      toast.error(error instanceof Error ? error.message : 'Unable to complete setup. Please try again.')
+      setPhase('idle')
     }
   }
 
   const review = [
-    ['Company name', data.name],
-    ['Company type', types.find(([value]) => value === data.type)?.[1] || data.type],
-    ['Company address', data.address],
-    ['Your name', data.contactName],
-    ['Your position', data.contactPosition],
-    ['Your phone', data.phone],
-    ['Banner address', data.bannerAddress],
-    ['Banner phone', data.bannerPhone],
-  ]
+    ['Company Information', 'Complete'],
+    ['Contact Information', 'Complete'],
+    ['Advertisement Information', 'Complete'],
+  ] as const
 
   return (
     <main className="min-h-screen bg-background px-4 py-12">
@@ -94,7 +112,18 @@ export function CompanyOnboarding() {
           ))}
         </div>
 
-        <form className="mt-8 space-y-4" onSubmit={(event) => { event.preventDefault(); if (step < steps.length - 1) setStep(step + 1); else submit() }}>
+        <form className="mt-8 space-y-4" onSubmit={(event) => {
+          event.preventDefault()
+          if (step < steps.length - 1) {
+            if (step === 3 && !selectedPlan) {
+              toast.error('Please select an advertising plan to continue.')
+              return
+            }
+            setStep(step + 1)
+          } else {
+            handleFinalCheckout()
+          }
+        }}>
           {step === 0 && (
             <>
               <FormInput label="Company name" name="name" type="text" required value={data.name || ''} onChange={(e) => set('name', e.target.value)} />
@@ -116,13 +145,51 @@ export function CompanyOnboarding() {
             </>
           )}
           {step === 3 && (
-            <div className="space-y-2 rounded border bg-card p-5">
-              {review.map(([label, value]) => (
-                <div key={label} className="flex justify-between gap-4 text-sm">
-                  <span className="text-muted-foreground">{label}</span>
-                  <span className="text-right font-medium">{value}</span>
+            <CompanyPlanAndCoupon
+              selectedPlanId={selectedPlan?.id ?? null}
+              onSelectPlan={(plan) => setSelectedPlan(plan)}
+              onCouponChange={(code, preview) => { setAppliedCouponCode(code); setCouponPreview(preview) }}
+            />
+          )}
+          {step === 4 && (
+            <div className="space-y-4">
+              <div className="space-y-2 rounded border bg-card p-5">
+                {review.map(([label, value]) => (
+                  <div key={label} className="flex items-center justify-between gap-4 text-sm">
+                    <span className="text-muted-foreground">{label}</span>
+                    <span className="flex items-center gap-1.5 font-medium text-success"><Check className="h-4 w-4" />{value}</span>
+                  </div>
+                ))}
+                <div className="my-3 border-t border-border" />
+                <div className="flex items-center justify-between gap-4 text-sm">
+                  <span className="text-muted-foreground">Advertising Plan</span>
+                  {selectedPlan ? (
+                    <span className="font-medium">${(selectedPlan.price / 100).toFixed(2)} / {selectedPlan.billingInterval}</span>
+                  ) : (
+                    <span className="font-medium text-destructive">No plan selected</span>
+                  )}
                 </div>
-              ))}
+                <div className="flex items-center justify-between gap-4 text-sm">
+                  <span className="text-muted-foreground">Coupon</span>
+                  <span className="font-medium">{appliedCouponCode ? `${appliedCouponCode}${couponPreview ? ` — ${couponPreview}` : ''}` : 'None'}</span>
+                </div>
+                <div className="my-3 border-t border-border" />
+                <div className="flex items-center justify-between gap-4 text-sm">
+                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="font-medium">{selectedPlan ? `$${(selectedPlan.price / 100).toFixed(2)}` : '—'}</span>
+                </div>
+                <div className="flex items-center justify-between gap-4 text-sm">
+                  <span className="text-muted-foreground">Discount</span>
+                  <span className="font-medium">{couponPreview || '—'}</span>
+                </div>
+                <div className="flex items-center justify-between gap-4 text-sm">
+                  <span className="text-muted-foreground">Total</span>
+                  <span className="font-medium">Set at Stripe checkout</span>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                The final amount is determined by the server and Stripe at checkout. The values above are a preview only.
+              </p>
             </div>
           )}
 
@@ -130,10 +197,19 @@ export function CompanyOnboarding() {
             {step > 0 && <button type="button" onClick={() => setStep(step - 1)} className="inline-flex items-center gap-2 rounded border px-4 py-2.5 text-sm font-semibold"><ArrowLeft className="h-4 w-4" />Back</button>}
             {step < steps.length - 1
               ? <PremiumButton type="submit" fullWidth leftIcon={<ArrowRight className="h-4 w-4" />}>Continue</PremiumButton>
-              : <PremiumButton type="submit" fullWidth loading={loading} loadingText="Completing setup...">Complete Company Setup</PremiumButton>}
+              : (
+                <PremiumButton
+                  type="submit"
+                  fullWidth
+                  loading={phase !== 'idle'}
+                  loadingText={phase === 'saving' ? 'Saving...' : 'Preparing secure checkout...'}
+                >
+                  Continue to Checkout
+                </PremiumButton>
+              )}
           </div>
         </form>
-      
+
       </div>
     </main>
   )

@@ -7,6 +7,7 @@ import {
   AccountDeletionError,
   AccountDeletionStripeError,
 } from '@/lib/account-deletion'
+import { sendAccountDeletionConfirmationEmail, sendAdminAccountDeletionNotification } from '@/actions/email.action'
 
 export async function POST(request: NextRequest) {
   if (!isSameOriginRequest(request)) {
@@ -30,6 +31,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Capture email/name BEFORE deletion — the user record may be removed.
+    const recipientEmail = user.email || ''
+    const recipientName = user.name || 'User'
+
     // The target is always the authenticated user; a client-supplied userId is
     // never trusted.
     const result = await AccountDeletionService.deleteUserAccount(
@@ -37,6 +42,25 @@ export async function POST(request: NextRequest) {
       { userId: user.id, role: user.role },
     )
     console.info('User account deleted via self-service', { userId: user.id, result })
+
+    // Fire-and-forget confirmation email — failure must not roll back deletion.
+    if (recipientEmail) {
+      void sendAccountDeletionConfirmationEmail({
+        email: recipientEmail,
+        name: recipientName,
+        accountType: 'User',
+      })
+    }
+
+    // Fire-and-forget admin account-deletion notification — every configured
+    // ADMIN_EMAILS recipient. Failure must not roll back the completed deletion.
+    void sendAdminAccountDeletionNotification({
+      email: recipientEmail,
+      name: recipientName,
+      accountType: 'User',
+      deletedBy: 'USER',
+    })
+
     return NextResponse.json({ success: true, deleted: result.deleted })
   } catch (error) {
     if (error instanceof AccountDeletionStripeError) {
