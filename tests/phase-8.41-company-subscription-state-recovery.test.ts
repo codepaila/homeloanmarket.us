@@ -77,16 +77,29 @@ test('genuinely stale rows (no Stripe customer) still reconcile to EXPIRED', () 
 // Cancel / resolved states must clear the "Payment received" banner.
 // ---------------------------------------------------------------------------
 
-test('dashboard confirmation window ends on any webhook-resolved status, not only ACTIVE', () => {
-  assert.match(dashboardClient, /status && status !== 'CHECKOUT_PENDING'/, 'confirmation clears when the row leaves CHECKOUT_PENDING')
-  assert.match(dashboardClient, /\[company\.subscription\?\.status\]/, 'effect re-runs on status resolution')
+test('dashboard confirmation UI is derived only from the authoritative CHECKOUT_PENDING status', () => {
+  assert.match(dashboardClient, /const isPending = subscriptionStatus === 'CHECKOUT_PENDING'/, 'pending derives from the server subscription row')
+  assert.match(dashboardClient, /const confirming = isPending && !confirmationTimedOut/, 'confirmation is gated on the authoritative pending state')
+  // The success query parameter must never be able to force the pending UI.
+  assert.match(dashboardClient, /const checkoutParam = searchParams\.get\('subscription'\) === 'success'/)
+  assert.doesNotMatch(dashboardClient, /useState<boolean>\(fromCheckout \|\| isPending\)/, 'the query param can no longer initialize the confirmation state')
   assert.doesNotMatch(dashboardClient, /if \(company\.subscription\?\.isActive\)/, 'no longer gated solely on isActive')
 })
 
-test('dashboard strips the temporary success query once the webhook resolves the state', () => {
+test('dashboard strips the temporary success query once consumed', () => {
   assert.match(dashboardClient, /Payment received/)
-  assert.match(dashboardClient, /setConfirming\(false\)/)
+  assert.match(dashboardClient, /setArrivedFromCheckout\(true\)/)
+  assert.match(dashboardClient, /setConfirmationTimedOut\(true\)/)
   assert.match(dashboardClient, /router\.replace\('\/company\/dashboard'\)/)
+})
+
+test('ACTIVE immediately wins over the timeout/long-confirmation message', () => {
+  // The poll loop stops the instant the row is no longer CHECKOUT_PENDING, so
+  // confirmed ACTIVE state always supersedes the recovery message.
+  assert.match(dashboardClient, /if \(!isPending\) return/)
+  assert.match(dashboardClient, /\[isPending, router\]/)
+  assert.match(dashboardClient, /\{confirmationTimedOut && isPending && \(/)
+  assert.match(dashboardClient, /arrivedFromCheckout && isActive/, 'one-time success acknowledgement only in the active state')
 })
 
 test('cancel flow reflects CANCELED without the confirmation banner persisting', () => {
@@ -96,7 +109,7 @@ test('cancel flow reflects CANCELED without the confirmation banner persisting',
   )
   assert.match(block, /toast\.success\('Subscription canceled\.'\)/)
   assert.match(block, /router\.refresh\(\)/)
-  // The resolved-status effect above re-renders status=CANCELED and clears the
-  // banner; the banner is rendered only under `confirming`.
+  // The resolved-status render clears the banner; the banner is rendered only
+  // under `confirming`, which is false for CANCELED.
   assert.match(dashboardClient, /\{confirming && \(/)
 })

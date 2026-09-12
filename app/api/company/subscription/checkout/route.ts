@@ -68,18 +68,24 @@ export async function POST(request: NextRequest) {
 
     return await SubscriptionService.withBillingLock(`company:${current.company.id}`, async () => {
       const stripe = await getStripe()
-      const existing = await prisma.companySubscription.findUnique({ where: { companyId: current.company.id } })
+      let existing = await prisma.companySubscription.findUnique({ where: { companyId: current.company.id } })
       if (existing?.isActive && existing.stripeSubId) return { url: null, free: false }
 
       // Bounded stale-checkout reconciliation (this company only — no full-DB
       // scan). If a prior checkout session was abandoned and left this row in
       // CHECKOUT_PENDING with no live Stripe subscription, move it to EXPIRED
-      // so the fresh checkout below is not misrepresented. This is idempotent
-      // and never touches an ACTIVE subscription. The webhook's
-      // checkout.session.expired handler is the authoritative event-driven path;
-      // this is the belt-and-suspenders reconcile for pre-existing stale rows.
+      // so the fresh checkout below is not misrepresented. If Stripe already
+      // has a live subscription (the webhook is merely delayed), the same
+      // reconciliation syncs that authoritative state into the local row. The
+      // webhook's checkout.session.expired handler is the authoritative
+      // event-driven path; this is the belt-and-suspenders reconcile for
+      // pre-existing stale rows.
       if (existing?.status === 'CHECKOUT_PENDING') {
         await SubscriptionService.reconcileStaleCompanyCheckout(current.company.id, existing.stripeCustomerId)
+        // Re-read: the reconcile may have promoted the row to an active
+        // subscription, in which case a second Checkout must never be created.
+        existing = await prisma.companySubscription.findUnique({ where: { companyId: current.company.id } })
+        if (existing?.isActive && existing.stripeSubId) return { url: null, free: false }
       }
 
       // Record the chosen plan before any Stripe interaction so a free plan can

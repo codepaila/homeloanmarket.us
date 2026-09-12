@@ -56,6 +56,23 @@ async function hasNewerAppliedEvent(stripeSubId: string, eventCreated: number) {
   return isStaleEvent(newer?.eventCreatedAt ?? null, eventCreated)
 }
 
+// Dispatches the durable Company activation email whenever an authoritative
+// Stripe sync leaves a CompanySubscription active. The durable sender is
+// idempotent per (companySubscriptionId, stripeSubscriptionId), so any of the
+// activation events may safely race or replay without producing a duplicate
+// email — and an activation that arrives via customer.subscription.* or
+// invoice.payment_succeeded is never silently missed just because the
+// checkout.session.completed event was ordered stale. Company only; broker
+// activation email keeps its existing path.
+function dispatchCompanyActivationEmail(
+  updated: { id: string; isActive?: boolean } | null | undefined,
+  stripeSubscriptionId: string | null | undefined,
+) {
+  if (!updated || updated.isActive !== true || typeof updated.id !== 'string') return
+  if (!('companyId' in updated)) return
+  void sendCompanySubscriptionPurchaseEmail(updated.id, stripeSubscriptionId || null)
+}
+
 async function processEvent(event: Stripe.Event) {
   const target = getStripeEventTarget(event)
 
@@ -158,9 +175,7 @@ export async function handleStripeEvent(event: Stripe.Event) {
       // Stripe subscription identity distinguishes a genuinely new activation
       // (cancel + re-subscribe) from a replay/retry of the same activation, and
       // the sync result is never affected by email delivery.
-      if (updated && 'companyId' in updated && updated.isActive && typeof updated.id === 'string') {
-        void sendCompanySubscriptionPurchaseEmail(updated.id, subscription.id)
-      }
+      dispatchCompanyActivationEmail(updated, subscription.id)
       return
     }
     case 'checkout.session.expired': {
@@ -188,13 +203,19 @@ export async function handleStripeEvent(event: Stripe.Event) {
     }
     case 'customer.subscription.updated': {
       const subscription = event.data.object as Stripe.Subscription
-      await SubscriptionService.updateSubscriptionFromStripe(
+      const updated = await SubscriptionService.updateSubscriptionFromStripe(
         subscription.customer as string,
         subscription.id,
         subscription.status,
         subscription.items.data[0]?.price.id,
         subscription.metadata?.ownerType || null,
       )
+      // Safety net: if this activation/update is the one that made the company
+      // subscription active (e.g. the checkout completion event was ordered
+      // stale), still dispatch the durable Company activation email. The sender
+      // is idempotent per Stripe subscription, so a later
+      // checkout.session.completed cannot duplicate it.
+      dispatchCompanyActivationEmail(updated as { id: string; isActive?: boolean } | null, subscription.id)
       return
     }
     case 'customer.subscription.deleted': {
@@ -220,6 +241,13 @@ export async function handleStripeEvent(event: Stripe.Event) {
         subscription.items.data[0]?.price.id,
         subscription.metadata?.ownerType || null,
       )
+      // Safety net: an initial paid invoice that activates the company
+      // subscription dispatches the durable activation email even if the
+      // checkout completion event was ordered stale. Idempotent per Stripe
+      // subscription, so renewals and replays never duplicate it.
+      if (event.type === 'invoice.payment_succeeded') {
+        dispatchCompanyActivationEmail(updated as { id: string; isActive?: boolean } | null, subscription.id)
+      }
       // Payment-failure notification. Dispatched only after the subscription
       // state is reconciled, only for actual failures, and only when the sync
       // resolved a product-owned subscription row. Broker registration rows

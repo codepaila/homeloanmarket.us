@@ -37,11 +37,11 @@ const navigation = [
     href: '/',
     icon: Home,
   },
-  {
-    name: 'Find a Mortgage Originator',
-    href: '/brokers',
-    icon: Briefcase,
-  },
+  // {
+  //   name: 'Find a Mortgage Originator',
+  //   href: '/brokers',
+  //   icon: Briefcase,
+  // },
   { name: 'Blogs', href: '/blog', icon: BookOpen },
   {
     name: ' Calculator',
@@ -159,7 +159,7 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
     navigation[2],
     navigation[3],
     navigation[4],
-    navigation[5],
+    // navigation[5],
     ...(dashboardNavItem ? [dashboardNavItem] : []),
   ]
 
@@ -176,16 +176,16 @@ export default function Header({ settings }: { settings?: SiteSettings }) {
   }
 
   // Get user role display name
-  const getRoleDisplay = (role?: string) => {
-    if (!role) return 'User'
-    const roleMap: Record<string, string> = {
-      ADMIN: 'Administrator',
-      BROKER: 'Mortgage Originator',
-      COMPANY: 'Company',
-      USER: 'User',
-    }
-    return roleMap[role.toUpperCase()] || role
-  }
+  // const getRoleDisplay = (role?: string) => {
+  //   if (!role) return 'User'
+  //   const roleMap: Record<string, string> = {
+  //     ADMIN: 'Administrator',
+  //     BROKER: 'Mortgage Originator',
+  //     COMPANY: 'Company',
+  //     USER: 'User',
+  //   }
+  //   return roleMap[role.toUpperCase()] || role
+  // }
 
   // Get user menu items based on role
   const getUserMenuItems = () => {

@@ -35,9 +35,13 @@ type CompanyRequest = {
   advertisement?: { id: string; title: string } | null
 }
 
-// Bounded revalidation window after returning from Stripe Checkout so the
-// dashboard picks up the webhook-confirmed ACTIVE state without manual refresh.
+// Bounded revalidation of the server-authoritative subscription after returning
+// from Stripe Checkout. The Stripe webhook (never the success URL) is the only
+// activator: this loop merely re-reads the server state until the row leaves
+// CHECKOUT_PENDING. The interval backs off after the recovery window so an
+// unusually slow provider cannot cause aggressive polling.
 const CONFIRMATION_POLL_MS = 2000
+const CONFIRMATION_SLOW_POLL_MS = 15000
 const CONFIRMATION_TIMEOUT_MS = 30000
 
 export function CompanyDashboardClient({ company, requests, onboarded }: { company: CompanyDashboardData; requests: CompanyRequest[]; onboarded: boolean }) {
@@ -49,52 +53,63 @@ export function CompanyDashboardClient({ company, requests, onboarded }: { compa
   const [busy, setBusy] = useState(false)
   const [submittedId, setSubmittedId] = useState<string | null>(null)
 
-  const fromCheckout = searchParams.get('subscription') === 'success'
-  const isPending = company.subscription?.status === 'CHECKOUT_PENDING'
-  const [confirming, setConfirming] = useState<boolean>(fromCheckout || isPending)
+  // Authoritative, single-source-of-truth state for the dashboard. Every value
+  // below is derived from the server-rendered CompanySubscription row. The
+  // temporary `?subscription=success` query parameter is only a hint that we
+  // just returned from Checkout — it is NEVER proof of payment or activation.
+  const checkoutParam = searchParams.get('subscription') === 'success'
+  const subscriptionStatus = company.subscription?.status ?? null
+  const isPending = subscriptionStatus === 'CHECKOUT_PENDING'
+  const isActive = hasActiveCompanyAdvertisingSubscription(company.subscription)
+  const [arrivedFromCheckout, setArrivedFromCheckout] = useState(false)
   const [confirmationTimedOut, setConfirmationTimedOut] = useState(false)
 
-  // After returning from Stripe Checkout (or while the subscription is still
-  // CHECKOUT_PENDING), revalidate the server state on a bounded interval until
-  // the webhook confirms activation or the timeout elapses.
-  useEffect(() => {
-    if (!confirming) return
-    const startedAt = Date.now()
-    const timer = setInterval(() => {
-      if (Date.now() - startedAt >= CONFIRMATION_TIMEOUT_MS) {
-        clearInterval(timer)
-        setConfirming(false)
-        setConfirmationTimedOut(true)
-        // Strip the temporary query state so a later refresh does not re-trigger.
-        if (fromCheckout) router.replace('/company/dashboard')
-        return
-      }
-      router.refresh()
-    }, CONFIRMATION_POLL_MS)
-    return () => clearInterval(timer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [confirming])
+  // The confirmation UI is shown ONLY while the authoritative row is actually
+  // CHECKOUT_PENDING (and before the recovery message appears). ACTIVE,
+  // PAST_DUE, CANCELED and EXPIRED never render the confirmation state.
+  const confirming = isPending && !confirmationTimedOut
 
-  // Once the webhook resolves the pending window, stop confirming and remove the
-  // temporary `?subscription=success` query state. "Resolved" means the row has
-  // left the transient CHECKOUT_PENDING state — either ACTIVE (success) or a
-  // synced status such as EXPIRED / CANCELED / PAST_DUE. Gating on isActive
-  // alone left the "Payment received" banner up beside a resolved EXPIRED /
-  // canceled status (e.g. after cancel) until the poll timeout.
+  // Consume the temporary success query exactly once: remember that this page
+  // was reached from Checkout (for the one-time success acknowledgement) and
+  // strip the parameter so a refresh/back navigation can never re-enter the
+  // confirmation state or override the authoritative subscription status.
   useEffect(() => {
-    if (!confirming) return
-    const status = company.subscription?.status
-    if (status && status !== 'CHECKOUT_PENDING') {
-      setConfirming(false)
-      setConfirmationTimedOut(false)
-      if (fromCheckout) router.replace('/company/dashboard')
+    if (!checkoutParam) return
+    setArrivedFromCheckout(true)
+    router.replace('/company/dashboard')
+  }, [checkoutParam, router])
+
+  // While (and only while) the row is CHECKOUT_PENDING, revalidate the server
+  // state until the webhook resolves it. The loop always stops the moment the
+  // row is no longer CHECKOUT_PENDING, so an authoritative ACTIVE immediately
+  // wins over the "taking longer than expected" message. There is no permanent
+  // lock: after the recovery window a fresh checkout is offered.
+  useEffect(() => {
+    if (!isPending) return
+    let cancelled = false
+    let timer: ReturnType<typeof setTimeout>
+    const startedAt = Date.now()
+    const schedule = () => {
+      const elapsed = Date.now() - startedAt
+      const delay = elapsed >= CONFIRMATION_TIMEOUT_MS ? CONFIRMATION_SLOW_POLL_MS : CONFIRMATION_POLL_MS
+      timer = setTimeout(() => {
+        if (cancelled) return
+        if (Date.now() - startedAt >= CONFIRMATION_TIMEOUT_MS) setConfirmationTimedOut(true)
+        router.refresh()
+        schedule()
+      }, delay)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [company.subscription?.status])
+    schedule()
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [isPending, router])
 
   async function checkout() {
-    // Allow returning to plan selection once confirmation has timed out (the
-    // pending row is recoverable and a fresh checkout reconciles it).
+    // A checkout that is still being confirmed is not interruptible until the
+    // recovery window elapses; after that, returning to plan selection offers a
+    // fresh checkout (which reconciles the pending row).
     if (isPending && !confirmationTimedOut) return
     window.location.href = '/company/subscription/select'
   }
@@ -152,21 +167,26 @@ export function CompanyDashboardClient({ company, requests, onboarded }: { compa
     }
   }
 
-  const statusLabel = company.subscription?.isActive
+  // Single authoritative mapping from CompanySubscription state to dashboard
+  // presentation. A status is never inferred from checkout success; only the
+  // authoritative subscription row decides.
+  const statusLabel = isActive
     ? 'Active'
-    : company.subscription?.status === 'CHECKOUT_PENDING'
+    : subscriptionStatus === 'CHECKOUT_PENDING'
       ? 'Confirming your subscription…'
-      : company.subscription?.status === 'PAST_DUE'
-        ? 'Payment past due'
-        : company.subscription?.status === 'CANCELED'
+      : subscriptionStatus === 'PAST_DUE'
+        ? 'Past due'
+        : subscriptionStatus === 'CANCELED'
           ? 'Canceled'
-          : company.subscription?.status || 'Not subscribed'
+          : subscriptionStatus === 'EXPIRED'
+            ? 'Expired'
+            : subscriptionStatus || 'Not subscribed'
 
   // Request Advertisement is gated by the same rule the API enforces
   // server-side (see lib/company-ad-access.ts): only an ACTIVE advertising
   // subscription may submit a request.
-  const canRequestAdvertisement = hasActiveCompanyAdvertisingSubscription(company.subscription)
-  const subscriptionPending = company.subscription?.status === 'CHECKOUT_PENDING'
+  const canRequestAdvertisement = isActive
+  const subscriptionPending = isPending
 
   return (
     <main className="mx-auto max-w-4xl space-y-6 px-4 py-10">
@@ -203,6 +223,12 @@ export function CompanyDashboardClient({ company, requests, onboarded }: { compa
             <a href="/company/subscription/select" className="mt-3 inline-block rounded bg-primary px-4 py-2 text-sm font-semibold text-white">
               Return to plan selection
             </a>
+          </div>
+        )}
+        {arrivedFromCheckout && isActive && (
+          <div role="status" aria-live="polite" className="mt-4 rounded border border-emerald-200 bg-emerald-50 p-4 text-sm">
+            <p className="font-semibold text-emerald-800">Payment successful</p>
+            <p className="mt-1 text-emerald-700">Your advertising subscription is active. You can now request an advertisement.</p>
           </div>
         )}
 

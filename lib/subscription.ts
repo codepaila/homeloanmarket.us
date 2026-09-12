@@ -629,10 +629,28 @@ export class SubscriptionService {
       return { reconciled: true }
     }
     const subs = await (await getStripe()).subscriptions.list({ customer: effectiveCustomerId, status: 'all', limit: 20 })
-    const live = subs.data.some((s) =>
+    const liveSubscriptions = subs.data.filter((s) =>
       ['active', 'trialing', 'incomplete', 'past_due', 'unpaid', 'paused'].includes(s.status),
     )
-    if (live) return { reconciled: false, reason: 'live-subscription-present' }
+    if (liveSubscriptions.length > 0) {
+      // Stripe already has a live subscription for this company while the local
+      // row is still CHECKOUT_PENDING (the webhook has not reconciled it yet, or
+      // delivery was delayed/missed). Push the authoritative Stripe state into
+      // the local row now — the exact same sync the webhook uses — so the
+      // dashboard can reach the true status without indefinitely showing
+      // "Confirming...". Prefer the subscription already referenced locally so a
+      // superseded checkout can never masquerade as the current one. This never
+      // fabricates state from the checkout redirect and never cancels anything.
+      const liveSubscription =
+        (existing.stripeSubId && liveSubscriptions.find((s) => s.id === existing.stripeSubId)) || liveSubscriptions[0]
+      await this.updateCompanySubscriptionFromStripe(
+        effectiveCustomerId,
+        liveSubscription.id,
+        liveSubscription.status,
+        liveSubscription.items.data[0]?.price.id,
+      )
+      return { reconciled: false, reason: 'live-subscription-present' }
+    }
     const sessions = await (await getStripe()).checkout.sessions.list({ customer: effectiveCustomerId, limit: 100 })
     const openCheckout = sessions.data.some(
       (session) => session.mode === 'subscription' && session.status === 'open' && session.metadata?.companyId === companyId,

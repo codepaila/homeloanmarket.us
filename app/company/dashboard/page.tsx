@@ -3,39 +3,50 @@ import { getCurrentCompany } from '@/lib/company-policy'
 import { CompanyDashboardClient } from './CompanyDashboardClient'
 import { DeleteAccountDialog } from '@/components/account/DeleteAccountDialog'
 import { SubscriptionService } from '@/lib/subscription'
+import prisma from '@/lib/prisma'
 
 export default async function CompanyDashboardPage() {
   const current = await getCurrentCompany()
   if (!current) redirect('/auth/signin')
 
-  // Abandoned-checkout self-healing: if the local subscription is stuck in
-  // CHECKOUT_PENDING (an abandoned Stripe Checkout with no live subscription),
-  // reconcile it to the neutral EXPIRED state so the dashboard never shows a
-  // permanent "Confirming your subscription..." state. This is bounded to this
-  // company, idempotent, and never touches an ACTIVE subscription or a live
-  // Stripe subscription. The webhook's checkout.session.expired handler is the
-  // authoritative event-driven path; this is the belt-and-suspenders reconcile
-  // so the dashboard self-heals on refresh even if that webhook was never sent.
-  const pendingSubscription = current.company.subscription
-  if (pendingSubscription?.status === 'CHECKOUT_PENDING') {
-    await SubscriptionService.reconcileStaleCompanyCheckout(current.company.id, pendingSubscription.stripeCustomerId)
+  // Reconcile a pending checkout against Stripe before rendering. This is
+  // bounded to this company, idempotent, and never touches an ACTIVE
+  // subscription or cancels a live Stripe subscription:
+  //  - an abandoned checkout with no live subscription is moved to the neutral
+  //    EXPIRED state so "Confirming..." is never permanent;
+  //  - a live Stripe subscription that the webhook has not reconciled yet is
+  //    synced into the local row so the dashboard reaches ACTIVE without waiting
+  //    on provider delivery (the same authoritative sync the webhook uses).
+  // The webhook remains the event-driven authority; this is the bounded
+  // self-healing path so the dashboard is never stuck on a stale snapshot.
+  let subscriptionRecord = current.company.subscription
+  if (subscriptionRecord?.status === 'CHECKOUT_PENDING') {
+    await SubscriptionService.reconcileStaleCompanyCheckout(current.company.id, subscriptionRecord.stripeCustomerId)
+    // The reconcile may have resolved the row (ACTIVE / PAST_DUE / EXPIRED).
+    // Re-read so this render reflects the resolved row instead of the
+    // pre-reconcile in-memory snapshot.
+    subscriptionRecord = await prisma.companySubscription.findUnique({
+      where: { companyId: current.company.id },
+      include: { advertisingPlan: true },
+    })
   }
-  const requests = await import('@/lib/prisma').then(({ default: prisma }) => prisma.companyAdRequest.findMany({
+
+  const requests = await prisma.companyAdRequest.findMany({
     where: { companyId: current.company.id },
     orderBy: { createdAt: 'desc' },
-  }))
+  })
 
-  const plan = current.company.subscription?.advertisingPlan
-  const subscription = current.company.subscription
+  const plan = subscriptionRecord?.advertisingPlan
+  const subscription = subscriptionRecord
     ? {
-        status: current.company.subscription.status,
-        isActive: current.company.subscription.isActive,
-        stripeCustomerId: current.company.subscription.stripeCustomerId,
-        startDate: current.company.subscription.startDate,
-        endDate: current.company.subscription.endDate,
+        status: subscriptionRecord.status,
+        isActive: subscriptionRecord.isActive,
+        stripeCustomerId: subscriptionRecord.stripeCustomerId,
+        startDate: subscriptionRecord.startDate,
+        endDate: subscriptionRecord.endDate,
         plan: plan
           ? { name: plan.name, price: plan.price, currency: plan.currency, billingInterval: plan.billingInterval }
-          : { name: current.company.subscription.plan },
+          : { name: subscriptionRecord.plan },
       }
     : null
 

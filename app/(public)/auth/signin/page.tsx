@@ -8,8 +8,8 @@ import { toast } from 'react-hot-toast'
 import { AuthFormWrapper } from '@/components/design/AuthFormWrapper'
 import { FormInput } from '@/components/design/FormInput'
 import { PremiumButton } from '@/components/design/PremiumButton'
-import { AuthDivider } from '@/components/auth/AuthDivider'
-import { GoogleContinueButton } from '@/components/auth/GoogleContinueButton'
+// import { AuthDivider } from '@/components/auth/AuthDivider'
+// import { GoogleContinueButton } from '@/components/auth/GoogleContinueButton'
 import { sanitizeCallbackUrl } from '@/lib/auth-redirect'
 import { LoginWithCredential } from '@/actions/auth.action'
 
@@ -110,9 +110,10 @@ function SignInContent() {
           </PremiumButton>
         </form>
 
+{/*
         <AuthDivider label="Or continue with" />
 
-        <GoogleContinueButton callbackUrl={oauthCallback} />
+        <GoogleContinueButton callbackUrl={oauthCallback} />*/}
       </div>
     </AuthFormWrapper>
   )
