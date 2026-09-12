@@ -57,7 +57,7 @@ export async function sendBrokerPaymentFailureEmailDurable(brokerSubscriptionId:
 
     const template = emailTemplates.paymentFailure(
       subscription.broker.displayName || 'there',
-      'Broker',
+      'Mortgage Originator',
       `${platformConfig.appUrl}/broker/subscription/billing`,
     )
 

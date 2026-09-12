@@ -209,14 +209,13 @@ test('used invitation cannot be reused after a previous completion', async () =>
   await assert.rejects(completeClaimForUser(context, user.id, user.email!), /USED|INVALID|OWNED/)
 })
 
-// TEST J — Google claimant completes per contract (provider reauth, no emailVerified required)
-test('Google reauthenticated claimant completes even when emailVerified is false', async () => {
-  const user = await prisma.user.create({ data: { email: `${suffix}-google@example.test`, phone: `+1559${Date.now().toString().slice(-7)}`, role: 'USER', isActive: true, emailVerified: false, password: null } })
+// TEST J — a claimant whose email is not verified cannot complete the claim.
+// The claim is password-only and email verification is mandatory (no provider
+// reauthentication bypass exists).
+test('unverified claimant cannot complete a claim without email verification', async () => {
+  const user = await prisma.user.create({ data: { email: `${suffix}-unverified@example.test`, phone: `+1559${Date.now().toString().slice(-7)}`, role: 'USER', isActive: true, emailVerified: false, password: 'hash' } })
   userIds.push(user.id)
-  await prisma.account.create({
-    data: { userId: user.id, type: 'oauth', provider: 'google', providerAccountId: `google-${suffix}` },
-  })
-  const { broker, claim, invitation } = await claimBroker(`${suffix}-google`, user.email!)
+  const { broker, claim, invitation } = await claimBroker(`${suffix}-unverified`, user.email!)
 
   const context = {
     claimId: claim.id,
@@ -225,12 +224,14 @@ test('Google reauthenticated claimant completes even when emailVerified is false
     expiresAt: Date.now() + 30 * 60 * 1000,
     email: user.email!,
     reauthenticatedAt: Date.now(),
-    reauthenticatedVia: 'google' as const,
   }
-  const result = await completeClaimForUser(context, user.id, user.email!)
+  await assert.rejects(
+    () => completeClaimForUser(context, user.id, user.email!),
+    /INELIGIBLE/,
+    'an unverified account must not complete a claim',
+  )
   const persisted = await prisma.broker.findUnique({ where: { id: broker.id } })
-  assert.equal(result.brokerId, broker.id)
-  assert.equal(persisted?.userId, user.id)
+  assert.equal(persisted?.userId, null, 'ownership is not attached without a verified email')
   assert.equal(persisted?.creationSource, 'ADMIN_CREATED')
 })
 

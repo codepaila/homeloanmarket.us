@@ -47,7 +47,7 @@ export async function sendBrokerRegistrationEmails(userId: string) {
 
         // 1. Send verification email to broker
         const brokerTemplate = emailTemplates.brokerWelcome(
-            user.name || 'Broker',
+            user.name || 'there',
             verifyUrl
         )
 
@@ -183,6 +183,58 @@ export async function sendAdminNewCompanyNotification(companyId: string) {
     }
 }
 
+// Admin notification for a successfully claimed admin-created broker profile.
+// Triggered ONLY after the claim transaction commits. Fire-and-forget: a failure
+// never affects the (already successful) claim. Idempotency is scoped per
+// broker (deterministic), so a retry of the completion handler cannot spam
+// admins. Never contains tokens, credentials, or billing secrets.
+export async function sendAdminBrokerClaimedNotification(brokerId: string) {
+    try {
+        const broker = await prisma.broker.findUnique({
+            where: { id: brokerId },
+            select: {
+                id: true,
+                displayName: true,
+                companyName: true,
+                email: true,
+                city: true,
+                profileSlug: true,
+                user: { select: { email: true } },
+                claim: { select: { completedAt: true } },
+            },
+        })
+
+        if (!broker) {
+            throw new Error('Broker not found')
+        }
+
+        if (platformConfig.adminEmails.length === 0) {
+            console.warn('No ADMIN_EMAILS configured; skipping admin broker-claimed notification', { brokerId })
+            return { success: true, skipped: true, reason: 'No admin email recipients configured' }
+        }
+
+        const template = emailTemplates.adminBrokerClaimed({
+            brokerDisplayName: broker.displayName,
+            brokerCompanyName: broker.companyName,
+            brokerEmail: broker.email || broker.user?.email || null,
+            brokerCity: broker.city,
+            profileSlug: broker.profileSlug,
+            claimedAt: broker.claim?.completedAt ?? new Date(),
+            adminUrl: `${platformConfig.appUrl}/admin/brokers/${broker.id}`,
+        })
+
+        return await sendEmail({
+            to: platformConfig.adminEmails,
+            subject: template.subject,
+            html: template.html,
+            idempotencyKey: `admin_broker_claimed_${broker.id}`,
+        })
+    } catch (error) {
+        console.error('Error sending admin broker-claimed notification:', error)
+        return { success: false, error: 'Failed to send admin broker-claimed notification' }
+    }
+}
+
 export async function sendBrokerClaimInvitationEmail(
     brokerId: string,
     recipient: string,
@@ -249,7 +301,7 @@ export async function sendClaimVerificationEmail(userId: string) {
 
         const appUrl = platformConfig.appUrl
         const verificationLink = `${appUrl}/auth/verify-email?token=${rawToken}&email=${encodeURIComponent(user.email)}`
-        const template = emailTemplates.claimVerification(user.name || 'Broker', verificationLink)
+        const template = emailTemplates.claimVerification(user.name || 'there', verificationLink)
     return sendEmail({
         to: user.email,
         subject: template.subject,
@@ -354,7 +406,7 @@ export async function resendBrokerVerificationEmail(brokerId: string) {
 
         // Send verification email
         const verificationTemplate = emailTemplates.resendVerification(
-            broker.user.name || 'Broker',
+            broker.user.name || 'there',
             verifyUrl
         )
 

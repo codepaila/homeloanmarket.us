@@ -28,16 +28,16 @@ export async function completeClaimForUser(context: ClaimContext, userId: string
     const user = await tx.user.findUnique({
       where: { id: userId },
       include: {
-        accounts: { select: { provider: true } },
         companyMemberships: { where: { isActive: true }, select: { id: true } },
       },
     })
     if (!user || !user.isActive || user.role === 'ADMIN') throw new ClaimFlowError('INELIGIBLE')
     if (user.companyMemberships.length > 0) throw new ClaimFlowError('INELIGIBLE')
 
-    const googleReauthenticated = context.reauthenticatedVia === 'google' &&
-      user.accounts.some((account) => account.provider === 'google')
-    if (!user.emailVerified && !googleReauthenticated) throw new ClaimFlowError('INELIGIBLE')
+    // Password-only claim: the account email must be verified before ownership
+    // attaches. Google/OAuth reauthentication is intentionally NOT part of the
+    // admin-created broker claim flow.
+    if (!user.emailVerified) throw new ClaimFlowError('INELIGIBLE')
     const existingBroker = await tx.broker.findFirst({ where: { userId }, select: { id: true } })
     if (existingBroker && existingBroker.id !== currentInvitation.claim.brokerId) throw new ClaimFlowError('CONFLICT')
 

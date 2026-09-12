@@ -11,7 +11,8 @@ export type ClaimContext = {
   expiresAt: number
   email?: string
   reauthenticatedAt?: number
-  reauthenticatedVia?: 'google' | 'credentials'
+  // Password-only claim flow: the only reauthentication method is credentials.
+  reauthenticatedVia?: 'credentials'
 }
 
 function secret() {

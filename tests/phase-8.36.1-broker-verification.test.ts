@@ -52,7 +52,7 @@ test('UNVERIFIED -> VERIFIED sends exactly one verification email (idempotency-s
 })
 
 test('verification email template reflects the isVisible dependency', () => {
-  assert.match(emailTemplates, /subject: 'Your HomeLoanMarket broker account is verified'/)
+  assert.match(emailTemplates, /subject: 'Your HomeLoanMarket mortgage originator account is verified'/)
   assert.match(emailTemplates, /when your profile is set to visible/)
 })
 

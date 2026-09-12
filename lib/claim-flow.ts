@@ -130,12 +130,10 @@ export function classifyClaimUser(user: {
   emailVerified: boolean
   password: string | null
   brokerProfile: { id: string } | null
-  accounts: { provider: string }[]
 }) {
   if (!user.isActive) return 'INACTIVE'
   if (user.role === 'ADMIN') return 'ADMIN'
   if (user.brokerProfile) return 'BROKER_WITH_PROFILE'
   if (user.role === 'BROKER') return 'BROKER_AVAILABLE'
-  if (user.accounts.some((account) => account.provider === 'google') && !user.password) return 'GOOGLE_ONLY'
   return 'EXISTING_USER'
 }

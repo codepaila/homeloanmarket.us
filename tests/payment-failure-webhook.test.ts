@@ -645,7 +645,7 @@ test('invoice.payment_failed (BROKER): Stripe retrieved â†’ broker reconciled â†
     // Stripe metadata).
     assert.equal(emailCalls.length, 1)
     assert.equal(emailCalls[0].to, 'broker-direct@example.com')
-    assert.match(emailCalls[0].subject, /Payment failure for your Broker subscription/)
+    assert.match(emailCalls[0].subject, /Payment failure for your Mortgage Originator subscription/)
     const log = store.brokerLogs[0]
     assert.ok(log, 'broker payment-failure log created')
     assert.equal(log.idempotencyKey, 'payment_failure_broker_bsub-1_in_broker_1')

@@ -5,7 +5,7 @@ import { sendEmail, emailTemplates } from '@/lib/email'
 //   - verifiedAt timestamp semantics (set-if-null on VERIFIED, clear on
 //     explicit UNVERIFIED, preserved on unrelated saves),
 //   - the UNVERIFIED → VERIFIED transition detection (drives the email),
-//   - the fire-and-forget "broker account verified" email.
+//   - the fire-and-forget "mortgage originator account verified" email.
 //
 // Verification is ADMIN-only (enforced by the routes); isVisible is NEVER
 // modified here — verification and visibility are independent concepts.
@@ -37,7 +37,7 @@ export function wasVerifiedTransition(
   return currentStatus !== 'VERIFIED' && target === 'VERIFIED'
 }
 
-// "Your HomeLoanMarket broker account is verified" email. Fire-and-forget: an
+// "Your HomeLoanMarket mortgage originator account is verified" email. Fire-and-forget: an
 // email failure is logged but never rolls back the already-persisted DB verification
 // (the DB remains authoritative). Idempotency is scoped per broker
 // (deterministic profileSlug key) so a repeated transition cannot send
@@ -62,7 +62,7 @@ export async function sendBrokerVerifiedEmail(params: {
       to: params.to,
       subject: template.subject,
       html: template.html,
-      text: `Your HomeLoanMarket broker account is verified. Go to your dashboard: ${appUrl}/broker/dashboard`,
+      text: `Your HomeLoanMarket mortgage originator account is verified. Go to your dashboard: ${appUrl}/broker/dashboard`,
       idempotencyKey: `broker_verified_${params.profileSlug}`,
     })
   } catch (error) {

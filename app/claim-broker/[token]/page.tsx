@@ -7,8 +7,6 @@ import { toast } from 'react-hot-toast'
 import { Loader2 } from 'lucide-react'
 import { FormInput } from '@/components/design/FormInput'
 import { PremiumButton } from '@/components/design/PremiumButton'
-import { GoogleContinueButton } from '@/components/auth/GoogleContinueButton'
-import { AuthDivider } from '@/components/auth/AuthDivider'
 
 type Preview = { profile: { displayName: string; companyName: string | null; profileSlug: string; description: string; city: string; state: string; logo: string | null }; invitationExpiresAt: string }
 
@@ -21,6 +19,7 @@ export default function ClaimBrokerPage({ params }: { params: Promise<{ token: s
   const [preview, setPreview] = useState<Preview | null>(null)
   const [started, setStarted] = useState(false)
   const [email, setEmail] = useState('')
+  const [invitedEmail, setInvitedEmail] = useState('')
   const [password, setPassword] = useState('')
   const [mode, setMode] = useState<'email' | 'account' | 'verify' | 'error'>('email')
   const [message, setMessage] = useState('')
@@ -69,7 +68,7 @@ export default function ClaimBrokerPage({ params }: { params: Promise<{ token: s
       const response = await fetch('/api/claims/session/email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) })
       const data = await response.json()
       if (!response.ok) setMessage(response.status === 409 ? 'This email does not match the invitation. Use the invited email address.' : data.message || 'Unable to continue')
-      else setMode('account')
+      else { setInvitedEmail(email.trim().toLowerCase()); setMode('account') }
     } finally {
       setAction('')
     }
@@ -88,19 +87,61 @@ export default function ClaimBrokerPage({ params }: { params: Promise<{ token: s
     }
   }
 
+  // Claim-aware handoff: only within a valid claim context can we learn that the
+  // INVITED email belongs to an existing unverified account. The server
+  // re-checks the invitation recipient binding, so this never probes an
+  // arbitrary address, and it never relies on a generic credentials failure.
+  async function claimNeedsVerification() {
+    try {
+      const response = await fetch('/api/claims/session')
+      if (!response.ok) return false
+      const data = await response.json()
+      return data.accountState === 'unverified'
+    } catch {
+      return false
+    }
+  }
+
+  async function routeToVerification() {
+    const target = invitedEmail || email.trim().toLowerCase()
+    try {
+      // Reuse the canonical resend-verification endpoint (enumeration-resistant,
+      // rate-limited, same verification-token architecture). No second sender or
+      // claim-specific token system is introduced.
+      await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: target }),
+      })
+    } catch {
+      // Best-effort; the verification page exposes its own resend control.
+    }
+    setMode('verify')
+  }
+
   async function signInAndClaim() {
     setAction('signin'); setMessage('')
     try {
       const result = await signIn('credentials', { email, password, redirect: false })
-      if (result?.error) { setMessage("We couldn't verify your account. Please try again."); return }
+      if (result?.error) {
+        // The account may simply need email verification. Only the valid claim
+        // context can confirm that for the invited address.
+        if (await claimNeedsVerification()) { await routeToVerification(); return }
+        setMessage("We couldn't verify your account. Please try again.")
+        return
+      }
       const reauth = await fetch('/api/claims/session/reauth', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password }) })
       if (!reauth.ok) { setMessage('Reauthentication could not be completed.'); return }
       const response = await fetch('/api/claims/session/complete', { method: 'POST' })
       const data = await response.json()
-      if (!response.ok) { setMessage(data.message || 'Claim could not be completed'); return }
+      if (!response.ok) {
+        if (await claimNeedsVerification()) { await routeToVerification(); return }
+        setMessage(data.message || 'Claim could not be completed')
+        return
+      }
       await refreshSession()
       toast.success('Mortgage originator profile claimed successfully.')
-      router.push(data.redirectTo || '/broker/dashboard')
+      router.push(data.redirectTo || '/broker/subscription/plan')
     } finally {
       setAction('')
     }
@@ -167,11 +208,8 @@ export default function ClaimBrokerPage({ params }: { params: Promise<{ token: s
           <section className="space-y-4 rounded border border-border bg-card p-6 shadow-soft">
             <div>
               <h2 className="text-lg font-semibold">Continue securely</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Choose how you&apos;d like to continue.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Create a password for this account, or sign in with an existing password.</p>
             </div>
-
-            <GoogleContinueButton callbackUrl="/claim-broker/continue?provider=google" />
-            <AuthDivider label="or" />
 
             <form onSubmit={createAccount} className="space-y-3">
               <FormInput label="Create a password" name="password" type="password" required minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Create a password" />
@@ -189,7 +227,7 @@ export default function ClaimBrokerPage({ params }: { params: Promise<{ token: s
           <section className="space-y-4 rounded border border-border bg-card p-6 shadow-soft">
             <div>
               <h2 className="text-lg font-semibold">Verify your email</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Check your email, verify the account, then return here to complete the claim.</p>
+              <p className="mt-1 text-sm text-muted-foreground">This email address must be verified before the claim can continue. Check your inbox for the verification link, then continue the claim.</p>
             </div>
             <PremiumButton fullWidth variant="secondary" onClick={() => router.push('/auth/verify-email')}>Open verification page</PremiumButton>
           </section>

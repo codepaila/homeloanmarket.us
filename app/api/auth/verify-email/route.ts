@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import crypto from 'crypto'
-import { getClaimContext } from '@/lib/claim-context'
+import { getClaimContext, setClaimContext } from '@/lib/claim-context'
 import { signIn } from '@/lib/auth'
 
 const VALID_PLAN_CODES = ['FREE', 'FEATURED'] as const
@@ -143,9 +143,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Signup verification (first-time email verification). Broker registration
-    // tokens remain available only long enough for the same Auth.js request to
-    // exchange them for a normal session; the credentials provider consumes it.
+    // and admin-created broker claim tokens remain available only long enough for
+    // the same Auth.js request to exchange them for a normal session; the
+    // credentials provider consumes the token. This lets a claimant who created
+    // their account with a password continue WITHOUT re-entering it.
+    const claimContext = await getClaimContext()
     const isBrokerRegistration = Boolean(user.brokerRegistration?.id)
+    const preserveTokenForSignIn = isBrokerRegistration || Boolean(claimContext)
     // Atomic token consumption: the update is gated on the exact token that was
     // read, so a stale/in-flight request cannot consume a newer token, and a
     // token can be consumed at most once. Zero matched rows means another
@@ -155,7 +159,7 @@ export async function POST(request: NextRequest) {
       where: { id: user.id, emailVerificationToken: expectedTokenHash },
       data: {
         emailVerified: true,
-        ...(isBrokerRegistration ? {} : {
+        ...(preserveTokenForSignIn ? {} : {
           emailVerificationToken: null,
           emailVerificationTokenExpiresAt: null,
         }),
@@ -177,24 +181,35 @@ export async function POST(request: NextRequest) {
     }
 
     let authenticated = false
-    if (isBrokerRegistration) {
+    if (preserveTokenForSignIn) {
       try {
         await signIn('credentials', {
           email: updatedUser.email || requestedEmail,
           verificationToken: token,
           redirect: false,
-          redirectTo: '/setup',
+          redirectTo: claimContext ? '/claim-broker/continue' : '/setup',
         })
         authenticated = true
+        if (claimContext) {
+          // The session is now the authenticated invited claimant. Record the
+          // claim reauthentication from the single-use verification token (proof
+          // of invited-email control) so completion does not prompt for the
+          // password a second time. No claim security check is weakened: the
+          // signed context, recipient binding, email verification, and atomic
+          // ownership attach all remain in force.
+          await setClaimContext({
+            ...claimContext,
+            reauthenticatedAt: Date.now(),
+            reauthenticatedVia: 'credentials',
+          })
+        }
       } catch (error) {
-        console.error('Broker verification session creation failed:', error)
+        console.error('Verification session creation failed:', error)
       }
     }
 
     // Broker verification is a separate ADMIN event (lib/broker-verification.ts).
     // Email verification must NOT send the "broker account verified" email.
-
-    const claimContext = await getClaimContext()
 
     const baseRedirect = claimContext
       ? '/claim-broker/continue'

@@ -19,15 +19,16 @@ test('accountDeletionConfirmation renders user deletion', () => {
   assert.ok(result.html.includes('permanently deleted'), 'html mentions permanent deletion')
 })
 
-test('accountDeletionConfirmation renders broker deletion', () => {
+test('accountDeletionConfirmation renders broker deletion with Mortgage Originator terminology', () => {
   const result = emailTemplates.accountDeletionConfirmation({
     name: 'John Smith',
     accountType: 'Broker',
     deletedAt: new Date('2025-09-10T12:00:00Z'),
   })
-  assert.ok(result.subject.includes('Broker'), 'subject mentions Broker')
+  assert.ok(result.subject.includes('Mortgage Originator'), 'subject uses customer-facing Mortgage Originator terminology')
+  assert.ok(!result.subject.includes('Broker'), 'subject must not expose the internal Broker account label')
   assert.ok(result.html.includes('John Smith'), 'html contains name')
-  assert.ok(result.html.includes('broker'), 'html mentions broker')
+  assert.ok(result.html.includes('mortgage originator'), 'html uses mortgage originator terminology')
 })
 
 test('accountDeletionConfirmation renders company deletion', () => {

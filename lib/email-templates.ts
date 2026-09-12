@@ -122,6 +122,16 @@ export type AdminNewCompanyEmailData = {
   registeredAt: Date
 }
 
+export type AdminBrokerClaimedEmailData = {
+  brokerDisplayName: string
+  brokerCompanyName?: string | null
+  brokerEmail?: string | null
+  brokerCity?: string | null
+  profileSlug?: string | null
+  claimedAt: Date
+  adminUrl: string
+}
+
 export type EmailTemplateResult = {
   subject: string
   preheader: string
@@ -131,6 +141,13 @@ export type EmailTemplateResult = {
 // ---------------------------------------------------------------------------
 // Templates
 // ---------------------------------------------------------------------------
+
+// Customer-facing display label for an account type. The internal accountType
+// discriminator (User/Broker/Company) is unchanged; only the copy shown to the
+// customer uses "Mortgage Originator" for the Broker account type.
+function accountTypeDisplayLabel(accountType: 'User' | 'Broker' | 'Company'): string {
+  return accountType === 'Broker' ? 'Mortgage Originator' : accountType
+}
 
 export const emailTemplates = {
   // Broker/user/company email verification (registration + resend).
@@ -189,12 +206,12 @@ export const emailTemplates = {
   }),
 
   brokerVerified: (data: BrokerVerifiedEmailData): EmailTemplateResult => ({
-    subject: 'Your HomeLoanMarket broker account is verified',
-    preheader: 'Your broker account has been verified and can now appear in the public directory.',
+    subject: 'Your HomeLoanMarket mortgage originator account is verified',
+    preheader: 'Your mortgage originator account has been verified and can now appear in the public directory.',
     html: renderEmailShell({
-      preheader: 'Your broker account has been verified and can now appear in the public directory.',
-      title: 'Your broker account is verified',
-      message: `Hi ${data.displayName},\n\nYour broker account has been successfully verified by our team. Your profile can now appear in the public broker directory when your profile is set to visible.`,
+      preheader: 'Your mortgage originator account has been verified and can now appear in the public directory.',
+      title: 'Your mortgage originator account is verified',
+      message: `Hi ${data.displayName},\n\nYour mortgage originator account has been successfully verified by our team. Your profile can now appear in the public mortgage originator directory when your profile is set to visible.`,
       status: { tone: 'success', label: 'Status: Verified' },
       ctaLabel: 'Go to Dashboard',
       ctaHref: data.dashboardUrl,
@@ -239,7 +256,7 @@ export const emailTemplates = {
       message: `Thank you for reaching out, ${data.recipientName || 'there'}. Your message was sent to ${data.brokerName}, and they will get back to you soon.`,
       status: { tone: 'success', label: 'Status: Message delivered' },
       info: {
-        Broker: data.brokerName,
+        'Mortgage Originator': data.brokerName,
         ...(data.companyName ? { Company: data.companyName } : {}),
         ...(data.messageSubject ? { Subject: data.messageSubject } : {}),
         'Sent At': new Date(data.sentAt).toLocaleString(),
@@ -338,20 +355,23 @@ export const emailTemplates = {
   // Account deletion confirmation. Sent after a successful self-service deletion
   // so the user has a record of the action. Admin-initiated deletions do not
   // send this email because the admin is already aware.
-  accountDeletionConfirmation: (data: AccountDeletionConfirmationEmailData): EmailTemplateResult => ({
-    subject: `Your HomeLoanMarket ${data.accountType} account has been deleted`,
-    preheader: `Your ${data.accountType.toLowerCase()} account has been permanently deleted.`,
-    html: renderEmailShell({
-      preheader: `Your ${data.accountType.toLowerCase()} account has been permanently deleted.`,
-      title: 'Account deleted',
-      message: `Hello ${data.name || 'there'},\n\nYour HomeLoanMarket ${data.accountType.toLowerCase()} account has been permanently deleted as requested. All associated data has been removed from our platform.`,
-      status: { tone: 'destructive', label: 'Status: Deleted' },
-      info: {
-        Account: data.accountType,
-        'Deleted At': new Date(data.deletedAt).toLocaleString(),
-      },
-    }),
-  }),
+  accountDeletionConfirmation: (data: AccountDeletionConfirmationEmailData): EmailTemplateResult => {
+    const accountLabel = accountTypeDisplayLabel(data.accountType)
+    return {
+      subject: `Your HomeLoanMarket ${accountLabel} account has been deleted`,
+      preheader: `Your ${accountLabel.toLowerCase()} account has been permanently deleted.`,
+      html: renderEmailShell({
+        preheader: `Your ${accountLabel.toLowerCase()} account has been permanently deleted.`,
+        title: 'Account deleted',
+        message: `Hello ${data.name || 'there'},\n\nYour HomeLoanMarket ${accountLabel.toLowerCase()} account has been permanently deleted as requested. All associated data has been removed from our platform.`,
+        status: { tone: 'destructive', label: 'Status: Deleted' },
+        info: {
+          Account: accountLabel,
+          'Deleted At': new Date(data.deletedAt).toLocaleString(),
+        },
+      }),
+    }
+  },
 
   // Admin notification: an account was deleted. Sent AFTER the successful
   // deletion transaction. Must never contain credentials, verification/reset
@@ -444,6 +464,31 @@ export const emailTemplates = {
       }),
     }
   },
+  // Admin notification: an admin-created broker profile was successfully
+  // claimed by its owner. Sent AFTER the claim transaction commits. Informational
+  // only — no action required. Never contains tokens, credentials, or billing
+  // secrets.
+  adminBrokerClaimed: (data: AdminBrokerClaimedEmailData): EmailTemplateResult => ({
+    subject: `Broker profile claimed: ${escapeHtml(data.brokerDisplayName)}`,
+    preheader: 'An admin-created broker profile has been successfully claimed.',
+    html: renderEmailShell({
+      preheader: 'An admin-created broker profile has been successfully claimed.',
+      title: 'Broker profile claimed',
+      subtitle: 'An admin-created broker profile has been successfully claimed',
+      message: 'An admin-created broker profile has been successfully claimed by its owner.',
+      status: { tone: 'success', label: 'Status: Claimed' },
+      ctaLabel: 'Review Broker',
+      ctaHref: data.adminUrl,
+      info: {
+        'Broker Name': data.brokerDisplayName,
+        Company: data.brokerCompanyName || 'Individual',
+        Email: data.brokerEmail || 'Not provided',
+        ...(data.brokerCity ? { City: data.brokerCity } : {}),
+        ...(data.profileSlug ? { 'Profile Slug': data.profileSlug } : {}),
+        'Claimed At': new Date(data.claimedAt).toLocaleString(),
+      },
+    }),
+  }),
 }
 
 // Plain-text fallback derived from the HTML (kept as the canonical text source).

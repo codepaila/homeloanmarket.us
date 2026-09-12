@@ -22,20 +22,19 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json()
-  const provider = body.provider === 'google' ? 'google' : 'credentials'
 
   try {
     await findClaimInvitationByContext(context)
-    const user = await prisma.user.findUnique({ where: { email: session.user.email }, include: { accounts: true } })
+    const user = await prisma.user.findUnique({ where: { email: session.user.email } })
     if (!user || !user.isActive || user.email?.toLowerCase() !== context.email?.toLowerCase()) throw new ClaimFlowError('INELIGIBLE')
 
-    if (provider === 'google') {
-      if (!user.accounts.some((account) => account.provider === 'google')) throw new ClaimFlowError('INELIGIBLE')
-    } else {
-      if (!user.password || typeof body.password !== 'string' || !(await bcrypt.compare(body.password, user.password))) throw new ClaimFlowError('INELIGIBLE')
+    // Password-only reauthentication. Google/OAuth is intentionally NOT part of
+    // the admin-created broker claim flow, so no provider branch exists here.
+    if (!user.password || typeof body.password !== 'string' || !(await bcrypt.compare(body.password, user.password))) {
+      throw new ClaimFlowError('INELIGIBLE')
     }
 
-    await setClaimContext({ ...context, reauthenticatedAt: Date.now(), reauthenticatedVia: provider })
+    await setClaimContext({ ...context, reauthenticatedAt: Date.now(), reauthenticatedVia: 'credentials' })
     return NextResponse.json({ success: true })
   } catch (error) {
     const status = error instanceof ClaimFlowError && error.code === 'EXPIRED' ? 410 : 403
