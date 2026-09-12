@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { cache } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import prisma from '@/lib/prisma'
@@ -9,9 +10,13 @@ interface BlogSlugPageProps {
   params: Promise<{ slug: string }>
 }
 
+// generateMetadata and the page body both need the same post. React.cache runs
+// the identical lookup once per request instead of querying the full row twice.
+const getPostBySlug = cache(async (slug: string) => prisma.blogPost.findUnique({ where: { slug } }))
+
 export async function generateMetadata({ params }: BlogSlugPageProps): Promise<Metadata> {
   const { slug } = await params
-  const post = await prisma.blogPost.findUnique({ where: { slug } })
+  const post = await getPostBySlug(slug)
 
   if (!post || !post.isPublished) {
     return { title: 'Article Not Found', robots: { index: false, follow: false } }
@@ -43,7 +48,7 @@ export async function generateMetadata({ params }: BlogSlugPageProps): Promise<M
 
 export default async function BlogSlugPage({ params }: BlogSlugPageProps) {
   const { slug } = await params
-  const post = await prisma.blogPost.findUnique({ where: { slug } })
+  const post = await getPostBySlug(slug)
 
   if (!post || !post.isPublished) notFound()
 

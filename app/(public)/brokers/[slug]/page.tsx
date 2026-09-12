@@ -1,5 +1,6 @@
 // app/brokers/[id]/page.tsx - Server Component
 import { notFound } from 'next/navigation'
+import { cache } from 'react'
 import type { Metadata } from 'next'
 import prisma from '@/lib/prisma'
 import BrokerDetailClient from '@/components/sections/broker/BrokerDetailClient'
@@ -8,8 +9,7 @@ import { brokerSubscriptionHasProfileBadge } from '@/lib/broker-plans'
 import { canonicalUrl, safeJsonLd, brokerLocalBusinessJsonLd, breadcrumbJsonLd } from '@/lib/seo'
 import { locationHasValidCoordinates } from '@/lib/location/broker-location'
 import { toPublicBrokerRecord, toPublicBrokerListRecord } from '@/lib/public-broker'
-import { getPublicListingPage } from '@/lib/broker-listing'
-import { BrokerDetailSkeleton } from '@/components/design/BrokerDetailSkeleton'
+import { getRelatedBrokerIds } from '@/lib/broker-listing'
 
 // Compact column set for the "Similar mortgage originators" cards on the
 // profile page — the same fields the public listing grid renders (identity +
@@ -44,29 +44,30 @@ interface PageProps {
   }>
 }
 
+// generateMetadata and the page body both need the same broker. React.cache
+// runs the identical lookup once per request instead of two separate queries.
+const getBrokerBySlug = cache(async (brokerSlug: string) =>
+  prisma.broker.findUnique({
+    where: { profileSlug: brokerSlug },
+    include: {
+      user: {
+        select: {
+          name: true,
+          image: true,
+          isActive: true,
+          companyMemberships: { where: { isActive: true }, select: { id: true } },
+        },
+      },
+      subscription: {
+        select: { plan: true, planId: true, isActive: true, endDate: true, planRef: { include: { features: true } } },
+      },
+    },
+  }),
+)
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const slug = (await params).slug
-  const broker = await prisma.broker.findUnique({
-    where: { profileSlug: slug },
-    select: {
-      displayName: true,
-      companyName: true,
-      description: true,
-      city: true,
-      state: true,
-      logo: true,
-      coverImage: true,
-      phone: true,
-      officeAddress: true,
-      profileSlug: true,
-      isVisible: true,
-      verificationStatus: true,
-      brokerStatus: true,
-      creationSource: true,
-      userId: true,
-      user: { select: { isActive: true, companyMemberships: { where: { isActive: true }, select: { id: true } } } },
-    },
-  })
+  const broker = await getBrokerBySlug(slug)
 
   if (!broker || !isPublicBroker({
     isVisible: broker.isVisible,
@@ -104,23 +105,7 @@ export default async function PublicBrokerPage({ params }: PageProps) {
 
   let broker
   try {
-    broker = await prisma.broker.findUnique({
-      where: { profileSlug: brokerSlug },
-      include: {
-        user: {
-          select: {
-            name: true,
-            image: true,
-            isActive: true,
-            companyMemberships: { where: { isActive: true }, select: { id: true } },
-          }
-        },
-        subscription: {
-          select: { plan: true, planId: true, isActive: true, endDate: true, planRef: { include: { features: true } } },
-        },
-      }
-    })
-
+    broker = await getBrokerBySlug(brokerSlug)
   } catch (error) {
     console.error('Error fetching broker:', error)
     notFound()
@@ -151,34 +136,45 @@ export default async function PublicBrokerPage({ params }: PageProps) {
     }),
   }
 
-  // Similar brokers: the top-priority public brokers, excluding this one,
-  // resolved server-side through the same listing ordering used by /brokers.
-  // Passed as initialRelated so the section is server-rendered and never
-  // triggers a client fetch or a mount-time layout shift.
-  const relatedPage = await getPublicListingPage({}, { page: 1, take: 4, admin: false })
-  const relatedIds = relatedPage.ids.filter((id) => id !== broker.id)
-  const relatedBrokers = relatedIds.length
-    ? await prisma.broker.findMany({
-        where: { id: { in: relatedIds } },
-        select: RELATED_SELECT,
-      })
-    : []
-  const initialRelated = relatedBrokers.map((related) =>
-    toPublicBrokerListRecord(related, {
-      isFeatured: hasPaidEntitlement(related.subscription),
-      isMortgageExpert: isMortgageExpertBroker({
-        mortgageExpertEnabled: related.mortgageExpertEnabled,
-        profileBadge: brokerSubscriptionHasProfileBadge(related.subscription),
-      }),
-    }),
-  )
-
   const brokerName = broker.companyName || broker.displayName
   const locationValue = broker.location as { type?: string; coordinates?: unknown } | null | undefined
   const hasCoords = locationValue ? locationHasValidCoordinates(locationValue) : false
   const coords = (Array.isArray(locationValue?.coordinates) && locationValue.coordinates.length === 2)
     ? { longitude: Number(locationValue.coordinates[0]), latitude: Number(locationValue.coordinates[1]) }
     : null
+
+  // Related brokers: geographically relevant first (nearby coordinates → same
+  // city → same state → global), then the canonical public broker ranking within
+  // each tier. Reuses the existing geo + listing services and the canonical
+  // public eligibility rules (admin:false). Server-rendered so the section is in
+  // the initial HTML with no client fetch.
+  const relatedIds = await getRelatedBrokerIds({
+    brokerId: broker.id,
+    latitude: hasCoords && coords ? coords.latitude : null,
+    longitude: hasCoords && coords ? coords.longitude : null,
+    city: broker.city,
+    state: broker.state,
+    take: 4,
+  })
+  const relatedBrokers = relatedIds.length
+    ? await prisma.broker.findMany({
+        where: { id: { in: relatedIds } },
+        select: RELATED_SELECT,
+      })
+    : []
+  const relatedById = new Map(relatedBrokers.map((related) => [related.id, related]))
+  const initialRelated = relatedIds
+    .map((id) => relatedById.get(id))
+    .filter((related): related is NonNullable<typeof related> => Boolean(related))
+    .map((related) =>
+      toPublicBrokerListRecord(related, {
+        isFeatured: hasPaidEntitlement(related.subscription),
+        isMortgageExpert: isMortgageExpertBroker({
+          mortgageExpertEnabled: related.mortgageExpertEnabled,
+          profileBadge: brokerSubscriptionHasProfileBadge(related.subscription),
+        }),
+      }),
+    )
 
   const brokerLd = brokerLocalBusinessJsonLd({
     name: brokerName,

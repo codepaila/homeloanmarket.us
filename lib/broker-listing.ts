@@ -24,6 +24,7 @@
 // Sort (before skip/take so pagination stays server-side and correct):
 //   tier asc, featuredRank desc, experienceYears desc, _id asc
 import prisma from '@/lib/prisma'
+import { findBrokerIdsWithinRadius } from '@/lib/location/broker-geo'
 
 type PublicListingMatchInput = {
   search?: string | null
@@ -245,4 +246,85 @@ export async function getPublicListingPage(
     .filter((id: string | null): id is string => Boolean(id))
   const total = Number(batch.metadata?.[0]?.total || 0)
   return { ids, total }
+}
+
+// Radius (miles) for the first, strongest "related brokers" tier. Matches the
+// listing's default radius so the nearby pool is consistent with a radius search.
+export const RELATED_BROKER_RADIUS_MILES = 25
+
+export type RelatedBrokerQuery = {
+  brokerId: string
+  latitude?: number | null
+  longitude?: number | null
+  city?: string | null
+  state?: string | null
+  take: number
+}
+
+// Geographically-relevant related brokers, reusing the canonical geo + listing
+// services rather than a new scoring system.
+//
+// Tier A — coordinates within RELATED_BROKER_RADIUS_MILES (canonical $geoNear
+//          aggregation; only runs when the broker has valid coordinates and the
+//          2dsphere index exists, otherwise it is skipped).
+// Tier B — same city (+ state when known) via the canonical listing match.
+// Tier C — same state.
+// Tier D — the canonical global listing (previous behaviour).
+//
+// Within every tier the canonical public eligibility and ranking apply
+// (admin:false). The current broker is always excluded, and results are
+// de-duplicated so a broker appears only once, at its strongest tier.
+export async function getRelatedBrokerIds(input: RelatedBrokerQuery): Promise<string[]> {
+  const take = Math.max(1, input.take)
+  const collected: string[] = []
+  const seen = new Set<string>([input.brokerId])
+
+  const add = (ids: string[]) => {
+    for (const id of ids) {
+      if (collected.length >= take) return
+      if (seen.has(id)) continue
+      seen.add(id)
+      collected.push(id)
+    }
+  }
+
+  if (Number.isFinite(input.latitude) && Number.isFinite(input.longitude)) {
+    try {
+      const nearby = await findBrokerIdsWithinRadius({
+        latitude: input.latitude as number,
+        longitude: input.longitude as number,
+        radiusMiles: RELATED_BROKER_RADIUS_MILES,
+        page: 1,
+        take: take + 1,
+        admin: false,
+      })
+      add(nearby.ids)
+    } catch {
+      // No 2dsphere index (or invalid coordinates): fall through to the string
+      // location tiers, which never depend on the geo index.
+    }
+  }
+
+  if (collected.length < take && input.city) {
+    const byCity = await getPublicListingPage(
+      { locationCity: input.city, locationState: input.state ?? null },
+      { page: 1, take: take + 1, admin: false },
+    )
+    add(byCity.ids)
+  }
+
+  if (collected.length < take && input.state) {
+    const byState = await getPublicListingPage(
+      { locationState: input.state },
+      { page: 1, take: take + 1, admin: false },
+    )
+    add(byState.ids)
+  }
+
+  if (collected.length < take) {
+    const global = await getPublicListingPage({}, { page: 1, take: take + 1, admin: false })
+    add(global.ids)
+  }
+
+  return collected.slice(0, take)
 }

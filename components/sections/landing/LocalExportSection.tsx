@@ -358,14 +358,12 @@ export default function LocalExpertSection() {
           <div className="grid gap-5 md:gap-10 lg:grid-cols-5 lg:gap-12">
             <div className="lg:col-span-3">
               <h2 className="heading-2 text-foreground">
-                Compare More.{' '}
-                <span className="text-primary">Choose Better</span>
+              Make Your Home Loan Search Easier
               </h2>
 
               {/* Paragraph 1 */}
               <p className="mt-2 md:mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-                Mortgage rates, fees, and loan options can vary from one lender to another.
-                Even a small difference in your rate or closing costs can mean thousands of dollars over time.
+              Finding the right mortgage professional can make a big difference when financing a home. An experienced local Home Loan Expert can help you understand the process, answer your questions, and find financing that fits your needs.
               </p>
             </div>
 
@@ -379,8 +377,9 @@ export default function LocalExpertSection() {
           {/* Supporting statement under a hairline rule */}
           {/* Paragraph 2 */}
           <p className="mt-2 text-center  md:mt-12 max-w-3xl mx-auto border-t border-border pt-8 md:text-2xl font-medium leading-relaxed text-foreground/90 sm:text-xl">
-            Home Loan Market helps you find local mortgage professionals so you can explore your options,
-            compare, and choose the loan that works best for you.
+          HomeLoanMarket makes it easier to find Home Loan Experts serving your area. The right home loan could save you thousands of dollars, and finding the right expert is an important place to start.
+            {/* Home Loan Market helps you find local mortgage professionals so you can explore your options,
+            compare, and choose the loan that works best for you. */}
           </p>
         </div>
 
@@ -412,13 +411,7 @@ export default function LocalExpertSection() {
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                   {option.description}
                 </p>
-                {/* action indicator */}
-                {/* <span
-                  aria-hidden="true"
-                  className="mt-auto inline-flex justify-end pt-6 text-primary/60 transition-colors duration-300 group-hover:text-primary"
-                >
-                  <ArrowRight className="h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
-                </span> */}
+             
               </div>
             ))}
           </div>

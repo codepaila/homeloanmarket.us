@@ -1,9 +1,17 @@
+import { cache } from 'react'
 import { auth } from "./auth"
 import prisma from "./prisma"
 import { SubscriptionService } from './subscription'
 import { hasPaidEntitlement } from './broker-policy'
 
-export async function getCurrentUser() {
+// Wrapped in React.cache so the identical read is executed once per request.
+// The broker layout AND the page (and, for many routes, the route handler) all
+// await getCurrentUser(), and the query eagerly loads broker/subscription/
+// company relations. Without memoization every server render issued the same
+// heavy user.findUnique 2+ times. React.cache is scoped to a single request, so
+// authenticated data is never shared across requests/users. Same pattern as
+// lib/site/settings.ts:getSiteSettings.
+export const getCurrentUser = cache(async function getCurrentUser() {
   const session = await auth()
 
   if (!session?.user?.email) {
@@ -113,4 +121,4 @@ export async function getCurrentUser() {
       isVerified: brokerProfile.verificationStatus === "VERIFIED",
     } : null,
   }
-}
+})
