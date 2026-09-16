@@ -1,5 +1,6 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { clientIp } from "@/lib/origin";
 
 // Broker-specific rate limits
 export const brokerRegisterRateLimit = new Ratelimit({
@@ -121,6 +122,63 @@ export const accountDeletionRateLimit = new Ratelimit({
   limiter: Ratelimit.fixedWindow(3, "10 m"), // 3 deletion attempts per 10 minutes
   analytics: true,
   prefix: "ratelimit:account-deletion",
+});
+
+// Company advertising coupon validation. Company-scoped, distributed limiter
+// executed BEFORE any Stripe call so a valid Company account cannot be used to
+// amplify provider lookups or enumerate promotion codes.
+export const companyCouponValidateRateLimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(20, "60 m"), // 20 coupon checks per hour per company/IP
+  analytics: true,
+  prefix: "ratelimit:company-coupon-validate",
+});
+
+// Broker registration, keyed by the normalized email identity in addition to
+// the existing per-IP limiter. Bounds repeated account/verification-email
+// creation for the same email even across rotating IPs.
+export const brokerRegisterEmailRateLimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.fixedWindow(3, "30 m"), // 3 registrations per email per 30 minutes
+  analytics: true,
+  prefix: "ratelimit:broker-register-email",
+});
+
+// Metered Google location lookups (autocomplete / geocode / resolve). These
+// are public endpoints backed by paid Google APIs; a distributed per-IP,
+// per-endpoint limiter bounds provider cost before any Google call.
+export const locationApiRateLimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(90, "10 m"), // 90 lookups per 10 minutes per IP/endpoint
+  analytics: true,
+  prefix: "ratelimit:location-api",
+});
+
+// Returns true when the location lookup should be rejected. Mirrors the
+// existing auth limiter fail-open policy: a Redis outage must not take down
+// legitimate public location search (broker/company onboarding, directory
+// search). The residual fail-open risk is documented for a later phase.
+export async function locationLookupExceeded(endpoint: string, request: Request): Promise<boolean> {
+  try {
+    const { success } = await locationApiRateLimit.limit(`location:${endpoint}:${clientIp(request)}`);
+    return !success;
+  } catch (error) {
+    console.warn("Location rate limiter unavailable; allowing request", {
+      endpoint,
+      error: error instanceof Error ? error.message : "unknown",
+    });
+    return false;
+  }
+}
+
+// Distributed profile-view dedup gate: at most one counted view per
+// (broker, client) per hour. This is a gate, not a rate limit, and analytics is
+// disabled so the hot public read path stays cheap.
+export const profileViewDedup = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.fixedWindow(1, "1 h"),
+  analytics: false,
+  prefix: "ratelimit:profile-view-dedup",
 });
 
 // In-memory rate limiting for email sending

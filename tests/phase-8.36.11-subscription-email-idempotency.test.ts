@@ -16,15 +16,20 @@ const schema = read('prisma/schema.prisma')
 // Durable, concurrency-safe, retryable delivery for the broker purchase email.
 // ===========================================================================
 
-test('1. idempotency key is deterministic and broker-subscription-scoped', () => {
-  assert.match(durable, /idempotencyKey = `subscription_purchase_\$\{brokerSubscriptionId\}`/)
+test('1. idempotency key is deterministic and scoped to the Stripe subscription', () => {
+  assert.match(durable, /subscription_purchase_\$\{brokerSubscriptionId\}/)
+  assert.match(durable, /stripeSubscriptionId \? `_\$\{stripeSubscriptionId\}`/)
   assert.doesNotMatch(durable, /subscription_purchase_\$\{[^}]*Date\.now/)
 })
 
 test('2. durable state is persisted in MongoDB with a unique idempotency key', () => {
   assert.match(schema, /model BrokerSubscriptionEmailLog /)
   assert.match(schema, /idempotencyKey\s+String\s+@unique/)
-  assert.match(schema, /brokerSubscriptionId\s+String\s+@unique @db\.ObjectId/)
+  // Per-Stripe-subscription identity: the broker subscription id is indexed,
+  // not unique, and the Stripe subscription id is stored alongside it.
+  assert.match(schema, /brokerSubscriptionId\s+String\s+@db\.ObjectId/)
+  assert.doesNotMatch(schema, /brokerSubscriptionId\s+String\s+@unique/)
+  assert.match(schema, /stripeSubscriptionId\s+String\?\s+@db\.ObjectId/)
   assert.match(schema, /status\s+BrokerSubscriptionEmailStatus/)
   assert.match(schema, /enum BrokerSubscriptionEmailStatus/)
   for (const s of ['PENDING', 'PROCESSING', 'SENT', 'FAILED']) {
@@ -88,11 +93,15 @@ test('10. only the canonical webhook trigger exists; no success-page/verify dupl
   assert.doesNotMatch(read('app/broker/subscription/success/page.tsx'), /sendSubscriptionPurchaseEmail|sendEmail/)
 })
 
-test('11. broker registration checkout does not trigger this purchase email', () => {
-  // The webhook only fires when the synced row carries a brokerId (BrokerSubscription),
-  // not a BrokerRegistrationSubscription.
+test('11. broker registration FEATURED is guaranteed after finalization, not by webhook ordering', () => {
+  // The webhook excludes registration rows by requiring a brokerId; the
+  // registration flow dispatches the durable sender AFTER finalize creates the
+  // live BrokerSubscription, so the receipt does not depend on whether
+  // checkout.session.completed ran before or after finalization.
   assert.match(webhook, /'brokerId' in updated/)
-  assert.doesNotMatch(read('lib/broker-registration.ts'), /sendSubscriptionPurchaseEmail/)
+  const registration = read('lib/broker-registration.ts')
+  assert.match(registration, /sendBrokerSubscriptionPurchaseEmailDurable/)
+  assert.match(registration, /createdBrokerId/)
 })
 
 test('12. abandoned/failed payments cannot reach the sender', () => {

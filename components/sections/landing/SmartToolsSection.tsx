@@ -113,7 +113,7 @@ export default function SmartToolsSection() {
               </h3>
 
               <p className="mt-3 max-w-lg text-sm leading-relaxed text-muted-foreground sm:text-base">
-                Enter loan amount, interest rate, and term to see your monthly payment
+                Enter home price, down payment, interest rate, and term to see your monthly payment
               </p>
 
               <div className="mt-8 flex flex-col gap-4 sm:flex-row">
@@ -132,12 +132,12 @@ export default function SmartToolsSection() {
               {/* Quick Stats */}
               <div className="mt-10 grid grid-cols-3 gap-4 border-t border-border pt-6">
                 <div>
-                  <p className="text-xs text-muted-foreground">Loan Amount</p>
+                  <p className="text-xs text-muted-foreground">Home Price</p>
                   <p className="mt-1 text-sm font-semibold text-foreground">$100k - $5M</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Terms</p>
-                  <p className="mt-1 text-sm font-semibold text-foreground">10 - 30 Years</p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">15 - 30 Years</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Rate</p>

@@ -39,10 +39,13 @@ test('Phase 2 onboarding uses US-oriented defaults', () => {
   assert.ok(source.includes("currentStep === 4 && 'Review and submit your application'"))
 })
 
-test('Phase 2 calculator guards manual loan amount input', () => {
+test('Phase 2 calculator guards manual numeric input', () => {
   const source = read('app/(public)/calculator/page.tsx')
-  assert.ok(source.includes('Math.max(50000, value)'))
-  assert.ok(source.includes('Number.isFinite(value)'))
+  assert.ok(source.includes('Number.isFinite(parsed)'), 'manual numeric input is finiteness-guarded')
+  assert.ok(
+    /Math\.min\([^)]*Math\.max\(/.test(source) || source.includes('clampLoanTerm'),
+    'numeric inputs are clamped to a valid range',
+  )
 })
 
 test('Phase 2 newsletter uses a real server endpoint and error state', () => {

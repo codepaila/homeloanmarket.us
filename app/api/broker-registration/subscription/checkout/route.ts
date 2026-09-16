@@ -78,7 +78,13 @@ export async function POST(request: NextRequest) {
         mode: 'subscription' as const,
         success_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/broker-registration/subscription/success?session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${process.env.AUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_URL || ''}/setup`,
-        metadata: { userId: user.id, brokerRegistrationId: registrationId, plan: 'FEATURED' },
+        // ownerType on the SESSION metadata routes checkout.session.expired to
+        // the registration stale-checkout reconciliation and makes
+        // checkout.session.completed deterministic. It is deliberately NOT set
+        // on subscription_data: after finalizeBrokerRegistration creates the
+        // live BrokerSubscription, subsequent customer.subscription.* events
+        // must resolve to that row (not the historical registration row).
+        metadata: { userId: user.id, brokerRegistrationId: registrationId, ownerType: 'BROKER_REGISTRATION', plan: 'FEATURED' },
         subscription_data: { metadata: { userId: user.id, brokerRegistrationId: registrationId, plan: 'FEATURED' } },
         billing_address_collection: 'required' as const,
         managed_payments: { enabled: false },

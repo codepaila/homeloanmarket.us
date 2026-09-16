@@ -142,11 +142,11 @@ test('no analytics scripts placed inside individual page components', () => {
 // Privacy documentation
 // ---------------------------------------------------------------------------
 
-test('privacy policy documents analytics cookies and consent behavior', () => {
-  assert.match(privacy, /Analytics & Cookies/)
+test('privacy policy documents cookies and analytics', () => {
+  assert.match(privacy, /Cookies and Similar Technologies/)
   assert.match(privacy, /Google Analytics/)
-  assert.match(privacy, /Google Tag Manager/)
-  assert.match(privacy, /consent/)
+  assert.match(privacy, /Cookie Settings tool/)
+  assert.match(privacy, /Your Privacy Rights/)
 })
 
 // ---------------------------------------------------------------------------

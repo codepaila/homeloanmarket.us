@@ -73,6 +73,23 @@ function dispatchCompanyActivationEmail(
   void sendCompanySubscriptionPurchaseEmail(updated.id, stripeSubscriptionId || null)
 }
 
+// Dispatches the durable Broker activation/purchase email whenever an
+// authoritative Stripe sync leaves a BrokerSubscription active. It is called
+// from every event that can activate the subscription, so a delayed or
+// reordered checkout completion cannot suppress the receipt. The durable
+// sender is idempotent per (brokerSubscriptionId, Stripe subscription id), so
+// multiple events and replays collapse to one email. Broker-registration rows
+// (registrationId) are intentionally excluded here: the registration finalizer
+// dispatches after it creates the live BrokerSubscription.
+function dispatchBrokerActivationEmail(
+  updated: { id: string; isActive?: boolean } | null | undefined,
+  stripeSubscriptionId: string | null | undefined,
+) {
+  if (!updated || updated.isActive !== true || typeof updated.id !== 'string') return
+  if (!('brokerId' in updated)) return
+  void sendSubscriptionPurchaseEmail(updated.id, stripeSubscriptionId || null)
+}
+
 async function processEvent(event: Stripe.Event) {
   const target = getStripeEventTarget(event)
 
@@ -160,14 +177,10 @@ export async function handleStripeEvent(event: Stripe.Event) {
         subscription.metadata?.ownerType || session.metadata?.ownerType || null,
       )
       // Broker-product subscription purchase/activation confirmation. Fires only
-      // when the synced row is a BrokerSubscription that became active (a
-      // broker-registration checkout resolves to the registration subscription
-      // and intentionally produces no broker purchase email here). Fire-and-forget
-      // with a deterministic per-subscription idempotency key; the sync result is
-      // never affected by email delivery.
-      if (updated && 'brokerId' in updated && updated.isActive && typeof updated.id === 'string') {
-        void sendSubscriptionPurchaseEmail(updated.id)
-      }
+      // when the synced row is a BrokerSubscription that became active. Multiple
+      // activating events and replays collapse to one durable email per Stripe
+      // subscription; the sync result is never affected by email delivery.
+      dispatchBrokerActivationEmail(updated, subscription.id)
       // Company-product subscription purchase/activation confirmation. Fires
       // only when the synced row is a CompanySubscription that became active.
       // Fire-and-forget with a deterministic idempotency key scoped to
@@ -216,6 +229,8 @@ export async function handleStripeEvent(event: Stripe.Event) {
       // is idempotent per Stripe subscription, so a later
       // checkout.session.completed cannot duplicate it.
       dispatchCompanyActivationEmail(updated as { id: string; isActive?: boolean } | null, subscription.id)
+      // Same safety net for the Broker product.
+      dispatchBrokerActivationEmail(updated as { id: string; isActive?: boolean } | null, subscription.id)
       return
     }
     case 'customer.subscription.deleted': {
@@ -247,6 +262,7 @@ export async function handleStripeEvent(event: Stripe.Event) {
       // subscription, so renewals and replays never duplicate it.
       if (event.type === 'invoice.payment_succeeded') {
         dispatchCompanyActivationEmail(updated as { id: string; isActive?: boolean } | null, subscription.id)
+        dispatchBrokerActivationEmail(updated as { id: string; isActive?: boolean } | null, subscription.id)
       }
       // Payment-failure notification. Dispatched only after the subscription
       // state is reconciled, only for actual failures, and only when the sync

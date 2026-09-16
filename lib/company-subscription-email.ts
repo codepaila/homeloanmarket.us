@@ -18,6 +18,7 @@
 import { sendEmail, emailTemplates } from '@/lib/email'
 import prisma from '@/lib/prisma'
 import { platformConfig } from '@/lib/platform-config'
+import { sendSubscriptionAdminPaymentNotification } from '@/lib/subscription-admin-email'
 import type { Prisma, CompanySubscriptionEmailStatus } from '@prisma/client'
 
 export type CompanyPurchaseEmailResult =
@@ -90,12 +91,41 @@ export async function sendCompanySubscriptionPurchaseEmailDurable(
 
     const ownerMembership = subscription.company.memberships[0]
     const recipient = ownerMembership?.user?.email
+    const plan = subscription.advertisingPlan
+    const companyName = subscription.company.name
+
+    // Admin subscription-payment notification. Dispatched from inside this
+    // durable claim so the existing CompanySubscriptionEmailLog row is the
+    // authoritative once-per-Stripe-subscription gate: replays never re-send,
+    // a genuinely new Stripe subscription produces a new notification. Skipped
+    // silently when no Stripe subscription or no admin recipients are
+    // configured; never affects the customer email or billing state.
+    const notifyAdmins = async () => {
+      if (!stripeSubscriptionId) return
+      try {
+        await sendSubscriptionAdminPaymentNotification({
+          product: 'COMPANY_ADVERTISING',
+          localSubscriptionId: companySubscriptionId,
+          stripeSubscriptionId,
+          planName: plan?.name || subscription.plan,
+          priceCents: typeof plan?.price === 'number' ? plan.price : 0,
+          currency: plan?.currency,
+          interval: plan?.billingInterval,
+          customerName: companyName,
+          customerEmail: recipient ?? null,
+          activatedAt: now,
+        })
+      } catch (adminError) {
+        console.error('Company subscription admin notification failed:', adminError)
+      }
+    }
+
     if (!recipient) {
+      await notifyAdmins()
       await prisma.companySubscriptionEmailLog.update({ where: { idempotencyKey }, data: { status: 'SENT', sentAt: now, messageId: null, lastError: 'no recipient email' } })
       return { status: 'skipped', reason: 'no_recipient' }
     }
 
-    const plan = subscription.advertisingPlan
     const template = emailTemplates.companySubscriptionPurchased({
       companyName: subscription.company.name,
       planName: plan?.name || subscription.plan,
@@ -132,6 +162,7 @@ export async function sendCompanySubscriptionPurchaseEmailDurable(
       return { status: 'failed', error: result.error || 'Email send failed', retryable: true }
     }
 
+    await notifyAdmins()
     await prisma.companySubscriptionEmailLog.update({
       where: { idempotencyKey },
       data: { status: 'SENT', sentAt: now, messageId: result.messageId || null, lastError: null },

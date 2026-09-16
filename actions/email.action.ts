@@ -662,13 +662,15 @@ export async function sendAdminAccountDeletionNotification(params: {
 }
 
 // Broker subscription purchase/activation confirmation. One canonical owner for
-// the broker product: fire-and-forget, deterministic key per broker subscription,
-// never mixed with company billing data. Delivery is hardened with durable,
-// concurrency-safe idempotency (lib/broker-subscription-email.ts) so the same
-// successful subscription cannot trigger duplicate purchase emails across
-// webhook retries, distinct events, or application instances.
-export async function sendSubscriptionPurchaseEmail(brokerSubscriptionId: string) {
-    const result = await sendBrokerSubscriptionPurchaseEmailDurable(brokerSubscriptionId)
+// the broker product: fire-and-forget, deterministic key per Stripe
+// subscription, never mixed with company billing data. Delivery is hardened
+// with durable, concurrency-safe idempotency (lib/broker-subscription-email.ts)
+// so the same successful subscription cannot trigger duplicate purchase emails
+// across webhook retries, distinct events, or application instances, while a
+// genuinely new Stripe subscription (cancel -> re-subscribe) produces a new
+// activation email.
+export async function sendSubscriptionPurchaseEmail(brokerSubscriptionId: string, stripeSubscriptionId?: string | null) {
+    const result = await sendBrokerSubscriptionPurchaseEmailDurable(brokerSubscriptionId, stripeSubscriptionId)
     if (result.status === 'sent') return { success: true }
     if (result.status === 'skipped') return { success: true, skipped: true, reason: result.reason }
     return { success: false, error: result.error, details: result.error }

@@ -124,9 +124,14 @@ export function ClaimPlanExperience({
           <div className="mt-2">
             <MortgageExpertBadge />
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {featuredPlan?.description || 'Get featured in listings and direct leads'}
-          </p>
+          {
+            featuredPlan?.description && (
+
+              <p className="mt-1 text-sm text-muted-foreground">
+                {featuredPlan?.description}
+              </p>
+            )
+          }
           <div className="mt-4 text-2xl font-bold text-foreground">
             {featuredPlan ? `$${(featuredPlan.price / 100).toFixed(2)}` : '—'}
             <span className="text-sm font-normal text-muted-foreground">

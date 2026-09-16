@@ -91,6 +91,7 @@ export const selfRegisteredBrokerDefaults = {
 
 import prisma from '@/lib/prisma'
 import { hashPassword } from '@/lib/aes'
+import { sendBrokerSubscriptionPurchaseEmailDurable } from '@/lib/broker-subscription-email'
 import { BankType, SubscriptionPlan } from '@prisma/client'
 
 export async function createBrokerRegistration(input: BrokerAccountRegistrationInput) {
@@ -254,7 +255,13 @@ export async function finalizeBrokerRegistration(
   userId: string,
   dataOverride?: Partial<ExistingUserBrokerInput>,
 ) {
-  return prisma.$transaction(async (tx) => {
+  // Set only when this call actually creates the Broker. The activation email
+  // is dispatched AFTER the transaction commits so a webhook that arrived
+  // before finalization (registration -> FEATURED) still produces exactly one
+  // customer/admin receipt. Existing Broker (idempotent re-entry) never
+  // re-dispatches.
+  let createdBrokerId: string | null = null
+  const finalizedBroker = await prisma.$transaction(async (tx) => {
     const existing = await tx.broker.findFirst({ where: { userId } })
     if (existing) {
       return existing
@@ -380,6 +387,7 @@ export async function finalizeBrokerRegistration(
         },
       },
     })
+    createdBrokerId = broker.id
 
     const bankPartnerships = Array.isArray(merged.bankPartnerships) ? (merged.bankPartnerships as string[]) : []
     if (bankPartnerships.length > 0) {
@@ -405,6 +413,31 @@ export async function finalizeBrokerRegistration(
     }
     return broker
   })
+
+  // Authoritative post-finalization activation. For a fresh FEATURED broker the
+  // BrokerSubscription now exists with the Stripe subscription id copied from
+  // the registration subscription, regardless of whether the Stripe webhook ran
+  // before or after this finalization. The durable sender (idempotent per
+  // Stripe subscription) guarantees exactly one customer/admin receipt.
+  if (createdBrokerId) {
+    void dispatchBrokerRegistrationActivationEmail(createdBrokerId)
+  }
+
+  return finalizedBroker
+}
+
+async function dispatchBrokerRegistrationActivationEmail(brokerId: string) {
+  try {
+    const subscription = await prisma.brokerSubscription.findUnique({
+      where: { brokerId },
+      select: { id: true, plan: true, isActive: true, stripeSubId: true },
+    })
+    if (subscription?.isActive && subscription.plan === 'FEATURED' && subscription.stripeSubId) {
+      await sendBrokerSubscriptionPurchaseEmailDurable(subscription.id, subscription.stripeSubId)
+    }
+  } catch (error) {
+    console.error('Broker registration activation email dispatch failed:', error)
+  }
 }
 
 export async function createBrokerForExistingUser(userId: string, data: ExistingUserBrokerInput) {

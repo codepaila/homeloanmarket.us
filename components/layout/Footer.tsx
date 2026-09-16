@@ -37,7 +37,7 @@ const footerColumns = [
     links: [
       { name: 'About Us', href: '/about' },
       { name: 'Contact', href: '/contact' },
-      { name: 'Subscription Plans', href: '/subscription' },
+      // { name: 'Subscription Plans', href: '/subscription' },
       { name: 'Become a Mortgage Originator', href: '/auth/signup' },
     ],
   },

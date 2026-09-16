@@ -114,12 +114,15 @@ test('email verification does NOT equal broker verification', () => {
 test('subscription purchase email has a deterministic key and no cross-product data', () => {
   const durable = read('lib/broker-subscription-email.ts')
   assert.match(actions, /sendSubscriptionPurchaseEmail/)
-  // Durable idempotency lives in the canonical durable sender.
-  assert.match(durable, /idempotencyKey = `subscription_purchase_\$\{brokerSubscriptionId\}`/)
+  // Durable idempotency lives in the canonical durable sender and is scoped to
+  // (brokerSubscriptionId, Stripe subscription id) so a new Stripe subscription
+  // is independently represented.
+  assert.match(durable, /subscription_purchase_\$\{brokerSubscriptionId\}/)
+  assert.match(durable, /stripeSubscriptionId \? `_\$\{stripeSubscriptionId\}`/)
   assert.match(durable, /idempotencyKey,/)
   assert.doesNotMatch(durable, /subscription_purchase_\$\{[^}]*Date\.now/)
   // Wired to the authoritative webhook owner for broker subscriptions.
-  assert.match(webhook, /sendSubscriptionPurchaseEmail\(updated\.id\)/)
+  assert.match(webhook, /sendSubscriptionPurchaseEmail\(updated\.id/)
   assert.match(webhook, /'brokerId' in updated/)
 })
 

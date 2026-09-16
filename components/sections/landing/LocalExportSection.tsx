@@ -346,8 +346,8 @@ const steps = [
 
 export default function LocalExpertSection() {
   return (
-    <section className="section-spacing bg-background">
-      <div className="container-custom space-y-14 md:space-y-24">
+    <section className="py-4 bg-background">
+      <div className="container-custom space-y-14 md:space-y-20">
 
         {/* ==========================================================
             SECTION 1 — Compare More. Choose Better.
@@ -355,41 +355,41 @@ export default function LocalExpertSection() {
             mortgage-comparison illustration; supporting statement below.
            ========================================================== */}
         <div>
-          <div className="grid gap-5 md:gap-10 lg:grid-cols-5 lg:gap-12">
-            <div className="lg:col-span-3">
+          <div className="grid gap-5 md:gap-10 lg:grid-cols-5 lg:gap-12 ">
+            <div className="lg:col-span-3 text-center">
               <h2 className="heading-3 text-foreground">
                 Make Your Home Loan Search Easier
               </h2>
 
               {/* Paragraph 1 */}
-              <p className="mt-2 md:mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+              <p className="mt-2 md:mt-4 max-w-xl mx-auto text-base leading-relaxed text-muted-foreground sm:text-lg">
                 Finding the right mortgage professional can make a big difference when financing a home. An experienced local Home Loan Expert can help you understand the process, answer your questions, and find financing that fits your needs.
               </p>
               <p
-                className="mt-2 md:mt-6 max-w-xl leading-relaxed text-muted-foreground text-base sm:text-lg"
+                className="mt-2 md:mt-6 max-w-xl mx-auto leading-relaxed text-muted-foreground text-base sm:text-lg"
               >
                 HomeLoanMarket.com makes it easier to find Home Loan Experts serving your area. The right home loan could save you thousands of dollars, and finding the right expert is an important place to start.
 
               </p>
-                  <div className="mt-8">
-                  <Link href="/brokers" className="group inline-block">
-                    <Button
-                      size="lg"
-                      className="btn-primary btn-lg shadow-soft hover:shadow-medium transition-all duration-300"
-                    >
-                      <span className="flex items-center">
-                        Find Your Local Expert
-                        <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                      </span>
-                    </Button>
-                  </Link>
-                </div>
+              <div className="  mt-4 md:mt-8">
+                <Link href="/brokers" className="group inline-block">
+                  <Button
+                    size="lg"
+                    className="btn-primary btn-lg shadow-soft hover:shadow-medium transition-all duration-300"
+                  >
+                    <span className="flex items-center">
+                      Find Your Local Expert
+                      <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                    </span>
+                  </Button>
+                </Link>
+              </div>
             </div>
 
             <div className="mx-auto w-full max-w-md lg:col-span-2 lg:max-w-none">
-              <div className="rounded border border-border bg-card p-5 sm:p-8 lg:p-6 xl:p-8">
-                <ComparisonIllustration />
-              </div>
+              {/* <div className="rounded border border-border bg-card p-5 sm:p-8 lg:p-6 xl:p-8"> */}
+              <ComparisonIllustration />
+              {/* </div> */}
             </div>
           </div>
 
@@ -422,7 +422,7 @@ export default function LocalExpertSection() {
             {options.map((option) => (
               <div key={option.title} className="group flex h-full flex-col rounded border border-border bg-card p-6  transition-all duration-300 hover:-translate-y-1 hover:shadow-medium lg:p-7">
                 {/* icon zone */}
-                <div className="flex h-16 w-16 items-center justify-center rounded-full border border-border bg-muted text-foreground transition-colors duration-300 group-hover:border-primary/40 group-hover:bg-background">
+                <div className="flex mx-auto h-16 w-16 items-center justify-center rounded-full border border-border bg-muted text-foreground transition-colors duration-300 group-hover:border-primary/40 group-hover:bg-background">
                   <option.icon className="h-7 w-7" />
                 </div>
                 <h4 className="mt-6 text-lg font-semibold text-foreground">{option.title}</h4>
@@ -435,9 +435,22 @@ export default function LocalExpertSection() {
           </div>
 
           {/* Call to action note */}
-          <p className="mt-8 flex items-center justify-center text-base font-medium text-foreground/80">
+          {/* <div className=" text-center mt-4 md:mt-8">
+          <p className=" flex items-center justify-center text-base font-medium text-foreground/80">
             Start by searching your city or ZIP code.
           </p>
+            <Link href="/brokers" className="group inline-block mt-2">
+              <Button
+                size="lg"
+                className="btn-primary btn-lg shadow-soft hover:shadow-medium transition-all duration-300"
+              >
+                <span className="flex items-center">
+                  Find Your Local Expert
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                </span>
+              </Button>
+            </Link>
+          </div> */}
         </div>
 
         {/* ==========================================================
@@ -470,7 +483,7 @@ export default function LocalExpertSection() {
                   {/* Content with top padding to accommodate the overlapping number */}
                   <div className="">
 
-                    <step.Diagram className="h-16 w-24 text-foreground/70" />
+                    <step.Diagram className="h-16 w-24 text-foreground/70 mx-auto" />
                     <h4 className="mt-4 text-lg font-semibold text-foreground">{step.title}</h4>
                     <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                       {step.description}
@@ -489,11 +502,11 @@ export default function LocalExpertSection() {
         <div>
           <div className="relative overflow-hidden">
             <div className="grid gap-10  lg:grid-cols-5 lg:items-center lg:gap-12">
-              <div className="lg:col-span-3">
+              <div className="lg:col-span-3 text-center">
                 <h3 className="text-xl font-medium sm:text-4xl text-foreground">
                   Your Home. Your Loan. Your Choice.
                 </h3>
-                <p className="mt-2 sm:mt-4 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+                <p className="mt-2 sm:mt-4 mx-auto max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
                   HomeLoanMarket gives you a simple way to discover mortgage professionals and explore your options — while you stay in control of who you contact.
                 </p>
 

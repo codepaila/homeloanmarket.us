@@ -1,8 +1,9 @@
 'use client'
 
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { motion } from 'motion/react'
-import { Calculator, Home, Percent, Calendar, TrendingUp } from 'lucide-react'
+import { Calculator, Home, Percent, Calendar } from 'lucide-react'
 import { AnimatedContainer } from '@/components/design/AnimatedContainer'
 import { Section } from '@/components/design/Section'
 import { cn } from '@/lib/utils'
@@ -115,62 +116,150 @@ function useEditableNumber({
   return { text, onChange, onFocus, onBlur }
 }
 
-const MIN_LOAN = 50000
-const MAX_LOAN = 500000
+export const MIN_HOME_PRICE = 100000
+export const MAX_HOME_PRICE = 5000000
+export const MIN_DOWN_PAYMENT = 0
+export const MAX_DOWN_PAYMENT = 50
+export const MIN_INTEREST_RATE = 1
+export const MAX_INTEREST_RATE = 15
+export const MIN_LOAN_TERM = 1
+export const MAX_LOAN_TERM = 50
+export const DEFAULT_HOME_PRICE = 300000
+export const DEFAULT_DOWN_PAYMENT = 20
+export const DEFAULT_INTEREST_RATE = 6.5
+export const DEFAULT_LOAN_TERM = 30
+export const LOAN_TERM_PRESETS = [15, 20, 30] as const
+
+export function clampLoanTerm(value: number): number {
+  if (!Number.isFinite(value)) return DEFAULT_LOAN_TERM
+  return Math.min(MAX_LOAN_TERM, Math.max(MIN_LOAN_TERM, Math.round(value)))
+}
+
+export type MortgageInputs = {
+  homePrice: number
+  downPaymentPercent: number
+  interestRate: number
+  loanTerm: number
+}
+
+export type MortgageResults = {
+  downPaymentAmount: number
+  loanAmount: number
+  monthlyPayment: number
+  totalPayment: number
+  totalInterest: number
+  interestShare: number
+  principalShare: number
+}
+
+// Pure calculation boundary. Guards every input so an invalid/transient value
+// (e.g. an interest rate of 0 typed mid-edit) can never surface NaN or
+// Infinity to the UI. The amortization formula is unchanged.
+export function calculateMortgage({
+  homePrice,
+  downPaymentPercent,
+  interestRate,
+  loanTerm,
+}: MortgageInputs): MortgageResults {
+  const finite = (value: number) => (Number.isFinite(value) ? value : 0)
+
+  const safeHomePrice = Number.isFinite(homePrice) && homePrice > 0 ? homePrice : 0
+  const safeDownPercent = Number.isFinite(downPaymentPercent)
+    ? Math.min(100, Math.max(0, downPaymentPercent))
+    : 0
+
+  const downPaymentAmount = safeHomePrice * (safeDownPercent / 100)
+  const loanAmount = Math.max(0, safeHomePrice - downPaymentAmount)
+
+  const safeRate = Number.isFinite(interestRate) && interestRate > 0 ? interestRate : 0
+  const monthlyRate = safeRate / 100 / 12
+  const numberOfPayments = clampLoanTerm(loanTerm) * 12
+
+  let monthlyPayment = 0
+  if (loanAmount > 0 && numberOfPayments > 0) {
+    if (monthlyRate > 0) {
+      const growth = Math.pow(1 + monthlyRate, numberOfPayments)
+      monthlyPayment = (loanAmount * (monthlyRate * growth)) / (growth - 1)
+    } else {
+      monthlyPayment = loanAmount / numberOfPayments
+    }
+  }
+
+  monthlyPayment = finite(monthlyPayment)
+  const totalPayment = finite(monthlyPayment * numberOfPayments)
+  const totalInterest = finite(totalPayment - loanAmount)
+  const interestShare = totalPayment > 0 ? (totalInterest / totalPayment) * 100 : 0
+  const principalShare = 100 - interestShare
+
+  return {
+    downPaymentAmount,
+    loanAmount,
+    monthlyPayment,
+    totalPayment,
+    totalInterest,
+    interestShare,
+    principalShare,
+  }
+}
 
 export default function CalculatorPage() {
-  const [loanAmount, setLoanAmount] = useState(300000)
-  const [interestRate, setInterestRate] = useState(6.5)
-  const [loanTerm, setLoanTerm] = useState(7)
-  const [downPayment, setDownPayment] = useState(20)
+  const [homePrice, setHomePrice] = useState(DEFAULT_HOME_PRICE)
+  const [interestRate, setInterestRate] = useState(DEFAULT_INTEREST_RATE)
+  const [downPayment, setDownPayment] = useState(DEFAULT_DOWN_PAYMENT)
+  const [termPreset, setTermPreset] = useState<number | 'other'>(DEFAULT_LOAN_TERM)
+  const [customTerm, setCustomTerm] = useState(25)
+  const customTermInputRef = useRef<HTMLInputElement>(null)
 
-  const loanAmountField = useEditableNumber({
-    value: loanAmount,
-    setValue: setLoanAmount,
-    min: MIN_LOAN,
-    max: MAX_LOAN,
+  const homePriceField = useEditableNumber({
+    value: homePrice,
+    setValue: setHomePrice,
+    min: MIN_HOME_PRICE,
+    max: MAX_HOME_PRICE,
   })
   const downPaymentField = useEditableNumber({
     value: downPayment,
     setValue: setDownPayment,
-    min: 0,
-    max: 50,
+    min: MIN_DOWN_PAYMENT,
+    max: MAX_DOWN_PAYMENT,
   })
   const interestRateField = useEditableNumber({
     value: interestRate,
     setValue: setInterestRate,
-    min: 1,
-    max: 15,
+    min: MIN_INTEREST_RATE,
+    max: MAX_INTEREST_RATE,
     decimals: 1,
   })
+  const customTermField = useEditableNumber({
+    value: customTerm,
+    setValue: setCustomTerm,
+    min: MIN_LOAN_TERM,
+    max: MAX_LOAN_TERM,
+  })
 
-  const results = useMemo(() => {
-    const principal = loanAmount * (1 - downPayment / 100)
-    const monthlyRate = interestRate / 100 / 12
-    const numberOfPayments = loanTerm * 12
+  // A preset always wins; a custom term only applies while "Other" is selected,
+  // so stale custom state can never override 15/20/30.
+  const effectiveLoanTerm = termPreset === 'other' ? clampLoanTerm(customTerm) : termPreset
+  const customTermInvalid =
+    termPreset === 'other' &&
+    (!Number.isFinite(customTerm) ||
+      !Number.isInteger(customTerm) ||
+      customTerm < MIN_LOAN_TERM ||
+      customTerm > MAX_LOAN_TERM)
 
-    const monthlyPayment =
-      principal *
-      (monthlyRate * Math.pow(1 + monthlyRate, numberOfPayments)) /
-      (Math.pow(1 + monthlyRate, numberOfPayments) - 1)
+  useEffect(() => {
+    if (termPreset === 'other') customTermInputRef.current?.focus()
+  }, [termPreset])
 
-    const totalPayment = monthlyPayment * numberOfPayments
-    const totalInterest = totalPayment - principal
-    const downPaymentAmount = loanAmount * (downPayment / 100)
-
-    const interestShare = totalPayment > 0 ? (totalInterest / totalPayment) * 100 : 0
-    const principalShare = 100 - interestShare
-
-    return {
-      principal,
-      monthlyPayment,
-      totalPayment,
-      totalInterest,
-      downPaymentAmount,
-      interestShare,
-      principalShare,
-    }
-  }, [loanAmount, interestRate, loanTerm, downPayment])
+  const results = useMemo(
+    () =>
+      calculateMortgage({
+        homePrice,
+        downPaymentPercent: downPayment,
+        interestRate,
+        loanTerm: effectiveLoanTerm,
+      }),
+    [homePrice, downPayment, interestRate, effectiveLoanTerm],
+  )
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -181,12 +270,17 @@ export default function CalculatorPage() {
     }).format(Number.isFinite(value) ? value : 0)
   }
 
-  const formatCompact = (value: number) => `$${Math.round(value / 1000)}K`
+  const formatCompact = (value: number) => {
+    if (value >= 1_000_000) {
+      const millions = value / 1_000_000
+      return `$${millions % 1 === 0 ? millions.toFixed(0) : millions.toFixed(1)}M`
+    }
+    return `$${Math.round(value / 1000)}K`
+  }
 
   const animatedMonthly = useAnimatedNumber(results.monthlyPayment)
-  const animatedPrincipal = useAnimatedNumber(results.principal)
+  const animatedLoanAmount = useAnimatedNumber(results.loanAmount)
   const animatedDownPayment = useAnimatedNumber(results.downPaymentAmount)
-  const animatedInterest = useAnimatedNumber(results.totalInterest)
   const animatedTotal = useAnimatedNumber(results.totalPayment)
   const animatedPrincipalShare = useAnimatedNumber(results.principalShare)
   const animatedInterestShare = useAnimatedNumber(results.interestShare)
@@ -222,15 +316,15 @@ export default function CalculatorPage() {
               <div className="p-5 sm:p-6 space-y-5">
                 <h2 className="text-base font-semibold text-foreground">Loan details</h2>
 
-                {/* Loan amount */}
+                {/* Home price */}
                 <div className="space-y-1.5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <label htmlFor="loanAmount" className="text-sm font-medium text-foreground">
-                        Loan amount
+                      <label htmlFor="homePrice" className="text-sm font-medium text-foreground">
+                        Home price
                       </label>
                       <p className="text-[11px] leading-tight text-muted-foreground">
-                        Total you&apos;re borrowing, before interest.
+                        The purchase price of the home.
                       </p>
                     </div>
                     <div className="relative shrink-0">
@@ -238,31 +332,32 @@ export default function CalculatorPage() {
                         $
                       </span>
                       <input
-                        id="loanAmount"
+                        id="homePrice"
                         type="text"
                         inputMode="numeric"
                         pattern="[0-9]*"
-                        value={loanAmountField.text}
-                        onChange={loanAmountField.onChange}
-                        onFocus={loanAmountField.onFocus}
-                        onBlur={loanAmountField.onBlur}
+                        value={homePriceField.text}
+                        onChange={homePriceField.onChange}
+                        onFocus={homePriceField.onFocus}
+                        onBlur={homePriceField.onBlur}
                         className={cn(fieldInputClass, 'w-28 pl-5 pr-2')}
                       />
                     </div>
                   </div>
                   <input
                     type="range"
-                    min={MIN_LOAN}
-                    max={MAX_LOAN}
+                    min={MIN_HOME_PRICE}
+                    max={MAX_HOME_PRICE}
                     step="5000"
-                    value={Math.min(MAX_LOAN, Math.max(MIN_LOAN, loanAmount || MIN_LOAN))}
-                    onChange={(e) => setLoanAmount(parseInt(e.target.value))}
+                    value={Math.min(MAX_HOME_PRICE, Math.max(MIN_HOME_PRICE, homePrice || MIN_HOME_PRICE))}
+                    onChange={(e) => setHomePrice(parseInt(e.target.value))}
+                    aria-label="Home price"
                     style={sliderStyle}
                     className="w-full h-1.5 bg-muted rounded-full cursor-pointer"
                   />
                   <div className="flex justify-between text-[11px] text-muted-foreground">
-                    <span>{formatCompact(MIN_LOAN)}</span>
-                    <span>{formatCompact(MAX_LOAN)}</span>
+                    <span>{formatCompact(MIN_HOME_PRICE)}</span>
+                    <span>{formatCompact(MAX_HOME_PRICE)}</span>
                   </div>
                 </div>
 
@@ -277,20 +372,25 @@ export default function CalculatorPage() {
                         Paid upfront — lowers what you finance.
                       </p>
                     </div>
-                    <div className="relative shrink-0">
-                      <input
-                        id="downPayment"
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={downPaymentField.text}
-                        onChange={downPaymentField.onChange}
-                        onFocus={downPaymentField.onFocus}
-                        onBlur={downPaymentField.onBlur}
-                        className={cn(fieldInputClass, 'w-16 pl-2 pr-5')}
-                      />
-                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
-                        %
+                    <div className="flex shrink-0 items-center gap-2">
+                      <div className="relative">
+                        <input
+                          id="downPayment"
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={downPaymentField.text}
+                          onChange={downPaymentField.onChange}
+                          onFocus={downPaymentField.onFocus}
+                          onBlur={downPaymentField.onBlur}
+                          className={cn(fieldInputClass, 'w-16 pl-2 pr-5')}
+                        />
+                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                          %
+                        </span>
+                      </div>
+                      <span className="text-xs font-medium text-foreground tabular-nums whitespace-nowrap">
+                        ({formatCurrency(results.downPaymentAmount)})
                       </span>
                     </div>
                   </div>
@@ -301,6 +401,7 @@ export default function CalculatorPage() {
                     step="1"
                     value={downPayment}
                     onChange={(e) => setDownPayment(parseInt(e.target.value))}
+                    aria-label="Down payment percentage"
                     style={sliderStyle}
                     className="w-full h-1.5 bg-muted rounded-full cursor-pointer"
                   />
@@ -309,6 +410,109 @@ export default function CalculatorPage() {
                     <span>{formatCurrency(results.downPaymentAmount)}</span>
                     <span>50%</span>
                   </div>
+                </div>
+
+                {/* Loan amount (derived) */}
+                <div className="rounded-md border border-border bg-muted/40 px-3 py-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-medium text-foreground">Loan amount</span>
+                    <span className="text-sm font-semibold text-foreground tabular-nums">
+                      {formatCurrency(animatedLoanAmount)}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-[11px] leading-tight text-muted-foreground">
+                    Home price − down payment.
+                  </p>
+                </div>
+
+                {/* Loan term */}
+                <div className="space-y-1.5">
+                  <span id="loanTermLabel" className="text-sm font-medium text-foreground">Loan term</span>
+                  <div role="group" aria-labelledby="loanTermLabel" className="grid grid-cols-4 gap-1.5">
+                    {LOAN_TERM_PRESETS.map((term) => (
+                      <button
+                        key={term}
+                        type="button"
+                        onClick={() => setTermPreset(term)}
+                        aria-pressed={termPreset === term}
+                        className={cn(
+                          'relative py-1.5 rounded-md text-xs font-medium transition-colors duration-150',
+                          termPreset === term ? '' : 'bg-muted text-foreground hover:bg-border/60'
+                        )}
+                      >
+                        {termPreset === term && (
+                          <motion.span
+                            layoutId="activeTerm"
+                            className="absolute inset-0 rounded-md bg-primary"
+                            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                          />
+                        )}
+                        <span
+                          className={cn(
+                            'relative z-10',
+                            termPreset === term ? 'text-primary-foreground' : ''
+                          )}
+                        >
+                          {term} yr
+                        </span>
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setTermPreset('other')}
+                      aria-pressed={termPreset === 'other'}
+                      className={cn(
+                        'relative py-1.5 rounded-md text-xs font-medium transition-colors duration-150',
+                        termPreset === 'other' ? '' : 'bg-muted text-foreground hover:bg-border/60'
+                      )}
+                    >
+                      {termPreset === 'other' && (
+                        <motion.span
+                          layoutId="activeTerm"
+                          className="absolute inset-0 rounded-md bg-primary"
+                          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                        />
+                      )}
+                      <span
+                        className={cn(
+                          'relative z-10',
+                          termPreset === 'other' ? 'text-primary-foreground' : ''
+                        )}
+                      >
+                        Other
+                      </span>
+                    </button>
+                  </div>
+
+                  {termPreset === 'other' && (
+                    <div className="pt-1">
+                      <label htmlFor="customLoanTerm" className="text-xs font-medium text-foreground">
+                        Custom loan term
+                      </label>
+                      <div className="mt-1 flex items-center gap-2">
+                        <input
+                          id="customLoanTerm"
+                          ref={customTermInputRef}
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          value={customTermField.text}
+                          onChange={customTermField.onChange}
+                          onFocus={customTermField.onFocus}
+                          onBlur={customTermField.onBlur}
+                          aria-invalid={customTermInvalid}
+                          aria-describedby={customTermInvalid ? 'customLoanTermError' : undefined}
+                          className={cn(fieldInputClass, 'w-16 pl-2 pr-2')}
+                        />
+                        <span className="text-xs text-muted-foreground">years</span>
+                      </div>
+                      {customTermInvalid && (
+                        <p id="customLoanTermError" role="alert" className="mt-1 text-xs text-destructive">
+                          Enter a whole number of years between {MIN_LOAN_TERM} and {MAX_LOAN_TERM}.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Interest rate */}
@@ -345,47 +549,13 @@ export default function CalculatorPage() {
                     step="0.1"
                     value={interestRate}
                     onChange={(e) => setInterestRate(parseFloat(e.target.value))}
+                    aria-label="Interest rate"
                     style={sliderStyle}
                     className="w-full h-1.5 bg-muted rounded-full cursor-pointer"
                   />
                   <div className="flex justify-between text-[11px] text-muted-foreground">
                     <span>1%</span>
                     <span>15%</span>
-                  </div>
-                </div>
-
-                {/* Loan term */}
-                <div className="space-y-1.5">
-                  <label className="text-sm font-medium text-foreground">Loan term</label>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {[3, 5, 7, 10].map((term) => (
-                      <button
-                        key={term}
-                        type="button"
-                        onClick={() => setLoanTerm(term)}
-                        aria-pressed={loanTerm === term}
-                        className={cn(
-                          'relative py-1.5 rounded-md text-xs font-medium transition-colors duration-150',
-                          loanTerm === term ? '' : 'bg-muted text-foreground hover:bg-border/60'
-                        )}
-                      >
-                        {loanTerm === term && (
-                          <motion.span
-                            layoutId="activeTerm"
-                            className="absolute inset-0 rounded-md bg-primary"
-                            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                          />
-                        )}
-                        <span
-                          className={cn(
-                            'relative z-10',
-                            loanTerm === term ? 'text-primary-foreground' : ''
-                          )}
-                        >
-                          {term} yr
-                        </span>
-                      </button>
-                    ))}
                   </div>
                 </div>
               </div>
@@ -404,13 +574,13 @@ export default function CalculatorPage() {
                 {/* Composition bar */}
                 <div>
                   <p className="text-xs text-muted-foreground mb-1.5">
-                    Where payments go over {loanTerm} years
+                    Where payments go over {effectiveLoanTerm} years
                   </p>
                   <div className="flex h-2.5 w-full overflow-hidden rounded-full border border-border">
                     <div
                       className="h-full bg-foreground transition-[width] duration-500 ease-out"
                       style={{ width: `${animatedPrincipalShare}%` }}
-                      aria-label={`Principal ${results.principalShare.toFixed(0)}%`}
+                      aria-label={`Loan amount ${results.principalShare.toFixed(0)}%`}
                     />
                     <div
                       className="h-full bg-foreground/20 transition-[width] duration-500 ease-out"
@@ -421,7 +591,7 @@ export default function CalculatorPage() {
                   <div className="flex justify-between mt-1.5 text-[11px]">
                     <span className="flex items-center gap-1 text-foreground">
                       <span className="h-1.5 w-1.5 rounded-sm bg-foreground" />
-                      Principal {results.principalShare.toFixed(0)}%
+                      Loan amount {results.principalShare.toFixed(0)}%
                     </span>
                     <span className="flex items-center gap-1 text-muted-foreground">
                       <span className="h-1.5 w-1.5 rounded-sm bg-foreground/20" />
@@ -435,10 +605,10 @@ export default function CalculatorPage() {
                   <div className="flex justify-between items-center py-2 border-b border-border">
                     <dt className="text-muted-foreground flex items-center gap-1.5 text-xs">
                       <Home className="h-3.5 w-3.5" />
-                      Principal
+                      Loan amount
                     </dt>
                     <dd className="font-semibold text-foreground tabular-nums text-sm">
-                      {formatCurrency(animatedPrincipal)}
+                      {formatCurrency(animatedLoanAmount)}
                     </dd>
                   </div>
                   <div className="flex justify-between items-center py-2 border-b border-border">
@@ -448,15 +618,6 @@ export default function CalculatorPage() {
                     </dt>
                     <dd className="font-semibold text-foreground tabular-nums text-sm">
                       {formatCurrency(animatedDownPayment)}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between items-center py-2 border-b border-border">
-                    <dt className="text-muted-foreground flex items-center gap-1.5 text-xs">
-                      <TrendingUp className="h-3.5 w-3.5" />
-                      Total interest
-                    </dt>
-                    <dd className="font-semibold text-foreground tabular-nums text-sm">
-                      {formatCurrency(animatedInterest)}
                     </dd>
                   </div>
                   <div className="flex justify-between items-center pt-2">

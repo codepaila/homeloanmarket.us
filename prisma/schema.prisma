@@ -398,7 +398,9 @@ model BrokerSubscription {
 
   broker   Broker                  @relation(fields: [brokerId], references: [id])
   planRef  BrokerSubscriptionPlan? @relation(fields: [planId], references: [id])
-  purchaseEmail BrokerSubscriptionEmailLog?
+  // One durable activation-email log row per genuinely new Stripe subscription
+  // activation (cancel -> re-subscribe produces a new row, never a duplicate).
+  emailLogs BrokerSubscriptionEmailLog[]
   paymentFailureLogs BrokerSubscriptionPaymentFailureLog[]
 
   createdAt DateTime @default(now())
@@ -409,7 +411,13 @@ model BrokerSubscription {
 }
 
 // Durable idempotency + delivery state for the broker subscription purchase
-// email. One row per broker subscription (unique idempotency key). Provides:
+// email. The durable idempotency key is scoped to
+// (brokerSubscriptionId, stripeSubscriptionId) so each genuinely new Stripe
+// subscription activation of the SAME BrokerSubscription (cancel -> re-subscribe)
+// is independently represented and independently idempotent, while replays of
+// the same Stripe subscription always collapse to one durable record. The
+// BrokerSubscription row itself is still reused (one per broker) — never
+// duplicated. Mirrors CompanySubscriptionEmailLog. Provides:
 //   - durable dedup across application instances and distinct Stripe events
 //   - atomic concurrency-safe claiming (lease)
 //   - safe retry after failure (FAILED -> PENDING -> retry)
@@ -417,9 +425,13 @@ model BrokerSubscription {
 // The email is marked SENT only AFTER a successful provider send, never before,
 // so a crash cannot "lose" an email that was never sent.
 model BrokerSubscriptionEmailLog {
-  id                    String @id @default(auto()) @map("_id") @db.ObjectId
-  idempotencyKey        String @unique
-  brokerSubscriptionId  String @unique @db.ObjectId
+  id                    String  @id @default(auto()) @map("_id") @db.ObjectId
+  idempotencyKey        String  @unique
+  brokerSubscriptionId  String  @db.ObjectId
+  // Authoritative Stripe subscription identity (Stripe `Subscription.id`),
+  // stored when one exists (paid activations). Distinguishes a new activation
+  // from a replay of the same activation.
+  stripeSubscriptionId  String? @db.ObjectId
   status                BrokerSubscriptionEmailStatus
   attempts              Int     @default(0)
   leaseExpiresAt        DateTime?
@@ -434,6 +446,8 @@ model BrokerSubscriptionEmailLog {
   updatedAt DateTime @updatedAt
 
   @@index([status])
+  @@index([brokerSubscriptionId])
+  @@index([stripeSubscriptionId])
   @@map("broker_subscription_email_logs")
 }
 

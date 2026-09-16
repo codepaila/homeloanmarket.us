@@ -6,6 +6,8 @@ import prisma from '@/lib/prisma'
 import { hasPaidEntitlement, isBrokerOwner, isMortgageExpertBroker, isPublicBroker, pickBrokerEditableFields } from '@/lib/broker-policy'
 import { brokerSubscriptionHasProfileBadge } from '@/lib/broker-plans'
 import { toPublicBrokerRecord } from '@/lib/public-broker'
+import { clientIp } from '@/lib/origin'
+import { recordProfileView } from '@/lib/profile-view'
 
 export async function GET(
   request: Request,
@@ -48,6 +50,9 @@ export async function GET(
           where: {
             status: 'APPROVED'
           },
+          // Bounded read on a public endpoint (the DTO does not emit reviews;
+          // only the count is used).
+          take: 12,
           include: {
             user: {
               select: {
@@ -141,12 +146,12 @@ export async function GET(
       }
     }
 
-    // Increment profile views (only for public access, not by owner)
+    // Record a profile view (only for public access, not by owner). The write
+    // is deduplicated per (broker, client) by recordProfileView so a public
+    // caller cannot generate an unbounded write stream. Non-critical: a
+    // recording failure never affects the response.
     if (!isOwner) {
-      await prisma.broker.update({
-        where: { id: broker.id },
-        data: { profileViews: { increment: 1 } }
-      })
+      await recordProfileView(broker.id, currentUser?.id ? `user:${currentUser.id}` : `ip:${clientIp(request)}`)
     }
 
     return NextResponse.json(responseData)

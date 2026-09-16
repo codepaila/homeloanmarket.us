@@ -1155,7 +1155,8 @@ test('TEST 10 | broker activation regression → exactly one broker email, compa
     assert.equal(emailCalls[0].to, 'broker-direct@example.com')
     assert.match(emailCalls[0].subject, /subscription is active/)
     assert.equal(store.brokerLogs.length, 1)
-    assert.equal(store.brokerLogs[0].idempotencyKey, 'subscription_purchase_bsub-1')
+    assert.equal(store.brokerLogs[0].idempotencyKey, 'subscription_purchase_bsub-1_sub_broker')
+    assert.equal(store.brokerLogs[0].stripeSubscriptionId, 'sub_broker')
     assert.equal(store.brokerLogs[0].status, 'SENT')
 
     // Company product untouched.

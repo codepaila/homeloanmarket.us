@@ -30,6 +30,7 @@ import { sendEmail, emailTemplates } from '@/lib/email'
 import prisma from '@/lib/prisma'
 import { CLAIM_LEASE_MS, isClaimEligible, claimEligibleWhere } from '@/lib/broker-subscription-email-state'
 import { platformConfig } from '@/lib/platform-config'
+import { sendSubscriptionAdminPaymentNotification } from '@/lib/subscription-admin-email'
 
 export { isClaimEligible, claimEligibleWhere }
 
@@ -38,8 +39,11 @@ export type BrokerPurchaseEmailResult =
   | { status: 'skipped'; reason: 'already_sent' | 'not_found' | 'no_recipient' | 'claim_lost' }
   | { status: 'failed'; error: string; retryable: boolean }
 
-export async function sendBrokerSubscriptionPurchaseEmailDurable(brokerSubscriptionId: string): Promise<BrokerPurchaseEmailResult> {
-  const idempotencyKey = `subscription_purchase_${brokerSubscriptionId}`
+export async function sendBrokerSubscriptionPurchaseEmailDurable(
+  brokerSubscriptionId: string,
+  stripeSubscriptionId?: string | null,
+): Promise<BrokerPurchaseEmailResult> {
+  const idempotencyKey = `subscription_purchase_${brokerSubscriptionId}${stripeSubscriptionId ? `_${stripeSubscriptionId}` : ''}`
   const now = new Date()
 
   try {
@@ -49,7 +53,7 @@ export async function sendBrokerSubscriptionPurchaseEmailDurable(brokerSubscript
       await prisma.brokerSubscriptionEmailLog.upsert({
         where: { idempotencyKey },
         update: {},
-        create: { idempotencyKey, brokerSubscriptionId, status: 'PENDING' },
+        create: { idempotencyKey, brokerSubscriptionId, stripeSubscriptionId: stripeSubscriptionId || null, status: 'PENDING' },
       })
     } catch (error) {
       if ((error as { code?: string } | null)?.code === 'P2002') {
@@ -82,19 +86,48 @@ export async function sendBrokerSubscriptionPurchaseEmailDurable(brokerSubscript
       return { status: 'failed', error: 'Broker subscription not found', retryable: false }
     }
     const recipient = subscription.broker.email || subscription.broker.user?.email
+    const plan = subscription.planRef
+    const brokerName = subscription.broker.displayName || 'there'
+
+    // Admin subscription-payment notification. Dispatched from inside this
+    // durable claim so the existing BrokerSubscriptionEmailLog row (scoped per
+    // Stripe subscription) is the authoritative once-per-activation gate:
+    // replays never re-send, a genuinely new Stripe subscription produces a new
+    // notification. Skipped silently when no Stripe subscription or no admin
+    // recipients are configured; never affects the customer email or billing.
+    const notifyAdmins = async () => {
+      if (!stripeSubscriptionId) return
+      try {
+        await sendSubscriptionAdminPaymentNotification({
+          product: 'BROKER_FEATURED',
+          localSubscriptionId: brokerSubscriptionId,
+          stripeSubscriptionId,
+          planName: plan?.name || subscription.plan,
+          priceCents: typeof plan?.price === 'number' ? plan.price : 0,
+          currency: plan?.currency,
+          interval: plan?.billingInterval,
+          customerName: brokerName,
+          customerEmail: recipient ?? null,
+          activatedAt: now,
+        })
+      } catch (adminError) {
+        console.error('Broker subscription admin notification failed:', adminError)
+      }
+    }
+
     if (!recipient) {
       // Not an error: a broker without any email simply cannot receive the
       // message; do not retry forever. Mark as not retryable.
+      await notifyAdmins()
       await prisma.brokerSubscriptionEmailLog.update({ where: { idempotencyKey }, data: { status: 'SENT', sentAt: now, messageId: null, lastError: 'no recipient email' } })
       return { status: 'skipped', reason: 'no_recipient' }
     }
 
     // 5. Build the canonical template (unchanged) and send via the shared
     //    sendEmail() boundary. Deterministic idempotency key preserved.
-    const plan = subscription.planRef
     const appUrl = platformConfig.appUrl
     const template = emailTemplates.subscriptionPurchased({
-      brokerName: subscription.broker.displayName || 'there',
+      brokerName,
       planName: plan?.name || subscription.plan,
       priceCents: typeof plan?.price === 'number' ? plan.price : 0,
       currency: plan?.currency || 'usd',
@@ -133,6 +166,7 @@ export async function sendBrokerSubscriptionPurchaseEmailDurable(brokerSubscript
     }
 
     // 7. Mark SENT only after the provider accepted the send.
+    await notifyAdmins()
     await prisma.brokerSubscriptionEmailLog.update({
       where: { idempotencyKey },
       data: { status: 'SENT', sentAt: now, messageId: result.messageId || null, lastError: null },

@@ -171,7 +171,7 @@ function SearchSection() {
     <div className="max-w-8xl mx-auto px-4 py-8 pb-10 md:py-14 bg-white dark:bg-background ">
       {/* Heading */}
       <motion.h2
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 1, y: 0 }}
         animate={{ opacity: 1, y: 0 }}
         transition={motionTransition(0.1)}
         className="text-center heading-3 sm:heading-1 font-bold text-secondary "
@@ -184,7 +184,7 @@ function SearchSection() {
 
       <motion.form
         onSubmit={handleSearch}
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 1, y: 0 }}
         animate={{ opacity: 1, y: 0 }}
         transition={motionTransition(0.25)}
         className="mt-4 sm:mt-8 mx-auto max-w-4xl"
