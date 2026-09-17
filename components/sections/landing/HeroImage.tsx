@@ -38,17 +38,17 @@ export default function HeroImageSection() {
                 className="h-auto w-full max-w-187.5 object-contain object-center"
               />
             </div>
-            <div className="mt-8 sm:mt-10 md:mt-16 lg:mt-24">
+            <div className="mt-8 sm:mt-10 md:mt-16 lg:mt-24 font-medium">
 
               <h1
-                className=" text-sm sm:text-xl  md:text-3xl    text-white text-shadow-xs text-shadow-black"
+                className=" text-[16.5px] sm:text-xl  md:text-3xl    text-white text-shadow-xs text-shadow-black"
               >
                 You Could Save Thousands on Your Home Loan
               </h1>
 
               {/* Subtitle - Exact text from image */}
               <p
-                className=" text-sm sm:text-xl  md:text-3xl     text-white text-shadow-xs text-shadow-black"
+                className=" text-[16.5px] sm:text-xl  md:text-3xl     text-white text-shadow-xs text-shadow-black"
               >
                 Talk To Local Home Loan Experts
               </p>

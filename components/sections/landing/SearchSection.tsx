@@ -168,7 +168,7 @@ function SearchSection() {
   })
 
   return (
-    <div className="max-w-8xl mx-auto px-4 py-8 pb-10 md:py-14 bg-white dark:bg-background ">
+    <div className="max-w-8xl mx-auto px-4 py-8  md:py-14 bg-white dark:bg-background ">
       {/* Heading */}
       <motion.h2
         initial={{ opacity: 1, y: 0 }}
@@ -176,10 +176,9 @@ function SearchSection() {
         transition={motionTransition(0.1)}
         className="text-center heading-3 sm:heading-1 font-bold text-secondary "
       >
-        <span className="text-primary">
-          Find Home Loan Experts
+        <span className="text-primary font-semibold">
+          Find Home Loan Experts Near You
         </span>
-        <span className="text-primary"> Near You</span>
       </motion.h2>
 
       <motion.form
@@ -187,10 +186,10 @@ function SearchSection() {
         initial={{ opacity: 1, y: 0 }}
         animate={{ opacity: 1, y: 0 }}
         transition={motionTransition(0.25)}
-        className="mt-4 sm:mt-8 mx-auto max-w-4xl"
+        className="mt-8 sm:mt-8 mx-auto max-w-4xl"
       >
         {/* Main Search Bar */}
-        <div ref={searchRef} className="relative flex items-center gap-3 rounded bg-background px-4 py-2.5  ring-1 ring-ring/5 transition-all focus-within:ring-2 focus-within:ring-primary/50">
+        <div ref={searchRef} className="relative flex items-center gap-3 rounded border bg-background px-4 py-2.5  ring-1 ring-ring/5 transition-all focus-within:ring-2 focus-within:ring-primary/50">
           <Search className="h-5 w-5 flex-shrink-0 text-primary" />
           <input
             type="search"

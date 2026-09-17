@@ -108,11 +108,11 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
     <footer className="border-t border-border bg-background">
       <div className="container-custom">
         {/* Newsletter — compact horizontal CTA */}
-        <div className="flex flex-col gap-6 py-10 lg:flex-row lg:items-center lg:justify-between lg:gap-10">
+        <div className="flex flex-col gap-6 py-6 md:py-10 lg:flex-row lg:items-center lg:justify-between lg:gap-10 ">
           <div className="flex items-start gap-4">
-            <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            {/* <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
               <Mail className="h-5 w-5" />
-            </span>
+            </span> */}
             <div>
               <h3 className="text-lg font-bold text-foreground sm:text-xl">
                 Get mortgage insights in your inbox

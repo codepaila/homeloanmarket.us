@@ -356,18 +356,20 @@ export default function LocalExpertSection() {
             mortgage-comparison illustration; supporting statement below.
            ========================================================== */}
         <div>
-          <div className="grid gap-5 md:gap-10 lg:grid-cols-5 ">
-            <div className="lg:col-span-3 text-center">
-              <h2 className="heading-3 text-foreground">
+          <div 
+          // className="grid gap-5 md:gap-10 lg:grid-cols-5 "
+          >
+            <div className="text-center">
+              <h2 className="heading-2 text-foreground">
                 Make Your Home Loan Search Easier
               </h2>
 
               {/* Paragraph 1 */}
-              <p className="mt-2 md:mt-4 max-w-xl mx-auto text-base leading-relaxed text-muted-foreground sm:text-lg">
+              <p className="mt-2 md:mt-4 max-w-3xl mx-auto text-base leading-relaxed text-muted-foreground sm:text-lg">
                 Finding the right mortgage professional can make a big difference when financing a home. An experienced local Home Loan Expert can help you understand the process, answer your questions, and find financing that fits your needs.
               </p>
               <p
-                className="mt-2 md:mt-4 max-w-xl mx-auto leading-relaxed text-muted-foreground text-base sm:text-lg"
+                className="mt-2 md:mt-4 max-w-3xl mx-auto leading-relaxed text-muted-foreground text-base sm:text-lg"
               >
                 HomeLoanMarket.com makes it easier to find Home Loan Experts serving your area. The right home loan could save you thousands of dollars, and finding the right expert is an important place to start.
 
@@ -376,7 +378,7 @@ export default function LocalExpertSection() {
                 <Link href="/brokers" className="group inline-block">
                   <Button
                     size="lg"
-                    className="btn-primary btn-lg shadow-soft hover:shadow-medium transition-all duration-300"
+                    className="btn-primary rounded transition-all duration-300"
                   >
                     <span className="flex items-center">
                       Find Your Local Expert
@@ -387,11 +389,10 @@ export default function LocalExpertSection() {
               </div>
             </div>
 
-            <div className="mx-auto w-full max-w-md lg:col-span-2 lg:max-w-none">
-              {/* <div className="rounded border border-border bg-card p-5 sm:p-8 lg:p-6 xl:p-8"> */}
+            {/* <div className="mx-auto w-full max-w-md lg:col-span-2 lg:max-w-none">
               <ComparisonIllustration />
-              {/* </div> */}
-            </div>
+              
+            </div> */}
           </div>
 
           {/* Supporting statement under a hairline rule */}
@@ -401,58 +402,11 @@ export default function LocalExpertSection() {
             compare, and choose the loan that works best for you.
           </p> */}
         </div>
-<SmartToolsSection/>
         {/* ==========================================================
-            SECTION 2 — More Options. A Smarter Home Loan Choice.
-            Three equal-weight cards: icon zone, title, description,
-            action indicator.
-           ========================================================== */}
-        <div>
-          <div className="mx-auto max-w-2xl text-center">
-            <h3 className="heading-3 text-foreground">
-              More Options. <br /> A Smarter Home Loan Choice.
-            </h3>
-            {/* Description */}
-            <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
-              Different mortgage professionals may offer different loan programs, rates, fees, and solutions.
-              Exploring your options can help you find a loan that better fits your needs.
-            </p>
-          </div>
-
-          <div className="mt-10 grid gap-6 sm:grid-cols-3">
-            {options.map((option) => (
-              <div key={option.title} className="group flex h-full flex-col rounded border border-border bg-card p-6  transition-all duration-300 hover:-translate-y-1 hover:shadow-medium lg:p-7">
-                {/* icon zone */}
-                <div className="flex mx-auto h-16 w-16 items-center justify-center rounded-full border border-border bg-muted text-foreground transition-colors duration-300 group-hover:border-primary/40 group-hover:bg-background">
-                  <option.icon className="h-7 w-7" />
-                </div>
-                <h4 className="mt-6 text-lg font-semibold text-foreground">{option.title}</h4>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {option.description}
-                </p>
-
-              </div>
-            ))}
-          </div>
-
-          {/* Call to action note */}
-          {/* <div className=" text-center mt-4 md:mt-8">
-          <p className=" flex items-center justify-center text-base font-medium text-foreground/80">
-            Start by searching your city or ZIP code.
-          </p>
-            <Link href="/brokers" className="group inline-block mt-2">
-              <Button
-                size="lg"
-                className="btn-primary btn-lg shadow-soft hover:shadow-medium transition-all duration-300"
-              >
-                <span className="flex items-center">
-                  Find Your Local Expert
-                  <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                </span>
-              </Button>
-            </Link>
-          </div> */}
-        </div>
+            SECTION 2 
+            ========================================================== */}
+    
+            <SmartToolsSection/>
 
         {/* ==========================================================
             SECTION 3 — Finding a Home Loan Expert Is Simple.
@@ -461,7 +415,7 @@ export default function LocalExpertSection() {
            ========================================================== */}
         <div>
           <div className="mx-auto max-w-2xl text-center">
-            <h3 className="heading-3 md:heading-2 text-foreground">
+            <h3 className="heading-2 text-foreground">
               Finding a Home Loan Expert Is Simple
             </h3>
           </div>
@@ -516,7 +470,7 @@ export default function LocalExpertSection() {
                   <Link href="/brokers" className="group inline-block">
                     <Button
                       size="lg"
-                      className="btn-primary btn-lg shadow-soft hover:shadow-medium transition-all duration-300"
+                      className="btn-primary  rounded hover:shadow-medium transition-all duration-300"
                     >
                       <span className="flex items-center">
                         Find Your Local Expert
