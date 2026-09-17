@@ -287,37 +287,71 @@ export default function CalculatorPage() {
 
   const sliderStyle = { accentColor: 'var(--foreground)' } as const
   const fieldInputClass =
-    'rounded-md border border-border bg-background/50 py-1.5 text-right text-sm font-semibold text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20'
+    'rounded-md border border-border bg-background/50 py-1.5 text-right text-sm font-semibold text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/20 scroll-mt-40 md:scroll-mt-0'
 
   return (
     <div className="min-h-screen">
-      <Section className="bg-muted">
+      <Section className="bg-muted py-5 sm:py-7 md:py-9 lg:py-10">
         <AnimatedContainer>
           <div className="text-center max-w-2xl mx-auto">
-            <Calculator className="h-9 w-9 text-primary mx-auto mb-3" />
-            <h1 className="heading-2 text-foreground mb-2">Mortgage calculator</h1>
-            <p className="text-base text-muted-foreground max-w-xl mx-auto">
+            <Calculator className="h-7 w-7 sm:h-8 sm:w-8 text-primary mx-auto mb-1.5" />
+            <h1 className="heading-2 text-foreground mb-1.5">Mortgage calculator</h1>
+            <p className="text-sm sm:text-base text-muted-foreground max-w-xl mx-auto">
               See your monthly payment and how much goes to interest.
             </p>
           </div>
         </AnimatedContainer>
       </Section>
 
-      <Section className="bg-background">
-        <AnimatedContainer>
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="max-w-3xl mx-auto rounded-sm border border-border bg-card overflow-hidden shadow-soft"
-          >
-            <div className="grid md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-border">
-              {/* Inputs */}
-              <div className="p-5 sm:p-6 space-y-5">
-                <h2 className="text-base font-semibold text-foreground">Loan details</h2>
+      <Section className="bg-background py-6 sm:py-8 md:py-10 lg:py-12">
+        <div className="max-w-3xl mx-auto">
+          {/* Mobile-only compact sticky payment summary. Reuses the same
+              calculated results used by the desktop summary panel; desktop
+              and tablet keep the full two-column summary below. */}
+          <div className="md:hidden sticky top-16 z-20 mb-3 rounded-sm border border-border bg-card/95 backdrop-blur-sm px-3.5 py-2.5 shadow-soft">
+            <div className="flex items-baseline justify-between gap-3">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl font-bold text-foreground tabular-nums leading-none">
+                  {formatCurrency(animatedMonthly)}
+                </span>
+                <span className="text-[11px] text-muted-foreground">per month</span>
+              </div>
+              <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                Loan {results.principalShare.toFixed(0)}% · Interest {results.interestShare.toFixed(0)}%
+              </span>
+            </div>
+            <div className="mt-1.5 flex h-1.5 w-full overflow-hidden rounded-full border border-border">
+              <div
+                className="h-full bg-foreground transition-[width] duration-500 ease-out"
+                style={{ width: `${animatedPrincipalShare}%` }}
+              />
+              <div
+                className="h-full bg-foreground/20 transition-[width] duration-500 ease-out"
+                style={{ width: `${animatedInterestShare}%` }}
+              />
+            </div>
+            <div className="mt-1 flex items-center justify-between gap-2 text-[10px] leading-none text-muted-foreground tabular-nums">
+              <span>Loan {formatCurrency(animatedLoanAmount)}</span>
+              <span>Down {formatCurrency(animatedDownPayment)}</span>
+              <span>Total {formatCurrency(animatedTotal)}</span>
+            </div>
+          </div>
+
+          <AnimatedContainer>
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="rounded-sm border border-border bg-card overflow-hidden shadow-soft"
+            >
+              {/* Desktop: loan details left, payment summary right. */}
+              <div className="flex flex-col md:grid md:grid-cols-2">
+                {/* Inputs */}
+                <div className="order-2 md:order-1 md:border-r border-border p-4 sm:p-5 space-y-3.5">
+                <h2 className="text-sm font-semibold text-foreground">Loan details</h2>
 
                 {/* Home price */}
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <label htmlFor="homePrice" className="text-sm font-medium text-foreground">
@@ -353,16 +387,16 @@ export default function CalculatorPage() {
                     onChange={(e) => setHomePrice(parseInt(e.target.value))}
                     aria-label="Home price"
                     style={sliderStyle}
-                    className="w-full h-1.5 bg-muted rounded-full cursor-pointer"
+                    className="w-full h-1.5 bg-muted rounded-full cursor-pointer scroll-mt-40 md:scroll-mt-0"
                   />
-                  <div className="flex justify-between text-[11px] text-muted-foreground">
+                  <div className="flex justify-between text-[10px] leading-none text-muted-foreground">
                     <span>{formatCompact(MIN_HOME_PRICE)}</span>
                     <span>{formatCompact(MAX_HOME_PRICE)}</span>
                   </div>
                 </div>
 
                 {/* Down payment */}
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <label htmlFor="downPayment" className="text-sm font-medium text-foreground">
@@ -403,9 +437,9 @@ export default function CalculatorPage() {
                     onChange={(e) => setDownPayment(parseInt(e.target.value))}
                     aria-label="Down payment percentage"
                     style={sliderStyle}
-                    className="w-full h-1.5 bg-muted rounded-full cursor-pointer"
+                    className="w-full h-1.5 bg-muted rounded-full cursor-pointer scroll-mt-40 md:scroll-mt-0"
                   />
-                  <div className="flex justify-between text-[11px] text-muted-foreground">
+                  <div className="flex justify-between text-[10px] leading-none text-muted-foreground">
                     <span>0%</span>
                     <span>{formatCurrency(results.downPaymentAmount)}</span>
                     <span>50%</span>
@@ -413,20 +447,20 @@ export default function CalculatorPage() {
                 </div>
 
                 {/* Loan amount (derived) */}
-                <div className="rounded-md border border-border bg-muted/40 px-3 py-2">
-                  <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center justify-between gap-3 border-t border-border pt-2.5">
+                  <div className="min-w-0">
                     <span className="text-sm font-medium text-foreground">Loan amount</span>
-                    <span className="text-sm font-semibold text-foreground tabular-nums">
-                      {formatCurrency(animatedLoanAmount)}
-                    </span>
+                    <p className="text-[11px] leading-tight text-muted-foreground">
+                      Home price − down payment.
+                    </p>
                   </div>
-                  <p className="mt-0.5 text-[11px] leading-tight text-muted-foreground">
-                    Home price − down payment.
-                  </p>
+                  <span className="shrink-0 text-sm font-semibold text-foreground tabular-nums">
+                    {formatCurrency(animatedLoanAmount)}
+                  </span>
                 </div>
 
                 {/* Loan term */}
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <span id="loanTermLabel" className="text-sm font-medium text-foreground">Loan term</span>
                   <div role="group" aria-labelledby="loanTermLabel" className="grid grid-cols-4 gap-1.5">
                     {LOAN_TERM_PRESETS.map((term) => (
@@ -436,7 +470,7 @@ export default function CalculatorPage() {
                         onClick={() => setTermPreset(term)}
                         aria-pressed={termPreset === term}
                         className={cn(
-                          'relative py-1.5 rounded-md text-xs font-medium transition-colors duration-150',
+                          'relative py-2 rounded-md text-xs font-medium transition-colors duration-150 scroll-mt-40 md:scroll-mt-0',
                           termPreset === term ? '' : 'bg-muted text-foreground hover:bg-border/60'
                         )}
                       >
@@ -462,7 +496,7 @@ export default function CalculatorPage() {
                       onClick={() => setTermPreset('other')}
                       aria-pressed={termPreset === 'other'}
                       className={cn(
-                        'relative py-1.5 rounded-md text-xs font-medium transition-colors duration-150',
+                        'relative py-2 rounded-md text-xs font-medium transition-colors duration-150 scroll-mt-40 md:scroll-mt-0',
                         termPreset === 'other' ? '' : 'bg-muted text-foreground hover:bg-border/60'
                       )}
                     >
@@ -516,7 +550,7 @@ export default function CalculatorPage() {
                 </div>
 
                 {/* Interest rate */}
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <label htmlFor="interestRate" className="text-sm font-medium text-foreground">
@@ -551,29 +585,33 @@ export default function CalculatorPage() {
                     onChange={(e) => setInterestRate(parseFloat(e.target.value))}
                     aria-label="Interest rate"
                     style={sliderStyle}
-                    className="w-full h-1.5 bg-muted rounded-full cursor-pointer"
+                    className="w-full h-1.5 bg-muted rounded-full cursor-pointer scroll-mt-40 md:scroll-mt-0"
                   />
-                  <div className="flex justify-between text-[11px] text-muted-foreground">
+                  <div className="flex justify-between text-[10px] leading-none text-muted-foreground">
                     <span>1%</span>
                     <span>15%</span>
                   </div>
                 </div>
+
+                <p className="md:hidden text-[11px] leading-tight text-muted-foreground text-center pt-0.5">
+                  Estimate only. Actual terms vary by credit, location, and lender.
+                </p>
               </div>
 
-              {/* Summary */}
-              <div className="p-5 sm:p-6 bg-muted space-y-5">
-                <h2 className="text-base font-semibold text-foreground">Payment summary</h2>
+              {/* Summary (desktop/tablet) */}
+              <div className="hidden md:order-2 md:flex md:flex-col md:justify-center p-4 sm:p-5 bg-muted space-y-3">
+                <h2 className="text-sm font-semibold text-foreground">Payment summary</h2>
 
                 <div className="text-center">
-                  <div className="text-3xl sm:text-4xl font-bold text-foreground tabular-nums">
+                  <div className="text-3xl sm:text-4xl font-bold text-foreground tabular-nums leading-none">
                     {formatCurrency(animatedMonthly)}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">per month</p>
+                  <p className="text-xs text-muted-foreground mt-1">per month</p>
                 </div>
 
                 {/* Composition bar */}
                 <div>
-                  <p className="text-xs text-muted-foreground mb-1.5">
+                  <p className="text-[11px] text-muted-foreground mb-1">
                     Where payments go over {effectiveLoanTerm} years
                   </p>
                   <div className="flex h-2.5 w-full overflow-hidden rounded-full border border-border">
@@ -588,7 +626,7 @@ export default function CalculatorPage() {
                       aria-label={`Interest ${results.interestShare.toFixed(0)}%`}
                     />
                   </div>
-                  <div className="flex justify-between mt-1.5 text-[11px]">
+                  <div className="flex justify-between mt-1 text-[11px]">
                     <span className="flex items-center gap-1 text-foreground">
                       <span className="h-1.5 w-1.5 rounded-sm bg-foreground" />
                       Loan amount {results.principalShare.toFixed(0)}%
@@ -602,7 +640,7 @@ export default function CalculatorPage() {
 
                 {/* Breakdown */}
                 <dl className="text-sm">
-                  <div className="flex justify-between items-center py-2 border-b border-border">
+                  <div className="flex justify-between items-center py-1.5 border-b border-border">
                     <dt className="text-muted-foreground flex items-center gap-1.5 text-xs">
                       <Home className="h-3.5 w-3.5" />
                       Loan amount
@@ -611,7 +649,7 @@ export default function CalculatorPage() {
                       {formatCurrency(animatedLoanAmount)}
                     </dd>
                   </div>
-                  <div className="flex justify-between items-center py-2 border-b border-border">
+                  <div className="flex justify-between items-center py-1.5 border-b border-border">
                     <dt className="text-muted-foreground flex items-center gap-1.5 text-xs">
                       <Percent className="h-3.5 w-3.5" />
                       Down payment
@@ -620,7 +658,7 @@ export default function CalculatorPage() {
                       {formatCurrency(animatedDownPayment)}
                     </dd>
                   </div>
-                  <div className="flex justify-between items-center pt-2">
+                  <div className="flex justify-between items-center pt-1.5">
                     <dt className="text-foreground font-medium flex items-center gap-1.5 text-xs">
                       <Calendar className="h-3.5 w-3.5" />
                       Total of all payments
@@ -637,7 +675,8 @@ export default function CalculatorPage() {
               </div>
             </div>
           </motion.div>
-        </AnimatedContainer>
+          </AnimatedContainer>
+        </div>
       </Section>
     </div>
   )
