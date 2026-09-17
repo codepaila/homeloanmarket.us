@@ -17,18 +17,18 @@ export default function SmartToolsSection() {
 
 
   return (
-    <div className="bg-primary rounded">
+    <div className="border bg-background rounded">
         <div className=" text-center p-4 transition-colors  sm:p-8 lg:p-10 ">
           <div className="flex items-center justify-center gap-3 border-b border-secondary pb-6">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-background text-foreground">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
               <Calculator className="h-5 w-5" />
             </span>
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-foreground">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-foreground">
               Mortgage Tool
             </span>
           </div>
 
-          <h3 className="mt-8 text-xl font-semibold text-primary-foreground sm:text-2xl">
+          <h3 className="mt-8 text-xl font-semibold text-foreground sm:text-2xl">
             Calculate Your Monthly Payment
           </h3>
           <p
@@ -44,7 +44,7 @@ export default function SmartToolsSection() {
           <div className="mt-8 group flex flex-col gap-4 sm:flex-row items-center justify-center">
             <Link href="/calculator">
               <Button
-                className="btn-secondary w-full px-8 py-3 text-base sm:w-auto"
+                className="btn-primary w-full px-8 py-3 text-base sm:w-auto"
               >
                 <span className="flex items-center gap-2">
                   Start Calculating
@@ -58,15 +58,15 @@ export default function SmartToolsSection() {
           <div className="mt-10 grid grid-cols-3 gap-4 border-t border-border pt-6">
             <div>
               <p className="text-xs text-muted-foreground">Home Price</p>
-              <p className="mt-1 text-sm font-semibold text-primary-foreground">$100k - $5M</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">$100k - $5M</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Terms</p>
-              <p className="mt-1 text-sm font-semibold text-primary-foreground">15 - 30 Years</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">15 - 30 Years</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Rate</p>
-              <p className="mt-1 text-sm font-semibold text-primary-foreground">1% - 15%</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">1% - 15%</p>
             </div>
           </div>
         </div>

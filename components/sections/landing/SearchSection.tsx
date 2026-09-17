@@ -174,7 +174,7 @@ function SearchSection() {
         initial={{ opacity: 1, y: 0 }}
         animate={{ opacity: 1, y: 0 }}
         transition={motionTransition(0.1)}
-        className="text-center heading-3 sm:heading-1 font-bold text-secondary "
+        className=" text-center heading-3 sm:heading-1 font-bold text-secondary "
       >
         <span className="text-primary font-semibold">
           Find Home Loan Experts Near You

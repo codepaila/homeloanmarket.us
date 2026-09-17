@@ -356,25 +356,31 @@ export default function LocalExpertSection() {
             mortgage-comparison illustration; supporting statement below.
            ========================================================== */}
         <div>
-          <div 
+          <div
           // className="grid gap-5 md:gap-10 lg:grid-cols-5 "
           >
-            <div className="text-center">
-              <h2 className="heading-2 text-foreground">
+            <div className="">
+              <h2 className="heading-3 text-foreground">
                 Make Your Home Loan Search Easier
               </h2>
 
               {/* Paragraph 1 */}
-              <p className="mt-2 md:mt-4 max-w-3xl mx-auto text-base leading-relaxed text-muted-foreground sm:text-lg">
-                Finding the right mortgage professional can make a big difference when financing a home. An experienced local Home Loan Expert can help you understand the process, answer your questions, and find financing that fits your needs.
+              <p className="mt-2 md:mt-4   text-base leading-relaxed text-muted-foreground sm:text-lg">
+                Finding the right mortgage professional can make a big difference when financing a home. An experienced local Home Loan Expert can provide personal guidance, answer your questions, and help you understand your options throughout the home loan process.
               </p>
               <p
-                className="mt-2 md:mt-4 max-w-3xl mx-auto leading-relaxed text-muted-foreground text-base sm:text-lg"
+                className="mt-2 md:mt-4   leading-relaxed text-muted-foreground text-base sm:text-lg"
               >
-                HomeLoanMarket.com makes it easier to find Home Loan Experts serving your area. The right home loan could save you thousands of dollars, and finding the right expert is an important place to start.
+                Whether you’re exploring a Conventional, FHA, VA, USDA, Jumbo, or other home loan, the right expert can help you understand which options may fit your needs and financial situation.
 
               </p>
-              <div className="  mt-4 md:mt-8">
+              <p
+                className="mt-2 md:mt-4 leading-relaxed text-muted-foreground text-base sm:text-lg"
+              >
+
+                HomeLoanMarket.com makes it easier to find Home Loan Experts serving your area. The right home loan could save you thousands of dollars, and finding the right expert is an important place to start.
+              </p>
+              <div className=" mt-4 md:mt-8">
                 <Link href="/brokers" className="group inline-block">
                   <Button
                     size="lg"
@@ -395,18 +401,13 @@ export default function LocalExpertSection() {
             </div> */}
           </div>
 
-          {/* Supporting statement under a hairline rule */}
-          {/* Paragraph 2 */}
-          {/* <p className="mt-2 text-center  md:mt-12 max-w-3xl mx-auto border-t border-border pt-8 md:text-2xl font-medium leading-relaxed text-foreground/90 sm:text-xl">
-            Home Loan Market helps you find local mortgage professionals so you can explore your options,
-            compare, and choose the loan that works best for you.
-          </p> */}
+
         </div>
         {/* ==========================================================
             SECTION 2 
             ========================================================== */}
-    
-            <SmartToolsSection/>
+
+        <SmartToolsSection />
 
         {/* ==========================================================
             SECTION 3 — Finding a Home Loan Expert Is Simple.
@@ -415,7 +416,7 @@ export default function LocalExpertSection() {
            ========================================================== */}
         <div>
           <div className="mx-auto max-w-2xl text-center">
-            <h3 className="heading-2 text-foreground">
+            <h3 className="heading-3 text-foreground">
               Finding a Home Loan Expert Is Simple
             </h3>
           </div>
@@ -462,7 +463,7 @@ export default function LocalExpertSection() {
                   Your Home. Your Loan. Your Choice.
                 </h3>
                 <p className="mt-2 sm:mt-4 mx-auto max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-                  HomeLoanMarket gives you a simple way to discover mortgage professionals and explore your options — while you stay in control of who you contact.
+                  HomeLoanMarket gives you a simple way to discover mortgage professionals and explore your options while you stay in control of who you contact.
                 </p>
 
 
