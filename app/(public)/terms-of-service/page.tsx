@@ -162,7 +162,7 @@ const termsSections: Array<{ title: string; paragraphs: string[] }> = [
       'Questions regarding these Terms may be sent to:',
       'Home Loan Market LLC',
       'HomeLoanMarket.com',
-      // 'Email: [YOUR SUPPORT/LEGAL EMAIL]',
+      'Email: support@homeloanmarket.com',
       // 'Mailing Address: [YOUR BUSINESS MAILING ADDRESS]',
     ],
   },

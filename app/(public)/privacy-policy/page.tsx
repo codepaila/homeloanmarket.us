@@ -131,7 +131,7 @@ const privacySections: Array<{ title: string; paragraphs: string[] }> = [
       'Home Loan Market LLC',
       'HomeLoanMarket.com',
       // 'Privacy Email: [YOUR PRIVACY EMAIL]',
-      // 'Mailing Address: [YOUR BUSINESS MAILING ADDRESS]',
+      'Mailing Address: support@homeloanmarket.com',
     ],
   },
 ]

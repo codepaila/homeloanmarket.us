@@ -44,7 +44,7 @@ const navigation = [
   // },
   { name: 'Blogs', href: '/blog', icon: BookOpen },
   {
-    name: ' Calculator',
+    name: 'Mortgage Calculator',
     href: '/calculator',
     icon: Calculator,
   },

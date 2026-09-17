@@ -43,7 +43,7 @@ export default function HeroImageSection() {
               <h1
                 className=" text-[16.5px] sm:text-xl  md:text-3xl    text-white text-shadow-xs text-shadow-black"
               >
-                You Could Save Thousands on Your Home Loan
+                You Could Save Thousands On Your Home Loan
               </h1>
 
               {/* Subtitle - Exact text from image */}
