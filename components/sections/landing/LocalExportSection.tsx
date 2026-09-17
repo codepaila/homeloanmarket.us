@@ -356,7 +356,7 @@ export default function LocalExpertSection() {
             mortgage-comparison illustration; supporting statement below.
            ========================================================== */}
         <div>
-          <div className="grid gap-5 md:gap-10 lg:grid-cols-5 lg:gap-12 ">
+          <div className="grid gap-5 md:gap-10 lg:grid-cols-5 ">
             <div className="lg:col-span-3 text-center">
               <h2 className="heading-3 text-foreground">
                 Make Your Home Loan Search Easier
@@ -367,7 +367,7 @@ export default function LocalExpertSection() {
                 Finding the right mortgage professional can make a big difference when financing a home. An experienced local Home Loan Expert can help you understand the process, answer your questions, and find financing that fits your needs.
               </p>
               <p
-                className="mt-2 md:mt-6 max-w-xl mx-auto leading-relaxed text-muted-foreground text-base sm:text-lg"
+                className="mt-2 md:mt-4 max-w-xl mx-auto leading-relaxed text-muted-foreground text-base sm:text-lg"
               >
                 HomeLoanMarket.com makes it easier to find Home Loan Experts serving your area. The right home loan could save you thousands of dollars, and finding the right expert is an important place to start.
 

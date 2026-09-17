@@ -33,7 +33,7 @@ export default function SmartToolsSection() {
   ]
 
   return (
-    <section className="section-spacing bg-background">
+    <div className="bg-background">
       <div className="container-custom">
         <div className="grid gap-12 lg:grid-cols-5 lg:items-center lg:gap-16">
 
@@ -149,6 +149,6 @@ export default function SmartToolsSection() {
 
         </div>
       </div>
-    </section>
+    </div>
   )
 }

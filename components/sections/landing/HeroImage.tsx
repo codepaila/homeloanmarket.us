@@ -22,7 +22,7 @@ export default function HeroImageSection() {
         />
 
       </div>
-      <div className="px-1 sm:px-6 lg:px-8 relative z-10">
+      <div className="px-3 sm:px-6 lg:px-8 relative z-10">
         <div
           className=" py-12 md:pt-16 lg:pt-20 mt-12 md:mt-12"
         >
@@ -41,14 +41,14 @@ export default function HeroImageSection() {
             <div className="mt-8 sm:mt-10 md:mt-16 lg:mt-24">
 
               <h1
-                className=" text-base sm:text-xl  md:text-3xl    font-semibold  tracking-wide text-white text-shadow-xs text-shadow-black"
+                className=" text-sm sm:text-xl  md:text-3xl    text-white text-shadow-xs text-shadow-black"
               >
                 You Could Save Thousands on Your Home Loan
               </h1>
 
               {/* Subtitle - Exact text from image */}
               <p
-                className=" text-base sm:text-2xl  md:text-3xl   font-semibold  tracking-wide text-white text-shadow-xs text-shadow-black"
+                className=" text-sm sm:text-xl  md:text-3xl     text-white text-shadow-xs text-shadow-black"
               >
                 Talk To Local Home Loan Experts
               </p>
