@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import SmartToolsSection from './SmartToolsSection'
 
 /* =====================================================================
    Custom line-art icon set — thin single-stroke "blueprint" style that
@@ -400,7 +401,7 @@ export default function LocalExpertSection() {
             compare, and choose the loan that works best for you.
           </p> */}
         </div>
-
+<SmartToolsSection/>
         {/* ==========================================================
             SECTION 2 — More Options. A Smarter Home Loan Choice.
             Three equal-weight cards: icon zone, title, description,

@@ -40,7 +40,7 @@ export default function SmartToolsSection() {
           {/* Supporting column (~38%) */}
           <div className="lg:col-span-2">
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 1, y: 0 }}
               animate={{ opacity: 1, y: 0 }}
               transition={motionTransition(0)}
               className="inline-flex items-center gap-2 rounded border border-border bg-card px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground"
@@ -51,7 +51,7 @@ export default function SmartToolsSection() {
 
             {/* Main Heading */}
             <motion.h2
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 1, y: 0 }}
               animate={{ opacity: 1, y: 0 }}
               transition={motionTransition(0.1)}
               className="heading-3 mt-5 text-foreground"
@@ -61,7 +61,7 @@ export default function SmartToolsSection() {
 
             {/* Description */}
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 1, y: 0 }}
               animate={{ opacity: 1, y: 0 }}
               transition={motionTransition(0.2)}
               className="mt-4 max-w-md text-base leading-relaxed text-muted-foreground sm:text-lg"
@@ -93,7 +93,7 @@ export default function SmartToolsSection() {
 
           {/* Calculator card — focal point (~62%) */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 1, y: 0 }}
             animate={{ opacity: 1, y: 0 }}
             transition={motionTransition(0.25)}
             className="lg:col-span-3"

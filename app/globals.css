@@ -314,7 +314,7 @@
 
   /* Section spacing */
   .section-spacing {
-    @apply py-10 md:py-14 lg:py-[72px];
+    @apply py-8 md:py-10 lg:py-[72px];
   }
 
   /* Typography */

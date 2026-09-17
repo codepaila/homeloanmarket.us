@@ -2,7 +2,7 @@
 import type { Metadata } from 'next'
 import SearchSection from '@/components/sections/landing/SearchSection'
 import LocalExpertSection from '@/components/sections/landing/LocalExportSection'
-import SmartToolsSection from '@/components/sections/landing/SmartToolsSection'
+// import SmartToolsSection from '@/components/sections/landing/SmartToolsSection'
 import HeroImageSection from '@/components/sections/landing/HeroImage'
 import { canonicalUrl, safeJsonLd, organizationJsonLd, websiteJsonLd } from '@/lib/seo'
 import { getSiteSettings } from '@/lib/site/settings'
@@ -64,8 +64,8 @@ export default async function Home() {
       {/* <HeroSection /> */}
       {/* <StatisticsSection /> */}
       <SearchSection/>
+      {/* <SmartToolsSection/> */}
       <LocalExpertSection/>
-      <SmartToolsSection/>
       {/* <FeaturedBrokersSection /> */}
       {/* <ServicesSection /> */}
       {/* <WhyChooseUsSection /> */}
