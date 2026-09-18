@@ -6,7 +6,7 @@ import prisma from '@/lib/prisma'
 import { hasPaidEntitlement, isBrokerOwner, isMortgageExpertBroker, isPublicBroker, pickBrokerEditableFields } from '@/lib/broker-policy'
 import { brokerSubscriptionHasProfileBadge } from '@/lib/broker-plans'
 import { toPublicBrokerRecord } from '@/lib/public-broker'
-import { clientIp } from '@/lib/origin'
+import { clientIp, isSameOriginRequest } from '@/lib/origin'
 import { recordProfileView } from '@/lib/profile-view'
 
 export async function GET(
@@ -99,8 +99,9 @@ export async function GET(
 
 
     // Calculate response time and features based on subscription. Subscription
-    // only drives the FEATURED presentation (badge + response time); it does
-    // NOT gate contact/email visibility.
+    // only drives the FEATURED presentation (badge + response time). Broker
+    // email and phone are intentional public product data for every eligible
+    // broker and are never gated by subscription.
     let averageResponseTime = 'Within 24 hours'
     let isFeatured = false
 
@@ -124,8 +125,8 @@ export async function GET(
       ? isBrokerOwner(broker.userId, currentUser.id)
       : false
 
-    // Contact details (phone/email) are public for every eligible broker,
-    // regardless of subscription or ownership.
+    // Public broker contact details (phone/whatsapp/email/website/officeAddress)
+    // are intentional product data for every eligible public broker.
     const responseData = {
       ...toPublicBrokerRecord(broker, { includeContact: true }),
       averageResponseTime,
@@ -158,7 +159,7 @@ export async function GET(
   } catch (error: any) {
     console.error('GET /api/brokers/[slug] error:', error)
     return NextResponse.json(
-      { message: 'Failed to fetch broker', error: error.message },
+      { message: 'Failed to fetch broker' },
       { status: 500 }
     )
   }
@@ -169,6 +170,9 @@ export async function PATCH(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
+    if (!isSameOriginRequest(request)) {
+      return NextResponse.json({ message: 'Invalid request origin' }, { status: 403 })
+    }
     const currentUser = await getCurrentUser()
     const slug = (await params).slug
 
@@ -278,7 +282,7 @@ export async function PATCH(
   } catch (error: any) {
     console.error('PATCH /api/brokers/[slug] error:', error)
     return NextResponse.json(
-      { message: 'Failed to update broker profile', error: error.message },
+      { message: 'Failed to update broker profile' },
       { status: 500 }
     )
   }
@@ -289,6 +293,9 @@ export async function DELETE(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
+    if (!isSameOriginRequest(request)) {
+      return NextResponse.json({ message: 'Invalid request origin' }, { status: 403 })
+    }
     const currentUser = await getCurrentUser()
     const slug = (await params).slug
 
@@ -357,7 +364,7 @@ export async function DELETE(
   } catch (error: any) {
     console.error('DELETE /api/brokers/[slug] error:', error)
     return NextResponse.json(
-      { message: 'Failed to delete broker profile', error: error.message },
+      { message: 'Failed to delete broker profile' },
       { status: 500 }
     )
   }

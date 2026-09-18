@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/currentUser'
+import { parseBoundedPositiveInt } from '@/utils'
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,8 +21,9 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '20')
+    // Bounded pagination: reject NaN/Infinity/negative and cap the page size.
+    const page = parseBoundedPositiveInt(searchParams.get('page'), 1)
+    const limit = Math.min(parseBoundedPositiveInt(searchParams.get('limit'), 20), 100)
     const brokerId = searchParams.get('brokerId')
     const status = searchParams.get('status')
     const search = searchParams.get('search')

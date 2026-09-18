@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/currentUser"
 import { MediaService } from "@/lib/advertisements/services"
+import { parseBoundedPositiveInt } from "@/utils"
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,8 +16,9 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get("page") || "1")
-    const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 100)
+    // Bounded pagination: reject NaN/Infinity/negative and cap the page size.
+    const page = parseBoundedPositiveInt(searchParams.get("page"), 1)
+    const limit = Math.min(parseBoundedPositiveInt(searchParams.get("limit"), 50), 100)
     const search = searchParams.get("search") || undefined
     const folderId = searchParams.get("folderId") || undefined
 

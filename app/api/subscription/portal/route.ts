@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/currentUser'
 import Stripe from 'stripe'
 import { SubscriptionService } from '@/lib/subscription'
 import { getStripeSecretKey } from '@/lib/stripe-config'
+import { isSameOriginRequest } from '@/lib/origin'
 
 async function getStripe(): Promise<Stripe> {
   const key = await getStripeSecretKey()
@@ -12,6 +13,9 @@ async function getStripe(): Promise<Stripe> {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!isSameOriginRequest(request)) {
+      return NextResponse.json({ success: false, error: 'Invalid request origin' }, { status: 403 })
+    }
     const user = await getCurrentUser()
     
     if (!user) {

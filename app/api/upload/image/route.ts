@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/currentUser"
 import { uploadImage, ImageUploadError } from "@/lib/image-upload"
+import { uploadImageRateLimit } from "@/lib/rateLimit"
 
 type UploadType = "logo" | "cover" | "avatar" | "profile"
 
@@ -29,6 +30,19 @@ export async function POST(request: NextRequest) {
     const user = await getCurrentUser()
     if (!user) {
       return NextResponse.json({ message: "Authentication required" }, { status: 401 })
+    }
+
+    // Distributed per-user guard on the CPU/Cloudinary-cost pipeline. Fails
+    // open on a Redis outage so legitimate uploads are not blocked.
+    try {
+      const limited = await uploadImageRateLimit.limit(`upload-image:${user.id}`)
+      if (!limited.success) {
+        return NextResponse.json({ message: "Too many uploads. Please try again later." }, { status: 429 })
+      }
+    } catch (limitError) {
+      console.warn("Upload rate limiter unavailable; allowing request", {
+        error: limitError instanceof Error ? limitError.message : "unknown",
+      })
     }
 
     const formData = await request.formData()

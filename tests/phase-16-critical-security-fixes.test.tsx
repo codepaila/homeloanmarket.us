@@ -82,8 +82,8 @@ test('C2: the public broker record carries the canonical profileSlug and strips 
 test('C2: contacts/send resolves the broker by profileSlug and guards missing identifiers', () => {
   const source = read('app/api/contacts/send/route.ts')
   assert.ok(source.includes('brokerSlug'), 'route must accept brokerSlug')
-  assert.ok(source.includes('profileSlug: brokerSlug'), 'route must resolve by unique profileSlug')
-  assert.ok(source.includes('!brokerSlug && !brokerId'), 'route must reject requests with no broker identifier')
+  assert.match(source, /profileSlug:\s*(input\.)?brokerSlug/, 'route must resolve by unique profileSlug')
+  assert.match(source, /!input\.brokerSlug && !input\.brokerId|!brokerSlug && !brokerId/, 'route must reject requests with no broker identifier')
   assert.ok(source.includes('brokerId: broker.id'), 'lead must be stored against the resolved broker only')
 })
 

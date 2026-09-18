@@ -117,7 +117,9 @@ export const AdQuerySchema = z.object({
 
 export const BulkAdActionSchema = z.object({
   action: z.enum(["enable", "disable", "archive", "restore", "delete"]),
-  ids: z.array(z.string()).min(1, "At least one ad ID required"),
+  // Bounded bulk array: prevents an unbounded fan-out of delete/archive/enable
+  // mutations from a single admin request.
+  ids: z.array(z.string()).min(1, "At least one ad ID required").max(200, "At most 200 ads per request"),
 })
 
 export const ImpressionSchema = z.object({

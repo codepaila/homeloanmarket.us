@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getCurrentUser } from '@/lib/currentUser'
 import { SubscriptionService } from '@/lib/subscription'
 import { getCorrelationId } from '@/lib/correlation'
+import { isSameOriginRequest } from '@/lib/origin'
 
 export async function POST(request: NextRequest) {
   try {
+    if (!isSameOriginRequest(request)) {
+      return NextResponse.json({ success: false, error: 'Invalid request origin' }, { status: 403 })
+    }
     const correlationId = getCorrelationId(request)
     const user = await getCurrentUser()
     

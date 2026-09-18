@@ -3,9 +3,27 @@ import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import crypto from 'crypto'
 import { hashPassword } from '@/lib/aes'
+import { resetPasswordRateLimit } from '@/lib/rateLimit'
+import { clientIp } from '@/lib/origin'
 
 export async function POST(request: NextRequest) {
   try {
+    // Distributed abuse guard. Fails open on a Redis outage (matching the other
+    // auth limiters) so a legitimate reset is never blocked by infrastructure.
+    try {
+      const limited = await resetPasswordRateLimit.limit(`reset-password:${clientIp(request)}`)
+      if (!limited.success) {
+        return NextResponse.json(
+          { success: false, error: 'Too many requests. Please try again later.' },
+          { status: 429 },
+        )
+      }
+    } catch (limitError) {
+      console.warn('Reset-password rate limiter unavailable; allowing request', {
+        error: limitError instanceof Error ? limitError.message : 'unknown',
+      })
+    }
+
     const body = await request.json()
     const { token, email, password } = body
 

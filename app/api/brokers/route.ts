@@ -55,10 +55,19 @@ export async function GET(request: Request) {
 
     const state = searchParams.get('state')
     const zip = searchParams.get('zip')
-    const minRating = searchParams.get('minRating')
+    // Numeric filters are parsed and range-checked at the boundary. NaN /
+    // Infinity / out-of-range values are dropped (treated as unset) so they can
+    // never reach the Mongo `$gte` stage as a non-finite number.
+    const parseBoundedNumberFilter = (raw: string | null, min: number, max: number): string | null => {
+      if (raw === null || raw.trim() === '') return null
+      const value = Number(raw)
+      if (!Number.isFinite(value) || value < min || value > max) return null
+      return String(value)
+    }
+    const minRating = parseBoundedNumberFilter(searchParams.get('minRating'), 0, 5)
     const verificationStatus = searchParams.get('verificationStatus')
     const brokerStatus = searchParams.get('brokerStatus')
-    const minExperience = searchParams.get('minExperience')
+    const minExperience = parseBoundedNumberFilter(searchParams.get('minExperience'), 0, 100)
     const search = searchParams.get('search') || searchParams.get('q')
     const latitudeParam = searchParams.get('latitude')
     const longitudeParam = searchParams.get('longitude')
@@ -228,15 +237,17 @@ export async function GET(request: Request) {
           })
         })
       : orderedBrokers.map((broker: any) => {
-      const canShowContact = hasPaidEntitlement(broker.subscription)
+      // Broker contact details (email/phone/website/address) are intentional
+      // public product data for every eligible broker and are never gated by
+      // subscription. Only the FEATURED badge is subscription-derived.
       return {
-        ...toPublicBrokerRecord(broker, { includeContact: canShowContact }),
-        isFeatured: canShowContact && broker.subscription?.plan === 'FEATURED',
+        ...toPublicBrokerRecord(broker, { includeContact: true }),
+        isFeatured: hasPaidEntitlement(broker.subscription),
         isMortgageExpert: isMortgageExpertBroker({
           mortgageExpertEnabled: broker.mortgageExpertEnabled,
           profileBadge: brokerSubscriptionHasProfileBadge(broker.subscription),
         }),
-        canShowContact,
+        canShowContact: true,
       }
     })
 
@@ -270,10 +281,8 @@ export async function GET(request: Request) {
     const message = error?.message?.includes('Radius search is unavailable')
       ? error.message
       : 'Failed to fetch brokers'
-    return NextResponse.json(
-      { message, error: error?.message || 'Unknown error' },
-      { status: 500 }
-    )
+    // Never return raw Prisma/Mongo/provider messages to anonymous callers.
+    return NextResponse.json({ message }, { status: 500 })
   }
 }
 
@@ -432,7 +441,7 @@ export async function POST(request: Request) {
     }
     console.error('POST /api/brokers error:', error)
     return NextResponse.json(
-      { message: 'Failed to create broker profile', error: error.message },
+      { message: 'Failed to create broker profile' },
       { status: 500 }
     )
   }

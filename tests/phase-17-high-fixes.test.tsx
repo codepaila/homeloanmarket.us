@@ -55,17 +55,16 @@ test('H1: public broker DTO includes contact only when entitled', () => {
   }
 })
 
-test('H1: listing route gates contact fields by paid entitlement', () => {
+test('H1: listing route exposes public contact for every eligible broker', () => {
   const source = read('app/api/brokers/route.ts')
-  assert.ok(source.includes('canShowContact = hasPaidEntitlement(broker.subscription)'), 'listing must compute paid entitlement')
-  assert.ok(source.includes('includeContact: canShowContact'), 'listing must pass the flag to the DTO')
+  assert.ok(source.includes('includeContact: true'), 'listing must include the public contact fields')
+  assert.ok(source.includes('canShowContact: true'), 'listing must expose canShowContact for eligible brokers')
 })
 
-test('H1: admin detail route gates contact fields by paid/owner/admin', () => {
+test('H1: broker detail route exposes public contact for every eligible broker', () => {
   const source = read('app/api/brokers/[id]/route.ts')
-  assert.ok(source.includes('includeContact: canShowContactFlag'), 'admin detail route must pass the entitlement flag')
-  assert.ok(source.includes("currentUser?.role === 'ADMIN'"), 'admin detail route must treat admins as entitled')
-  assert.ok(source.includes('canShowContact || isOwner'), 'admin detail route must treat owners as entitled')
+  assert.ok(source.includes('includeContact: true'), 'detail route must include the public contact fields')
+  assert.ok(source.includes('canShowContact: true'), 'detail route must expose canShowContact')
 })
 
 test('H1: public profile route exposes contact for every eligible broker', () => {
@@ -75,14 +74,17 @@ test('H1: public profile route exposes contact for every eligible broker', () =>
   assert.equal(source.includes('canShowContact = hasPaidEntitlement'), false, 'public profile must not gate contact by subscription')
 })
 
-test('H1: featured feed applies the public DTO instead of leaking raw records', () => {
+test('H1: featured feed applies a public projection instead of leaking raw records', () => {
   const source = read('app/api/brokers/featured/route.ts')
   // Each featured broker is explicitly projected to a public display record
-  // (id, identity, location, ratings, badges) rather than returned raw.
+  // (id, identity, location, ratings, badges, public contact) rather than
+  // returned raw.
   assert.match(source, /brokers: brokers\.map\(\(broker\) => \(\{/)
   assert.ok(!/return NextResponse\.json\(\{ brokers \}\)/.test(source), 'raw broker array must not be returned')
-  // Protected broker columns and account contact details never leak.
-  assert.ok(!/userId:|phone:|email:|officeAddress:/.test(source), 'protected broker fields must not leak from the featured feed')
+  const response = source.slice(source.indexOf('brokers: brokers.map'))
+  assert.doesNotMatch(response, /userId/, 'ownership id must not leak from the featured feed')
+  assert.doesNotMatch(response, /stripe/i, 'Stripe internals must not leak from the featured feed')
+  assert.doesNotMatch(response, /planId|stripeCustomerId|stripeSubId/, 'subscription internals must not leak from the featured feed')
 })
 
 // =============================================================

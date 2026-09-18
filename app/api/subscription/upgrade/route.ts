@@ -5,6 +5,7 @@ import { BillingUnavailableError, CheckoutConflictError, SubscriptionService } f
 import { validateBrokerPlanForCheckout } from '@/lib/broker-plans'
 import { getCorrelationId } from '@/lib/correlation'
 import { getStripeSecretKey } from '@/lib/stripe-config'
+import { isSameOriginRequest } from '@/lib/origin'
 
 async function getStripe(): Promise<Stripe> {
   const key = await getStripeSecretKey()
@@ -14,6 +15,9 @@ async function getStripe(): Promise<Stripe> {
 
 export async function POST(request: NextRequest) {
   try {
+    if (!isSameOriginRequest(request)) {
+      return NextResponse.json({ success: false, error: 'Invalid request origin' }, { status: 403 })
+    }
     const stripe = await getStripe()
     const correlationId = getCorrelationId(request)
     const user = await getCurrentUser()

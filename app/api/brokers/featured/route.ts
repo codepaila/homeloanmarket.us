@@ -5,8 +5,9 @@ import { isMortgageExpertBroker } from '@/lib/broker-policy'
 import { brokerSubscriptionHasProfileBadge } from '@/lib/broker-plans'
 
 // The featured row card renders identity, ratings, description, bank partner
-// names, and the two server-computed badges. Contact details, reviews, and the
-// full user/subscription objects are not needed for the public section.
+// names, and the two server-computed badges. Broker email/phone are
+// intentional public product data, so they are projected alongside the rest of
+// the public record; the full user/subscription objects are not.
 const FEATURED_SELECT = {
   id: true,
   profileSlug: true,
@@ -15,6 +16,8 @@ const FEATURED_SELECT = {
   logo: true,
   profileImage: true,
   description: true,
+  email: true,
+  phone: true,
   city: true,
   state: true,
   verificationStatus: true,
@@ -95,6 +98,8 @@ export async function GET() {
         logo: broker.logo,
         profileImage: broker.profileImage,
         description: broker.description,
+        email: broker.email,
+        phone: broker.phone,
         city: broker.city,
         state: broker.state,
         verificationStatus: broker.verificationStatus,
@@ -112,10 +117,8 @@ export async function GET() {
     })
   } catch (error) {
     console.error('GET /api/brokers/featured error:', error)
-    const message =
-      error instanceof Error ? error.message : 'Unknown error'
     return NextResponse.json(
-      { message: 'Failed to fetch featured brokers', error: message },
+      { message: 'Failed to fetch featured brokers' },
       { status: 500 }
     )
   }

@@ -8,6 +8,7 @@ import { toPublicBrokerRecord } from '@/lib/public-broker'
 import { clientIp } from '@/lib/origin'
 import { recordProfileView } from '@/lib/profile-view'
 import { buildVerificationUpdate, wasVerifiedTransition, sendBrokerVerifiedEmail } from '@/lib/broker-verification'
+import { isSameOriginRequest } from '@/lib/origin'
 
 export async function GET(
   request: Request,
@@ -111,13 +112,12 @@ export async function GET(
       }
     }
 
-    // Calculate response time and features based on subscription
+    // Calculate response time and features based on subscription. Contact
+    // details are intentional public product data and are not gated here.
     let averageResponseTime = 'Within 24 hours'
-    let canShowContact = false
     let isFeatured = false
 
     if (hasPaidEntitlement(broker.subscription)) {
-      canShowContact = true
       const plan = broker.subscription?.plan || 'FREE'
       
       switch (plan) {
@@ -137,12 +137,12 @@ export async function GET(
       ? isBrokerOwner(broker.userId, currentUser.id)
       : false
 
-    // Prepare response data
-    const canShowContactFlag = canShowContact || isOwner || currentUser?.role === 'ADMIN'
+    // Prepare response data. Broker contact details (email/phone/website/
+    // address) are intentional public product data for every eligible broker.
     const responseData = {
-      ...toPublicBrokerRecord(broker, { includeContact: canShowContactFlag }),
+      ...toPublicBrokerRecord(broker, { includeContact: true }),
       averageResponseTime,
-      canShowContact: canShowContactFlag,
+      canShowContact: true,
       isFeatured,
       isMortgageExpert: isMortgageExpertBroker({
         mortgageExpertEnabled: broker.mortgageExpertEnabled,
@@ -169,7 +169,7 @@ export async function GET(
   } catch (error: any) {
     console.error('GET /api/brokers/[slug] error:', error)
     return NextResponse.json(
-      { message: 'Failed to fetch broker', error: error.message },
+      { message: 'Failed to fetch broker' },
       { status: 500 }
     )
   }
@@ -181,6 +181,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!isSameOriginRequest(request)) {
+      return NextResponse.json({ message: 'Invalid request origin' }, { status: 403 })
+    }
     const currentUser = await getCurrentUser()
     const brokerId = (await params).id
 
@@ -269,7 +272,7 @@ export async function PATCH(
   } catch (error) {
     console.error('PATCH /api/brokers/[id] error:', error)
     return NextResponse.json(
-      { message: 'Failed to update broker profile', error: error instanceof Error ? error.message : 'Unknown error' },
+      { message: 'Failed to update broker profile' },
       { status: 500 }
     )
   }
@@ -280,6 +283,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!isSameOriginRequest(request)) {
+      return NextResponse.json({ message: 'Invalid request origin' }, { status: 403 })
+    }
     const currentUser = await getCurrentUser()
     const { id: brokerId } = await params
 
@@ -330,7 +336,7 @@ export async function DELETE(
   } catch (error) {
     console.error('DELETE /api/brokers/[id] error:', error)
     return NextResponse.json(
-      { message: 'Failed to delete broker profile', error: error instanceof Error ? error.message : 'Unknown error' },
+      { message: 'Failed to delete broker profile' },
       { status: 500 }
     )
   }

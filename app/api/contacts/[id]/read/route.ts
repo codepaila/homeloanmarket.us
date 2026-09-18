@@ -2,12 +2,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/currentUser'
+import { isSameOriginRequest } from '@/lib/origin'
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!isSameOriginRequest(request)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid request origin' },
+        { status: 403 }
+      )
+    }
+
     const user = await getCurrentUser()
     
     if (!user || !user.brokerProfile) {

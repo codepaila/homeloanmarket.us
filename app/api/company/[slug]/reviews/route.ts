@@ -4,6 +4,7 @@ import { getCurrentUser } from '@/lib/currentUser'
 import prisma from '@/lib/prisma'
 import { isPublicBroker } from '@/lib/broker-policy'
 import { REVIEW_CONTENT_MIN, REVIEW_CONTENT_MAX, REVIEW_PUBLIC_STATUS } from '@/lib/reviews'
+import { isSameOriginRequest } from '@/lib/origin'
 
 function loadBroker(slug: string) {
   return prisma.broker.findUnique({
@@ -18,7 +19,8 @@ export async function GET(
 ) {
   try {
     const { searchParams } = new URL(request.url)
-    const page = Math.max(1, parseInt(searchParams.get('page') || '1') || 1)
+    // Bounded pagination: page >= 1 and a hard upper bound keep `skip` finite.
+    const page = Math.min(1000, Math.max(1, parseInt(searchParams.get('page') || '1') || 1))
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '10') || 10))
     const skip = (page - 1) * limit
 
@@ -85,7 +87,7 @@ export async function GET(
   } catch (error: unknown) {
     console.error('GET /api/brokers/[slug]/reviews error:', error)
     return NextResponse.json(
-      { message: 'Failed to fetch reviews', error: error instanceof Error ? error.message : 'Unknown error' },
+      { message: 'Failed to fetch reviews' },
       { status: 500 }
     )
   }
@@ -96,6 +98,9 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
+    if (!isSameOriginRequest(request)) {
+      return NextResponse.json({ message: 'Invalid request origin' }, { status: 403 })
+    }
     const user = await getCurrentUser()
     if (!user?.id) {
       return NextResponse.json({ message: 'Authentication required' }, { status: 401 })

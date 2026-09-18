@@ -126,6 +126,8 @@ export default async function PublicBrokerPage({ params }: PageProps) {
     notFound()
   }
 
+  // Broker contact details (phone/email/website/address) are intentional public
+  // product data for every eligible public broker.
   const publicBroker = {
     ...toPublicBrokerRecord(broker, { includeContact: true }),
     hasOwner: Boolean(broker.userId),

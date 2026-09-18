@@ -6,9 +6,13 @@ import { NextRequest, NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 import { getCurrentUser } from "@/lib/currentUser"
 import { uploadBrokerProfileImage, ProfileImageValidationError } from "@/lib/broker-profile-image"
+import { isSameOriginRequest } from "@/lib/origin"
 
 export async function POST(request: NextRequest) {
   try {
+    if (!isSameOriginRequest(request)) {
+      return NextResponse.json({ message: "Invalid request origin" }, { status: 403 })
+    }
     const user = await getCurrentUser()
     if (!user) {
       return NextResponse.json({ message: "Authentication required" }, { status: 401 })
@@ -46,8 +50,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   try {
+    if (!isSameOriginRequest(request)) {
+      return NextResponse.json({ message: "Invalid request origin" }, { status: 403 })
+    }
     const user = await getCurrentUser()
     if (!user) {
       return NextResponse.json({ message: "Authentication required" }, { status: 401 })

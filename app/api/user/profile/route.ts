@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/currentUser'
 import { sendEmailChangeVerificationEmail } from '@/actions/email.action'
 import { hashPassword, comparePassword } from '@/lib/aes'
+import { isSameOriginRequest } from '@/lib/origin'
 
 export async function GET() {
   try {
@@ -60,6 +61,10 @@ export async function GET() {
 
 export async function PATCH(request: NextRequest) {
   try {
+    if (!isSameOriginRequest(request)) {
+      return NextResponse.json({ message: 'Invalid request origin' }, { status: 403 })
+    }
+
     const currentUser = await getCurrentUser()
 
     if (!currentUser) {

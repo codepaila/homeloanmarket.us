@@ -1,7 +1,8 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getCurrentCompany } from '@/lib/company-policy'
 import { getStripeSecretKey } from '@/lib/stripe-config'
+import { isSameOriginRequest } from '@/lib/origin'
 
 async function getStripe(): Promise<Stripe> {
   const key = await getStripeSecretKey()
@@ -9,7 +10,10 @@ async function getStripe(): Promise<Stripe> {
   return new Stripe(key)
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  if (!isSameOriginRequest(request)) {
+    return NextResponse.json({ error: 'Invalid request origin' }, { status: 403 })
+  }
   const current = await getCurrentCompany()
   if (!current?.company.subscription?.stripeCustomerId) return NextResponse.json({ error: 'Company billing is not configured' }, { status: 404 })
   try {

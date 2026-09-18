@@ -45,11 +45,35 @@ export const resendVerificationRateLimit = new Ratelimit({
   prefix: "ratelimit:resend-verification",
 });
 
+// Password-reset completion is an unauthenticated, credential-changing POST.
+// The 256-bit token makes brute force infeasible, but the endpoint previously
+// had no distributed limit at all, so repeated attempts/abuse were unbounded.
+// A modest per-IP sliding window preserves legitimate retries after a typo.
+export const resetPasswordRateLimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(10, "15 m"), // 10 reset attempts per 15 minutes per IP
+  analytics: true,
+  prefix: "ratelimit:reset-password",
+});
+
 export const contactBrokerRateLimit = new Ratelimit({
   redis: Redis.fromEnv(),
   limiter: Ratelimit.slidingWindow(15, "60 m"), // 15 contact attempts per hour per IP
   analytics: true,
   prefix: "ratelimit:contact-broker",
+});
+
+// Secondary guard for the public broker contact endpoint, keyed by the target
+// broker. This bounds how many contact messages a single broker can receive in
+// a window (protecting the broker's inbox and the persisted lead stream) even
+// when the sender rotates spoofed X-Forwarded-For values. Deliberately more
+// permissive than the per-IP/per-email limit so a legitimately popular broker
+// is not throttled below normal lead volume.
+export const contactBrokerTargetRateLimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(120, "60 m"), // 120 contact attempts per hour per broker
+  analytics: true,
+  prefix: "ratelimit:contact-broker-target",
 });
 
 export const claimPreviewRateLimit = new Ratelimit({
@@ -179,6 +203,91 @@ export const profileViewDedup = new Ratelimit({
   limiter: Ratelimit.fixedWindow(1, "1 h"),
   analytics: false,
   prefix: "ratelimit:profile-view-dedup",
+});
+
+// ---------------------------------------------------------------------------
+// Public advertisement tracking (anonymous). Impressions and clicks are
+// unauthenticated writes to the AdEvent collection, so a distributed per-IP
+// limit bounds event inflation. These mirror the existing fail-open location
+// limiter: a Redis outage must not break ad rendering, so an unavailable
+// limiter allows the request rather than failing the page.
+// ---------------------------------------------------------------------------
+export const adImpressionRateLimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(100, "10 m"), // 100 impressions per 10 minutes per IP
+  analytics: true,
+  prefix: "ratelimit:ad-impression",
+});
+
+export const adClickRateLimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(30, "10 m"), // 30 clicks per 10 minutes per IP
+  analytics: true,
+  prefix: "ratelimit:ad-click",
+});
+
+// Distributed impression dedup gate: at most one counted impression per
+// (advertisement, client) per short window, replacing reliance on a spoofable
+// IP and a database round-trip. Analytics is disabled so the hot public read
+// path stays cheap; this is a gate, not a metric.
+export const adImpressionDedup = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.fixedWindow(1, "10 s"),
+  analytics: false,
+  prefix: "ratelimit:ad-impression-dedup",
+});
+
+// Returns true when the ad event should be rejected for exceeding the public
+// limit. Fails open (returns false) when the limiter is unavailable, matching
+// the existing public-location limiter policy.
+export async function adImpressionRateLimitExceeded(ip: string): Promise<boolean> {
+  try {
+    const { success } = await adImpressionRateLimit.limit(`ad-impression:${ip}`);
+    return !success;
+  } catch (error) {
+    console.warn("Ad impression rate limiter unavailable; allowing request", {
+      error: error instanceof Error ? error.message : "unknown",
+    });
+    return false;
+  }
+}
+
+export async function adClickRateLimitExceeded(ip: string): Promise<boolean> {
+  try {
+    const { success } = await adClickRateLimit.limit(`ad-click:${ip}`);
+    return !success;
+  } catch (error) {
+    console.warn("Ad click rate limiter unavailable; allowing request", {
+      error: error instanceof Error ? error.message : "unknown",
+    });
+    return false;
+  }
+}
+
+// Returns true when an identical impression for this (advertisement, client)
+// was already counted inside the dedup window. Fails open (returns false) when
+// the limiter is unavailable so tracking never breaks ad rendering.
+export async function adImpressionIsDuplicate(advertisementId: string, ip: string): Promise<boolean> {
+  try {
+    const { success } = await adImpressionDedup.limit(`ad-impression:${advertisementId}:${ip}`);
+    return !success;
+  } catch (error) {
+    console.warn("Ad impression dedup limiter unavailable; skipping gate", {
+      error: error instanceof Error ? error.message : "unknown",
+    });
+    return false;
+  }
+}
+
+// Authenticated image upload is CPU-intensive (Sharp decode/encode) and can
+// incur Cloudinary cost. Bound it per user. Ordinary profile editing needs a
+// handful of uploads, so 20 per 10 minutes is generous for legitimate use
+// while preventing a scripted re-encode flood.
+export const uploadImageRateLimit = new Ratelimit({
+  redis: Redis.fromEnv(),
+  limiter: Ratelimit.slidingWindow(20, "10 m"), // 20 uploads per 10 minutes per user
+  analytics: true,
+  prefix: "ratelimit:upload-image",
 });
 
 // In-memory rate limiting for email sending
