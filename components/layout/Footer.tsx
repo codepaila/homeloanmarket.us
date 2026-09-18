@@ -82,21 +82,33 @@ export default function Footer({ settings }: { settings?: SiteSettings }) {
 
   const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (newsletterLoading) return
+
+    // Client-side validation is a fast feedback layer only; the server remains
+    // authoritative. Normalize identically (trim -> lowercase) before sending.
+    const normalizedEmail = email.trim().toLowerCase()
+    if (!normalizedEmail || normalizedEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      const message = 'Please enter a valid email address.'
+      setNewsletterError(message)
+      toast.error(message)
+      return
+    }
+
     setNewsletterError('')
     setNewsletterLoading(true)
     try {
       const response = await fetch('/api/newsletter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: normalizedEmail }),
       })
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Unable to subscribe')
+      const data = await response.json().catch(() => null)
+      if (!response.ok) throw new Error(data?.error || 'We couldn\u2019t subscribe you right now. Please try again.')
       setSubscribed(true)
       setEmail('')
-      toast.success('Subscribed successfully.')
+      toast.success(data?.message || 'Subscribed successfully.')
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to subscribe'
+      const message = error instanceof Error ? error.message : 'We couldn\u2019t subscribe you right now. Please try again.'
       setNewsletterError(message)
       toast.error(message)
     } finally {

@@ -11,16 +11,26 @@ import { PremiumButton } from '@/components/design/PremiumButton'
 import { cn } from '@/lib/utils'
 import type { SiteSettings } from '@/lib/site/settings'
 
+const NAME_MAX = 100
+const EMAIL_MAX = 254
+const SUBJECT_MAX = 200
+const MESSAGE_MIN = 10
+const MESSAGE_MAX = 5000
+
 const validateName = (name: string): string => {
-  if (!name.trim()) return 'Name is required'
-  if (name.trim().length < 2) return 'Name must be at least 2 characters'
+  const value = name.trim()
+  if (!value) return 'Name is required'
+  if (value.length < 2) return 'Name must be at least 2 characters'
+  if (value.length > NAME_MAX) return `Name must be ${NAME_MAX} characters or fewer`
   return ''
 }
 
 const validateEmail = (email: string): string => {
-  if (!email.trim()) return 'Email is required'
+  const value = email.trim()
+  if (!value) return 'Email is required'
+  if (value.length > EMAIL_MAX) return `Email must be ${EMAIL_MAX} characters or fewer`
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(email)) return 'Please enter a valid email address'
+  if (!emailRegex.test(value)) return 'Please enter a valid email address'
   return ''
 }
 
@@ -64,15 +74,22 @@ export function ContactPageClient({ settings }: { settings: SiteSettings }) {
       email: validateEmail(formData.email),
       phone: validatePhone(formData.phone),
     }
-    if (!formData.subject.trim()) newErrors.subject = 'Subject is required'
-    if (!formData.message.trim()) newErrors.message = 'Message is required'
-    if (formData.message.trim().length < 10) newErrors.message = 'Message must be at least 10 characters'
+    const subject = formData.subject.trim()
+    if (!subject) newErrors.subject = 'Subject is required'
+    else if (subject.length > SUBJECT_MAX) newErrors.subject = `Subject must be ${SUBJECT_MAX} characters or fewer`
+
+    const message = formData.message.trim()
+    if (!message) newErrors.message = 'Message is required'
+    else if (message.length < MESSAGE_MIN) newErrors.message = `Message must be at least ${MESSAGE_MIN} characters`
+    else if (message.length > MESSAGE_MAX) newErrors.message = `Message must be ${MESSAGE_MAX} characters or fewer`
+
     setErrors(newErrors)
     return !Object.values(newErrors).some((e) => e !== '')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (loading) return
     if (!validate()) {
       toast.error('Please correct the highlighted fields.')
       return
@@ -80,22 +97,28 @@ export function ContactPageClient({ settings }: { settings: SiteSettings }) {
 
     setLoading(true)
     try {
-      const response = await fetch('/api/admin/contact', {
+      const response = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          email: formData.email.trim().toLowerCase(),
+          phone: formData.phone.trim(),
+          subject: formData.subject.trim(),
+          message: formData.message.trim(),
+        }),
       })
 
-      const data = await response.json()
+      const data = await response.json().catch(() => null)
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to send message')
+        throw new Error(data?.error || 'We couldn\u2019t send your message right now. Please try again.')
       }
 
-      toast.success('Message sent successfully! We will get back to you soon.')
+      toast.success(data?.message || 'Message sent successfully! We will get back to you soon.')
       setFormData({ name: '', email: '', phone: '', subject: '', message: '' })
     } catch (err: any) {
-      toast.error(err.message || 'Failed to send message')
+      toast.error(err?.message || 'We couldn\u2019t send your message right now. Please try again.')
     } finally {
       setLoading(false)
     }

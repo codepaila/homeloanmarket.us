@@ -100,6 +100,6 @@ test('admin media bulk actions await the result and report accurate success/fail
 })
 
 test('newsletter subscription shows success/error toast', () => {
-  assert.match(footer, /toast\.success\('Subscribed successfully\.'\)/, 'newsletter success toast')
+  assert.match(footer, /toast\.success\(data\?\.message \|\| 'Subscribed successfully\.'\)/, 'newsletter success toast')
   assert.match(footer, /toast\.error\(message\)/, 'newsletter error toast')
 })

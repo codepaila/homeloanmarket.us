@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // app/api/admin/contacts/route.ts
+//
+// ADMIN-ONLY read surface for platform contact messages. The public contact
+// form was moved to POST /api/contact (see lib/contact-submission.ts); this
+// route intentionally exposes only the protected GET.
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getCurrentUser } from '@/lib/currentUser'
-import { sendEmail, emailTemplates } from '@/lib/email'
-import { contactBrokerRateLimit } from '@/lib/rateLimit'
-import { platformConfig } from '@/lib/platform-config'
 
 export async function GET(request: NextRequest) {
   try {
@@ -96,47 +97,5 @@ export async function GET(request: NextRequest) {
       { success: false, error: 'Failed to fetch contacts' },
       { status: 500 }
     )
-  }
-}
-
-export async function POST(request: NextRequest) {
-  try {
-    const rate = await contactBrokerRateLimit.limit(`site-contact:${request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'}`)
-    if (!rate.success) return NextResponse.json({ success: false, error: 'Too many requests. Please try again later.' }, { status: 429 })
-
-    const body = await request.json()
-    const name = typeof body.name === 'string' ? body.name.trim() : ''
-    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
-    const phone = typeof body.phone === 'string' ? body.phone.trim() : ''
-    const subject = typeof body.subject === 'string' ? body.subject.trim() : ''
-    const message = typeof body.message === 'string' ? body.message.trim() : ''
-    if (name.length < 2 || name.length > 100 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || message.length < 10 || message.length > 5000) {
-      return NextResponse.json({ success: false, error: 'Please provide a valid name, email, and message.' }, { status: 400 })
-    }
-
-    const recipient = platformConfig.adminEmails.length > 0 ? platformConfig.adminEmails : null
-    if (!recipient) return NextResponse.json({ success: false, error: 'Contact service is not configured.' }, { status: 503 })
-    const template = emailTemplates.notification({
-      title: `New platform contact message: ${subject || 'New message'}`,
-      message: 'A visitor submitted the platform contact form.',
-      info: {
-        Name: name,
-        Email: email,
-        Phone: phone || 'Not provided',
-        Subject: subject || 'No subject',
-        Message: message,
-      },
-    })
-    const result = await sendEmail({
-      to: recipient,
-      subject: template.subject,
-      html: template.html,
-      text: `From: ${name} (${email})\nPhone: ${phone || 'Not provided'}\n\n${message}`,
-      replyTo: email,
-    })
-    if (!result.success) return NextResponse.json({ success: false, error: 'Unable to send your message right now.' }, { status: 502 })
-    return NextResponse.json({ success: true, message: 'Message sent successfully.' })
-  } catch {
-    return NextResponse.json({ success: false, error: 'Unable to send your message right now.' }, { status: 500 })
   }
 }

@@ -57,7 +57,11 @@ function secureSessionCookies(): boolean {
 //   /api/company/*                 (public company directory + register)
 //   /api/cities, /api/states,
 //   /api/location/*                (public reference data)
-//   /api/contacts/send             (public contact form)
+//   /api/contacts/send             (public broker contact form)
+//   /api/contact                   (POST ONLY — public site contact form)
+//   /api/newsletter                (POST ONLY — public footer newsletter signup)
+//   /api/admin/*                   (PROTECTED — no public method exception,
+//                                   including POST; admin reads stay ADMIN-only)
 //   /api/ads/*                     (public advertisement tracking)
 //   /api/stripe/webhook            (Stripe signature IS the auth)
 //   /api/subscription/plans        (GET ONLY — public plan read)
@@ -79,6 +83,14 @@ const PUBLIC_METHOD_AWARE_API: Array<{ method: 'GET' | 'POST' | 'ALL'; pattern: 
   // able to render plans for completely unauthenticated visitors. The route
   // handler returns a display-safe DTO (no Stripe secrets, no customer data).
   { method: 'GET', pattern: /^\/api\/subscription\/plans\/?$/ },
+  // Footer newsletter signup. Public by design: the route validates +
+  // normalizes the email, applies a distributed per-IP rate limit, and sends
+  // the admin notification. POST only — there is no public read surface.
+  { method: 'POST', pattern: /^\/api\/newsletter\/?$/ },
+  // Public site contact form. Dedicated anonymous endpoint (validation + rate
+  // limit + admin notification). Deliberately separate from /api/admin/* so
+  // no public method exception is ever needed for the admin read surface.
+  { method: 'POST', pattern: /^\/api\/contact\/?$/ },
 ]
 
 function isPublicMethodAwareApi(method: string, path: string): boolean {

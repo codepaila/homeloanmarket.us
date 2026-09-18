@@ -13,13 +13,15 @@ test('Phase 2 homepage uses the local hero asset and real broker search route', 
   assert.ok(hero.includes('Search brokers'))
 })
 
-test('Phase 2 public contact form has a public POST handler', () => {
-  const page = read('app/(public)/contact/page.tsx')
-  const route = read('app/api/admin/contact/route.ts')
-  assert.ok(page.includes("fetch('/api/admin/contact'"))
+test('Phase 2 public contact form has a dedicated public POST handler', () => {
+  const client = read('app/(public)/contact/ContactPageClient.tsx')
+  const route = read('app/api/contact/route.ts')
+  const shared = read('lib/contact-submission.ts')
+  assert.ok(client.includes("fetch('/api/contact'"))
   assert.ok(route.includes('export async function POST'))
   assert.ok(route.includes('contactBrokerRateLimit'))
-  assert.ok(route.includes('sendEmail'))
+  assert.ok(shared.includes('sendEmail'))
+  assert.ok(route.includes("@/lib/contact-submission"))
 })
 
 test('Phase 2 admin navigation points only to implemented primary areas', () => {
