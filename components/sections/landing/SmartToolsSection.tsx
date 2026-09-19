@@ -24,7 +24,7 @@ export default function SmartToolsSection() {
               <Calculator className="h-5 w-5" />
             </span>
             <span className="text-xs font-semibold uppercase tracking-[0.18em] text-foreground">
-              Mortgage Tool
+              Mortgage Calculator
             </span>
           </div>
 
